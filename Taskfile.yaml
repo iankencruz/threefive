@@ -16,10 +16,17 @@ tasks:
     cmds:
       - go mod tidy
 
+  dev:
+    desc: Build Go backend binary
+    silent: true
+    cmds:
+      - air
+
   build:
     desc: Build Go backend binary
     cmds:
       - go build -o ./tmp/main ./cmd/api
+      - ./tmp/main
 
   test:
     desc: Run Go tests
