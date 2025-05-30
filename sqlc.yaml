@@ -1,0 +1,17 @@
+version: "2"
+
+sql:
+  - engine: "postgresql"
+    schema: "db/migrations"
+    queries: "db/sql"
+    codegen:
+      go:
+        package: "sqlc"
+        out: "internal/models/sqlc"
+        emit_db_tags: true
+        emit_prepared_queries: false
+        emit_interface: false
+        emit_exact_table_names: false
+# Optional — You can set this via .env or here directly
+# database:
+#   uri: "postgresql://user:pass@localhost:5432/threefive"

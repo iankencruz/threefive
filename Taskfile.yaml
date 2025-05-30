@@ -1,0 +1,58 @@
+version: "3"
+
+env:
+  PROJECT_NAME: threefive
+
+dotenv: [".env"]
+
+tasks:
+  default:
+    desc: Show all available tasks
+    cmds:
+      - task --list
+
+  tidy:
+    desc: Install Go Dependencies
+    cmds:
+      - go mod tidy
+
+  build:
+    desc: Build Go backend binary
+    cmds:
+      - go build -o ./tmp/main ./cmd/api
+
+  test:
+    desc: Run Go tests
+    cmds:
+      - go test ./...
+
+  # 🐤 Goose migrations
+  db:create:
+    desc: Create a new goose migration
+    cmds:
+      - goose create {{.CLI_ARGS}} sql
+    dir: ./db/migrations
+
+  db:up:
+    desc: Apply all up migrations
+    cmds:
+      - goose up
+    dir: ./db/migrations
+
+  db:down:
+    desc: Roll back the last migration
+    cmds:
+      - goose down
+    dir: ./db/migrations
+
+  db:status:
+    desc: Show current migration status
+    cmds:
+      - goose status
+    dir: ./db/migrations
+
+  # 🧬 SQLC code generation
+  db:generate:
+    desc: Generate Go code from SQL files
+    cmds:
+      - sqlc generate
