@@ -16,17 +16,23 @@ tasks:
     cmds:
       - go mod tidy
 
-  dev:
-    desc: Build Go backend binary
-    silent: true
-    cmds:
-      - air
-
   build:
-    desc: Build Go backend binary
+    desc: Build Go binary only
+    deps: [templ:generate, tailwind:generate]
     cmds:
       - go build -o ./tmp/main ./cmd/api
-      - ./tmp/main
+
+    # 🧩 Templ
+  templ:generate:
+    desc: Compile .templ files into Go code
+    cmds:
+      - templ generate
+
+  # 🎨 TailwindCSS
+  tailwind:generate:
+    desc: Generate CSS from Tailwind input file
+    cmds:
+      - npx tailwindcss -i ./ui/static/css/input.css -o ./ui/static/css/tailwind.css --minify
 
   test:
     desc: Run Go tests
@@ -43,14 +49,12 @@ tasks:
   db:up:
     desc: Apply all up migrations
     cmds:
-      - goose up
-    dir: ./db/migrations
+      - goose -dir ./db/migrations/ up
 
   db:down:
     desc: Roll back the last migration
     cmds:
-      - goose down
-    dir: ./db/migrations
+      - goose -dir ./db/migrations/ down
 
   db:status:
     desc: Show current migration status
@@ -63,3 +67,23 @@ tasks:
     desc: Generate Go code from SQL files
     cmds:
       - sqlc generate
+
+  docker:up:
+    desc: Start QL container
+    cmds:
+      - docker-compose up -d
+
+  docker:down:
+    desc: Stop all Docker containers
+    cmds:
+      - docker-compose down
+
+  docker:logs:
+    desc: View database logs
+    cmds:
+      - docker-compose logs -f
+
+  docker:psql:
+    desc: Open psql shell to the DB container
+    cmds:
+      - docker exec -it  psql -U user -d sabiflow
