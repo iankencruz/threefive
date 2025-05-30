@@ -3,16 +3,27 @@ package main
 import (
 	"log"
 	"net/http"
+	"time"
 
-	"github.com/go-chi/chi/v5"
+	"github.com/iankencruz/threefive/internal/application"
+	"github.com/iankencruz/threefive/internal/routes"
 )
 
 func main() {
 
-	r := chi.NewRouter()
+	app := application.NewApp()
+
+	r := routes.Routes(app)
 
 	log.Println("🚀 Server running at http://localhost:8080")
-	if err := http.ListenAndServe(":8080", r); err != nil {
+	srv := &http.Server{
+		Addr:         ":8080",
+		Handler:      r,
+		ReadTimeout:  60 * time.Second,
+		WriteTimeout: 60 * time.Second,
+		IdleTimeout:  90 * time.Second,
+	}
+	if err := srv.ListenAndServe(); err != nil {
 		log.Fatal("❌ Server error:", err)
 	}
 
