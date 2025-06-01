@@ -43,8 +43,7 @@ tasks:
   db:create:
     desc: Create a new goose migration
     cmds:
-      - goose create {{.CLI_ARGS}} sql
-    dir: ./db/migrations
+      - goose -dir ./db/migrations/ create {{.CLI_ARGS}} sql
 
   db:up:
     desc: Apply all up migrations

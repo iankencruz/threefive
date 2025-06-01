@@ -1,4 +1,4 @@
-package users
+package models
 
 import (
 	"context"
@@ -15,24 +15,24 @@ type Repository interface {
 	ListUsers(ctx context.Context) ([]User, error)
 }
 
-type repository struct {
+type UserRepo struct {
 	q *sqlc.Queries
 }
 
-func NewRepository(db sqlc.DBTX) Repository {
-	return &repository{
+func NewUser(db sqlc.DBTX) Repository {
+	return &UserRepo{
 		q: sqlc.New(db),
 	}
 }
 
-func (r *repository) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
+func (r *UserRepo) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
 	return r.q.CreateUser(ctx, arg)
 }
 
-func (r *repository) GetUserByEmail(ctx context.Context, email string) (User, error) {
+func (r *UserRepo) GetUserByEmail(ctx context.Context, email string) (User, error) {
 	return r.q.GetUserByEmail(ctx, email)
 }
 
-func (r *repository) ListUsers(ctx context.Context) ([]User, error) {
+func (r *UserRepo) ListUsers(ctx context.Context) ([]User, error) {
 	return r.q.ListUsers(ctx)
 }

@@ -8,12 +8,18 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Session struct {
+	Token  string             `db:"token"`
+	Data   []byte             `db:"data"`
+	Expiry pgtype.Timestamptz `db:"expiry"`
+}
+
 type User struct {
-	ID           int32            `db:"id"`
-	FirstName    string           `db:"first_name"`
-	LastName     string           `db:"last_name"`
-	Email        string           `db:"email"`
-	PasswordHash string           `db:"password_hash"`
-	CreatedAt    pgtype.Timestamp `db:"created_at"`
-	UpdatedAt    pgtype.Timestamp `db:"updated_at"`
+	ID           int32              `db:"id"`
+	FirstName    string             `db:"first_name"`
+	LastName     string             `db:"last_name"`
+	Email        string             `db:"email"`
+	PasswordHash string             `db:"password_hash"`
+	CreatedAt    pgtype.Timestamptz `db:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `db:"updated_at"`
 }

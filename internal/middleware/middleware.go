@@ -115,7 +115,7 @@ func visibleLength(s string) int {
 	// Strip ANSI escape codes to calculate visible width
 	clean := ""
 	skip := false
-	for i := 0; i < len(s); i++ {
+	for i := range len(s) {
 		if s[i] == '\033' {
 			skip = true
 			continue
