@@ -18,18 +18,18 @@ tasks:
 
   build:
     desc: Build Go binary only
-    deps: [templ:generate, tailwind:generate]
+    deps: [templ, tailwind]
     cmds:
       - go build -o ./tmp/main ./cmd/api
 
     # 🧩 Templ
-  templ:generate:
+  templ:
     desc: Compile .templ files into Go code
     cmds:
       - templ generate
 
   # 🎨 TailwindCSS
-  tailwind:generate:
+  tailwind:
     desc: Generate CSS from Tailwind input file
     cmds:
       - npx tailwindcss -i ./ui/static/css/input.css -o ./ui/static/css/tailwind.css --minify
