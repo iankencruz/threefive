@@ -1,17 +1,28 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"time"
 
 	"github.com/iankencruz/threefive/internal/application"
+	"github.com/iankencruz/threefive/internal/database"
 	"github.com/iankencruz/threefive/internal/routes"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	godotenv.Load()
 
-	app := application.NewApp()
+	ctx := context.Background()
+
+	// Database connection
+
+	db := database.Connect(ctx)
+	defer db.Close()
+
+	app := application.New(ctx, db)
 
 	r := routes.Routes(app)
 
