@@ -2,7 +2,7 @@ package database
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"os"
 	"time"
 
@@ -17,10 +17,10 @@ type DBTX interface {
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 }
 
-func Connect(ctx context.Context) *pgxpool.Pool {
+func Connect(ctx context.Context, log *slog.Logger) *pgxpool.Pool {
 	dsn := os.Getenv("DATABASE_URL")
 	if dsn == "" {
-		log.Fatal("❌ DATABASE_URL is not set")
+		log.Error("❌ DATABASE_URL is not set")
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
@@ -28,21 +28,26 @@ func Connect(ctx context.Context) *pgxpool.Pool {
 
 	pool, err := pgxpool.New(ctx, dsn)
 	if err != nil {
-		log.Fatalf("❌ Failed to connect to DB: %v", err)
+		log.Error("Failed to connect to database", slog.Any("error", err))
+		os.Exit(1)
 	}
 
 	// Check if the connection is successful
 	conn, err := pool.Acquire(ctx)
 	if err != nil {
-		log.Fatalf("Unable to acquire a connection: %v", err)
+		log.Error("Unable to acquire a database connection", slog.Any("error", err))
+		os.Exit(1)
 	}
 	defer conn.Release()
 
 	var result int
 	err = conn.QueryRow(ctx, "SELECT 1").Scan(&result)
 	if err != nil || result != 1 {
-		log.Fatalf("Database connection test failed: %v", err)
+		log.Error("Database connection test failed", slog.Any("error", err))
+		os.Exit(1)
 	}
+
+	log.Info("✅ Connected to database")
 
 	return pool
 }

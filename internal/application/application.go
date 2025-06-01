@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 
 	"github.com/a-h/templ"
@@ -12,14 +13,16 @@ import (
 )
 
 type Application struct {
-	DB    *pgxpool.Pool
-	Users users.Repository
+	Logger *slog.Logger
+	DB     *pgxpool.Pool
+	Users  users.Repository
 }
 
-func New(ctx context.Context, db *pgxpool.Pool) *Application {
+func New(ctx context.Context, db *pgxpool.Pool, logger *slog.Logger) *Application {
 	return &Application{
-		DB:    db,
-		Users: users.NewRepository(db),
+		Logger: logger,
+		DB:     db,
+		Users:  users.NewRepository(db),
 	}
 }
 

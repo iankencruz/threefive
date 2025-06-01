@@ -2,12 +2,13 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"net/http"
 	"time"
 
 	"github.com/iankencruz/threefive/internal/application"
 	"github.com/iankencruz/threefive/internal/database"
+	"github.com/iankencruz/threefive/internal/logger"
 	"github.com/iankencruz/threefive/internal/routes"
 	"github.com/joho/godotenv"
 )
@@ -17,16 +18,23 @@ func main() {
 
 	ctx := context.Background()
 
-	// Database connection
+	// Logger setup
+	log := logger.New()
+	log.Info("💾 Starting ThreeFiveProject")
 
-	db := database.Connect(ctx)
+	// Database connection
+	db := database.Connect(ctx, log)
 	defer db.Close()
 
-	app := application.New(ctx, db)
+	app := application.New(
+		ctx,
+		db,
+		log,
+	)
 
 	r := routes.Routes(app)
 
-	log.Println("🚀 Server running at http://localhost:8080")
+	log.Info("🚀 Server running at http://localhost:8080")
 	srv := &http.Server{
 		Addr:         ":8080",
 		Handler:      r,
@@ -35,7 +43,7 @@ func main() {
 		IdleTimeout:  90 * time.Second,
 	}
 	if err := srv.ListenAndServe(); err != nil {
-		log.Fatal("❌ Server error:", err)
+		log.Error("❌ Server error:", slog.Any("error", err))
 	}
 
 }
