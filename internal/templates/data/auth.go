@@ -1,13 +1,16 @@
 package data
 
 type LoginPageData struct {
-	Title   string
-	Message string
+	Title string
+	Form  struct {
+		Email string
+	}
+	Errors map[string]string
 }
 
 type LoginForm struct {
-	Title   string
-	Message string
+	Email    string
+	Password string
 }
 
 type RegisterPageData struct {

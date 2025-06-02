@@ -13,6 +13,7 @@ type Repository interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	ListUsers(ctx context.Context) ([]User, error)
+	GetUserByID(ctx context.Context, id int32) (User, error)
 }
 
 type UserRepo struct {
@@ -35,4 +36,8 @@ func (r *UserRepo) GetUserByEmail(ctx context.Context, email string) (User, erro
 
 func (r *UserRepo) ListUsers(ctx context.Context) ([]User, error) {
 	return r.q.ListUsers(ctx)
+}
+
+func (r *UserRepo) GetUserByID(ctx context.Context, id int32) (User, error) {
+	return r.q.GetUserByID(ctx, id)
 }

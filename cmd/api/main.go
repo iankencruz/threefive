@@ -42,6 +42,8 @@ func main() {
 		log,
 	)
 
+	// requireAuth := middleware.RequireAuth(app)
+
 	r := routes.Routes(app)
 
 	log.Info("🚀 Server running at http://localhost:8080")
