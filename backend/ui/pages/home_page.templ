@@ -1,0 +1,14 @@
+
+package pages
+
+import "github.com/iankencruz/threefive/backend/ui/layouts"
+import "github.com/iankencruz/threefive/backend/internal/core/viewdata"
+
+templ HomePage(data viewdata.HomePageData) {
+	@layouts.BaseLayout(data.Title) {
+		<div hx-boost="true" class="p-4">
+			<h1 class="text-3xl font-bold">Welcome to { data.Title }</h1>
+			<p class="mt-2 text-gray-600">{ data.Description }</p>
+		</div>
+	}
+}

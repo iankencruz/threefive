@@ -3,16 +3,13 @@ version: "2"
 sql:
   - engine: "postgresql"
     schema: "db/migrations"
-    queries: "db/sql"
+    queries: "db/sql/users.sql"
     gen:
       go:
-        package: "sqlc"
-        out: "internal/models/users/sqlc"
+        package: "auth"
+        out: "backend/internal/auth"
         sql_package: "pgx/v5"
         emit_db_tags: true
         emit_prepared_queries: false
         emit_interface: false
         emit_exact_table_names: false
-# Optional — You can set this via .env or here directly
-# database:
-#   uri: "postgresql://user:pass@localhost:5432/threefive"

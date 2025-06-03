@@ -1,6 +1,0 @@
-{
-  "componentsDir": "ui/templates/components",
-  "utilsDir": "ui/templates/utils",
-  "moduleName": "github.com/iankencruz/threefive",
-  "jsDir": "ui/static/js"
-}

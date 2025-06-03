@@ -1,0 +1,13 @@
+
+package pages
+
+import "github.com/iankencruz/threefive/backend/ui/layouts"
+import "github.com/iankencruz/threefive/backend/internal/core/viewdata"
+
+templ AboutPage(data viewdata.AboutPageData) {
+	@layouts.BaseLayout(data.Title) {
+		<div>
+			<h1>About Page</h1>
+		</div>
+	}
+}
