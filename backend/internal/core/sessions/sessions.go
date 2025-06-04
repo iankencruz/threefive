@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/iankencruz/threefive/backend/internal/core/contextkeys"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -169,4 +170,67 @@ func (m *Manager) Exists(r *http.Request, key string) bool {
 		return false
 	}
 	return cookie.Value != ""
+}
+
+// RenewToken destroys the current session and creates a new one with the same data.
+
+func (m *Manager) RenewToken(ctx context.Context) error {
+	token, ok := ctx.Value(contextkeys.SessionID).(string)
+	if !ok || token == "" {
+		return errors.New("no session token found in context")
+	}
+
+	// Destroy the existing session
+	if err := m.Destroy(ctx); err != nil {
+		return fmt.Errorf("failed to destroy session: %w", err)
+	}
+
+	// Create a new session
+	newToken := generateSessionToken()
+	newExpiry := time.Now().Add(sessionLifespan)
+
+	// You can add metadata later if needed (IP, user-agent, etc.)
+	_, err := m.DB.Exec(ctx, `
+		INSERT INTO sessions (token, expires_at)
+		VALUES (@token, @expires_at)
+	`, pgx.NamedArgs{
+		"token":      newToken,
+		"expires_at": newExpiry,
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to create new session: %w", err)
+	}
+
+	return nil
+}
+
+func (m *Manager) Create(ctx context.Context) (string, error) {
+	sessionID := generateSessionToken()
+
+	expiry := time.Now().Add(sessionLifespan)
+
+	_, err := m.DB.Exec(ctx, `
+		INSERT INTO sessions (token, user_id, expires_at, user_agent)
+		VALUES (@token, NULL, @expires_at, '')
+	`, pgx.NamedArgs{
+		"token":      sessionID,
+		"expires_at": expiry,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return sessionID, nil
+}
+func (m *Manager) Destroy(ctx context.Context) error {
+	cookie, ok := ctx.Value("user_session").(string)
+	if !ok || cookie == "" {
+		return errors.New("no session ID in context")
+	}
+
+	_, err := m.DB.Exec(ctx, `
+		DELETE FROM sessions WHERE token = @token
+	`, pgx.NamedArgs{"token": cookie})
+	return err
 }

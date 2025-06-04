@@ -34,37 +34,56 @@ func RequestLogger(next http.Handler) http.Handler {
 		status := rec.status
 		size := rec.size
 
-		version := fmt.Sprintf("\033[1;33mHTTP/%d.%d\033[0m", r.ProtoMajor, r.ProtoMinor)
-		ip := fmt.Sprintf("\033[38;5;208m%s\033[0m", r.RemoteAddr)
-		statusStr := colorStatus(status)
-		sizeStr := fmt.Sprintf("\033[94m%4dB\033[0m", size)
-		durStr := fmt.Sprintf("\033[32m%8s\033[0m", formatDuration(duration))
+		// Time prefix (HH:mm:ss)
+		timeStr := fmt.Sprintf("\033[38;5;245m%8s\033[0m", time.Now().Format("15:04:05"))
 
-		line := fmt.Sprintf(
-			"%s \033[37mfrom %s\033[0m - %s %s in %s",
-			version, ip, statusStr, sizeStr, durStr,
+		// Protocol version
+		versionStr := fmt.Sprintf("HTTP/%d.%d", r.ProtoMajor, r.ProtoMinor)
+		version := fmt.Sprintf("\033[1;33m%-8s\033[0m", versionStr)
+
+		// Remote IP
+		ip := fmt.Sprintf("\033[38;5;208m%-15s\033[0m", r.RemoteAddr)
+
+		// Status
+		statusPadded := fmt.Sprintf("%-3d", status)
+		statusStr := colorStatus(statusPadded)
+
+		// Size
+		sizeStr := fmt.Sprintf("\033[94m%6dB\033[0m", size)
+
+		// Duration
+		durStr := fmt.Sprintf("\033[32m%10s\033[0m", formatDuration(duration))
+
+		// Path and method
+		methodColored := fmt.Sprintf("%-6s", colorMethod(r.Method))
+		pathColored := fmt.Sprintf("\033[1;33m%-32s\033[0m", r.URL.Path)
+
+		meta := fmt.Sprintf("%s%s",
+			colorField("Method", methodColored),
+			colorField("Path", pathColored),
 		)
 
-		pathColored := fmt.Sprintf("\033[1;33m%s\033[0m", r.URL.Path) // bold yellow
-		meta := fmt.Sprintf("%s%s",
-			colorField("Method", padRight(colorMethod(r.Method), 6)),
-			colorField("Path", padRight(pathColored, 32)),
+		line := fmt.Sprintf(
+			"%s %s \033[37mfrom %s\033[0m - %s %s in %s",
+			timeStr, version, ip, statusStr, sizeStr, durStr,
 		)
 
 		fmt.Println(line + " " + meta)
 	})
 }
 
-func colorStatus(status int) string {
-	switch {
-	case status >= 200 && status < 300:
-		return fmt.Sprintf("\033[32m%3d\033[0m", status) // green
-	case status >= 300 && status < 400:
-		return fmt.Sprintf("\033[36m%3d\033[0m", status) // cyan
-	case status >= 400 && status < 500:
-		return fmt.Sprintf("\033[33m%3d\033[0m", status) // yellow
+func colorStatus(status string) string {
+	switch status[:1] {
+	case "2":
+		return fmt.Sprintf("\033[32m%s\033[0m", status) // Green for 2xx
+	case "3":
+		return fmt.Sprintf("\033[36m%s\033[0m", status) // Cyan for 3xx
+	case "4":
+		return fmt.Sprintf("\033[33m%s\033[0m", status) // Yellow for 4xx
+	case "5":
+		return fmt.Sprintf("\033[31m%s\033[0m", status) // Red for 5xx
 	default:
-		return fmt.Sprintf("\033[31m%3d\033[0m", status) // red
+		return fmt.Sprintf("\033[37m%s\033[0m", status) // White (default)
 	}
 }
 
