@@ -28,6 +28,12 @@ tasks:
     cmds:
       - go build -o ./backend/tmp/main ./backend/cmd/api
 
+  clean:
+    desc: Remove Go binary
+    dir: ./backend/
+    cmds:
+      - rm -rf tmp/
+
     # 🧩 Templ
   templ:
     desc: Compile .templ files into Go code
