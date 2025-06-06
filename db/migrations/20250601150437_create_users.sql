@@ -1,5 +1,5 @@
 -- +goose Up
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS  users (
   id SERIAL PRIMARY KEY,
   first_name TEXT NOT NULL,
   last_name TEXT NOT NULL,
@@ -10,4 +10,4 @@ CREATE TABLE users (
 );
 
 -- +goose Down
-DROP TABLE IF EXISTS users;e StatementEnd
+DROP TABLE IF EXISTS users;
