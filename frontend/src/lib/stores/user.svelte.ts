@@ -23,10 +23,10 @@ export function createAuthStore() {
 		roles: []
 	});
 
-	function login(data: User) {
+	function login(data: any) {
 		user.id = data.id;
-		user.firstName = data.firstName;
-		user.lastName = data.lastName;
+		user.firstName = data.first_name;
+		user.lastName = data.last_name;
 		user.email = data.email;
 		user.roles = data.roles;
 	}

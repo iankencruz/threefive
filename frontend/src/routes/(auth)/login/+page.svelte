@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { PUBLIC_API_URL } from '$env/static/public';
-	import { initUserContext } from '$lib/stores/user.svelte';
+	import { getUserContext } from '$lib/stores/user.svelte';
 
-	let { user, login } = initUserContext();
+	let { user, login } = getUserContext();
 	let email = $state('');
 	let password = $state('');
 	let error = $state('');

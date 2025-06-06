@@ -16,8 +16,16 @@
 				});
 				const result = await res.json();
 
+				console.log('🚀 User root fetch result:', result);
+				console.log('root user type: ', user);
 				if (res.ok && result.user?.id) {
-					login(result.user);
+					login({
+						id: result.user.id,
+						firstName: result.user.first_name,
+						lastName: result.user.last_name,
+						email: result.user.email,
+						roles: []
+					});
 				} else {
 					logout();
 				}
@@ -41,7 +49,7 @@
 
 {#if hydrated}
 	{console.log('✅ Hydrated and rendering children')}
-	{@render children()}
+	<main class="min-h-screen">{@render children()}</main>
 {:else}
-	<div class="flex h-screen items-center justify-center text-gray-500"><PageLoader /></div>
+	<div class="flex h-screen w-full items-center justify-center text-gray-500"><PageLoader /></div>
 {/if}

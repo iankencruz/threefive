@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { initUserContext } from '$lib/stores/user.svelte';
+	import { getUserContext } from '$lib/stores/user.svelte';
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
 
-	const { user } = initUserContext();
+	const { user } = getUserContext();
 
 	$effect(() => {
 		console.log('🏁 Dashboard user:', user);
