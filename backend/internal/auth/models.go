@@ -9,17 +9,26 @@ import (
 )
 
 type Session struct {
-	Token  string             `db:"token"`
-	Data   []byte             `db:"data"`
-	Expiry pgtype.Timestamptz `db:"expiry"`
+	Token     string             `db:"token" json:"token"`
+	UserID    int32              `db:"user_id" json:"user_id"`
+	UserAgent pgtype.Text        `db:"user_agent" json:"user_agent"`
+	ExpiresAt pgtype.Timestamptz `db:"expires_at" json:"expires_at"`
+	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+type SessionDatum struct {
+	Token string      `db:"token" json:"token"`
+	Key   string      `db:"key" json:"key"`
+	Value pgtype.Text `db:"value" json:"value"`
 }
 
 type User struct {
-	ID           int32              `db:"id"`
-	FirstName    string             `db:"first_name"`
-	LastName     string             `db:"last_name"`
-	Email        string             `db:"email"`
-	PasswordHash string             `db:"password_hash"`
-	CreatedAt    pgtype.Timestamptz `db:"created_at"`
-	UpdatedAt    pgtype.Timestamptz `db:"updated_at"`
+	ID           int32              `db:"id" json:"id"`
+	FirstName    string             `db:"first_name" json:"first_name"`
+	LastName     string             `db:"last_name" json:"last_name"`
+	Email        string             `db:"email" json:"email"`
+	PasswordHash string             `db:"password_hash" json:"password_hash"`
+	CreatedAt    pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }

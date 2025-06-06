@@ -33,18 +33,31 @@ func Routes(app *Application) http.Handler {
 		r.Post("/register", app.AuthHandler.RegisterHandler)
 	})
 
-	// ✅ Serve SvelteKit admin SPA
+	// ✅ Serve SvelteKit Admin SPA — protected by middleware
 	adminStatic := http.Dir(filepath.Join("static", "admin"))
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.RequireAuth(app.AuthHandler))
 		r.Handle("/admin/*", http.StripPrefix("/admin", http.FileServer(adminStatic)))
 	})
 
-	// ✅ Example API group for admin SPA
-	r.Route("/api/admin", func(r chi.Router) {
-		r.Use(middleware.RequireAuth(app.AuthHandler))
-		r.Get("/me", app.AuthHandler.GetAuthenticatedUser)
-		// Add other secured endpoints here
+	// ✅ Versioned API group for /admin — scoped under /api/v1/admin
+	r.Route("/api", func(r chi.Router) {
+		r.Route("/v1", func(r chi.Router) {
+			r.Route("/admin", func(r chi.Router) {
+				// Public admin auth endpoints
+				r.Post("/login", app.AuthHandler.LoginHandler)
+				r.Post("/register", app.AuthHandler.RegisterHandler)
+
+				// Protected admin endpoints
+				r.Group(func(r chi.Router) {
+					r.Use(middleware.RequireAuth(app.AuthHandler))
+					r.Post("/logout", app.AuthHandler.LogoutHandler)
+					r.Get("/me", app.AuthHandler.GetAuthenticatedUser)
+
+					// Future protected admin APIs (e.g. projects, galleries, etc.)
+				})
+			})
+		})
 	})
 
 	return r

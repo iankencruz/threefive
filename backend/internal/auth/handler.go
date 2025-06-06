@@ -5,8 +5,12 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 
+	"github.com/iankencruz/threefive/backend/internal/core/contextkeys"
+	"github.com/iankencruz/threefive/backend/internal/core/errors"
+	"github.com/iankencruz/threefive/backend/internal/core/response"
 	"github.com/iankencruz/threefive/backend/internal/core/sessions"
 	"github.com/iankencruz/threefive/backend/internal/core/templates"
 	"github.com/iankencruz/threefive/backend/internal/core/validators"
@@ -21,55 +25,43 @@ type Handler struct {
 }
 
 func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodGet {
-		data := viewdata.LoginPageData{
-			MetaData: viewdata.NewMeta(r, "Login", "Login to your account"),
-		}
-		templates.Render(w, r, pages.LoginPage(data))
-		return
+	var input struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
 	}
 
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, "Invalid form data", http.StatusBadRequest)
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		errResp := errors.BadRequest("Invalid login payload")
+		response.WriteJSON(w, errResp.Code, errResp.Message, errResp)
 		return
 	}
-
-	email := r.FormValue("email")
-	password := r.FormValue("password")
 
 	v := validators.New()
-	v.Require("email", email)
-	v.Require("password", password)
+	v.Require("email", input.Email)
+	v.MatchPattern("email", input.Email, validators.EmailRX, "Must be a valid email address")
+	v.Require("password", input.Password)
 
 	if !v.Valid() {
-		data := viewdata.LoginPageData{
-			MetaData: viewdata.NewMeta(r, "Login", "Login to your account"),
-			Email:    email,
-			Errors:   v.Errors,
-		}
-		templates.Render(w, r, pages.LoginPage(data))
+		errResp := errors.BadRequest("Validation failed")
+		response.WriteJSON(w, errResp.Code, errResp.Message, v.Errors)
 		return
 	}
 
-	user, err := h.Service.Login(r.Context(), email, password)
+	// Use the service to Check the credentials
+	user, err := h.Service.Login(r.Context(), input.Email, input.Password)
 	if err != nil {
-		v.Errors["email"] = "Invalid email or password"
-		data := viewdata.LoginPageData{
-			MetaData: viewdata.NewMeta(r, "Login", "Login to your account"),
-			Email:    email,
-			Errors:   v.Errors,
-		}
-		templates.Render(w, r, pages.LoginPage(data))
+		errResp := errors.Internal(err.Error())
+		response.WriteJSON(w, errResp.Code, errResp.Message, errResp)
 		return
 	}
 
-	// ✅ Create session and set user ID cookie
 	if err := h.SessionManager.SetUserID(w, r, user.ID); err != nil {
-		http.Error(w, "Session error", http.StatusInternalServerError)
+		errResp := errors.Internal("Failed to set session")
+		response.WriteJSON(w, errResp.Code, errResp.Message, errResp)
 		return
 	}
 
-	http.Redirect(w, r, "/admin/dashboard", http.StatusSeeOther)
+	response.WriteJSON(w, http.StatusOK, "Logged in", map[string]any{"user": user})
 }
 
 func (h *Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
@@ -162,4 +154,36 @@ func (h *Handler) GetAuthenticatedUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(map[string]interface{}{"user": user})
+}
+
+func (h *Handler) MeHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	sessionID := ctx.Value(contextkeys.SessionID).(string)
+	if sessionID == "" {
+		http.Error(w, "Unauthorised", http.StatusUnauthorized)
+		return
+	}
+
+	userIDStr, err := h.SessionManager.GetString(ctx, sessionID, "userID")
+	if err != nil || userIDStr == "" {
+		http.Error(w, "Unauthorised", http.StatusUnauthorized)
+		return
+	}
+
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		http.Error(w, "Invalid user ID", http.StatusInternalServerError)
+		return
+	}
+
+	user, err := h.Service.GetUserByID(ctx, int32(userID))
+	if err != nil {
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+
+	response := map[string]any{"user": user}
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(response)
 }
