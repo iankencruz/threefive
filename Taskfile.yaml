@@ -2,6 +2,9 @@ version: "3"
 
 env:
   PROJECT_NAME: threefive
+  BACKEND_DIR: backend
+  STATIC_OUT_DIR: frontend/build
+  FRONTEND_DIR: frontend
 
 dotenv: [".env"]
 
@@ -22,11 +25,24 @@ tasks:
     cmds:
       - air
 
+  dev-front:
+    desc: Start SvelteKit dev server
+    dir: "{{.FRONTEND_DIR}}"
+    cmds:
+      - bun run dev
+
   build:
     desc: Build Go binary only
     deps: [templ, tailwind]
+    dir: .
     cmds:
       - go build -o ./backend/tmp/main ./backend/cmd/api
+
+  build-front:
+    desc: Build SvelteKit for production
+    dir: "{{.FRONTEND_DIR}}"
+    cmds:
+      - bun run build
 
   clean:
     desc: Remove Go binary
@@ -71,7 +87,7 @@ tasks:
     desc: Show current migration status
     cmds:
       - goose status
-    dir: ./db/migrations
+    dir: db/migrations
 
   # 🧬 SQLC code generation
   db-gen:
