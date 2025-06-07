@@ -19,13 +19,13 @@ tasks:
     cmds:
       - go mod tidy
 
-  dev:
+  backend:
     desc: Run Dev Server
     dir: ./backend/
     cmds:
       - air
 
-  dev-front:
+  frontend:
     desc: Start SvelteKit dev server
     dir: "{{.FRONTEND_DIR}}"
     cmds:
@@ -61,11 +61,6 @@ tasks:
     desc: Generate CSS from Tailwind input file
     cmds:
       - npx tailwindcss -i ./backend/ui/static/css/input.css -o ./backend/ui/static/css/tailwind.css --minify
-
-  test:
-    desc: Run Go tests
-    cmds:
-      - go test ./...
 
   # 🐤 Goose migrations
   db-create:
@@ -114,3 +109,30 @@ tasks:
     desc: Open psql shell to the DB container
     cmds:
       - docker exec -it  psql -U user -d sabiflow
+
+  test:
+    desc: Run tests (supports optional param e.g. task test -- auth or auth:integration)
+    cmds:
+      - task: test:{{.CLI_ARGS | default "all"}}
+
+  test:all:
+    desc: Run all tests in backend
+    cmds:
+      - go test -v ./backend/...
+
+  test:auth:
+    desc: Run unit tests in internal/auth
+    cmds:
+      - go test -v ./backend/internal/auth
+
+  test:auth:integration:
+    desc: Run TestContainers integration tests in internal/auth
+    cmds:
+      - go test -v -tags=integration ./backend/internal/auth
+
+  test:auth:single:
+    desc: Run specific test in internal/auth (use TEST=TestName)
+    vars:
+      TEST: TestCreateUser
+    cmds:
+      - go test -v -tags=integration ./backend/internal/auth -run '{{.TEST}}'
