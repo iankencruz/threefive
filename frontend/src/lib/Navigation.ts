@@ -1,5 +1,5 @@
 
-import { FileCode2, FolderClosed, Folders, House, LogOut, Settings, Users, type Icon as IconType } from "@lucide/svelte";
+import { FileCode2, FolderClosed, Folders, House, Images, LogOut, Settings, Users, type Icon as IconType } from "@lucide/svelte";
 import { base } from '$app/paths';
 export interface NavigationItem {
 	label: string;
@@ -33,6 +33,11 @@ export const sidebarNavigation: NavigationItem[] = [
 		label: 'Projects',
 		href: `${base}/projects`,
 		icon: FolderClosed,
+	},
+	{
+		label: 'Media',
+		href: `${base}/medias`,
+		icon: Images,
 	},
 	{
 		label: 'Contacts',

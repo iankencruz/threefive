@@ -60,11 +60,13 @@
 		return $page.url.pathname === path || $page.url.pathname.startsWith(path + '/');
 	}
 
-	function handleLogoutAction(action?: string) {
+	function handleLogoutAction(e: MouseEvent, action?: string) {
+		e.preventDefault();
+		console.log('handleLogoutAction : Action = ', action);
 		if (action === 'logout') {
 			logout();
-			fetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' });
-			goto('/login');
+			fetch('/api/v1/admin/logout', { method: 'POST', credentials: 'include' });
+			goto('/admin/login');
 		}
 	}
 </script>
@@ -88,25 +90,19 @@
 			<!-- label (conditionally visible) -->
 			<span class={collapsed ? 'sr-only' : 'truncate'}>{item.label}</span>
 		</a>
-		{#if item.children}
-			<ul class={`mt-1 ml-12 space-y-1 ${collapsed ? 'hidden' : ''}`}>
-				{#each item.children as child}
-					<li class="flex items-center gap-x-2">
-						<a
-							href={child.href}
-							class={`block text-sm text-gray-600 hover:text-indigo-600 hover:underline ${
-								isActive(child.href) ? 'font-semibold text-indigo-600' : ''
-							}`}
-						>
-							{child.label}
-						</a>
-						<div class="order-first flex h-10 w-10 items-center justify-center">
-							<item.icon class="h-5 w-5 shrink-0" />
-						</div>
-					</li>
-				{/each}
-			</ul>
-		{/if}
+	{/each}
+{/snippet}
+
+<!-- UserProfile Navigation loop snippet -->
+{#snippet UserItems(NavItems: NavigationItem[])}
+	{#each NavItems as item}
+		<button
+			onclick={(e) => handleLogoutAction(e, item.action)}
+			class="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+		>
+			<item.icon class="h-4 w-4" />
+			<span>{item.label}</span>
+		</button>
 	{/each}
 {/snippet}
 
@@ -220,7 +216,7 @@
 							<div
 								class="absolute bottom-14 left-0 z-20 w-full origin-top-left rounded-md bg-white shadow ring-1 ring-black/5"
 							>
-								{@render NavItem(userMenuItems)}
+								{@render UserItems(userMenuItems)}
 							</div>
 						{/if}
 					</div>

@@ -43,7 +43,7 @@
 	<meta name="description" content="Login to Sabiflow" />
 </svelte:head>
 
-<div class="flex min-h-full flex-col justify-center py-12 sm:px-6 lg:px-8">
+<div class="flex min-h-full w-full flex-col justify-center py-12 sm:px-6 lg:px-8">
 	<div class="sm:mx-auto sm:w-full sm:max-w-md">
 		<img
 			class="mx-auto h-10 w-auto"
@@ -202,8 +202,8 @@
 
 		<p class="mt-10 text-center text-sm/6 text-gray-500">
 			Not a member?
-			<a href="/register" class="font-semibold text-indigo-600 hover:text-indigo-500"
-				>Start a 14 day free trial</a
+			<a href="/admin/register" class="font-semibold text-indigo-600 hover:text-indigo-500"
+				>Register</a
 			>
 		</p>
 	</div>

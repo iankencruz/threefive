@@ -30,7 +30,7 @@
 </script>
 
 {#if hydrated}
-	<main>
+	<main class="flex h-screen w-full items-center justify-center text-gray-500">
 		{@render children()}
 	</main>
 	<!-- {:else} -->
