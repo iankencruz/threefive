@@ -25,7 +25,7 @@ func main() {
 	log.Info("💾 Starting ThreeFiveProject")
 
 	// Database connection
-	db, err := database.Connect(ctx, log, cfg.DB_URL)
+	db, err := database.Connect(ctx, cfg.DB_URL)
 	if err != nil {
 		log.Error("❌ DB connect error", slog.String("Reason", err.Error()))
 		os.Exit(1)
