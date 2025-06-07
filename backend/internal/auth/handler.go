@@ -12,10 +12,7 @@ import (
 	"github.com/iankencruz/threefive/backend/internal/core/errors"
 	"github.com/iankencruz/threefive/backend/internal/core/response"
 	"github.com/iankencruz/threefive/backend/internal/core/sessions"
-	"github.com/iankencruz/threefive/backend/internal/core/templates"
 	"github.com/iankencruz/threefive/backend/internal/core/validators"
-	"github.com/iankencruz/threefive/backend/internal/core/viewdata"
-	"github.com/iankencruz/threefive/backend/ui/pages"
 )
 
 type Handler struct {
@@ -66,68 +63,74 @@ func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		data := viewdata.RegisterPageData{
-			MetaData: viewdata.NewMeta(r, "Register", "Create your account"),
-		}
-		templates.Render(w, r, pages.RegisterPage(data))
+		response.WriteJSON(w, http.StatusMethodNotAllowed, "Method not allowed", nil)
 		return
 	}
 
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, "Invalid form data", http.StatusBadRequest)
+	var input struct {
+		FirstName string `json:"first_name"`
+		LastName  string `json:"last_name"`
+		Email     string `json:"email"`
+		Password  string `json:"password"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		errResp := errors.BadRequest("Invalid JSON payload")
+		response.WriteJSON(w, errResp.Code, errResp.Message, nil)
 		return
 	}
 
-	firstName := r.FormValue("first_name")
-	lastName := r.FormValue("last_name")
-	email := strings.ToLower(strings.TrimSpace(r.FormValue("email")))
-	password := r.FormValue("password")
+	input.Email = strings.ToLower(strings.TrimSpace(input.Email))
 
 	v := validators.New()
-	v.Require("first_name", firstName)
-	v.Require("last_name", lastName)
-	v.Require("email", email)
-	v.MatchPattern("email", email, validators.EmailRX, "Invalid email address")
-	v.Require("password", password)
-	v.MatchPattern("password", password, validators.UppercaseRX, "Must include at least one uppercase letter")
-	v.MatchPattern("password", password, validators.NumberRX, "Must include at least one number")
+	v.Require("first_name", input.FirstName)
+	v.Require("last_name", input.LastName)
+	v.Require("email", input.Email)
+	v.MatchPattern("email", input.Email, validators.EmailRX, "Invalid email address")
+	v.Require("password", input.Password)
+	v.MatchPattern("password", input.Password, validators.UppercaseRX, "Must include at least one uppercase letter")
+	v.MatchPattern("password", input.Password, validators.NumberRX, "Must include at least one number")
 
 	if !v.Valid() {
-		data := viewdata.RegisterPageData{
-			MetaData:  viewdata.NewMeta(r, "Register", "Create your account"),
-			Errors:    v.Errors,
-			FirstName: firstName,
-			LastName:  lastName,
-			Email:     email,
-		}
-		templates.Render(w, r, pages.RegisterPage(data))
+		errResp := errors.BadRequest("Validation failed")
+		response.WriteJSON(w, errResp.Code, errResp.Message, v.Errors)
 		return
 	}
 
-	user, err := h.Service.Register(r.Context(), firstName, lastName, email, password)
+	user, err := h.Service.Register(r.Context(), input.FirstName, input.LastName, input.Email, input.Password)
 	if err != nil {
 		v.Errors["email"] = "Registration failed"
-		data := viewdata.RegisterPageData{
-			MetaData:  viewdata.NewMeta(r, "Register", "Create your account"),
-			Errors:    v.Errors,
-			FirstName: firstName,
-			LastName:  lastName,
-			Email:     email,
-		}
-		templates.Render(w, r, pages.RegisterPage(data))
+		response.WriteJSON(w, http.StatusBadRequest, "Registration failed", v.Errors)
 		return
 	}
 
 	if err := h.SessionManager.SetUserID(w, r, user.ID); err != nil {
-		http.Error(w, "Session error", http.StatusInternalServerError)
+		errResp := errors.Internal("Session error")
+		response.WriteJSON(w, errResp.Code, errResp.Message, nil)
 		return
 	}
 
-	http.Redirect(w, r, "/admin/dashboard", http.StatusSeeOther)
+	response.WriteJSON(w, http.StatusOK, "Registration successful", map[string]any{
+		"user": map[string]any{
+			"id":         user.ID,
+			"firstName":  user.FirstName,
+			"lastName":   user.LastName,
+			"email":      user.Email,
+			"created_at": user.CreatedAt,
+		},
+	})
 }
 
 func (h *Handler) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO: implement handler logic
+	if err := h.SessionManager.Clear(w, r); err != nil {
+		errResp := errors.Internal("Failed to clear session")
+		response.WriteJSON(w, errResp.Code, errResp.Message, errResp)
+		return
+	}
+
+	response.WriteJSON(w, http.StatusOK, "Logged out successfully", nil)
+
 }
 
 func (h *Handler) GetUserID(r *http.Request) (int32, error) {

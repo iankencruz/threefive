@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -24,7 +23,7 @@ var (
 	ErrConnectionTestFailed = errors.New("database connection test failed")
 )
 
-func Connect(ctx context.Context, log *slog.Logger, dsn string) (*pgxpool.Pool, error) {
+func Connect(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
 	if dsn == "" {
 		return nil, ErrMissingDSN
 	}
@@ -50,8 +49,6 @@ func Connect(ctx context.Context, log *slog.Logger, dsn string) (*pgxpool.Pool, 
 	if err != nil || result != 1 {
 		return nil, fmt.Errorf("%w: %v", ErrConnectionTestFailed, err)
 	}
-
-	log.Info("✅ Connected to database")
 
 	return pool, nil
 }

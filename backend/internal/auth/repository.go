@@ -2,6 +2,8 @@ package auth
 
 import (
 	"context"
+	"errors"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -23,6 +25,9 @@ func NewPgxRepository(pool *pgxpool.Pool) *PgxRepository {
 }
 
 func (r *PgxRepository) CreateUser(ctx context.Context, arg CreateUserParams) (*User, error) {
+	if strings.TrimSpace(arg.Email) == "" {
+		return nil, errors.New("email is required")
+	}
 	user, err := r.q.CreateUser(ctx, arg)
 	if err != nil {
 		return nil, err
@@ -44,4 +49,12 @@ func (r *PgxRepository) GetUserByID(ctx context.Context, id int32) (*User, error
 		return nil, err
 	}
 	return &user, nil
+}
+
+func (r *PgxRepository) DeleteUserByID(ctx context.Context, id int32) error {
+	err := r.q.DeleteUser(ctx, id)
+	if err != nil {
+		return err
+	}
+	return nil
 }
