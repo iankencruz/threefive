@@ -8,6 +8,7 @@ import (
 
 	"github.com/iankencruz/threefive/backend/internal/auth"
 	"github.com/iankencruz/threefive/backend/internal/core/sessions"
+	"github.com/iankencruz/threefive/backend/internal/generated"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -21,8 +22,9 @@ type Application struct {
 
 func New(ctx context.Context, cfg *Config, db *pgxpool.Pool, sm *sessions.Manager, logger *slog.Logger) *Application {
 
-	authRepo := auth.NewPgxRepository(db)
-	authService := auth.NewService(authRepo)
+	queries := generated.New(db) // ✅ Initialize sqlc Queries
+	authRepo := auth.NewAuthRepository(queries)
+	authService := auth.NewAuthService(authRepo)
 	authHandler := &auth.Handler{
 		Service:        authService,
 		SessionManager: sm,

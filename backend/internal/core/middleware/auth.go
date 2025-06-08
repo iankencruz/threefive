@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/iankencruz/threefive/backend/internal/auth"
+	"github.com/iankencruz/threefive/backend/internal/generated"
 )
 
 // contextKey is used to avoid key collisions in request context.
@@ -62,8 +62,8 @@ func RedirectIfAuthenticated(sm SessionManager) func(http.Handler) http.Handler 
 
 // GetUserFromContext extracts the *auth.User from context.
 // Returns nil if not found or invalid type.
-func GetUserFromContext(r *http.Request) *auth.User {
-	user, ok := r.Context().Value(userContextKey).(*auth.User)
+func GetUserFromContext(r *http.Request) *generated.User {
+	user, ok := r.Context().Value(userContextKey).(*generated.User)
 	if !ok {
 		return nil
 	}

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/iankencruz/threefive/backend/internal/generated"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -21,7 +22,7 @@ func runMigrations(t *testing.T, db *pgxpool.Pool) {
 			id SERIAL PRIMARY KEY,
 			first_name TEXT NOT NULL,
 			last_name TEXT NOT NULL,
-			email TEXT NOT NULL UNIQUE,
+			email text NOT NULL CHECK (TRIM(BOTH FROM email) <> ''::text) UNIQUE,
 			password_hash TEXT NOT NULL,
 			created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 			updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -68,20 +69,20 @@ func SetupPostgres(t *testing.T) error {
 func TestCreateUser(t *testing.T) {
 	tests := []struct {
 		name       string
-		input      CreateUserParams
+		input      generated.CreateUserParams
 		wantErr    bool
-		assertFunc func(t *testing.T, user *User)
+		assertFunc func(t *testing.T, user *generated.User)
 	}{
 		{
 			name: "valid user",
-			input: CreateUserParams{
+			input: generated.CreateUserParams{
 				FirstName:    "Alice",
 				LastName:     "Test",
 				Email:        "alice@example.com",
 				PasswordHash: "password123",
 			},
 			wantErr: false,
-			assertFunc: func(t *testing.T, user *User) {
+			assertFunc: func(t *testing.T, user *generated.User) {
 				assert.NotZero(t, user.ID)
 				assert.Equal(t, "Alice", user.FirstName)
 				assert.Equal(t, "alice@example.com", user.Email)
@@ -89,7 +90,7 @@ func TestCreateUser(t *testing.T) {
 		},
 		{
 			name: "missing email",
-			input: CreateUserParams{
+			input: generated.CreateUserParams{
 				FirstName:    "Bob",
 				LastName:     "Test",
 				Email:        "",
@@ -99,7 +100,7 @@ func TestCreateUser(t *testing.T) {
 		},
 		{
 			name: "duplicate email",
-			input: CreateUserParams{
+			input: generated.CreateUserParams{
 				FirstName:    "Charlie",
 				LastName:     "Test",
 				Email:        "duplicate@example.com",
@@ -109,7 +110,7 @@ func TestCreateUser(t *testing.T) {
 		},
 		{
 			name: "duplicate email again",
-			input: CreateUserParams{
+			input: generated.CreateUserParams{
 				FirstName:    "Charlie2",
 				LastName:     "Test",
 				Email:        "duplicate@example.com",
@@ -145,13 +146,14 @@ func TestCreateUser(t *testing.T) {
 			db, err := pgxpool.New(ctx, connURI)
 			assert.NoError(t, err)
 
-			repo := NewPgxRepository(db)
+			queries := generated.New(db) // ✅ Initialize sqlc Queries
+			repo := NewAuthRepository(queries)
 
 			runMigrations(t, db) // << Add this line
 
 			// Handle duplicate email setup manually
 			if tt.name == "duplicate email again" {
-				_, _ = repo.CreateUser(ctx, CreateUserParams{
+				_, _ = repo.CreateUser(ctx, generated.CreateUserParams{
 					FirstName:    "Seed",
 					LastName:     "User",
 					Email:        "duplicate@example.com",
@@ -195,7 +197,7 @@ func TestGetUserByEmail(t *testing.T) {
 	db, err := pgxpool.New(ctx, connURI)
 	assert.NoError(t, err)
 
-	testUser := CreateUserParams{
+	testUser := generated.CreateUserParams{
 		FirstName:    "Ian",
 		LastName:     "Cruz",
 		Email:        "iankencruz@gmail.com",
@@ -204,7 +206,8 @@ func TestGetUserByEmail(t *testing.T) {
 
 	runMigrations(t, db) // << Add this line
 
-	repo := NewPgxRepository(db)
+	queries := generated.New(db) // ✅ Initialize sqlc Queries
+	repo := NewAuthRepository(queries)
 
 	created, err := repo.CreateUser(ctx, testUser)
 	assert.NoError(t, err)
@@ -254,7 +257,7 @@ func TestGetUserByID(t *testing.T) {
 	db, err := pgxpool.New(ctx, connURI)
 	assert.NoError(t, err)
 
-	testUser := CreateUserParams{
+	testUser := generated.CreateUserParams{
 		FirstName:    "Ian",
 		LastName:     "Cruz",
 		Email:        "idtest@example.com",
@@ -263,7 +266,8 @@ func TestGetUserByID(t *testing.T) {
 
 	runMigrations(t, db) // << Add this line
 
-	repo := NewPgxRepository(db)
+	queries := generated.New(db) // ✅ Initialize sqlc Queries
+	repo := NewAuthRepository(queries)
 
 	created, err := repo.CreateUser(ctx, testUser)
 	assert.NoError(t, err)
@@ -312,20 +316,23 @@ func TestDeleteUser(t *testing.T) {
 	db, err := pgxpool.New(ctx, connURI)
 	assert.NoError(t, err)
 
-	testUser := CreateUserParams{
+	testUser := generated.CreateUserParams{
 		FirstName:    "Delete",
 		LastName:     "Me",
 		Email:        "delete@example.com",
 		PasswordHash: "hash",
 	}
 
-	repo := NewPgxRepository(db)
+	queries := generated.New(db) // ✅ Initialize sqlc Queries
+	repo := NewAuthRepository(queries)
+
 	runMigrations(t, db) // << Add this line
 
 	created, err := repo.CreateUser(ctx, testUser)
 	assert.NoError(t, err)
 
 	err = repo.DeleteUserByID(ctx, created.ID)
+	// err = repo.DeleteUserByID(ctx, created.ID)
 	assert.NoError(t, err)
 
 	_, err = repo.GetUserByID(ctx, created.ID)

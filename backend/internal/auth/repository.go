@@ -2,32 +2,28 @@ package auth
 
 import (
 	"context"
-	"errors"
-	"strings"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/iankencruz/threefive/backend/internal/generated"
 )
 
 type Repository interface {
-	CreateUser(ctx context.Context, arg CreateUserParams) (*User, error)
-	GetUserByEmail(ctx context.Context, email string) (*User, error)
-	GetUserByID(ctx context.Context, id int32) (*User, error)
+	CreateUser(ctx context.Context, arg generated.CreateUserParams) (*generated.User, error)
+	GetUserByEmail(ctx context.Context, email string) (*generated.User, error)
+	GetUserByID(ctx context.Context, id int32) (*generated.User, error)
+	DeleteUserByID(ctx context.Context, id int32) error
 }
 
-type PgxRepository struct {
-	q *Queries
+type AuthRepository struct {
+	q *generated.Queries
 }
 
-func NewPgxRepository(pool *pgxpool.Pool) *PgxRepository {
-	return &PgxRepository{
-		q: New(pool),
+func NewAuthRepository(q *generated.Queries) Repository {
+	return &AuthRepository{
+		q: q,
 	}
 }
 
-func (r *PgxRepository) CreateUser(ctx context.Context, arg CreateUserParams) (*User, error) {
-	if strings.TrimSpace(arg.Email) == "" {
-		return nil, errors.New("email is required")
-	}
+func (r *AuthRepository) CreateUser(ctx context.Context, arg generated.CreateUserParams) (*generated.User, error) {
 	user, err := r.q.CreateUser(ctx, arg)
 	if err != nil {
 		return nil, err
@@ -35,7 +31,7 @@ func (r *PgxRepository) CreateUser(ctx context.Context, arg CreateUserParams) (*
 	return &user, nil
 }
 
-func (r *PgxRepository) GetUserByEmail(ctx context.Context, email string) (*User, error) {
+func (r *AuthRepository) GetUserByEmail(ctx context.Context, email string) (*generated.User, error) {
 	user, err := r.q.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, err
@@ -43,7 +39,7 @@ func (r *PgxRepository) GetUserByEmail(ctx context.Context, email string) (*User
 	return &user, nil
 }
 
-func (r *PgxRepository) GetUserByID(ctx context.Context, id int32) (*User, error) {
+func (r *AuthRepository) GetUserByID(ctx context.Context, id int32) (*generated.User, error) {
 	user, err := r.q.GetUserByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -51,10 +47,6 @@ func (r *PgxRepository) GetUserByID(ctx context.Context, id int32) (*User, error
 	return &user, nil
 }
 
-func (r *PgxRepository) DeleteUserByID(ctx context.Context, id int32) error {
-	err := r.q.DeleteUser(ctx, id)
-	if err != nil {
-		return err
-	}
-	return nil
+func (r *AuthRepository) DeleteUserByID(ctx context.Context, id int32) error {
+	return r.q.DeleteUser(ctx, id)
 }

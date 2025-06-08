@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 
+	"github.com/iankencruz/threefive/backend/internal/generated"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type Service interface {
-	Register(ctx context.Context, firstName, lastName, email, password string) (*User, error)
-	Login(ctx context.Context, email, password string) (*User, error)
-	GetUserByID(ctx context.Context, id int32) (*User, error)
+	Register(ctx context.Context, firstName, lastName, email, password string) (*generated.User, error)
+	Login(ctx context.Context, email, password string) (*generated.User, error)
+	GetUserByID(ctx context.Context, id int32) (*generated.User, error)
 }
 
 type RegisterParams struct {
@@ -24,17 +25,17 @@ type AuthService struct {
 	Repo Repository
 }
 
-func NewService(repo Repository) *AuthService {
+func NewAuthService(repo Repository) *AuthService {
 	return &AuthService{Repo: repo}
 }
 
-func (s *AuthService) Register(ctx context.Context, firstName, lastName, email, password string) (*User, error) {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+func (s *AuthService) Register(ctx context.Context, firstName, lastName, email, password string) (*generated.User, error) {
+	hashedPassword, err := HashPassword(password)
 	if err != nil {
 		return nil, errors.New("could not hash password")
 	}
 
-	args := CreateUserParams{
+	args := generated.CreateUserParams{
 		FirstName:    firstName,
 		LastName:     lastName,
 		Email:        email,
@@ -44,7 +45,7 @@ func (s *AuthService) Register(ctx context.Context, firstName, lastName, email, 
 	return s.Repo.CreateUser(ctx, args)
 }
 
-func (s *AuthService) Login(ctx context.Context, email, password string) (*User, error) {
+func (s *AuthService) Login(ctx context.Context, email, password string) (*generated.User, error) {
 	user, err := s.Repo.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, err
@@ -57,7 +58,7 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (*User,
 	return user, nil
 }
 
-func (s *AuthService) GetUserByID(ctx context.Context, id int32) (*User, error) {
+func (s *AuthService) GetUserByID(ctx context.Context, id int32) (*generated.User, error) {
 	return s.Repo.GetUserByID(ctx, id)
 }
 
