@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS sessions (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE session_datas (
+CREATE TABLE session_data (
     token TEXT NOT NULL REFERENCES sessions(token) ON DELETE CASCADE,
     key TEXT NOT NULL,
     value TEXT,
@@ -17,6 +17,6 @@ CREATE TABLE session_datas (
 );
 
 -- +goose Down
-DROP TABLE IF EXISTS session_datas;
+DROP TABLE IF EXISTS session_data;
 DROP TABLE IF EXISTS sessions;
 

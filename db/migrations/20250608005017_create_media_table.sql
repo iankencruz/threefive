@@ -1,7 +1,7 @@
 
 
 -- +goose Up
-CREATE TABLE IF NOT EXISTS medias (
+CREATE TABLE IF NOT EXISTS media (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     url TEXT NOT NULL,
     thumbnail_url TEXT,
@@ -16,4 +16,4 @@ CREATE TABLE IF NOT EXISTS medias (
 );
 
 -- +goose Down
-DROP TABLE IF EXISTS medias;
+DROP TABLE IF EXISTS media;
