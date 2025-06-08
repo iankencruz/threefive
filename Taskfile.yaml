@@ -81,8 +81,7 @@ tasks:
   db-status:
     desc: Show current migration status
     cmds:
-      - goose status
-    dir: db/migrations
+      - goose -dir ./db/migrations/ status
 
   # 🧬 SQLC code generation
   db-gen:

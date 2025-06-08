@@ -1,6 +1,6 @@
 
 -- +goose Up
-CREATE TABLE sessions (
+CREATE TABLE IF NOT EXISTS sessions (
     token TEXT PRIMARY KEY,
     user_id INTEGER NOT NULL,
     user_agent TEXT,
@@ -9,7 +9,7 @@ CREATE TABLE sessions (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE session_data (
+CREATE TABLE session_datas (
     token TEXT NOT NULL REFERENCES sessions(token) ON DELETE CASCADE,
     key TEXT NOT NULL,
     value TEXT,
@@ -17,6 +17,6 @@ CREATE TABLE session_data (
 );
 
 -- +goose Down
-DROP TABLE IF EXISTS session_data;
+DROP TABLE IF EXISTS session_datas;
 DROP TABLE IF EXISTS sessions;
 

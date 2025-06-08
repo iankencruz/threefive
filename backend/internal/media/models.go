@@ -2,11 +2,25 @@
 // versions:
 //   sqlc v1.29.0
 
-package auth
+package media
 
 import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+type Medium struct {
+	ID           pgtype.UUID        `db:"id" json:"id"`
+	Url          string             `db:"url" json:"url"`
+	ThumbnailUrl pgtype.Text        `db:"thumbnail_url" json:"thumbnail_url"`
+	Type         string             `db:"type" json:"type"`
+	Title        pgtype.Text        `db:"title" json:"title"`
+	AltText      pgtype.Text        `db:"alt_text" json:"alt_text"`
+	MimeType     pgtype.Text        `db:"mime_type" json:"mime_type"`
+	FileSize     pgtype.Int4        `db:"file_size" json:"file_size"`
+	SortOrder    int32              `db:"sort_order" json:"sort_order"`
+	CreatedAt    pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
 
 type Session struct {
 	Token     string             `db:"token" json:"token"`
@@ -28,7 +42,7 @@ type User struct {
 	FirstName    string             `db:"first_name" json:"first_name"`
 	LastName     string             `db:"last_name" json:"last_name"`
 	Email        string             `db:"email" json:"email"`
-	PasswordHash string             `db:"password_hash" json:"-"`
+	PasswordHash string             `db:"password_hash" json:"password_hash"`
 	CreatedAt    pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt    pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
