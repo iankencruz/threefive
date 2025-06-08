@@ -11,12 +11,12 @@ import (
 type Media struct {
 	ID           pgtype.UUID        `db:"id" json:"id"`
 	Url          string             `db:"url" json:"url"`
-	ThumbnailUrl pgtype.Text        `db:"thumbnail_url" json:"thumbnail_url"`
+	ThumbnailUrl *string            `db:"thumbnail_url" json:"thumbnail_url"`
 	Type         string             `db:"type" json:"type"`
-	Title        pgtype.Text        `db:"title" json:"title"`
-	AltText      pgtype.Text        `db:"alt_text" json:"alt_text"`
-	MimeType     pgtype.Text        `db:"mime_type" json:"mime_type"`
-	FileSize     pgtype.Int4        `db:"file_size" json:"file_size"`
+	Title        *string            `db:"title" json:"title"`
+	AltText      *string            `db:"alt_text" json:"alt_text"`
+	MimeType     *string            `db:"mime_type" json:"mime_type"`
+	FileSize     *int32             `db:"file_size" json:"file_size"`
 	SortOrder    int32              `db:"sort_order" json:"sort_order"`
 	CreatedAt    pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt    pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
@@ -25,16 +25,16 @@ type Media struct {
 type Session struct {
 	Token     string             `db:"token" json:"token"`
 	UserID    int32              `db:"user_id" json:"user_id"`
-	UserAgent pgtype.Text        `db:"user_agent" json:"user_agent"`
+	UserAgent *string            `db:"user_agent" json:"user_agent"`
 	ExpiresAt pgtype.Timestamptz `db:"expires_at" json:"expires_at"`
 	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
 type SessionData struct {
-	Token string      `db:"token" json:"token"`
-	Key   string      `db:"key" json:"key"`
-	Value pgtype.Text `db:"value" json:"value"`
+	Token string  `db:"token" json:"token"`
+	Key   string  `db:"key" json:"key"`
+	Value *string `db:"value" json:"value"`
 }
 
 type User struct {

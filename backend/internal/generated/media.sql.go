@@ -12,7 +12,7 @@ import (
 )
 
 const createMedia = `-- name: CreateMedia :one
-INSERT INTO medias (
+INSERT INTO media (
   url, thumbnail_url, type, title, alt_text, mime_type, file_size, sort_order
 ) VALUES (
   $1, $2, $3, $4, $5, $6, $7, $8
@@ -21,14 +21,14 @@ RETURNING id, url, thumbnail_url, type, title, alt_text, mime_type, file_size, s
 `
 
 type CreateMediaParams struct {
-	Url          string      `db:"url" json:"url"`
-	ThumbnailUrl pgtype.Text `db:"thumbnail_url" json:"thumbnail_url"`
-	Type         string      `db:"type" json:"type"`
-	Title        pgtype.Text `db:"title" json:"title"`
-	AltText      pgtype.Text `db:"alt_text" json:"alt_text"`
-	MimeType     pgtype.Text `db:"mime_type" json:"mime_type"`
-	FileSize     pgtype.Int4 `db:"file_size" json:"file_size"`
-	SortOrder    int32       `db:"sort_order" json:"sort_order"`
+	Url          string  `db:"url" json:"url"`
+	ThumbnailUrl *string `db:"thumbnail_url" json:"thumbnail_url"`
+	Type         string  `db:"type" json:"type"`
+	Title        *string `db:"title" json:"title"`
+	AltText      *string `db:"alt_text" json:"alt_text"`
+	MimeType     *string `db:"mime_type" json:"mime_type"`
+	FileSize     *int32  `db:"file_size" json:"file_size"`
+	SortOrder    int32   `db:"sort_order" json:"sort_order"`
 }
 
 func (q *Queries) CreateMedia(ctx context.Context, arg CreateMediaParams) (Media, error) {
@@ -60,7 +60,7 @@ func (q *Queries) CreateMedia(ctx context.Context, arg CreateMediaParams) (Media
 }
 
 const deleteMedia = `-- name: DeleteMedia :exec
-DELETE FROM medias WHERE id = $1
+DELETE FROM media WHERE id = $1
 `
 
 func (q *Queries) DeleteMedia(ctx context.Context, id pgtype.UUID) error {
@@ -69,7 +69,7 @@ func (q *Queries) DeleteMedia(ctx context.Context, id pgtype.UUID) error {
 }
 
 const getMediaByID = `-- name: GetMediaByID :one
-SELECT id, url, thumbnail_url, type, title, alt_text, mime_type, file_size, sort_order, created_at, updated_at FROM medias WHERE id = $1
+SELECT id, url, thumbnail_url, type, title, alt_text, mime_type, file_size, sort_order, created_at, updated_at FROM media WHERE id = $1
 `
 
 func (q *Queries) GetMediaByID(ctx context.Context, id pgtype.UUID) (Media, error) {
@@ -92,7 +92,7 @@ func (q *Queries) GetMediaByID(ctx context.Context, id pgtype.UUID) (Media, erro
 }
 
 const listMedia = `-- name: ListMedia :many
-SELECT id, url, thumbnail_url, type, title, alt_text, mime_type, file_size, sort_order, created_at, updated_at FROM medias ORDER BY sort_order ASC
+SELECT id, url, thumbnail_url, type, title, alt_text, mime_type, file_size, sort_order, created_at, updated_at FROM media ORDER BY sort_order ASC
 `
 
 func (q *Queries) ListMedia(ctx context.Context) ([]Media, error) {
@@ -128,7 +128,7 @@ func (q *Queries) ListMedia(ctx context.Context) ([]Media, error) {
 }
 
 const updateMediaSortOrder = `-- name: UpdateMediaSortOrder :exec
-UPDATE medias SET sort_order = $1 WHERE id = $2
+UPDATE media SET sort_order = $1 WHERE id = $2
 `
 
 type UpdateMediaSortOrderParams struct {
