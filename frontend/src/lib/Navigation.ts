@@ -36,7 +36,7 @@ export const sidebarNavigation: NavigationItem[] = [
 	},
 	{
 		label: 'Media',
-		href: `${base}/medias`,
+		href: `${base}/media`,
 		icon: Images,
 	},
 	{

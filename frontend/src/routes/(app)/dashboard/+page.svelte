@@ -4,10 +4,6 @@
 	import { goto } from '$app/navigation';
 
 	const { user } = getUserContext();
-
-	$effect(() => {
-		console.log('🏁 Dashboard user:', user);
-	});
 </script>
 
 <h1 class="text-2xl font-bold">Welcome to your dashboard, {user.firstName}</h1>

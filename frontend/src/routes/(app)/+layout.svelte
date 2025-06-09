@@ -25,8 +25,20 @@
 
 	$effect(() => {
 		if (!hydrated) return;
-		if (user.id === 0 && browser) {
-			goto('/admin/login');
+
+		const currentPath = $page.url.pathname;
+
+		// ✅ Block unauthenticated access to any /admin route except login
+		if (!user || user.id === 0) {
+			if (!currentPath.startsWith('/admin/login')) {
+				goto('/admin/login');
+			}
+			return;
+		}
+
+		// ✅ Prevent logged-in users from seeing login page again
+		if (currentPath === '/admin/login') {
+			goto('/admin/dashboard');
 		}
 	});
 
@@ -39,8 +51,6 @@
 				});
 				const result = await res.json();
 
-				console.log('🚀 User Layout fetch result:', result);
-				console.log('layout user type: ', user);
 				if (res.ok && result.user?.id) {
 					login(result.user);
 				} else {
@@ -50,7 +60,6 @@
 				logout();
 			} finally {
 				// time to ensure the UI updates
-
 				hydrated = true;
 			}
 		})();

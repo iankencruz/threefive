@@ -37,7 +37,6 @@
 		});
 
 		const data = await res.json();
-		console.log('✅ JSON from backend:', data);
 
 		if (!res.ok) {
 			const errors = data.data || {};
@@ -49,16 +48,11 @@
 				error = data.message || 'Something went wrong';
 			}
 
-			console.log('❗ Error:', errors);
 			return;
 		}
 		success = 'Registered successfully! Redirecting...';
 		setTimeout(() => (location.href = '/'), 1000);
 	}
-
-	$effect(() => {
-		console.log('📦 fieldErrors changed:', fieldErrors);
-	});
 </script>
 
 <svelte:head>

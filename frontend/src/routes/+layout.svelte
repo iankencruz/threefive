@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
 	import { initUserContext } from '$lib/stores/user.svelte';
 	import PageLoader from '$src/components/PageLoader.svelte';
 
@@ -16,8 +17,6 @@
 				});
 				const result = await res.json();
 
-				console.log('🚀 User root fetch result:', result);
-				console.log('root user type: ', user);
 				if (res.ok && result.user?.id) {
 					login({
 						id: result.user.id,
@@ -41,14 +40,18 @@
 
 	$effect(() => {
 		if (!browser) return;
-		if (hydrated && user.id !== 0) {
+		if (!hydrated) return;
+
+		const currentPath = page.url.pathname;
+
+		// ✅ Redirect only if currently on login page
+		if (user.id !== 0 && currentPath === '/admin/login') {
 			goto('/admin/dashboard');
 		}
 	});
 </script>
 
 {#if hydrated}
-	{console.log('✅ Hydrated and rendering children')}
 	<main class="min-h-screen">{@render children()}</main>
 {:else}
 	<div class="flex h-screen w-full items-center justify-center text-gray-500"><PageLoader /></div>

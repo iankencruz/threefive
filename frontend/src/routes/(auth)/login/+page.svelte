@@ -22,9 +22,7 @@
 
 			if (res.ok) {
 				const result = await res.json();
-				console.log('Before login():', user);
 				login(result.data.user);
-				console.log('After login():', user);
 				goto('/admin/dashboard');
 			} else {
 				const result = await res.json();
