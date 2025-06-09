@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS media (
     url TEXT NOT NULL,
     thumbnail_url TEXT,
     type TEXT NOT NULL, -- e.g. "image", "video", "embed"
+    is_public BOOLEAN DEFAULT FALSE,
     title TEXT,
     alt_text TEXT,
     mime_type TEXT,
