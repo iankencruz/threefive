@@ -13,12 +13,27 @@ import (
 	"github.com/iankencruz/threefive/backend/internal/core/response"
 	"github.com/iankencruz/threefive/backend/internal/core/sessions"
 	"github.com/iankencruz/threefive/backend/internal/core/validators"
+	"github.com/iankencruz/threefive/backend/internal/generated"
 )
 
 type Handler struct {
+	Repo           Repository
 	Service        Service
 	SessionManager *sessions.Manager
 	Logger         *slog.Logger
+}
+
+func NewHandler(q *generated.Queries, sessionManager *sessions.Manager, logger *slog.Logger) *Handler {
+
+	repo := NewAuthRepository(q)
+	service := NewAuthService(repo)
+
+	return &Handler{
+		Repo:           repo,
+		Service:        service,
+		SessionManager: sessionManager,
+		Logger:         logger,
+	}
 }
 
 func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {

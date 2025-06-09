@@ -20,6 +20,7 @@ func main() {
 	ctx := context.Background()
 
 	cfg := application.LoadConfig()
+
 	// Logger setup
 	log := logger.New()
 	log.Info("💾 Starting ThreeFiveProject")

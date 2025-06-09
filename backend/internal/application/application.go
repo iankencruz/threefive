@@ -7,8 +7,10 @@ import (
 	"net/http"
 
 	"github.com/iankencruz/threefive/backend/internal/auth"
+	"github.com/iankencruz/threefive/backend/internal/core/s3"
 	"github.com/iankencruz/threefive/backend/internal/core/sessions"
 	"github.com/iankencruz/threefive/backend/internal/generated"
+	"github.com/iankencruz/threefive/backend/internal/media"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -18,18 +20,35 @@ type Application struct {
 	DB             *pgxpool.Pool
 	SessionManager *sessions.Manager
 	AuthHandler    *auth.Handler
+	MediaHandler   *media.Handler
 }
 
-func New(ctx context.Context, cfg *Config, db *pgxpool.Pool, sm *sessions.Manager, logger *slog.Logger) *Application {
+func New(
+	ctx context.Context,
+	cfg *Config,
+	db *pgxpool.Pool,
+	sm *sessions.Manager,
+	logger *slog.Logger) *Application {
 
 	queries := generated.New(db) // ✅ Initialize sqlc Queries
-	authRepo := auth.NewAuthRepository(queries)
-	authService := auth.NewAuthService(authRepo)
-	authHandler := &auth.Handler{
-		Service:        authService,
-		SessionManager: sm,
-		Logger:         logger,
+
+	// ✅ Initialise S3 uploader here
+	uploader, err := s3.NewUploader(
+		cfg.S3.Endpoint,
+		cfg.S3.AccessKey,
+		cfg.S3.SecretKey,
+		cfg.S3.Bucket,
+		cfg.S3.UseSSL,
+		cfg.S3.BaseURL,
+	)
+
+	if err != nil {
+		logger.Error("failed to initialise S3", "err", err)
+		panic(err) // or return error if you propagate
 	}
+
+	authHandler := auth.NewHandler(queries, sm, logger)
+	mediaHandler := media.NewHandler(queries, logger, uploader)
 
 	return &Application{
 		Config:         cfg,
@@ -37,6 +56,7 @@ func New(ctx context.Context, cfg *Config, db *pgxpool.Pool, sm *sessions.Manage
 		DB:             db,
 		SessionManager: sm,
 		AuthHandler:    authHandler,
+		MediaHandler:   mediaHandler,
 	}
 }
 

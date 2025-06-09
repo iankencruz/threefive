@@ -13,6 +13,7 @@ type Media struct {
 	Url          string             `db:"url" json:"url"`
 	ThumbnailUrl *string            `db:"thumbnail_url" json:"thumbnail_url"`
 	Type         string             `db:"type" json:"type"`
+	IsPublic     *bool              `db:"is_public" json:"is_public"`
 	Title        *string            `db:"title" json:"title"`
 	AltText      *string            `db:"alt_text" json:"alt_text"`
 	MimeType     *string            `db:"mime_type" json:"mime_type"`
@@ -20,6 +21,7 @@ type Media struct {
 	SortOrder    int32              `db:"sort_order" json:"sort_order"`
 	CreatedAt    pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt    pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	MediumUrl    *string            `db:"medium_url" json:"medium_url"`
 }
 
 type Session struct {

@@ -1,6 +1,7 @@
 package application
 
 import (
+	"fmt"
 	"net/http"
 	"path/filepath"
 
@@ -26,7 +27,6 @@ func Routes(app *Application) http.Handler {
 
 	// ✅ Auth endpoints
 	r.Group(func(r chi.Router) {
-		r.Use(middleware.RedirectIfAuthenticated(app.SessionManager))
 		r.Get("/login", app.AuthHandler.LoginHandler)
 		r.Post("/login", app.AuthHandler.LoginHandler)
 		r.Get("/register", app.AuthHandler.RegisterHandler)
@@ -53,6 +53,20 @@ func Routes(app *Application) http.Handler {
 					r.Use(middleware.RequireAuth(app.AuthHandler))
 					r.Post("/logout", app.AuthHandler.LogoutHandler)
 					r.Get("/me", app.AuthHandler.GetAuthenticatedUser)
+
+					// Media management
+					r.Get("/media", app.MediaHandler.ListMediaHandler)
+					r.Post("/media", app.MediaHandler.UploadMediaHandler)
+					r.Put("/media/{id}", func(w http.ResponseWriter, r *http.Request) {
+						fmt.Print("Update media metadata Endpoint:")
+					})
+					r.Delete("/media/{id}", func(w http.ResponseWriter, r *http.Request) {
+
+						fmt.Print("Delete media instance Endpoint:")
+					})
+					r.Post("/sort", func(w http.ResponseWriter, r *http.Request) {
+						fmt.Print("Sort media Endpoint:")
+					})
 
 					// Future protected admin APIs (e.g. projects, galleries, etc.)
 				})

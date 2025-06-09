@@ -11,18 +11,30 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countMedia = `-- name: CountMedia :one
+SELECT COUNT(*) FROM media
+`
+
+func (q *Queries) CountMedia(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countMedia)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createMedia = `-- name: CreateMedia :one
 INSERT INTO media (
-  url, thumbnail_url, type, title, alt_text, mime_type, file_size, sort_order
+  url, thumbnail_url, medium_url, type, title, alt_text, mime_type, file_size, sort_order
 ) VALUES (
-  $1, $2, $3, $4, $5, $6, $7, $8
+  $1, $2, $3, $4, $5, $6, $7, $8, $9
 )
-RETURNING id, url, thumbnail_url, type, title, alt_text, mime_type, file_size, sort_order, created_at, updated_at
+RETURNING id, url, thumbnail_url, type, is_public, title, alt_text, mime_type, file_size, sort_order, created_at, updated_at, medium_url
 `
 
 type CreateMediaParams struct {
 	Url          string  `db:"url" json:"url"`
 	ThumbnailUrl *string `db:"thumbnail_url" json:"thumbnail_url"`
+	MediumUrl    *string `db:"medium_url" json:"medium_url"`
 	Type         string  `db:"type" json:"type"`
 	Title        *string `db:"title" json:"title"`
 	AltText      *string `db:"alt_text" json:"alt_text"`
@@ -35,6 +47,7 @@ func (q *Queries) CreateMedia(ctx context.Context, arg CreateMediaParams) (Media
 	row := q.db.QueryRow(ctx, createMedia,
 		arg.Url,
 		arg.ThumbnailUrl,
+		arg.MediumUrl,
 		arg.Type,
 		arg.Title,
 		arg.AltText,
@@ -48,6 +61,7 @@ func (q *Queries) CreateMedia(ctx context.Context, arg CreateMediaParams) (Media
 		&i.Url,
 		&i.ThumbnailUrl,
 		&i.Type,
+		&i.IsPublic,
 		&i.Title,
 		&i.AltText,
 		&i.MimeType,
@@ -55,6 +69,7 @@ func (q *Queries) CreateMedia(ctx context.Context, arg CreateMediaParams) (Media
 		&i.SortOrder,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.MediumUrl,
 	)
 	return i, err
 }
@@ -69,7 +84,7 @@ func (q *Queries) DeleteMedia(ctx context.Context, id pgtype.UUID) error {
 }
 
 const getMediaByID = `-- name: GetMediaByID :one
-SELECT id, url, thumbnail_url, type, title, alt_text, mime_type, file_size, sort_order, created_at, updated_at FROM media WHERE id = $1
+SELECT id, url, thumbnail_url, type, is_public, title, alt_text, mime_type, file_size, sort_order, created_at, updated_at, medium_url FROM media WHERE id = $1
 `
 
 func (q *Queries) GetMediaByID(ctx context.Context, id pgtype.UUID) (Media, error) {
@@ -80,6 +95,7 @@ func (q *Queries) GetMediaByID(ctx context.Context, id pgtype.UUID) (Media, erro
 		&i.Url,
 		&i.ThumbnailUrl,
 		&i.Type,
+		&i.IsPublic,
 		&i.Title,
 		&i.AltText,
 		&i.MimeType,
@@ -87,12 +103,13 @@ func (q *Queries) GetMediaByID(ctx context.Context, id pgtype.UUID) (Media, erro
 		&i.SortOrder,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.MediumUrl,
 	)
 	return i, err
 }
 
 const listMedia = `-- name: ListMedia :many
-SELECT id, url, thumbnail_url, type, title, alt_text, mime_type, file_size, sort_order, created_at, updated_at FROM media ORDER BY sort_order ASC
+SELECT id, url, thumbnail_url, type, is_public, title, alt_text, mime_type, file_size, sort_order, created_at, updated_at, medium_url FROM media ORDER BY sort_order ASC
 `
 
 func (q *Queries) ListMedia(ctx context.Context) ([]Media, error) {
@@ -109,6 +126,7 @@ func (q *Queries) ListMedia(ctx context.Context) ([]Media, error) {
 			&i.Url,
 			&i.ThumbnailUrl,
 			&i.Type,
+			&i.IsPublic,
 			&i.Title,
 			&i.AltText,
 			&i.MimeType,
@@ -116,6 +134,92 @@ func (q *Queries) ListMedia(ctx context.Context) ([]Media, error) {
 			&i.SortOrder,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.MediumUrl,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listMediaPaginated = `-- name: ListMediaPaginated :many
+SELECT id, url, thumbnail_url, type, is_public, title, alt_text, mime_type, file_size, sort_order, created_at, updated_at, medium_url FROM media
+ORDER BY sort_order ASC
+LIMIT $1 OFFSET $2
+`
+
+type ListMediaPaginatedParams struct {
+	Limit  int32 `db:"limit" json:"limit"`
+	Offset int32 `db:"offset" json:"offset"`
+}
+
+func (q *Queries) ListMediaPaginated(ctx context.Context, arg ListMediaPaginatedParams) ([]Media, error) {
+	rows, err := q.db.Query(ctx, listMediaPaginated, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Media
+	for rows.Next() {
+		var i Media
+		if err := rows.Scan(
+			&i.ID,
+			&i.Url,
+			&i.ThumbnailUrl,
+			&i.Type,
+			&i.IsPublic,
+			&i.Title,
+			&i.AltText,
+			&i.MimeType,
+			&i.FileSize,
+			&i.SortOrder,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.MediumUrl,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPublicMedia = `-- name: ListPublicMedia :many
+SELECT id, url, thumbnail_url, type, is_public, title, alt_text, mime_type, file_size, sort_order, created_at, updated_at, medium_url FROM media
+WHERE is_public = true
+ORDER BY sort_order ASC
+`
+
+func (q *Queries) ListPublicMedia(ctx context.Context) ([]Media, error) {
+	rows, err := q.db.Query(ctx, listPublicMedia)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Media
+	for rows.Next() {
+		var i Media
+		if err := rows.Scan(
+			&i.ID,
+			&i.Url,
+			&i.ThumbnailUrl,
+			&i.Type,
+			&i.IsPublic,
+			&i.Title,
+			&i.AltText,
+			&i.MimeType,
+			&i.FileSize,
+			&i.SortOrder,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.MediumUrl,
 		); err != nil {
 			return nil, err
 		}
