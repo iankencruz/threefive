@@ -1,6 +1,7 @@
 <script lang="ts">
 	import MediaItem from './MediaItem.svelte';
 	let { media, refresh } = $props();
+	console.log('Media Grid View');
 </script>
 
 <div class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">

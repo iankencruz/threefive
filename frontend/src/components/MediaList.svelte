@@ -2,6 +2,7 @@
 	import MediaItem from './MediaItem.svelte';
 
 	let { media, refresh } = $props();
+	console.log('Media List View');
 </script>
 
 <div class="flex flex-col gap-4">

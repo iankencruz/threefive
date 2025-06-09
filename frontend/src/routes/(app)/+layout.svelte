@@ -43,27 +43,27 @@
 	});
 
 	// Hydrate user
-	if (browser) {
-		(async () => {
-			try {
-				const res = await fetch('/api/v1/admin/me', {
-					credentials: 'include'
-				});
-				const result = await res.json();
+	// if (browser) {
+	(async () => {
+		try {
+			const res = await fetch('/api/v1/admin/me', {
+				credentials: 'include'
+			});
+			const result = await res.json();
 
-				if (res.ok && result.user?.id) {
-					login(result.user);
-				} else {
-					logout();
-				}
-			} catch {
+			if (res.ok && result.user?.id) {
+				login(result.user);
+			} else {
 				logout();
-			} finally {
-				// time to ensure the UI updates
-				hydrated = true;
 			}
-		})();
-	}
+		} catch {
+			logout();
+		} finally {
+			// time to ensure the UI updates
+			hydrated = true;
+		}
+	})();
+	// }
 
 	function isActive(path?: string): boolean {
 		return $page.url.pathname === path || $page.url.pathname.startsWith(path + '/');

@@ -4,7 +4,7 @@
 	import { page } from '$app/state';
 	import { initUserContext } from '$lib/stores/user.svelte';
 	import PageLoader from '$src/components/PageLoader.svelte';
-
+	import { Toaster } from 'svelte-sonner';
 	let { children } = $props();
 	const { user, login, logout } = initUserContext();
 	let hydrated = $state(false);
@@ -52,6 +52,8 @@
 </script>
 
 {#if hydrated}
+	<Toaster richColors position="top-right" expand={true} />
+
 	<main class="min-h-screen">{@render children()}</main>
 {:else}
 	<div class="flex h-screen w-full items-center justify-center text-gray-500"><PageLoader /></div>
