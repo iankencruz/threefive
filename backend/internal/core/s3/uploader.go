@@ -110,6 +110,10 @@ func ResizeImage(input []byte, scale float64) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+func (u *Uploader) RemoveObject(ctx context.Context, key string) error {
+	return u.Client.RemoveObject(ctx, u.BucketName, key, minio.RemoveObjectOptions{})
+}
+
 // ✅ Optional: Create a new uploader instance
 func NewUploader(endpoint, accessKey, secretKey, bucket string, useSSL bool, baseURL string) (*Uploader, error) {
 	client, err := minio.New(endpoint, &minio.Options{

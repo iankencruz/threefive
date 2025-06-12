@@ -1,12 +1,14 @@
 package media
 
 import (
+	"encoding/json"
 	"log/slog"
 	"math"
 	"net/http"
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"github.com/iankencruz/threefive/backend/internal/core/response"
 	"github.com/iankencruz/threefive/backend/internal/core/s3"
 	"github.com/iankencruz/threefive/backend/internal/generated"
@@ -130,23 +132,51 @@ func (h *Handler) ListMediaHandler(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) DeleteMediaHandler(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
-	if idStr == "" {
-		response.WriteJSON(w, http.StatusBadRequest, "Missing media ID", nil)
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		response.WriteJSON(w, http.StatusBadRequest, "Invalid ID", nil)
 		return
 	}
 
-	id, err := parseUUIDParam(r, idStr)
+	media, err := h.Repo.GetByID(r.Context(), id)
 	if err != nil {
-		http.Error(w, "invalid UUID", http.StatusBadRequest)
+		response.WriteJSON(w, http.StatusNotFound, "Media not found", nil)
 		return
 	}
 
-	err = h.Repo.Delete(r.Context(), id)
-	if err != nil {
-		h.Logger.Error("failed to delete media", "id", id, "err", err)
-		response.WriteJSON(w, http.StatusInternalServerError, "Delete failed", nil)
+	if err := h.Service.DeleteMediaWithVariants(r.Context(), media); err != nil {
+		h.Logger.Error("Failed to delete media and variants", "err", err)
+		response.WriteJSON(w, http.StatusInternalServerError, "Failed to delete media", nil)
 		return
 	}
 
 	response.WriteJSON(w, http.StatusOK, "✅ Deleted", nil)
+}
+
+func (h *Handler) UpdateMediaHandler(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	mediaID, err := uuid.Parse(idStr)
+	if err != nil {
+		response.WriteJSON(w, http.StatusBadRequest, "Invalid media ID", nil)
+		return
+	}
+
+	var payload struct {
+		Title string `json:"title"`
+		Alt   string `json:"alt"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		response.WriteJSON(w, http.StatusBadRequest, "Invalid request body", nil)
+		return
+	}
+
+	// if err := h.Repo.UpdateAltText(r.Context(), mediaID, payload.Alt); err != nil {
+	if err := h.Repo.UpdateMedia(r.Context(), mediaID, payload.Title, payload.Alt); err != nil {
+		h.Logger.Error("failed to update media", "err", err)
+		response.WriteJSON(w, http.StatusInternalServerError, "Update failed", nil)
+		return
+	}
+
+	response.WriteJSON(w, http.StatusOK, "Alt text updated", nil)
 }

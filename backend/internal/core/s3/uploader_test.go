@@ -44,7 +44,7 @@ func TestUploader_Upload(t *testing.T) {
 
 	logger.Info("MinIO started", "endpoint", endpoint)
 
-	uploader, err := NewUploader(endpoint, "minioadmin", "minioadmin", bucket, "sgp1", false, baseURL)
+	uploader, err := NewUploader(endpoint, "minioadmin", "minioadmin", bucket, false, baseURL)
 	require.NoError(t, err)
 
 	err = uploader.Client.MakeBucket(ctx, bucket, minio.MakeBucketOptions{})
@@ -74,7 +74,7 @@ func TestUploader_Upload(t *testing.T) {
 
 			logger.Info("Uploading file", "object", objectName)
 
-			url, thumb, err := uploader.Upload(ctx, reader, objectName, tt.contentType)
+			url, err := uploader.PutObject(ctx, reader, objectName, tt.contentType)
 
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -83,7 +83,7 @@ func TestUploader_Upload(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			logger.Info("Upload complete", "url", url, "thumb", thumb)
+			logger.Info("Upload complete", "url", url)
 
 			obj, err := uploader.Client.GetObject(ctx, bucket, objectName, minio.GetObjectOptions{})
 			require.NoError(t, err)

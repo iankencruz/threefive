@@ -5,11 +5,12 @@
 package generated
 
 import (
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Media struct {
-	ID           pgtype.UUID        `db:"id" json:"id"`
+	ID           uuid.UUID          `db:"id" json:"id"`
 	Url          string             `db:"url" json:"url"`
 	ThumbnailUrl *string            `db:"thumbnail_url" json:"thumbnail_url"`
 	Type         string             `db:"type" json:"type"`

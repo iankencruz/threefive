@@ -6,19 +6,18 @@ import (
 	"fmt"
 	"io"
 	"mime/multipart"
-	"net/http"
 	"path/filepath"
 	"strings"
 
 	"github.com/google/uuid"
 	"github.com/iankencruz/threefive/backend/internal/core/s3"
 	"github.com/iankencruz/threefive/backend/internal/generated"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type S3Uploader interface {
 	PutObject(ctx context.Context, reader io.Reader, filename, contentType string) (string, error)
 	JoinURL(filename string) string
+	RemoveObject(ctx context.Context, key string) error
 }
 
 type Service struct {
@@ -55,46 +54,33 @@ func (s *Service) UploadMedia(
 
 	var mainFilename string
 	var mainURL string
-	var webpBytes []byte
 	var thumbURL, mediumURL *string
 	mime := contentType
 
 	if isJPG || isPNG {
-		webpBytes, err = s3.ConvertToWebP(buf)
+
+		variants, err := s3.GenerateVariants(header.Filename, buf)
 		if err != nil {
 			return nil, err
 		}
 
-		baseName := strings.TrimSuffix(header.Filename, filepath.Ext(header.Filename))
-		mainFilename = fmt.Sprintf("%s-%s.webp", uuid.New().String(), baseName)
-		key, err := s.uploader.PutObject(ctx, bytes.NewReader(webpBytes), mainFilename, "image/webp")
+		mainS3Key, err := s.uploader.PutObject(ctx, bytes.NewReader(variants.WebP), variants.Filename, "image/webp")
 		if err != nil {
 			return nil, err
 		}
-		mainURL = s.uploader.JoinURL(key)
+		mainURL = s.uploader.JoinURL(mainS3Key)
 
-		// Thumbnail
-		thumb, err := s3.ResizeImage(webpBytes, 0.25)
+		thumbS3, err := s.uploader.PutObject(ctx, bytes.NewReader(variants.Thumbnail), variants.ThumbName, "image/webp")
 		if err == nil {
-			thumbName := "thumb-" + mainFilename
-			thumbS3Key, err := s.uploader.PutObject(ctx, bytes.NewReader(thumb), thumbName, "image/webp")
-			if err == nil {
-				thumb := s.uploader.JoinURL(thumbS3Key)
-				thumbURL = &thumb
-			}
+			tmp := s.uploader.JoinURL(thumbS3)
+			thumbURL = &tmp
 		}
 
-		// Medium
-		medium, err := s3.ResizeImage(webpBytes, 0.5)
+		mediumS3, err := s.uploader.PutObject(ctx, bytes.NewReader(variants.Medium), variants.MediumName, "image/webp")
 		if err == nil {
-			mediumName := "medium-" + mainFilename
-			mediumS3Key, err := s.uploader.PutObject(ctx, bytes.NewReader(medium), mediumName, "image/webp")
-			if err == nil {
-				medium := s.uploader.JoinURL(mediumS3Key)
-				mediumURL = &medium
-			}
+			tmp := s.uploader.JoinURL(mediumS3)
+			mediumURL = &tmp
 		}
-
 		mime = "image/webp"
 	} else {
 
@@ -129,6 +115,45 @@ func (s *Service) UploadMedia(
 	return media, nil
 }
 
+func (s *Service) DeleteMediaWithVariants(ctx context.Context, media *generated.Media) error {
+	// Remove from DB first
+	if err := s.repo.Delete(ctx, media.ID); err != nil {
+		return err
+	}
+
+	// Get object keys by trimming the base URL
+	baseURL := s.uploader.JoinURL("") // ensures consistent formatting
+	stripPrefix := strings.TrimSuffix(baseURL, "/")
+
+	trim := func(fullURL *string) (key string, ok bool) {
+		if fullURL != nil && strings.HasPrefix(*fullURL, stripPrefix) {
+			return strings.TrimPrefix(*fullURL, stripPrefix+"/"), true
+		}
+		return "", false
+	}
+
+	keys := []string{}
+	if key, ok := trim(&media.Url); ok {
+		keys = append(keys, key)
+	}
+	if key, ok := trim(media.ThumbnailUrl); ok {
+		keys = append(keys, key)
+	}
+	if key, ok := trim(media.MediumUrl); ok {
+		keys = append(keys, key)
+	}
+
+	// Delete from S3
+	for _, key := range keys {
+		if err := s.uploader.RemoveObject(ctx, key); err != nil {
+			// Optional: log warning instead of failing the whole process
+			fmt.Printf("⚠️ failed to delete S3 object %s: %v\n", key, err)
+		}
+	}
+
+	return nil
+}
+
 func inferMediaType(mimeType string) string {
 	switch {
 	case mimeType == "image/gif":
@@ -142,15 +167,4 @@ func inferMediaType(mimeType string) string {
 	default:
 		return "embed"
 	}
-}
-
-func parseUUIDParam(r *http.Request, id string) (pgtype.UUID, error) {
-	u, err := uuid.Parse(id)
-	if err != nil {
-		return pgtype.UUID{}, err
-	}
-	return pgtype.UUID{
-		Bytes: u,
-		Valid: true,
-	}, nil
 }

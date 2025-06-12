@@ -35,3 +35,15 @@ LIMIT $1 OFFSET $2;
 -- name: CountMedia :one
 SELECT COUNT(*) FROM media;
 
+
+-- name: UpdateMedia :exec
+UPDATE media
+SET alt_text = @alt_text, title = @title
+WHERE id = @id;
+
+
+-- name: SetPublicStatus :exec
+UPDATE media
+set is_public = @is_public
+WHERE id = @id;
+

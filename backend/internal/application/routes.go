@@ -57,13 +57,8 @@ func Routes(app *Application) http.Handler {
 					// Media management
 					r.Get("/media", app.MediaHandler.ListMediaHandler)
 					r.Post("/media", app.MediaHandler.UploadMediaHandler)
-					r.Put("/media/{id}", func(w http.ResponseWriter, r *http.Request) {
-						fmt.Print("Update media metadata Endpoint:")
-					})
-					r.Delete("/media/{id}", func(w http.ResponseWriter, r *http.Request) {
-
-						fmt.Print("Delete media instance Endpoint:")
-					})
+					r.Put("/media/{id}", app.MediaHandler.UpdateMediaHandler)
+					r.Delete("/media/{id}", app.MediaHandler.DeleteMediaHandler)
 					r.Post("/sort", func(w http.ResponseWriter, r *http.Request) {
 						fmt.Print("Sort media Endpoint:")
 					})

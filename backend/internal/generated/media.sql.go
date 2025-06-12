@@ -8,7 +8,7 @@ package generated
 import (
 	"context"
 
-	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/google/uuid"
 )
 
 const countMedia = `-- name: CountMedia :one
@@ -78,7 +78,7 @@ const deleteMedia = `-- name: DeleteMedia :exec
 DELETE FROM media WHERE id = $1
 `
 
-func (q *Queries) DeleteMedia(ctx context.Context, id pgtype.UUID) error {
+func (q *Queries) DeleteMedia(ctx context.Context, id uuid.UUID) error {
 	_, err := q.db.Exec(ctx, deleteMedia, id)
 	return err
 }
@@ -87,7 +87,7 @@ const getMediaByID = `-- name: GetMediaByID :one
 SELECT id, url, thumbnail_url, type, is_public, title, alt_text, mime_type, file_size, sort_order, created_at, updated_at, medium_url FROM media WHERE id = $1
 `
 
-func (q *Queries) GetMediaByID(ctx context.Context, id pgtype.UUID) (Media, error) {
+func (q *Queries) GetMediaByID(ctx context.Context, id uuid.UUID) (Media, error) {
 	row := q.db.QueryRow(ctx, getMediaByID, id)
 	var i Media
 	err := row.Scan(
@@ -231,13 +231,46 @@ func (q *Queries) ListPublicMedia(ctx context.Context) ([]Media, error) {
 	return items, nil
 }
 
+const setPublicStatus = `-- name: SetPublicStatus :exec
+UPDATE media
+set is_public = $1
+WHERE id = $2
+`
+
+type SetPublicStatusParams struct {
+	IsPublic *bool     `db:"is_public" json:"is_public"`
+	ID       uuid.UUID `db:"id" json:"id"`
+}
+
+func (q *Queries) SetPublicStatus(ctx context.Context, arg SetPublicStatusParams) error {
+	_, err := q.db.Exec(ctx, setPublicStatus, arg.IsPublic, arg.ID)
+	return err
+}
+
+const updateMedia = `-- name: UpdateMedia :exec
+UPDATE media
+SET alt_text = $1, title = $2
+WHERE id = $3
+`
+
+type UpdateMediaParams struct {
+	AltText *string   `db:"alt_text" json:"alt_text"`
+	Title   *string   `db:"title" json:"title"`
+	ID      uuid.UUID `db:"id" json:"id"`
+}
+
+func (q *Queries) UpdateMedia(ctx context.Context, arg UpdateMediaParams) error {
+	_, err := q.db.Exec(ctx, updateMedia, arg.AltText, arg.Title, arg.ID)
+	return err
+}
+
 const updateMediaSortOrder = `-- name: UpdateMediaSortOrder :exec
 UPDATE media SET sort_order = $1 WHERE id = $2
 `
 
 type UpdateMediaSortOrderParams struct {
-	SortOrder int32       `db:"sort_order" json:"sort_order"`
-	ID        pgtype.UUID `db:"id" json:"id"`
+	SortOrder int32     `db:"sort_order" json:"sort_order"`
+	ID        uuid.UUID `db:"id" json:"id"`
 }
 
 func (q *Queries) UpdateMediaSortOrder(ctx context.Context, arg UpdateMediaSortOrderParams) error {
