@@ -15,6 +15,10 @@ sql:
         overrides:
           - column: users.password_hash # prevent exporting the struct tag
             go_struct_tag: json:"-"
+          - db_type: "uuid"
+            go_type:
+              import: "github.com/google/uuid"
+              type: "UUID"
 
 overrides:
   go:

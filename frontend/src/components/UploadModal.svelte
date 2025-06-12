@@ -7,6 +7,7 @@
 		accept = '*/*',
 		maxSize = 10 * 1024 * 1024,
 		multiple = true,
+		maxWidth = 'max-w-lg',
 		onuploaded,
 		onclose
 	} = $props();
@@ -89,7 +90,7 @@
 			role="button"
 			tabindex="0"
 			aria-label="Close modal"
-			class="relative w-full max-w-lg rounded-lg bg-white p-6 shadow-xl"
+			class={`relative w-full ${maxWidth}  rounded-lg bg-white p-6 shadow-xl`}
 			onclick={(e) => e.stopPropagation()}
 			onkeydown={(e) => {
 				if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') onclose?.();

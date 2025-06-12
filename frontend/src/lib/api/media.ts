@@ -5,15 +5,20 @@ export async function fetchMedia(page = 1, limit = 20) {
 	return res.json();
 }
 
-export async function updateMedia(id: string, data: { title: string; alt_text: string }) {
+
+export async function updateMedia(id: string, payload: { title: string; alt_text: string }) {
 	const res = await fetch(`/api/v1/admin/media/${id}`, {
 		method: 'PUT',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify(data)
+		body: JSON.stringify({
+			title: payload.title,
+			alt: payload.alt_text // 👈 Must be `alt` to match the Go handler
+		})
 	});
+
 	if (!res.ok) throw new Error('Failed to update media');
-	return res.json();
 }
+
 
 export async function deleteMedia(id: string) {
 	const res = await fetch(`/api/v1/admin/media/${id}`, {

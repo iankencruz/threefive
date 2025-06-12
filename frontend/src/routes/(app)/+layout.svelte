@@ -4,77 +4,45 @@
 	import { navigating } from '$app/stores';
 	import { fade } from 'svelte/transition';
 	import { sidebarNavigation, userMenuItems, type NavigationItem } from '$lib/Navigation';
-	import { onMount } from 'svelte';
-	import { browser } from '$app/environment';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { getUserContext, initUserContext } from '$lib/stores/user.svelte';
 	import { PanelLeftClose, PanelLeftOpen, PanelRightClose } from '@lucide/svelte';
 	import PageLoader from '$src/components/PageLoader.svelte';
+	import type { LayoutData } from './$types';
 
-	let { children } = $props();
+	let { children, data }: { children: any; data: LayoutData } = $props();
 	const { user, login, logout } = getUserContext();
 
-	console.log('user', user);
-
 	let isSidebarOpen = $state(false);
-	let hydrated = $state(false);
-
 	let menuOpen = $state(false);
 	let collapsed = $state(false); // controls full vs compact sidebar
 
+	// Initialize user context with data from load function
 	$effect(() => {
-		if (!hydrated) return;
-
-		const currentPath = $page.url.pathname;
-
-		// ✅ Block unauthenticated access to any /admin route except login
-		if (!user || user.id === 0) {
-			if (!currentPath.startsWith('/admin/login')) {
-				goto('/admin/login');
-			}
-			return;
-		}
-
-		// ✅ Prevent logged-in users from seeing login page again
-		if (currentPath === '/admin/login') {
-			goto('/admin/dashboard');
+		if (data.user && data.user.id !== 0) {
+			login(data.user);
+		} else {
+			logout();
 		}
 	});
 
-	// Hydrate user
-	// if (browser) {
-	(async () => {
-		try {
-			const res = await fetch('/api/v1/admin/me', {
-				credentials: 'include'
-			});
-			const result = await res.json();
-
-			if (res.ok && result.user?.id) {
-				login(result.user);
-			} else {
-				logout();
-			}
-		} catch {
-			logout();
-		} finally {
-			// time to ensure the UI updates
-			hydrated = true;
-		}
-	})();
-	// }
+	console.log('user', user);
 
 	function isActive(path?: string): boolean {
 		return $page.url.pathname === path || $page.url.pathname.startsWith(path + '/');
 	}
 
-	function handleLogoutAction(e: MouseEvent, action?: string) {
+	async function handleLogoutAction(e: MouseEvent, action?: string) {
 		e.preventDefault();
 		console.log('handleLogoutAction : Action = ', action);
 		if (action === 'logout') {
 			logout();
-			fetch('/api/v1/admin/logout', { method: 'POST', credentials: 'include' });
+			try {
+				await fetch('/api/v1/admin/logout', { method: 'POST', credentials: 'include' });
+			} catch (error) {
+				console.error('Logout error:', error);
+			}
 			goto('/admin/login');
 		}
 	}
@@ -115,9 +83,9 @@
 	{/each}
 {/snippet}
 
-{#if !hydrated}
+{#if data.isLoading}
 	<div class="flex h-screen items-center justify-center text-gray-500"><PageLoader /></div>
-{:else if hydrated && user.id !== 0}
+{:else if data.user && data.user.id !== 0}
 	<div>
 		<!-- Mobile sidebar -->
 		{#if isSidebarOpen}
@@ -159,6 +127,32 @@
 								</li>
 							</ul>
 						</nav>
+						<!-- User menu at the bottom -->
+						<div class="mt-auto pb-6">
+							<div class="relative -mx-2 hover:bg-gray-50">
+								<button
+									class="flex w-full items-center gap-3 rounded-lg p-2"
+									onclick={() => (menuOpen = !menuOpen)}
+								>
+									<img
+										class="h-8 w-8 rounded-full"
+										src={`https://ui-avatars.com/api/?name=${user.firstName}+${user.lastName}`}
+										alt="User avatar"
+									/>
+									<span class="truncate text-sm font-medium text-gray-900"
+										>{user.firstName} {user.lastName}</span
+									>
+								</button>
+
+								{#if menuOpen}
+									<div
+										class="absolute bottom-14 left-0 z-20 w-full origin-top-left rounded-md bg-white shadow ring-1 ring-black/5"
+									>
+										{@render UserItems(userMenuItems)}
+									</div>
+								{/if}
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -253,14 +247,7 @@
 				</svg>
 			</button>
 			<div class="flex-1 text-sm font-semibold text-gray-900">Dashboard</div>
-			<a href="#">
-				<span class="sr-only">Your profile</span>
-				<img
-					class="size-8 rounded-full bg-gray-50"
-					src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-					alt="Profile"
-				/>
-			</a>
+			<p class=" text-sm font-semibold text-gray-900">{user.firstName} {user.lastName}</p>
 		</div>
 		<main
 			class={`min-h-screen  overflow-x-hidden px-4 py-10 sm:px-6 lg:px-8 ${collapsed ? 'lg:ml-20' : 'lg:ml-72'}`}
@@ -274,4 +261,6 @@
 			<PageLoader />
 		</div>
 	{/if}
+{:else}
+	<div class="flex h-screen items-center justify-center text-gray-500"><PageLoader /></div>
 {/if}
