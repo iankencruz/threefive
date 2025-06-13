@@ -10,6 +10,7 @@
 
 	async function save() {
 		await updateMedia(item.id, { title, alt_text: altText });
+		editMode = false;
 		console.log(item);
 		onrefresh?.();
 	}
