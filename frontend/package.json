@@ -31,6 +31,7 @@
 	},
 	"dependencies": {
 		"@lucide/svelte": "^0.513.0",
+		"dayjs": "^1.11.13",
 		"svelte-sonner": "^1.0.4"
 	}
 }
