@@ -3,7 +3,7 @@ package auth
 import (
 	"context"
 
-	"github.com/iankencruz/threefive/backend/internal/generated"
+	"github.com/iankencruz/threefive/internal/generated"
 )
 
 type Repository interface {

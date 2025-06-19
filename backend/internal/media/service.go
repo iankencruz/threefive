@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/iankencruz/threefive/backend/internal/core/s3"
-	"github.com/iankencruz/threefive/backend/internal/generated"
+	"github.com/iankencruz/threefive/internal/core/s3"
+	"github.com/iankencruz/threefive/internal/generated"
 )
 
 type S3Uploader interface {
@@ -103,7 +103,7 @@ func (s *Service) UploadMedia(
 		MediumUrl:    mediumURL,
 		Type:         mediaType,
 		Title:        &title,
-		AltText:      &altText,
+		AltText:      &title,
 		MimeType:     &mime,
 		FileSize:     &size,
 		SortOrder:    sortOrder,

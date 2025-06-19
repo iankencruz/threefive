@@ -26,7 +26,7 @@ type S3Config struct {
 }
 
 func LoadConfig() *Config {
-	err := godotenv.Load("../.env") // Load environment variables from .env file
+	err := godotenv.Load(".env") // Load environment variables from .env file
 	if err != nil {
 		log.Fatalf("Error loading .env file: %v", err)
 	}
@@ -34,7 +34,7 @@ func LoadConfig() *Config {
 	cfg := &Config{
 		Env:    getEnv("APP_ENV", "development"),
 		Port:   getEnv("PORT", "8080"),
-		DB_URL: getEnv("DATABASE_URL", "postgres://user:pass@localhost:5432/threefive?sslmode=disable"),
+		DB_URL: getEnv("DATABASE_URL", "postgres://user:pass@localhost:5432/threefive?sslmode=disable&timezone=UTC"),
 		S3: S3Config{
 			Endpoint:  getEnv("S3_ENDPOINT", "localhost:9000"),
 			AccessKey: getEnv("S3_ACCESS_KEY", ""),

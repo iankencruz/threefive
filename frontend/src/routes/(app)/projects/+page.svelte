@@ -1,10 +1,10 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import Drawer from '$src/components/Drawer.svelte';
-
 	import { slugify, formatDate } from '$lib/utils/utilities';
 	import { createProject, getProjects, deleteProjectByID } from '$lib/api/project';
 	import { toast } from 'svelte-sonner';
-	import { Trash, Trash2 } from '@lucide/svelte';
+	import { Trash } from '@lucide/svelte';
 	import { browser } from '$app/environment';
 	import { getUserContext } from '$lib/stores/user.svelte';
 	import type { User } from '$lib/types';
@@ -15,8 +15,7 @@
 	let description = $state('');
 	let projects = $state<any[]>([]);
 	let loading = $state(true);
-
-	let user: User;
+	let user: User = { id: 0, firstName: '', lastName: '', email: '', roles: [] };
 
 	if (browser) {
 		user = getUserContext().user;
@@ -24,10 +23,9 @@
 
 	$effect(() => {
 		slug = slugify(title);
-		console.log(projects);
 	});
 
-	$effect(() => {
+	onMount(() => {
 		fetchProjects();
 	});
 
@@ -42,23 +40,24 @@
 	}
 
 	async function fetchProjects() {
+		loading = true;
 		try {
 			projects = await getProjects();
 		} catch (err) {
 			console.error('❌ Failed to load projects', err);
+			toast.error('Failed to load projects');
 		} finally {
 			loading = false;
 		}
 	}
 
 	async function deleteProject(id: string) {
-		const confirmed = confirm('Delete project?');
-		if (!confirmed) return;
+		if (!confirm('Delete project?')) return;
 
 		try {
-			await deleteProjectByID(id); // ✅ Await this
+			await deleteProjectByID(id);
 			toast.success('Project deleted');
-			await fetchProjects(); // ✅ Only refresh after deletion completes
+			await fetchProjects();
 		} catch (error) {
 			console.error('❌ Failed to delete project', error);
 			toast.error('Failed to delete project. Please try again.');
@@ -67,15 +66,12 @@
 
 	async function handleSubmit() {
 		try {
-			const result = await createProject({ title, slug, description });
-			console.log('✅ Project created:', result);
+			await createProject({ title, slug, description });
 			drawerOpen = false;
 			toast.success('Project created successfully!');
-			// TODO: refresh project list
-			await fetchProjects(); // ✅ refresh project list
+			await fetchProjects();
 		} catch (error) {
 			console.error('❌', error);
-			// TODO: show error toast/UI
 			toast.error('Failed to create project. Please try again.');
 		}
 	}

@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/iankencruz/threefive/backend/internal/generated"
+	"github.com/iankencruz/threefive/internal/generated"
 	"golang.org/x/crypto/bcrypt"
 )
 

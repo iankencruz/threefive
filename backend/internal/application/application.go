@@ -6,11 +6,12 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/iankencruz/threefive/backend/internal/auth"
-	"github.com/iankencruz/threefive/backend/internal/core/s3"
-	"github.com/iankencruz/threefive/backend/internal/core/sessions"
-	"github.com/iankencruz/threefive/backend/internal/generated"
-	"github.com/iankencruz/threefive/backend/internal/media"
+	"github.com/iankencruz/threefive/internal/auth"
+	"github.com/iankencruz/threefive/internal/core/s3"
+	"github.com/iankencruz/threefive/internal/core/sessions"
+	"github.com/iankencruz/threefive/internal/generated"
+	"github.com/iankencruz/threefive/internal/media"
+	project "github.com/iankencruz/threefive/internal/projects"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -21,6 +22,7 @@ type Application struct {
 	SessionManager *sessions.Manager
 	AuthHandler    *auth.Handler
 	MediaHandler   *media.Handler
+	ProjectHandler *project.Handler
 }
 
 func New(
@@ -49,6 +51,7 @@ func New(
 
 	authHandler := auth.NewHandler(queries, sm, logger)
 	mediaHandler := media.NewHandler(queries, logger, uploader)
+	projectHandler := project.NewHandler(queries, logger)
 
 	return &Application{
 		Config:         cfg,
@@ -57,6 +60,7 @@ func New(
 		SessionManager: sm,
 		AuthHandler:    authHandler,
 		MediaHandler:   mediaHandler,
+		ProjectHandler: projectHandler,
 	}
 }
 

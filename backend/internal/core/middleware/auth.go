@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/iankencruz/threefive/backend/internal/generated"
+	"github.com/iankencruz/threefive/internal/generated"
 )
 
 // contextKey is used to avoid key collisions in request context.
@@ -31,13 +31,13 @@ func RequireAuth(auth AuthService) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			userID, err := auth.GetUserID(r)
 			if err != nil || userID == 0 {
-				http.Redirect(w, r, "/login", http.StatusSeeOther)
+				http.Redirect(w, r, "/admin/login", http.StatusSeeOther)
 				return
 			}
 
 			user, err := auth.LoadUser(r.Context(), int32(userID))
 			if err != nil || user == nil {
-				http.Redirect(w, r, "/login", http.StatusSeeOther)
+				http.Redirect(w, r, "/admin/login", http.StatusSeeOther)
 				return
 			}
 

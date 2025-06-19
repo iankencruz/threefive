@@ -12,6 +12,7 @@ var (
 	LowercaseRX = regexp.MustCompile(`[a-z]`)
 	NumberRX    = regexp.MustCompile(`[0-9]`)
 	SpecialRX   = regexp.MustCompile(`[!@#\$%\^&\*]`)
+	SlugRX      = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`) // valid slug
 )
 
 type Validator struct {

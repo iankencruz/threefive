@@ -7,10 +7,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/iankencruz/threefive/backend/internal/application"
-	"github.com/iankencruz/threefive/backend/internal/core/logger"
-	"github.com/iankencruz/threefive/backend/internal/core/sessions"
-	"github.com/iankencruz/threefive/backend/internal/database"
+	"github.com/iankencruz/threefive/internal/application"
+	"github.com/iankencruz/threefive/internal/core/logger"
+	"github.com/iankencruz/threefive/internal/core/sessions"
+	"github.com/iankencruz/threefive/internal/database"
 	"github.com/joho/godotenv"
 )
 
@@ -35,7 +35,8 @@ func main() {
 
 	// create session manager
 	// Initialize the Session Manager
-	sm := sessions.NewManager(db)
+	sm := sessions.NewWithCleanupInterval(db, log, 5*time.Minute) // default: 5min
+	defer sm.StopCleanup()
 
 	app := application.New(
 		ctx,

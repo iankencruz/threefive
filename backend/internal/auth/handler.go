@@ -8,12 +8,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/iankencruz/threefive/backend/internal/core/contextkeys"
-	"github.com/iankencruz/threefive/backend/internal/core/errors"
-	"github.com/iankencruz/threefive/backend/internal/core/response"
-	"github.com/iankencruz/threefive/backend/internal/core/sessions"
-	"github.com/iankencruz/threefive/backend/internal/core/validators"
-	"github.com/iankencruz/threefive/backend/internal/generated"
+	"github.com/iankencruz/threefive/internal/core/contextkeys"
+	"github.com/iankencruz/threefive/internal/core/errors"
+	"github.com/iankencruz/threefive/internal/core/response"
+	"github.com/iankencruz/threefive/internal/core/sessions"
+	"github.com/iankencruz/threefive/internal/core/validators"
+	"github.com/iankencruz/threefive/internal/generated"
 )
 
 type Handler struct {

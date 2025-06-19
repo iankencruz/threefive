@@ -9,9 +9,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	"github.com/iankencruz/threefive/backend/internal/core/response"
-	"github.com/iankencruz/threefive/backend/internal/core/s3"
-	"github.com/iankencruz/threefive/backend/internal/generated"
+	"github.com/iankencruz/threefive/internal/core/response"
+	"github.com/iankencruz/threefive/internal/core/s3"
+	"github.com/iankencruz/threefive/internal/generated"
 )
 
 type Handler struct {

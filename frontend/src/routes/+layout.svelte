@@ -5,6 +5,7 @@
 	import { initUserContext } from '$lib/stores/user.svelte';
 	import PageLoader from '$src/components/PageLoader.svelte';
 	import { Toaster } from 'svelte-sonner';
+
 	let { children } = $props();
 	const { user, login, logout } = initUserContext();
 	let hydrated = $state(false);
@@ -23,38 +24,42 @@
 						firstName: result.user.first_name,
 						lastName: result.user.last_name,
 						email: result.user.email,
-						roles: []
+						roles: result.user.roles ?? []
 					});
+
+					// ✅ Immediately set hydrated before redirecting
+					hydrated = true;
+
+					const pathname = page.url.pathname;
+					if (pathname === '/admin/login') {
+						goto('/admin/dashboard');
+						return;
+					}
 				} else {
 					logout();
+					hydrated = true;
+
+					const pathname = page.url.pathname;
+					if (pathname.startsWith('/admin') && pathname !== '/admin/login') {
+						goto('/admin/login');
+						return;
+					}
 				}
 			} catch (err) {
 				logout();
 			} finally {
-				setTimeout(() => {
-					hydrated = true;
-				}, 500); // Optional delay for smoother UX
+				hydrated = true;
 			}
 		})();
 	}
-
-	$effect(() => {
-		if (!browser) return;
-		if (!hydrated) return;
-
-		const currentPath = page.url.pathname;
-
-		// ✅ Redirect only if currently on login page
-		if (user.id !== 0 && currentPath === '/admin/login') {
-			goto('/admin/dashboard');
-		}
-	});
 </script>
 
 {#if hydrated}
 	<Toaster richColors position="top-right" expand={true} />
-
 	<main class="min-h-screen">{@render children()}</main>
 {:else}
-	<div class="flex h-screen w-full items-center justify-center text-gray-500"><PageLoader /></div>
+	<div class="flex h-screen w-full items-center justify-center text-gray-500">
+		<PageLoader />
+		<!-- <p>Loading...</p> -->
+	</div>
 {/if}

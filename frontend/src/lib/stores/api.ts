@@ -26,7 +26,7 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
 		if (res.status === 401) {
 			const { logout } = initUserContext();
 			logout();
-			goto('/login');
+			goto('/admin/login');
 			throw new Error('Session expired');
 		}
 

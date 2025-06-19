@@ -1,1 +1,0 @@
-import{w as s}from"./CWFVS_wd.js";const a=s(null),e=s(!1);async function r(){try{const t=await fetch("/api/admin/me",{credentials:"include"});if(!t.ok)throw new Error("Not authenticated");const n=await t.json();a.set(n.user),e.set(!0)}catch{a.set(null),e.set(!1)}}export{r as a,e as i,a as u};

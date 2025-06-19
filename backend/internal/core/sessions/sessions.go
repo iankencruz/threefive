@@ -4,26 +4,43 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
 
-	"github.com/iankencruz/threefive/backend/internal/core/contextkeys"
+	"github.com/iankencruz/threefive/internal/core/contextkeys"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Manager struct {
-	DB *pgxpool.Pool
+	DB              *pgxpool.Pool
+	Logger          *slog.Logger
+	cleanupInterval time.Duration
+	stopCleanup     chan struct{}
 }
 
-func NewManager(db *pgxpool.Pool) *Manager {
-	return &Manager{DB: db}
+func New(db *pgxpool.Pool, logger *slog.Logger) *Manager {
+	return NewWithCleanupInterval(db, logger, 5*time.Minute) // default: 5min
+}
+
+func NewWithCleanupInterval(db *pgxpool.Pool, logger *slog.Logger, interval time.Duration) *Manager {
+	m := &Manager{
+		DB:              db,
+		Logger:          logger,
+		cleanupInterval: interval,
+		stopCleanup:     make(chan struct{}),
+	}
+	if interval > 0 {
+		go m.startCleanup()
+	}
+	return m
 }
 
 const (
 	sessionCookieName = "user_session"
-	sessionLifespan   = 7 * 24 * time.Hour // 7 days
+	sessionLifespan   = 30 * time.Minute // 30 Minutes
 )
 
 func (m *Manager) SetUserID(w http.ResponseWriter, r *http.Request, userID int32) error {
@@ -233,4 +250,33 @@ func (m *Manager) Destroy(ctx context.Context) error {
 		DELETE FROM sessions WHERE token = @token
 	`, pgx.NamedArgs{"token": cookie})
 	return err
+}
+
+func (m *Manager) startCleanup() {
+	ticker := time.NewTicker(m.cleanupInterval)
+	defer ticker.Stop()
+
+	m.Logger.Info("session cleanup started", "interval", m.cleanupInterval.String())
+
+	for {
+		select {
+		case <-ticker.C:
+			m.Logger.Debug("running session cleanup")
+			_, err := m.DB.Exec(context.Background(), `
+				DELETE FROM sessions WHERE expires_at < now()
+			`)
+			if err != nil {
+				m.Logger.Error("session cleanup error", "error", err)
+			}
+		case <-m.stopCleanup:
+			m.Logger.Info("session cleanup stopped")
+			return
+		}
+	}
+}
+
+func (m *Manager) StopCleanup() {
+	if m.cleanupInterval > 0 {
+		close(m.stopCleanup)
+	}
 }

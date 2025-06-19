@@ -1,12 +1,13 @@
 <script lang="ts">
 	import '$src/app.css';
 
+	import '$lib/dayjs'; // plugin registration
 	import { navigating } from '$app/stores';
 	import { fade } from 'svelte/transition';
 	import { sidebarNavigation, userMenuItems, type NavigationItem } from '$lib/Navigation';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
-	import { getUserContext, initUserContext } from '$lib/stores/user.svelte';
+	import { getUserContext } from '$lib/stores/user.svelte';
 	import { PanelLeftClose, PanelLeftOpen, PanelRightClose } from '@lucide/svelte';
 	import PageLoader from '$src/components/PageLoader.svelte';
 	import type { LayoutData } from './$types';
@@ -18,16 +19,13 @@
 	let menuOpen = $state(false);
 	let collapsed = $state(false); // controls full vs compact sidebar
 
-	// Initialize user context with data from load function
+	console.log('user', user);
+
 	$effect(() => {
-		if (data.user && data.user.id !== 0) {
-			login(data.user);
-		} else {
-			logout();
+		if ($page.url.pathname.startsWith('/admin') && user.id === 0) {
+			goto('/admin/login');
 		}
 	});
-
-	console.log('user', user);
 
 	function isActive(path?: string): boolean {
 		return $page.url.pathname === path || $page.url.pathname.startsWith(path + '/');
@@ -83,9 +81,12 @@
 	{/each}
 {/snippet}
 
-{#if data.isLoading}
-	<div class="flex h-screen items-center justify-center text-gray-500"><PageLoader /></div>
-{:else if data.user && data.user.id !== 0}
+{#if $page.url.pathname.startsWith('/admin') && user.id === 0}
+	<div class="flex h-screen items-center justify-center text-gray-500">
+		<PageLoader />
+		<!-- <p>Loading...</p> -->
+	</div>
+{:else}
 	<div>
 		<!-- Mobile sidebar -->
 		{#if isSidebarOpen}
@@ -261,6 +262,4 @@
 			<PageLoader />
 		</div>
 	{/if}
-{:else}
-	<div class="flex h-screen items-center justify-center text-gray-500"><PageLoader /></div>
 {/if}

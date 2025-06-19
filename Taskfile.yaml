@@ -16,12 +16,13 @@ tasks:
 
   tidy:
     desc: Install Go Dependencies
+    dir: "{{ .BACKEND_DIR }}"
     cmds:
       - go mod tidy
 
   backend:
     desc: Run Dev Server
-    dir: ./backend/
+    dir: "{{.BACKEND_DIR}}"
     cmds:
       - air
 
@@ -33,10 +34,9 @@ tasks:
 
   build:
     desc: Build Go binary only
-    deps: [templ, tailwind]
-    dir: .
+    dir: "{{.BACKEND_DIR}}"
     cmds:
-      - go build -o ./backend/tmp/main ./backend/cmd/api
+      - go build -o ./tmp/main ./cmd/api
 
   build-front:
     desc: Build SvelteKit for production

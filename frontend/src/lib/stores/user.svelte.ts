@@ -25,11 +25,12 @@ export function createAuthStore() {
 
 	function login(data: any) {
 		user.id = data.id;
-		user.firstName = data.first_name;
-		user.lastName = data.last_name;
+		user.firstName = data.firstName ?? data.first_name ?? '';
+		user.lastName = data.lastName ?? data.last_name ?? '';
 		user.email = data.email;
-		user.roles = data.roles;
+		user.roles = data.roles ?? [];
 	}
+
 
 	function logout() {
 		user.id = 0;
