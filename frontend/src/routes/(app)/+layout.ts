@@ -14,6 +14,7 @@ export const load: LayoutLoad = async ({ url, fetch }) => {
 	let user = null;
 
 	try {
+		console.log("Auth from (app) layout")
 		const res = await fetch('/api/v1/admin/me', {
 			credentials: 'include'
 		});
