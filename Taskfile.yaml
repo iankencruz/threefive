@@ -44,6 +44,18 @@ tasks:
     cmds:
       - bun run build
 
+  bun-i:
+    desc: Bun Install Dependencies
+    dir: "{{.FRONTEND_DIR}}"
+    cmds:
+      - bun install {{.CLI_ARGS}}
+
+  bun-x:
+    desc: Bun Remove Dependencies
+    dir: "{{.FRONTEND_DIR}}"
+    cmds:
+      - bun remove {{.CLI_ARGS}}
+
   clean:
     desc: Remove Go binary
     dir: ./backend/

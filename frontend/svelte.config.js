@@ -1,10 +1,16 @@
-import adapter from '@sveltejs/adapter-bun';
-import { vitePreprocess } from '@sveltejs/kit/vite';
+import adapter from '@sveltejs/adapter-node';
+import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
-export default {
+const config = {
+	preprocess: vitePreprocess(),
 	kit: {
 		adapter: adapter(),
-		ssr: true
-	},
-	preprocess: vitePreprocess()
+		alias: {
+			$src: './src',
+			$assets: './src/assets',
+			$components: './src/components'
+		}
+	}
 };
+
+export default config;
