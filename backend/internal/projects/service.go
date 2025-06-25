@@ -28,7 +28,7 @@ func (s *ProjectService) Update(ctx context.Context, arg generated.UpdateProject
 		arg.PublishedAt = pgtype.Timestamp{Valid: false}
 	}
 
-	var ts pgtype.Timestamp
+	var ts pgtype.Timestamptz
 	_ = ts.Scan(time.Now())
 	arg.UpdatedAt = ts
 

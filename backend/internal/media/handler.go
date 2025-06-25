@@ -127,7 +127,7 @@ func (h *Handler) ListMediaHandler(w http.ResponseWriter, r *http.Request) {
 		"page":        page,
 	}
 
-	response.WriteJSON(w, http.StatusOK, "✅ Media list fetched", result)
+	response.WriteJSON(w, http.StatusOK, "✅ Admin: Media list fetched", result)
 }
 
 func (h *Handler) DeleteMediaHandler(w http.ResponseWriter, r *http.Request) {

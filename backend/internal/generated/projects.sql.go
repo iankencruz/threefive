@@ -151,6 +151,44 @@ func (q *Queries) ListProjects(ctx context.Context) ([]Project, error) {
 	return items, nil
 }
 
+const listPublishedProjects = `-- name: ListPublishedProjects :many
+SELECT id, title, slug, description, meta_description, canonical_url, cover_media_id, is_published, published_at, created_at, updated_at FROM projects
+WHERE is_published = true
+ORDER BY created_at DESC
+`
+
+func (q *Queries) ListPublishedProjects(ctx context.Context) ([]Project, error) {
+	rows, err := q.db.Query(ctx, listPublishedProjects)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Project
+	for rows.Next() {
+		var i Project
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.Slug,
+			&i.Description,
+			&i.MetaDescription,
+			&i.CanonicalUrl,
+			&i.CoverMediaID,
+			&i.IsPublished,
+			&i.PublishedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateProject = `-- name: UpdateProject :one
 UPDATE projects
 SET
@@ -168,16 +206,16 @@ RETURNING id, title, slug, description, meta_description, canonical_url, cover_m
 `
 
 type UpdateProjectParams struct {
-	Title           string           `db:"title" json:"title"`
-	Slug            string           `db:"slug" json:"slug"`
-	Description     *string          `db:"description" json:"description"`
-	MetaDescription *string          `db:"meta_description" json:"meta_description"`
-	CanonicalUrl    *string          `db:"canonical_url" json:"canonical_url"`
-	CoverMediaID    pgtype.UUID      `db:"cover_media_id" json:"cover_media_id"`
-	IsPublished     bool             `db:"is_published" json:"is_published"`
-	PublishedAt     pgtype.Timestamp `db:"published_at" json:"published_at"`
-	UpdatedAt       pgtype.Timestamp `db:"updated_at" json:"updated_at"`
-	ID              uuid.UUID        `db:"id" json:"id"`
+	Title           string             `db:"title" json:"title"`
+	Slug            string             `db:"slug" json:"slug"`
+	Description     *string            `db:"description" json:"description"`
+	MetaDescription *string            `db:"meta_description" json:"meta_description"`
+	CanonicalUrl    *string            `db:"canonical_url" json:"canonical_url"`
+	CoverMediaID    pgtype.UUID        `db:"cover_media_id" json:"cover_media_id"`
+	IsPublished     bool               `db:"is_published" json:"is_published"`
+	PublishedAt     pgtype.Timestamp   `db:"published_at" json:"published_at"`
+	UpdatedAt       pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	ID              uuid.UUID          `db:"id" json:"id"`
 }
 
 func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) (Project, error) {

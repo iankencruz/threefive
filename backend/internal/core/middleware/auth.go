@@ -52,7 +52,7 @@ func RedirectIfAuthenticated(sm SessionManager) func(http.Handler) http.Handler 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if sm.Exists(r, "userID") {
-				http.Redirect(w, r, "/admin/dashboard", http.StatusSeeOther)
+				http.Redirect(w, r, "/admin", http.StatusSeeOther)
 				return
 			}
 			next.ServeHTTP(w, r)

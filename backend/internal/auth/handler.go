@@ -89,8 +89,8 @@ func (h *Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		Password  string `json:"password"`
 	}
 
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		errResp := errors.BadRequest("Invalid JSON payload")
+	if err := response.DecodeJSON(w, r, &input); err != nil {
+		errResp := errors.BadRequest("Invalid JSON payload: " + err.Error())
 		response.WriteJSON(w, errResp.Code, errResp.Message, nil)
 		return
 	}
@@ -158,20 +158,18 @@ func (h *Handler) LoadUser(ctx context.Context, userID int32) (any, error) {
 
 func (h *Handler) GetAuthenticatedUser(w http.ResponseWriter, r *http.Request) {
 	userID, err := h.SessionManager.GetUserID(r)
-	w.Header().Set("Content-Type", "application/json")
-
 	if err != nil || userID == 0 {
-		json.NewEncoder(w).Encode(map[string]interface{}{"user": nil})
+		_ = response.WriteJSON(w, http.StatusUnauthorized, "unauthorised", nil)
 		return
 	}
 
 	user, err := h.Service.GetUserByID(r.Context(), int32(userID))
 	if err != nil {
-		json.NewEncoder(w).Encode(map[string]interface{}{"user": nil})
+		_ = response.WriteJSON(w, http.StatusInternalServerError, "could not retrieve user", nil)
 		return
 	}
 
-	json.NewEncoder(w).Encode(map[string]interface{}{"user": user})
+	_ = response.WriteJSON(w, http.StatusOK, "", user)
 }
 
 func (h *Handler) MeHandler(w http.ResponseWriter, r *http.Request) {

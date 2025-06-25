@@ -40,7 +40,7 @@ func NewWithCleanupInterval(db *pgxpool.Pool, logger *slog.Logger, interval time
 
 const (
 	sessionCookieName = "user_session"
-	sessionLifespan   = 30 * time.Minute // 30 Minutes
+	sessionLifespan   = 2 * time.Hour // 30 Minutes
 )
 
 func (m *Manager) SetUserID(w http.ResponseWriter, r *http.Request, userID int32) error {

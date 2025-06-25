@@ -9,9 +9,10 @@ import (
 
 type Repository interface {
 	CreateProject(ctx context.Context, arg generated.CreateProjectParams) (*generated.Project, error)
-	GetProjectByID(ctx context.Context, id uuid.UUID) (*generated.Project, error)
+	GetProjectByID(ctx context.Context, id uuid.UUID) (*ProjectWithMedia, error)
 	GetProjectBySlug(ctx context.Context, slug string) (*generated.Project, error)
 	ListProjects(ctx context.Context) ([]generated.Project, error)
+	ListPublishedProjects(ctx context.Context) ([]generated.Project, error)
 	UpdateProject(ctx context.Context, arg generated.UpdateProjectParams) (*generated.Project, error)
 	DeleteProject(ctx context.Context, id uuid.UUID) error
 
@@ -37,12 +38,26 @@ func (r *ProjectRepository) CreateProject(ctx context.Context, arg generated.Cre
 	return &project, nil
 }
 
-func (r *ProjectRepository) GetProjectByID(ctx context.Context, id uuid.UUID) (*generated.Project, error) {
+func (r *ProjectRepository) GetProjectByID(ctx context.Context, id uuid.UUID) (*ProjectWithMedia, error) {
 	project, err := r.q.GetProjectByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	return &project, nil
+
+	mediaVals, err := r.q.ListMediaForProject(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	mediaPtrs := make([]*generated.Media, len(mediaVals))
+	for i := range mediaVals {
+		mediaPtrs[i] = &mediaVals[i]
+	}
+
+	return &ProjectWithMedia{
+		Project: &project,
+		Media:   mediaPtrs,
+	}, nil
 }
 
 func (r *ProjectRepository) GetProjectBySlug(ctx context.Context, slug string) (*generated.Project, error) {
@@ -83,4 +98,8 @@ func (r *ProjectRepository) ListMediaForProject(ctx context.Context, projectID u
 
 func (r *ProjectRepository) UpdateProjectMediaSortOrder(ctx context.Context, arg generated.UpdateProjectMediaSortOrderParams) error {
 	return r.q.UpdateProjectMediaSortOrder(ctx, arg)
+}
+
+func (r *ProjectRepository) ListPublishedProjects(ctx context.Context) ([]generated.Project, error) {
+	return r.q.ListPublishedProjects(ctx)
 }

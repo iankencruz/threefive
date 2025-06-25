@@ -26,17 +26,17 @@ type Media struct {
 }
 
 type Project struct {
-	ID              uuid.UUID        `db:"id" json:"id"`
-	Title           string           `db:"title" json:"title"`
-	Slug            string           `db:"slug" json:"slug"`
-	Description     *string          `db:"description" json:"description"`
-	MetaDescription *string          `db:"meta_description" json:"meta_description"`
-	CanonicalUrl    *string          `db:"canonical_url" json:"canonical_url"`
-	CoverMediaID    pgtype.UUID      `db:"cover_media_id" json:"cover_media_id"`
-	IsPublished     bool             `db:"is_published" json:"is_published"`
-	PublishedAt     pgtype.Timestamp `db:"published_at" json:"published_at"`
-	CreatedAt       pgtype.Timestamp `db:"created_at" json:"created_at"`
-	UpdatedAt       pgtype.Timestamp `db:"updated_at" json:"updated_at"`
+	ID              uuid.UUID          `db:"id" json:"id"`
+	Title           string             `db:"title" json:"title"`
+	Slug            string             `db:"slug" json:"slug"`
+	Description     *string            `db:"description" json:"description"`
+	MetaDescription *string            `db:"meta_description" json:"meta_description"`
+	CanonicalUrl    *string            `db:"canonical_url" json:"canonical_url"`
+	CoverMediaID    pgtype.UUID        `db:"cover_media_id" json:"cover_media_id"`
+	IsPublished     bool               `db:"is_published" json:"is_published"`
+	PublishedAt     pgtype.Timestamp   `db:"published_at" json:"published_at"`
+	CreatedAt       pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
 type ProjectMedium struct {

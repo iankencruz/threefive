@@ -38,7 +38,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		response.WriteJSON(w, http.StatusInternalServerError, "❌ Failed to list projects", err)
 		return
 	}
-	response.WriteJSON(w, http.StatusOK, "✅ List Projects success", projects)
+	response.WriteJSON(w, http.StatusOK, "✅ Admin: List Projects success", projects)
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
@@ -80,7 +80,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		response.WriteJSON(w, http.StatusNotFound, "Project not found", err)
 		return
 	}
-	response.WriteJSON(w, http.StatusOK, "✅ Get Project success", project)
+	response.WriteJSON(w, http.StatusOK, "✅ Admin:Get Project success", project)
 }
 
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
@@ -89,6 +89,15 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		response.WriteJSON(w, http.StatusBadRequest, "Invalid request body", err)
 		return
 	}
+
+	v := validators.New()
+	v.MatchPattern("slug", req.Slug, validators.SlugRX, "❌ Slug must be lowercase and can only contain letters, numbers, and hyphens")
+
+	if !v.Valid() {
+		response.WriteJSON(w, http.StatusInternalServerError, "❌ Validation failed", v.Errors)
+		return
+	}
+
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
@@ -97,12 +106,9 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 	req.ID = id
 
-	var ts pgtype.Timestamp
+	var ts pgtype.Timestamptz
 	_ = ts.Scan(time.Now())
 	req.UpdatedAt = ts
-
-	v := validators.New()
-	v.MatchPattern("slug", req.Slug, validators.SlugRX, "❌ Slug must be lowercase and can only contain letters, numbers, and hyphens")
 
 	project, err := h.Service.Update(r.Context(), req)
 	if err != nil {
@@ -186,4 +192,13 @@ func (h *Handler) UpdateSortOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response.WriteJSON(w, http.StatusOK, "✅ Update Sort Order success", nil)
+}
+
+func (h *Handler) GetPublicProjects(w http.ResponseWriter, r *http.Request) {
+	projects, err := h.Repo.ListPublishedProjects(r.Context())
+	if err != nil {
+		response.WriteJSON(w, http.StatusInternalServerError, "Failed to fetch projects", nil)
+		return
+	}
+	response.WriteJSON(w, http.StatusOK, "✅ Public projects list", projects)
 }
