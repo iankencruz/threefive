@@ -78,26 +78,27 @@ tasks:
   db-create:
     desc: Create a new goose migration
     cmds:
-      - goose -dir ./db/migrations/ create {{.CLI_ARGS}} sql
+      - goose -dir ./backend/db/migrations/ create {{.CLI_ARGS}} sql
 
   db-up:
     desc: Apply all up migrations
     cmds:
-      - goose -dir ./db/migrations/ up
+      - goose -dir ./backend/db/migrations/ up
 
   db-down:
     desc: Roll back the last migration
     cmds:
-      - goose -dir ./db/migrations/ down
+      - goose -dir ./backend/db/migrations/ down
 
   db-status:
     desc: Show current migration status
     cmds:
-      - goose -dir ./db/migrations/ status
+      - goose -dir ./backend/db/migrations/ status
 
   # 🧬 SQLC code generation
   sqlc:
     desc: Generate Go code from SQL files
+    dir: "{{.BACKEND_DIR}}"
     cmds:
       - sqlc generate
 

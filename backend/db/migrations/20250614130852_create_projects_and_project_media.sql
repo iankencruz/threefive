@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS projects (
     canonical_url TEXT,
     cover_media_id UUID REFERENCES media(id) ON DELETE SET NULL,
     is_published BOOLEAN NOT NULL DEFAULT false,
-    published_at TIMESTAMP,
+    published_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );

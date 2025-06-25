@@ -16,6 +16,12 @@ SELECT * FROM projects WHERE slug = @slug;
 -- name: ListProjects :many
 SELECT * FROM projects ORDER BY created_at DESC;
 
+-- name: ListPublishedProjects :many
+SELECT * FROM projects
+WHERE is_published = true
+ORDER BY created_at DESC;
+
+
 -- name: UpdateProject :one
 UPDATE projects
 SET
