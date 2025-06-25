@@ -39,6 +39,8 @@
 	"type": "module",
 	"dependencies": {
 		"@lucide/svelte": "^0.522.0",
+		"dayjs": "^1.11.13",
+		"lucide": "^0.523.0",
 		"svelte-sonner": "^1.0.5"
 	}
 }
