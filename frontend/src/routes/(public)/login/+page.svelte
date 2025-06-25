@@ -9,17 +9,23 @@
 
 	console.log('User - public  login', auth.user);
 
-	onMount(async () => {
-		try {
-			const res = await fetch('/api/v1/auth/me');
-			if (!res.ok) throw new Error('unauthenticated');
-
-			const json = await res.json();
-			auth.setUser(json.user); // hydrate
-		} catch {
-			goto('/login'); // redirect if not logged in
-		} finally {
-			loading = false;
+	// onMount(async () => {
+	// 	try {
+	// 		const res = await fetch('/api/v1/auth/me');
+	// 		if (!res.ok) throw new Error('unauthenticated');
+	//
+	// 		const json = await res.json();
+	// 		auth.setUser(json.user); // hydrate
+	// 	} catch {
+	// 		goto('/login'); // redirect if not logged in
+	// 	} finally {
+	// 		loading = false;
+	// 	}
+	// });
+	//
+	$effect(() => {
+		if (auth.isAuthenticated) {
+			goto('/admin');
 		}
 	});
 
@@ -43,7 +49,7 @@
 			}
 
 			auth.setUser(json.data); // assumes backend returns user data
-			goto('/admin/dashboard');
+			goto('/admin');
 		} catch (e) {
 			console.error(e);
 			error = 'Something went wrong. Try again.';
