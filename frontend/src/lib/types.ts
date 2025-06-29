@@ -20,6 +20,8 @@ export type Project = {
 	published_at: string | null;
 	created_at: string;
 	updated_at: string;
+	media?: MediaItem[]; // or `media?: Media[]` if it's optional
+
 };
 
 
@@ -29,6 +31,7 @@ export type MediaItem = {
 	title: string;
 	url: string;
 	thumbnail_url?: string;
+	medium_url?: string;
 	alt_text?: string;
 	file_size?: string;
 };

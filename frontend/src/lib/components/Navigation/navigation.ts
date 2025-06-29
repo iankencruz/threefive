@@ -21,7 +21,7 @@ export const userMenuItems: NavigationItem[] = [
 export const sidebarNavigation: NavigationItem[] = [
 	{
 		label: 'Dashboard',
-		href: `/admin/dashboard`,
+		href: `/admin`,
 		icon: LayoutDashboard
 	},
 	{

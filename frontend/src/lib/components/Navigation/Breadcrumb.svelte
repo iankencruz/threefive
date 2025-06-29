@@ -12,9 +12,12 @@
 	$effect(() => {
 		let pathname = $page.url.pathname;
 
-		// ✅ HIDE on `/admin` only
-		shouldHide = pathname === '/admin';
-		if (shouldHide) return;
+		if (pathname === '/admin') {
+			breadcrumbs = []; // force clear
+			shouldHide = true;
+			return;
+		}
+
 		let segments = $page.url.pathname.split('/').filter(Boolean); // e.g. ['admin', 'projects', 'uuid']
 		let path = '';
 		let parts: { label: string; href: string }[] = [];
@@ -40,24 +43,26 @@
 	});
 </script>
 
-<nav class="mb-4 text-sm text-gray-500">
-	<ul class="flex items-center gap-1">
-		{#each breadcrumbs as crumb, i (i)}
-			{#if i > 0}
-				<li class="text-gray-400">
-					<ChevronRight class="h-4 w-4" />
+{#if !shouldHide}
+	<nav class="mb-4 text-sm text-gray-500">
+		<ul class="flex items-center gap-1">
+			{#each breadcrumbs as crumb, i (i)}
+				{#if i > 0}
+					<li class="text-gray-400">
+						<ChevronRight class="h-4 w-4" />
+					</li>
+				{/if}
+				<li>
+					<a
+						href={crumb.href}
+						class="block max-w-64 truncate hover:underline {i === breadcrumbs.length - 1
+							? 'font-medium text-gray-800'
+							: 'text-gray-500'}"
+					>
+						{crumb.label}
+					</a>
 				</li>
-			{/if}
-			<li>
-				<a
-					href={crumb.href}
-					class="block max-w-64 truncate hover:underline {i === breadcrumbs.length - 1
-						? 'font-medium text-gray-800'
-						: 'text-gray-500'}"
-				>
-					{crumb.label}
-				</a>
-			</li>
-		{/each}
-	</ul>
-</nav>
+			{/each}
+		</ul>
+	</nav>
+{/if}
