@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { createProject, getProjects, deleteProjectByID } from '$lib/api/projects';
+	import { createProject, getProjects, deleteProjectBySlug } from '$lib/api/projects';
 	import { toast } from 'svelte-sonner';
 	import Drawers from '$src/lib/components/Overlays/Drawers.svelte';
 	import EmptyState from '$src/lib/components/Overlays/EmptyState.svelte';
@@ -46,11 +46,11 @@
 		}
 	}
 
-	async function deleteProject(id: string) {
+	async function deleteProject(slug: string) {
 		if (!confirm('Delete project?')) return;
 
 		try {
-			await deleteProjectByID(id);
+			await deleteProjectBySlug(slug);
 			toast.success('Project deleted');
 			await fetchProjects();
 		} catch (error) {
@@ -137,7 +137,7 @@
 					</div>
 					<div class="flex flex-none items-center gap-x-2">
 						<a
-							href={`/admin/projects/${project.id}`}
+							href={`/admin/projects/${project.slug}`}
 							class="hover hidden rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-xs ring-1 ring-gray-300 ring-inset hover:bg-gray-50 sm:block"
 							>View project<span class="sr-only">View Project</span></a
 						>

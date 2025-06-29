@@ -18,9 +18,8 @@
 
 	async function loadMedia() {
 		const res = await fetchMedia(page);
-		media = res.data?.items ?? [];
+		media = res.items ?? [];
 		totalPages = res.total_pages ?? 1;
-		console.log('res.data.items: ', res.data.items);
 		console.log('res total pages', totalPages);
 		console.log($state.snapshot(media));
 	}

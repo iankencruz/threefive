@@ -229,7 +229,7 @@
 			</a>
 		</div>
 		<main
-			class={`min-h-screen  overflow-x-hidden px-4 py-10 sm:px-6 lg:px-8 ${collapsed ? 'lg:ml-20' : 'lg:ml-72'}`}
+			class={`min-h-screen  overflow-x-hidden px-4 py-10 sm:px-4  ${collapsed ? 'lg:ml-20' : 'lg:ml-72'}`}
 		>
 			{@render children()}
 		</main>
