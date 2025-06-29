@@ -2,6 +2,7 @@ package project
 
 import (
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
@@ -68,14 +69,13 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
-	idStr := chi.URLParam(r, "id")
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		response.WriteJSON(w, http.StatusBadRequest, "Invalid project ID", nil)
+	slug := chi.URLParam(r, "slug")
+	if slug == "" {
+		response.WriteJSON(w, http.StatusBadRequest, "Missing project slug", nil)
 		return
 	}
 
-	project, err := h.Service.repo.GetProjectByID(r.Context(), id)
+	project, err := h.Service.repo.GetProjectBySlug(r.Context(), slug)
 	if err != nil {
 		response.WriteJSON(w, http.StatusNotFound, "Project not found", err)
 		return
@@ -98,13 +98,20 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	idStr := chi.URLParam(r, "id")
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		response.WriteJSON(w, http.StatusBadRequest, "Invalid project ID", nil)
+	slug := chi.URLParam(r, "slug")
+	if slug == "" {
+		response.WriteJSON(w, http.StatusBadRequest, "Missing project slug", nil)
 		return
 	}
-	req.ID = id
+
+	projectWithMedia, err := h.Service.repo.GetProjectBySlug(r.Context(), slug)
+	fmt.Printf("projectWithMedia: %v", projectWithMedia)
+	if err != nil {
+		response.WriteJSON(w, http.StatusNotFound, "Project not found", nil)
+		return
+	}
+
+	req.ID = projectWithMedia.ID
 
 	var ts pgtype.Timestamptz
 	_ = ts.Scan(time.Now())
@@ -139,13 +146,16 @@ func (h *Handler) AddMedia(w http.ResponseWriter, r *http.Request) {
 		response.WriteJSON(w, http.StatusBadRequest, "Invalid request body", err)
 		return
 	}
-	idStr := chi.URLParam(r, "id")
-	id, err := uuid.Parse(idStr)
+	slug := chi.URLParam(r, "slug")
+	fmt.Printf("slug: %v ", slug)
+
+	projectWithMedia, err := h.Service.repo.GetProjectBySlug(r.Context(), slug)
+	fmt.Printf("projectWithMedia: %v", projectWithMedia)
 	if err != nil {
-		response.WriteJSON(w, http.StatusBadRequest, "Invalid project ID", err)
+		response.WriteJSON(w, http.StatusNotFound, "Project not found", nil)
 		return
 	}
-	req.ProjectID = id
+	req.ProjectID = projectWithMedia.ID
 	if err := h.Service.repo.AddMediaToProject(r.Context(), req); err != nil {
 		response.WriteJSON(w, http.StatusInternalServerError, "Failed to add media", err)
 		return
@@ -159,13 +169,16 @@ func (h *Handler) RemoveMedia(w http.ResponseWriter, r *http.Request) {
 		response.WriteJSON(w, http.StatusBadRequest, "Invalid request body", err)
 		return
 	}
-	idStr := chi.URLParam(r, "id")
-	id, err := uuid.Parse(idStr)
+	slug := chi.URLParam(r, "slug")
+	fmt.Printf("slug: %v ", slug)
+
+	projectWithMedia, err := h.Service.repo.GetProjectBySlug(r.Context(), slug)
+	fmt.Printf("projectWithMedia: %v", projectWithMedia)
 	if err != nil {
-		response.WriteJSON(w, http.StatusBadRequest, "Invalid project ID", err)
+		response.WriteJSON(w, http.StatusNotFound, "Project not found", nil)
 		return
 	}
-	req.ProjectID = id
+	req.ProjectID = projectWithMedia.ID
 	if err := h.Service.repo.RemoveMediaFromProject(r.Context(), req); err != nil {
 		response.WriteJSON(w, http.StatusInternalServerError, "Failed to remove media", err)
 		return

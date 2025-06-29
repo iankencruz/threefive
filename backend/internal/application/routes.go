@@ -90,7 +90,7 @@ func Routes(app *Application) http.Handler {
 				r.Route("/projects", func(r chi.Router) {
 					r.Get("/", app.ProjectHandler.List)
 					r.Post("/", app.ProjectHandler.Create)
-					r.Route("/{id}", func(r chi.Router) {
+					r.Route("/{slug}", func(r chi.Router) {
 						r.Get("/", app.ProjectHandler.Get)
 						r.Put("/", app.ProjectHandler.Update)
 						r.Delete("/", app.ProjectHandler.Delete)
