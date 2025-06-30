@@ -84,18 +84,22 @@ func (q *Queries) RemoveMediaFromProject(ctx context.Context, arg RemoveMediaFro
 }
 
 const updateProjectMediaSortOrder = `-- name: UpdateProjectMediaSortOrder :exec
-UPDATE project_media
-SET sort_order = $1
-WHERE project_id = $2 AND media_id = $3
+WITH sorted(media_id, sort_order) AS (
+  SELECT unnest($2::uuid[]), generate_series(0, cardinality($2) - 1)
+)
+UPDATE project_media pm
+SET sort_order = sorted.sort_order
+FROM sorted
+WHERE pm.project_id = $1
+  AND pm.media_id = sorted.media_id
 `
 
 type UpdateProjectMediaSortOrderParams struct {
-	SortOrder int32     `db:"sort_order" json:"sort_order"`
-	ProjectID uuid.UUID `db:"project_id" json:"project_id"`
-	MediaID   uuid.UUID `db:"media_id" json:"media_id"`
+	ProjectID uuid.UUID   `db:"project_id" json:"project_id"`
+	MediaIds  []uuid.UUID `db:"media_ids" json:"media_ids"`
 }
 
 func (q *Queries) UpdateProjectMediaSortOrder(ctx context.Context, arg UpdateProjectMediaSortOrderParams) error {
-	_, err := q.db.Exec(ctx, updateProjectMediaSortOrder, arg.SortOrder, arg.ProjectID, arg.MediaID)
+	_, err := q.db.Exec(ctx, updateProjectMediaSortOrder, arg.ProjectID, arg.MediaIds)
 	return err
 }

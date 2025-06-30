@@ -97,7 +97,7 @@ func Routes(app *Application) http.Handler {
 
 						r.Post("/media", app.ProjectHandler.AddMedia)
 						r.Delete("/media", app.ProjectHandler.RemoveMedia)
-						r.Post("/media/sort", app.ProjectHandler.UpdateSortOrder)
+						r.Put("/media/sort", app.ProjectHandler.UpdateSortOrder)
 					})
 				})
 

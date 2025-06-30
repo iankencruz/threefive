@@ -170,7 +170,6 @@ func (h *Handler) RemoveMedia(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	slug := chi.URLParam(r, "slug")
-	fmt.Printf("slug: %v ", slug)
 
 	projectWithMedia, err := h.Service.repo.GetProjectBySlug(r.Context(), slug)
 	fmt.Printf("projectWithMedia: %v", projectWithMedia)
@@ -192,14 +191,15 @@ func (h *Handler) UpdateSortOrder(w http.ResponseWriter, r *http.Request) {
 		response.WriteJSON(w, http.StatusBadRequest, "Invalid request body", err)
 		return
 	}
-	idStr := chi.URLParam(r, "id")
-	id, err := uuid.Parse(idStr)
+	slug := chi.URLParam(r, "slug")
+
+	projectWithMedia, err := h.Service.repo.GetProjectBySlug(r.Context(), slug)
+	fmt.Printf("projectWithMedia: %v", projectWithMedia)
 	if err != nil {
-		response.WriteJSON(w, http.StatusBadRequest, "Invalid project ID", err)
+		response.WriteJSON(w, http.StatusNotFound, "Project not found", nil)
 		return
 	}
-
-	req.ProjectID = id
+	req.ProjectID = projectWithMedia.ID
 	if err := h.Service.repo.UpdateProjectMediaSortOrder(r.Context(), req); err != nil {
 		response.WriteJSON(w, http.StatusInternalServerError, "Failed to update sort order", err)
 		return

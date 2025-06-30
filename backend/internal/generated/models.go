@@ -34,7 +34,7 @@ type Project struct {
 	CanonicalUrl    *string            `db:"canonical_url" json:"canonical_url"`
 	CoverMediaID    pgtype.UUID        `db:"cover_media_id" json:"cover_media_id"`
 	IsPublished     bool               `db:"is_published" json:"is_published"`
-	PublishedAt     pgtype.Timestamp   `db:"published_at" json:"published_at"`
+	PublishedAt     pgtype.Timestamptz `db:"published_at" json:"published_at"`
 	CreatedAt       pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt       pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }

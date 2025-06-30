@@ -91,3 +91,20 @@ export async function unlinkMediaFromProject(slug: string, mediaId: string): Pro
 	if (!res.ok) throw new Error('Failed to unlink media from project');
 }
 
+
+
+export async function updateProjectMediaOrder(slug: string, mediaIds: string[]): Promise<void> {
+	const res = await fetch(`/api/v1/admin/projects/${slug}/media/sort`, {
+		method: 'PUT',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ media_ids: mediaIds })
+	});
+	if (!res.ok) {
+		const error = await res.text();
+		throw new Error(`Failed to update media order: ${error}`);
+
+	}
+
+	return await res.json();
+}
+

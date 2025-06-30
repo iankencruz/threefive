@@ -18,14 +18,14 @@ func NewProjectService(repo Repository) *ProjectService {
 
 func (s *ProjectService) Create(ctx context.Context, arg generated.CreateProjectParams) (*generated.Project, error) {
 	if arg.PublishedAt.Valid && !arg.IsPublished {
-		arg.PublishedAt = pgtype.Timestamp{Valid: false}
+		arg.PublishedAt = pgtype.Timestamptz{Valid: false}
 	}
 	return s.repo.CreateProject(ctx, arg)
 }
 
 func (s *ProjectService) Update(ctx context.Context, arg generated.UpdateProjectParams) (*generated.Project, error) {
 	if arg.PublishedAt.Valid && !arg.IsPublished {
-		arg.PublishedAt = pgtype.Timestamp{Valid: false}
+		arg.PublishedAt = pgtype.Timestamptz{Valid: false}
 	}
 
 	var ts pgtype.Timestamptz

@@ -22,14 +22,14 @@ RETURNING id, title, slug, description, meta_description, canonical_url, cover_m
 `
 
 type CreateProjectParams struct {
-	Title           string           `db:"title" json:"title"`
-	Slug            string           `db:"slug" json:"slug"`
-	Description     *string          `db:"description" json:"description"`
-	MetaDescription *string          `db:"meta_description" json:"meta_description"`
-	CanonicalUrl    *string          `db:"canonical_url" json:"canonical_url"`
-	CoverMediaID    pgtype.UUID      `db:"cover_media_id" json:"cover_media_id"`
-	IsPublished     bool             `db:"is_published" json:"is_published"`
-	PublishedAt     pgtype.Timestamp `db:"published_at" json:"published_at"`
+	Title           string             `db:"title" json:"title"`
+	Slug            string             `db:"slug" json:"slug"`
+	Description     *string            `db:"description" json:"description"`
+	MetaDescription *string            `db:"meta_description" json:"meta_description"`
+	CanonicalUrl    *string            `db:"canonical_url" json:"canonical_url"`
+	CoverMediaID    pgtype.UUID        `db:"cover_media_id" json:"cover_media_id"`
+	IsPublished     bool               `db:"is_published" json:"is_published"`
+	PublishedAt     pgtype.Timestamptz `db:"published_at" json:"published_at"`
 }
 
 func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (Project, error) {
@@ -213,7 +213,7 @@ type UpdateProjectParams struct {
 	CanonicalUrl    *string            `db:"canonical_url" json:"canonical_url"`
 	CoverMediaID    pgtype.UUID        `db:"cover_media_id" json:"cover_media_id"`
 	IsPublished     bool               `db:"is_published" json:"is_published"`
-	PublishedAt     pgtype.Timestamp   `db:"published_at" json:"published_at"`
+	PublishedAt     pgtype.Timestamptz `db:"published_at" json:"published_at"`
 	UpdatedAt       pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 	ID              uuid.UUID          `db:"id" json:"id"`
 }

@@ -219,14 +219,29 @@
 				</svg>
 			</button>
 			<div class="flex-1 text-sm font-semibold text-gray-900">Dashboard</div>
-			<a href="#">
-				<span class="sr-only">Your profile</span>
-				<img
-					class="size-8 rounded-full bg-gray-50"
-					src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-					alt="Profile"
-				/>
-			</a>
+			<div class="relative -mx-2 hover:bg-gray-50">
+				<button
+					class="flex w-full items-center gap-3 rounded-lg p-2"
+					onclick={() => (menuOpen = !menuOpen)}
+				>
+					<img
+						class="h-8 w-8 rounded-full"
+						src={`https://ui-avatars.com/api/?name=${auth.user?.first_name}+${auth.user?.last_name}`}
+						alt="User avatar"
+					/>
+					<span class="truncate text-sm font-medium text-gray-900"
+						>{auth.user?.first_name} {auth.user?.last_name}</span
+					>
+				</button>
+
+				{#if menuOpen}
+					<div
+						class="absolute left-0 z-20 w-full origin-top-left rounded-md bg-white shadow ring-1 ring-black/5"
+					>
+						{@render UserItems(userMenuItems)}
+					</div>
+				{/if}
+			</div>
 		</div>
 		<main
 			class={`min-h-screen  overflow-x-hidden px-4 py-10 sm:px-4  ${collapsed ? 'lg:ml-20' : 'lg:ml-72'}`}

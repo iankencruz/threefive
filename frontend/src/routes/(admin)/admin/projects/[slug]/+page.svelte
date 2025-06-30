@@ -4,7 +4,8 @@
 		getProjectBySlug,
 		updateProjectBySlug,
 		linkMediaToProject,
-		unlinkMediaFromProject
+		unlinkMediaFromProject,
+		updateProjectMediaOrder
 	} from '$src/lib/api/projects';
 	import LinkMediaModal from '$lib/components/Media/LinkMediaModal.svelte';
 	import ProjectMediaGrid from '$src/lib/components/Media/ProjectMediaGrid.svelte';
@@ -165,9 +166,23 @@
 			}
 			project = await getProjectBySlug(project.slug);
 			linkedMediaIds = project?.media?.map((m) => m.id) ?? [];
+			saveChanges();
 		} catch (err) {
 			console.error('Unlinking failed', err);
 			toast.error('Failed to unlink media');
+		}
+	}
+
+	async function handleSortMedia(updated: any[]) {
+		if (!project) return;
+
+		try {
+			const ids = updated.map((m) => m.id);
+			await updateProjectMediaOrder(project.slug, ids);
+			project = { ...project, media: updated };
+		} catch (err) {
+			console.error('Sorting failed:', err);
+			toast.error('Failed to update media order');
 		}
 	}
 </script>
@@ -236,11 +251,11 @@
 				<div class="grid grid-cols-2 justify-between space-y-2 text-sm text-gray-400">
 					<div>
 						<h2 id="applicant-information-title" class="text-lg font-medium text-gray-900">
-							{project.title}
+							Title: {project.title}
 						</h2>
-						<p class="text-sm text-gray-500">Slug: {project.slug}</p>
+						<p class="mt-2 text-sm text-gray-500">Slug: {project.slug}</p>
 					</div>
-					<div class="justify-self-end text-right">
+					<div class="justify-self-end text-justify">
 						<p>Created: {formatDate(project.created_at, 'relative')}</p>
 						<p>Last Updated: {formatDate(project.updated_at, 'relative')}</p>
 					</div>
@@ -286,6 +301,7 @@
 				media={project.media}
 				onremove={handleUnlinkMedia}
 				onlink={handleLinkClick}
+				onsort={handleSortMedia}
 			/>
 			<!-- Project Media Modal -->
 			<LinkMediaModal
