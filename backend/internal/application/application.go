@@ -6,11 +6,13 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/iankencruz/threefive/internal/auth"
 	"github.com/iankencruz/threefive/internal/core/s3"
 	"github.com/iankencruz/threefive/internal/core/sessions"
 	"github.com/iankencruz/threefive/internal/generated"
 	"github.com/iankencruz/threefive/internal/media"
+	"github.com/iankencruz/threefive/internal/pages"
 	project "github.com/iankencruz/threefive/internal/projects"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -23,6 +25,7 @@ type Application struct {
 	AuthHandler    *auth.Handler
 	MediaHandler   *media.Handler
 	ProjectHandler *project.Handler
+	PageHandler    *pages.Handler
 }
 
 func New(
@@ -52,6 +55,7 @@ func New(
 	authHandler := auth.NewHandler(queries, sm, logger)
 	mediaHandler := media.NewHandler(queries, logger, uploader)
 	projectHandler := project.NewHandler(queries, logger)
+	pageHandler := *pages.NewHandler(queries, logger)
 
 	return &Application{
 		Config:         cfg,
@@ -61,17 +65,18 @@ func New(
 		AuthHandler:    authHandler,
 		MediaHandler:   mediaHandler,
 		ProjectHandler: projectHandler,
+		PageHandler:    &pageHandler,
 	}
 }
 
-func (app *Application) GetUserID(r *http.Request) (int32, error) {
+func (app *Application) GetUserID(r *http.Request) (uuid.UUID, error) {
 	id, err := app.SessionManager.GetUserID(r)
-	if err != nil || id == 0 {
-		return 0, errors.New("no session user")
+	if err != nil || id == uuid.Nil {
+		return uuid.Nil, errors.New("no session user")
 	}
 	return id, nil
 }
 
-func (app *Application) LoadUser(ctx context.Context, userID int) (any, error) {
-	return app.AuthHandler.Service.GetUserByID(ctx, int32(userID))
+func (app *Application) LoadUser(ctx context.Context, userID uuid.UUID) (any, error) {
+	return app.AuthHandler.Service.GetUserByID(ctx, userID)
 }

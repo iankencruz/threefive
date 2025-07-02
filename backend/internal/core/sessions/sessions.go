@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/iankencruz/threefive/internal/core/contextkeys"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -43,7 +44,7 @@ const (
 	sessionLifespan   = 5 * time.Hour // 5 Hours
 )
 
-func (m *Manager) SetUserID(w http.ResponseWriter, r *http.Request, userID int32) error {
+func (m *Manager) SetUserID(w http.ResponseWriter, r *http.Request, userID uuid.UUID) error {
 	sessionToken := generateSessionToken()
 	expiry := time.Now().Add(sessionLifespan)
 	userAgent := r.UserAgent()
@@ -80,13 +81,13 @@ func (m *Manager) SetUserID(w http.ResponseWriter, r *http.Request, userID int32
 	return nil
 }
 
-func (m *Manager) GetUserID(r *http.Request) (int32, error) {
+func (m *Manager) GetUserID(r *http.Request) (uuid.UUID, error) {
 	cookie, err := r.Cookie(sessionCookieName)
 	if err != nil {
-		return 0, err
+		return uuid.Nil, err
 	}
 
-	var userID int32
+	var userID uuid.UUID
 	var expiresAt time.Time
 
 	args := pgx.NamedArgs{
@@ -101,9 +102,9 @@ func (m *Manager) GetUserID(r *http.Request) (int32, error) {
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return 0, nil
+			return uuid.Nil, nil
 		}
-		return 0, fmt.Errorf("query session failed: %w", err)
+		return uuid.Nil, fmt.Errorf("query session failed: %w", err)
 	}
 
 	// Refresh session if nearing expiry

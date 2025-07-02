@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/google/uuid"
 	"github.com/iankencruz/threefive/internal/generated"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -11,7 +12,7 @@ import (
 type Service interface {
 	Register(ctx context.Context, firstName, lastName, email, password string) (*generated.User, error)
 	Login(ctx context.Context, email, password string) (*generated.User, error)
-	GetUserByID(ctx context.Context, id int32) (*generated.User, error)
+	GetUserByID(ctx context.Context, id uuid.UUID) (*generated.User, error)
 }
 
 type RegisterParams struct {
@@ -58,7 +59,7 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (*gener
 	return user, nil
 }
 
-func (s *AuthService) GetUserByID(ctx context.Context, id int32) (*generated.User, error) {
+func (s *AuthService) GetUserByID(ctx context.Context, id uuid.UUID) (*generated.User, error) {
 	return s.Repo.GetUserByID(ctx, id)
 }
 

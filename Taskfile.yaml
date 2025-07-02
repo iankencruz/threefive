@@ -82,18 +82,27 @@ tasks:
 
   db-up:
     desc: Apply all up migrations
+    dir: ./backend
     cmds:
-      - goose -dir ./backend/db/migrations/ up
+      - goose up
 
   db-down:
     desc: Roll back the last migration
+    dir: ./backend
     cmds:
-      - goose -dir ./backend/db/migrations/ down
+      - goose down
+
+  db-reset:
+    desc: Roll back everything
+    dir: ./backend
+    cmds:
+      - goose reset
 
   db-status:
     desc: Show current migration status
+    dir: ./backend
     cmds:
-      - goose -dir ./backend/db/migrations/ status
+      - goose status
 
   # 🧬 SQLC code generation
   sqlc:

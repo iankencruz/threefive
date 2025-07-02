@@ -6,6 +6,7 @@ package generated
 
 import (
 	"github.com/google/uuid"
+	blocks "github.com/iankencruz/threefive/internal/core/blocks"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -23,6 +24,21 @@ type Media struct {
 	CreatedAt    pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt    pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 	MediumUrl    *string            `db:"medium_url" json:"medium_url"`
+}
+
+type Page struct {
+	ID             uuid.UUID          `db:"id" json:"id"`
+	Slug           string             `db:"slug" json:"slug"`
+	Title          string             `db:"title" json:"title"`
+	BannerImageID  pgtype.UUID        `db:"banner_image_id" json:"banner_image_id"`
+	SeoTitle       *string            `db:"seo_title" json:"seo_title"`
+	SeoDescription *string            `db:"seo_description" json:"seo_description"`
+	SeoCanonical   *string            `db:"seo_canonical" json:"seo_canonical"`
+	Content        []blocks.Block     `db:"content" json:"content"`
+	IsDraft        *bool              `db:"is_draft" json:"is_draft"`
+	IsPublished    *bool              `db:"is_published" json:"is_published"`
+	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
 type Project struct {
@@ -47,7 +63,7 @@ type ProjectMedium struct {
 
 type Session struct {
 	Token     string             `db:"token" json:"token"`
-	UserID    int32              `db:"user_id" json:"user_id"`
+	UserID    uuid.UUID          `db:"user_id" json:"user_id"`
 	UserAgent *string            `db:"user_agent" json:"user_agent"`
 	ExpiresAt pgtype.Timestamptz `db:"expires_at" json:"expires_at"`
 	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
@@ -61,7 +77,7 @@ type SessionData struct {
 }
 
 type User struct {
-	ID           int32              `db:"id" json:"id"`
+	ID           uuid.UUID          `db:"id" json:"id"`
 	FirstName    string             `db:"first_name" json:"first_name"`
 	LastName     string             `db:"last_name" json:"last_name"`
 	Email        string             `db:"email" json:"email"`

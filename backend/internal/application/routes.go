@@ -42,9 +42,13 @@ func Routes(app *Application) http.Handler {
 				r.Get("/home", func(w http.ResponseWriter, r *http.Request) {
 					w.Write([]byte("Home Page"))
 				})
-				r.Get("/about", func(w http.ResponseWriter, r *http.Request) {
-					w.Write([]byte("About Page"))
-				})
+
+				// r.Get("/about", func(w http.ResponseWriter, r *http.Request) {
+				// 	w.Write([]byte("About Page"))
+				// })
+
+				// Generated Pages (About, Contact, etc.)
+				r.Get("/api/v1/pages/{slug}", app.PageHandler.GetPublic)
 
 				r.Get("/projects", app.MediaHandler.ListMediaHandler)
 
@@ -98,6 +102,18 @@ func Routes(app *Application) http.Handler {
 						r.Post("/media", app.ProjectHandler.AddMedia)
 						r.Delete("/media", app.ProjectHandler.RemoveMedia)
 						r.Put("/media/sort", app.ProjectHandler.UpdateSortOrder)
+					})
+				})
+
+				// === /pages ===
+				r.Route("/pages", func(r chi.Router) {
+					r.Get("/", app.PageHandler.List)
+					r.Post("/", app.PageHandler.Create)
+					r.Route("/{slug}", func(r chi.Router) {
+						r.Get("/", app.PageHandler.Get)
+						r.Put("/", app.PageHandler.Update)
+						r.Delete("/", app.PageHandler.Delete)
+
 					})
 				})
 

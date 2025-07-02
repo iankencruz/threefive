@@ -3,12 +3,12 @@ package auth
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
-	"strconv"
 	"strings"
 
-	"github.com/iankencruz/threefive/internal/core/contextkeys"
+	"github.com/google/uuid"
 	"github.com/iankencruz/threefive/internal/core/errors"
 	"github.com/iankencruz/threefive/internal/core/response"
 	"github.com/iankencruz/threefive/internal/core/sessions"
@@ -114,13 +114,14 @@ func (h *Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.Service.Register(r.Context(), input.FirstName, input.LastName, input.Email, input.Password)
 	if err != nil {
-		v.Errors["email"] = "Registration failed"
+		v.Errors["email"] = fmt.Sprintf("Email Registration failed: %v", err)
 		response.WriteJSON(w, http.StatusBadRequest, "Registration failed", v.Errors)
 		return
 	}
 
+	fmt.Printf("User.ID: %v", user.ID)
 	if err := h.SessionManager.SetUserID(w, r, user.ID); err != nil {
-		errResp := errors.Internal("Session error")
+		errResp := errors.Internal(fmt.Sprintf("Session error: %v", err))
 		response.WriteJSON(w, errResp.Code, errResp.Message, nil)
 		return
 	}
@@ -148,22 +149,22 @@ func (h *Handler) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (h *Handler) GetUserID(r *http.Request) (int32, error) {
+func (h *Handler) GetUserID(r *http.Request) (uuid.UUID, error) {
 	return h.SessionManager.GetUserID(r)
 }
 
-func (h *Handler) LoadUser(ctx context.Context, userID int32) (any, error) {
+func (h *Handler) LoadUser(ctx context.Context, userID uuid.UUID) (any, error) {
 	return h.Service.GetUserByID(ctx, userID)
 }
 
 func (h *Handler) GetAuthenticatedUser(w http.ResponseWriter, r *http.Request) {
 	userID, err := h.SessionManager.GetUserID(r)
-	if err != nil || userID == 0 {
+	if err != nil || userID == uuid.Nil {
 		_ = response.WriteJSON(w, http.StatusUnauthorized, "unauthorised", nil)
 		return
 	}
 
-	user, err := h.Service.GetUserByID(r.Context(), int32(userID))
+	user, err := h.Service.GetUserByID(r.Context(), userID)
 	if err != nil {
 		_ = response.WriteJSON(w, http.StatusInternalServerError, "could not retrieve user", nil)
 		return
@@ -172,34 +173,34 @@ func (h *Handler) GetAuthenticatedUser(w http.ResponseWriter, r *http.Request) {
 	_ = response.WriteJSON(w, http.StatusOK, "", user)
 }
 
-func (h *Handler) MeHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	sessionID := ctx.Value(contextkeys.SessionID).(string)
-	if sessionID == "" {
-		http.Error(w, "Unauthorised", http.StatusUnauthorized)
-		return
-	}
-
-	userIDStr, err := h.SessionManager.GetString(ctx, sessionID, "userID")
-	if err != nil || userIDStr == "" {
-		http.Error(w, "Unauthorised", http.StatusUnauthorized)
-		return
-	}
-
-	userID, err := strconv.Atoi(userIDStr)
-	if err != nil {
-		http.Error(w, "Invalid user ID", http.StatusInternalServerError)
-		return
-	}
-
-	user, err := h.Service.GetUserByID(ctx, int32(userID))
-	if err != nil {
-		http.Error(w, "User not found", http.StatusNotFound)
-		return
-	}
-
-	response := map[string]any{"user": user}
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(response)
-}
+// func (h *Handler) MeHandler(w http.ResponseWriter, r *http.Request) {
+// 	ctx := r.Context()
+//
+// 	sessionID := ctx.Value(contextkeys.SessionID).(string)
+// 	if sessionID == "" {
+// 		http.Error(w, "Unauthorised", http.StatusUnauthorized)
+// 		return
+// 	}
+//
+// 	userIDStr, err := h.SessionManager.GetString(ctx, sessionID, "userID")
+// 	if err != nil || userIDStr == "" {
+// 		http.Error(w, "Unauthorised", http.StatusUnauthorized)
+// 		return
+// 	}
+//
+// 	userID, err := strconv.Atoi(userIDStr)
+// 	if err != nil {
+// 		http.Error(w, "Invalid user ID", http.StatusInternalServerError)
+// 		return
+// 	}
+//
+// 	user, err := h.Service.GetUserByID(ctx, userID)
+// 	if err != nil {
+// 		http.Error(w, "User not found", http.StatusNotFound)
+// 		return
+// 	}
+//
+// 	response := map[string]any{"user": user}
+// 	w.Header().Set("Content-Type", "application/json")
+// 	_ = json.NewEncoder(w).Encode(response)
+// }

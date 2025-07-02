@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/iankencruz/threefive/internal/generated"
 )
 
@@ -15,8 +16,8 @@ const userContextKey = contextKey("user")
 // AuthService defines what the middleware expects from the auth handler.
 
 type AuthService interface {
-	GetUserID(r *http.Request) (int32, error)
-	LoadUser(ctx context.Context, userID int32) (any, error)
+	GetUserID(r *http.Request) (uuid.UUID, error)
+	LoadUser(ctx context.Context, userID uuid.UUID) (any, error)
 }
 
 // SessionManager defines just the part of your session manager needed for redirection.
@@ -30,12 +31,12 @@ func RequireAuth(auth AuthService) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			userID, err := auth.GetUserID(r)
-			if err != nil || userID == 0 {
+			if err != nil || userID == uuid.Nil {
 				http.Redirect(w, r, "/login", http.StatusSeeOther)
 				return
 			}
 
-			user, err := auth.LoadUser(r.Context(), int32(userID))
+			user, err := auth.LoadUser(r.Context(), userID)
 			if err != nil || user == nil {
 				http.Redirect(w, r, "/login", http.StatusSeeOther)
 				return

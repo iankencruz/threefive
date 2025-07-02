@@ -19,6 +19,12 @@ sql:
             go_type:
               import: "github.com/google/uuid"
               type: "UUID"
+          - column: "pages.content"
+            go_type:
+              import: "github.com/iankencruz/threefive/internal/core/blocks"
+              package: "blocks"
+              type: "Block"
+              slice: true
 
 overrides:
   go:
