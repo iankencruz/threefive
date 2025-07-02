@@ -37,6 +37,13 @@
 		toast.success(`Moved "${moved.title}" to position ${toIndex + 1}`);
 		onsort?.(reordered);
 	}
+
+	function handleRemoveClick(e: MouseEvent, id: string) {
+		e.stopPropagation();
+		e.preventDefault();
+		onremove?.(id);
+		console.log('remove clicked', id);
+	}
 </script>
 
 <div class="mt-10 space-y-4">
@@ -64,7 +71,8 @@
 					class="group relative block rounded-lg bg-gray-100 ring-1 ring-gray-200"
 					animate:flip={{ duration: 300 }}
 				>
-					<div use:draggable={{ container: index.toString(), dragData: item }} class="relative">
+					<!-- ✅ Move draggable here, so it's only the image that's draggable -->
+					<div use:draggable={{ container: index.toString(), dragData: item }} class="cursor-grab">
 						<img
 							src={item.thumbnail_url || item.url}
 							alt={item.alt_text || item.title || 'Media'}
@@ -79,17 +87,18 @@
 								{item.alt_text || 'No alt text'}
 							</p>
 						</div>
-
-						{#if onremove}
-							<button
-								onclick={() => onremove?.(item.id)}
-								class="absolute top-1 right-1 inline-flex cursor-pointer items-center rounded-full bg-white p-1 text-gray-500 shadow hover:bg-gray-100 hover:text-red-600"
-							>
-								<Unlink class="size-4" />
-								<span class="sr-only">Remove</span>
-							</button>
-						{/if}
 					</div>
+
+					<!-- ✅ Properly working remove button -->
+					{#if onremove}
+						<button
+							onclick={(e) => handleRemoveClick(e, item.id)}
+							class="absolute top-1 right-1 inline-flex cursor-pointer items-center rounded-full bg-white p-1 text-gray-500 shadow hover:bg-gray-100 hover:text-red-600"
+						>
+							<Unlink class="size-4" />
+							<span class="sr-only">Remove</span>
+						</button>
+					{/if}
 				</li>
 			{/each}
 		</ul>

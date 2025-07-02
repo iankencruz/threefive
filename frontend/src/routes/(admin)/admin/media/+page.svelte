@@ -5,23 +5,49 @@
 	import MediaGrid from '$src/lib/components/Media/MediaGrid.svelte';
 	import MediaList from '$src/lib/components/Media/MediaList.svelte';
 	import { LayoutGrid, LayoutList } from '@lucide/svelte';
+	import Pagination from '$src/lib/components/Navigation/Pagination.svelte';
+	import { toast } from 'svelte-sonner';
 
 	let view = $state('grid'); // 'list' or 'grid'
-	let media = $state([]);
-	let page = $state(1);
-	let totalPages = $state(1);
 	let modalOpen = $state(false);
 
-	onMount(async () => {
-		await loadMedia();
+	let page = $state(1);
+	let limit = $state(10);
+
+	let media = $state([]);
+	let totalPages = $state(1);
+	let totalCount = $state(1);
+
+	// onMount(async () => {
+	// 	await loadMedia();
+	// });
+
+	async function loadMedia(p: number) {
+		try {
+			const result = await fetchMedia(p, limit);
+			media = result.items ?? [];
+			totalPages = result.total_pages ?? 1;
+			totalCount = result.total_count ?? 0;
+		} catch (err) {
+			console.error(err);
+			toast.error('Failed to load media');
+		}
+	}
+
+	// media = res.items ?? [];
+	// totalPages = res.total_pages ?? 1;
+
+	$effect(() => {
+		loadMedia(page);
 	});
 
-	async function loadMedia() {
-		const res = await fetchMedia(page);
-		media = res.items ?? [];
-		totalPages = res.total_pages ?? 1;
-		console.log('res total pages', totalPages);
-		console.log($state.snapshot(media));
+	function handlePageChange(newPage: number) {
+		console.log('Changing to page', newPage);
+		page = newPage;
+	}
+
+	function refreshCurrentPage() {
+		loadMedia(page); // ✅ preserve current page
 	}
 </script>
 
@@ -30,7 +56,7 @@
 	<meta name="description" content="Media Admin Page" />
 </svelte:head>
 
-<section>
+<section class="relative">
 	<div class="md:flex md:items-center md:justify-between">
 		<div class="min-w-0 flex-1">
 			<h2 class="text-2xl/7 font-bold text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
@@ -71,9 +97,9 @@
 		{#if media.length > 0}
 			<div class="mt-12">
 				{#if view === 'grid'}
-					<MediaGrid {media} refresh={loadMedia} />
+					<MediaGrid {media} refresh={refreshCurrentPage} />
 				{:else}
-					<MediaList {media} refresh={loadMedia} />
+					<MediaList {media} refresh={refreshCurrentPage} />
 				{/if}
 			</div>
 		{:else}
@@ -103,10 +129,20 @@
 		{/if}
 	</div>
 
+	<div class="absolute w-full">
+		<Pagination
+			totalMedia={totalCount}
+			pageSize={limit}
+			{page}
+			{totalPages}
+			onchange={handlePageChange}
+		/>
+	</div>
+
 	<UploadModal
 		open={modalOpen}
 		onclose={() => (modalOpen = false)}
-		onuploaded={() => loadMedia()}
+		onuploaded={() => loadMedia(page)}
 		maxWidth="max-w-2xl"
 	/>
 </section>

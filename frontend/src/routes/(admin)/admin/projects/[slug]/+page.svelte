@@ -150,6 +150,7 @@
 	}
 
 	async function handleUnlinkMedia(mediaId: string) {
+		console.log('Unlinking media with ID:', mediaId);
 		if (!project) return;
 
 		try {
