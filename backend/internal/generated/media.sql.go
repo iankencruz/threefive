@@ -148,7 +148,7 @@ func (q *Queries) ListMedia(ctx context.Context) ([]Media, error) {
 
 const listMediaPaginated = `-- name: ListMediaPaginated :many
 SELECT id, url, thumbnail_url, type, is_public, title, alt_text, mime_type, file_size, sort_order, created_at, updated_at, medium_url FROM media
-ORDER BY sort_order ASC
+ORDER BY title ASC
 LIMIT $1 OFFSET $2
 `
 
@@ -194,7 +194,7 @@ func (q *Queries) ListMediaPaginated(ctx context.Context, arg ListMediaPaginated
 const listPublicMedia = `-- name: ListPublicMedia :many
 SELECT id, url, thumbnail_url, type, is_public, title, alt_text, mime_type, file_size, sort_order, created_at, updated_at, medium_url FROM media
 WHERE is_public = true
-ORDER BY sort_order ASC
+ORDER BY title ASC
 `
 
 func (q *Queries) ListPublicMedia(ctx context.Context) ([]Media, error) {
