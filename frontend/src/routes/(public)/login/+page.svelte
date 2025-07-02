@@ -221,9 +221,7 @@
 
 		<p class="mt-10 text-center text-sm/6 text-gray-500">
 			Not a member?
-			<a href="/admin/register" class="font-semibold text-indigo-600 hover:text-indigo-500"
-				>Register</a
-			>
+			<a href="/register" class="font-semibold text-indigo-600 hover:text-indigo-500">Register</a>
 		</p>
 	</div>
 </div>
