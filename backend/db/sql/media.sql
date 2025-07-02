@@ -23,12 +23,12 @@ DELETE FROM media WHERE id = @id;
 -- name: ListPublicMedia :many
 SELECT * FROM media
 WHERE is_public = true
-ORDER BY sort_order ASC;
+ORDER BY title ASC;
 
 
 -- name: ListMediaPaginated :many
 SELECT * FROM media
-ORDER BY sort_order ASC
+ORDER BY title ASC
 LIMIT $1 OFFSET $2;
 
 
