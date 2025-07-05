@@ -62,7 +62,6 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
-	response.WriteJSON(w, http.StatusAccepted, fmt.Sprintf("TEST ROUTE: Slug: %v", slug), slug)
 
 	if slug == "" {
 		response.WriteJSON(w, http.StatusBadRequest, "Missing page slug", nil)
@@ -70,6 +69,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	page, err := h.Service.Repo.GetPageBySlug(r.Context(), slug)
+	fmt.Println("Page:", page)
 	if err != nil {
 		response.WriteJSON(w, http.StatusNotFound, "No valid Page found", err)
 		return
@@ -80,9 +80,13 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	var req generated.UpdatePageParams
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		fmt.Printf("Req err: %v\n", err)
+
 		response.WriteJSON(w, http.StatusBadRequest, "❌ Invalid request body", err)
 		return
 	}
+
+	fmt.Printf("Req: %v\n", req)
 
 	slug := chi.URLParam(r, "slug")
 	if slug == "" {
@@ -104,29 +108,4 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response.WriteJSON(w, http.StatusOK, "✅ Update Page success", updated)
-}
-
-func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
-	slug := chi.URLParam(r, "slug")
-	page, err := h.Service.Repo.GetPageBySlug(r.Context(), slug)
-	if err != nil {
-		response.WriteJSON(w, http.StatusNotFound, "Page not found", err)
-		return
-	}
-
-	if err := h.Service.Repo.DeletePage(r.Context(), page.ID); err != nil {
-		response.WriteJSON(w, http.StatusInternalServerError, "❌ Failed to delete page", err)
-		return
-	}
-	response.WriteJSON(w, http.StatusNoContent, "", nil)
-}
-
-func (h *Handler) GetPublic(w http.ResponseWriter, r *http.Request) {
-	slug := chi.URLParam(r, "slug")
-	page, err := h.Service.Repo.GetPageBySlug(r.Context(), slug)
-	if err != nil || page.IsPublished == nil || !*page.IsPublished {
-		response.WriteJSON(w, http.StatusNotFound, "Page not found or not published", nil)
-		return
-	}
-	response.WriteJSON(w, http.StatusOK, "✅ Public Page", page)
 }

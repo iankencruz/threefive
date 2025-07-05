@@ -14,7 +14,11 @@ RETURNING *;
 SELECT * FROM pages WHERE id = @id;
 
 -- name: GetPageBySlug :one
+SELECT * FROM pages WHERE slug = @slug;
+
+-- name: GetPublishedPageBySlug :one
 SELECT * FROM pages WHERE slug = @slug AND is_published = true;
+
 
 -- name: ListPages :many
 SELECT * FROM pages ORDER BY updated_at DESC;

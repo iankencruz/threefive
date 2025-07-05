@@ -101,11 +101,35 @@ func (q *Queries) GetPageByID(ctx context.Context, id uuid.UUID) (Page, error) {
 }
 
 const getPageBySlug = `-- name: GetPageBySlug :one
-SELECT id, slug, title, banner_image_id, seo_title, seo_description, seo_canonical, content, is_draft, is_published, created_at, updated_at FROM pages WHERE slug = $1 AND is_published = true
+SELECT id, slug, title, banner_image_id, seo_title, seo_description, seo_canonical, content, is_draft, is_published, created_at, updated_at FROM pages WHERE slug = $1
 `
 
 func (q *Queries) GetPageBySlug(ctx context.Context, slug string) (Page, error) {
 	row := q.db.QueryRow(ctx, getPageBySlug, slug)
+	var i Page
+	err := row.Scan(
+		&i.ID,
+		&i.Slug,
+		&i.Title,
+		&i.BannerImageID,
+		&i.SeoTitle,
+		&i.SeoDescription,
+		&i.SeoCanonical,
+		&i.Content,
+		&i.IsDraft,
+		&i.IsPublished,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getPublishedPageBySlug = `-- name: GetPublishedPageBySlug :one
+SELECT id, slug, title, banner_image_id, seo_title, seo_description, seo_canonical, content, is_draft, is_published, created_at, updated_at FROM pages WHERE slug = $1 AND is_published = true
+`
+
+func (q *Queries) GetPublishedPageBySlug(ctx context.Context, slug string) (Page, error) {
+	row := q.db.QueryRow(ctx, getPublishedPageBySlug, slug)
 	var i Page
 	err := row.Scan(
 		&i.ID,
