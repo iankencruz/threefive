@@ -1,10 +1,19 @@
 <!-- MediaGrid.svelte -->
 <script lang="ts">
+	import tippy from 'tippy.js';
+
 	import MediaItem from './MediaItem.svelte';
 	import { Ban, Pencil, Save, Trash2 } from '@lucide/svelte';
+	import type { Attachment } from 'svelte/attachments';
 
 	let { media, refresh } = $props();
-	console.log('Media Grid View');
+
+	function tooltip(content: string): Attachment {
+		return (element) => {
+			const tooltip = tippy(element, { content });
+			return tooltip.destroy;
+		};
+	}
 </script>
 
 <div
@@ -75,6 +84,7 @@
 					<div class="absolute -top-4 right-0 flex justify-center">
 						<span class="group isolate inline-flex -space-x-px rounded-md shadow-xs">
 							<button
+								{@attach tooltip(editMode ? 'Cancel' : 'Edit')}
 								type="button"
 								onclick={toggleEdit}
 								class="relative inline-flex items-center rounded-l-md bg-white px-3 py-2 text-gray-400 ring-1 ring-gray-300 ring-inset hover:cursor-pointer hover:bg-gray-50 hover:text-indigo-600 focus:z-10"
@@ -88,6 +98,7 @@
 							</button>
 							{#if editMode}
 								<button
+									{@attach tooltip('Save')}
 									type="button"
 									onclick={save}
 									class="relative inline-flex items-center bg-white px-3 py-2 text-gray-400 ring-1 ring-gray-300 ring-inset hover:cursor-pointer hover:bg-gray-50 hover:text-indigo-600 focus:z-10"
@@ -97,6 +108,7 @@
 								</button>
 							{/if}
 							<button
+								{@attach tooltip('Delete')}
 								type="button"
 								onclick={remove}
 								class="relative inline-flex items-center rounded-r-md bg-white px-3 py-2 text-gray-400 ring-1 ring-gray-300 ring-inset hover:cursor-pointer hover:bg-gray-50 hover:text-red-600 focus:z-10"

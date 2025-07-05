@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import {
 		getProjectBySlug,
 		updateProjectBySlug,
@@ -75,7 +75,7 @@
 	$effect(() => {
 		(async () => {
 			loading = true;
-			const slug = $page.params.slug;
+			const slug = page.params.slug;
 
 			try {
 				project = await getProjectBySlug(slug);
@@ -112,7 +112,7 @@
 	async function saveChanges() {
 		saving = true;
 		try {
-			const updated = await updateProjectBySlug($page.params.slug, {
+			const updated = await updateProjectBySlug(page.params.slug, {
 				title,
 				slug,
 				description,
@@ -123,7 +123,7 @@
 
 			// 🧠 navigate to the new slug if it changed
 
-			if (updated.slug !== $page.params.slug) {
+			if (updated.slug !== page.params.slug) {
 				await goto(`/admin/projects/${updated.slug}`);
 			} else {
 				project = await getProjectBySlug(updated.slug); // ✅ re-fetch full project with media

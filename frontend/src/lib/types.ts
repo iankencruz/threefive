@@ -1,6 +1,7 @@
+import type { UUID } from 'crypto';
 
 export type User = {
-	id: number;
+	id: UUID;
 	first_name: string;
 	last_name: string;
 	email: string;
@@ -9,7 +10,7 @@ export type User = {
 
 
 export type Project = {
-	id: string;
+	id: UUID;
 	title: string;
 	slug: string;
 	description: string | null;
@@ -27,7 +28,7 @@ export type Project = {
 
 
 export type MediaItem = {
-	id: string;
+	id: UUID;
 	title: string;
 	url: string;
 	thumbnail_url?: string;
@@ -36,3 +37,23 @@ export type MediaItem = {
 	file_size?: string;
 };
 
+
+export interface Block {
+	type: string;
+	props: Record<string, any>;
+}
+
+export interface Page {
+	id: UUID;
+	slug: string;
+	title: string;
+	banner_image_id: UUID | null;
+	seo_title?: string;
+	seo_description?: string;
+	seo_canonical?: string;
+	content: Block[];
+	is_draft?: boolean;
+	is_published?: boolean;
+	created_at: string;
+	updated_at: string;
+}
