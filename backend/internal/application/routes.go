@@ -82,6 +82,7 @@ func Routes(app *Application) http.Handler {
 					r.Get("/", app.MediaHandler.ListMediaHandler)
 					r.Post("/", app.MediaHandler.UploadMediaHandler)
 					r.Route("/{id}", func(r chi.Router) {
+						r.Get("/", app.MediaHandler.Get)
 						r.Put("/", app.MediaHandler.UpdateMediaHandler)
 						r.Delete("/", app.MediaHandler.DeleteMediaHandler)
 					})

@@ -180,3 +180,14 @@ func (h *Handler) UpdateMediaHandler(w http.ResponseWriter, r *http.Request) {
 
 	response.WriteJSON(w, http.StatusOK, "Alt text updated", nil)
 }
+
+func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	mediaID, err := uuid.Parse(idStr)
+	media, err := h.Repo.GetByID(r.Context(), mediaID)
+	if err != nil {
+		response.WriteJSON(w, http.StatusNotFound, "Media not found", nil)
+		return
+	}
+	response.WriteJSON(w, http.StatusOK, "Media fetched", media)
+}

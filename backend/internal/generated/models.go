@@ -30,7 +30,7 @@ type Page struct {
 	ID             uuid.UUID          `db:"id" json:"id"`
 	Slug           string             `db:"slug" json:"slug"`
 	Title          string             `db:"title" json:"title"`
-	BannerImageID  pgtype.UUID        `db:"banner_image_id" json:"banner_image_id"`
+	CoverImageID   pgtype.UUID        `db:"cover_image_id" json:"cover_image_id"`
 	SeoTitle       *string            `db:"seo_title" json:"seo_title"`
 	SeoDescription *string            `db:"seo_description" json:"seo_description"`
 	SeoCanonical   *string            `db:"seo_canonical" json:"seo_canonical"`

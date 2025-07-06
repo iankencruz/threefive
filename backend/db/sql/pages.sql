@@ -1,11 +1,11 @@
 
 -- name: CreatePage :one
 INSERT INTO pages (
-  slug, title, banner_image_id, seo_title, seo_description, seo_canonical,
+  slug, title, cover_image_id, seo_title, seo_description, seo_canonical,
   content, is_draft, is_published
 )
 VALUES (
-  @slug, @title, @banner_image_id, @seo_title, @seo_description, @seo_canonical,
+  @slug, @title, @cover_image_id, @seo_title, @seo_description, @seo_canonical,
   @content, @is_draft, @is_published
 )
 RETURNING *;
@@ -27,7 +27,7 @@ SELECT * FROM pages ORDER BY updated_at DESC;
 UPDATE pages
 SET title = @title,
     slug = @slug,
-    banner_image_id = @banner_image_id,
+    cover_image_id = @cover_image_id,
     seo_title = @seo_title,
     seo_description = @seo_description,
     seo_canonical = @seo_canonical,

@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS pages (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   slug TEXT UNIQUE NOT NULL,
   title TEXT NOT NULL,
-  banner_image_id UUID REFERENCES media(id),
+  cover_image_id UUID REFERENCES media(id),
   seo_title TEXT,
   seo_description TEXT,
   seo_canonical TEXT,
