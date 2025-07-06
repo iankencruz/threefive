@@ -1,3 +1,4 @@
+import type { MediaItem } from "../types";
 
 
 export async function fetchMedia(page = 1, limit = 20) {
@@ -31,8 +32,15 @@ export async function deleteMedia(id: string) {
 }
 
 
+export async function getMediaById(id: string): Promise<MediaItem> {
+	const res = await fetch(`/api/v1/admin/media/${id}`);
+	if (!res.ok) throw new Error('Failed to fetch media');
+	const json = await res.json();
+	return json.data
+}
 
-// src/lib/api/media.ts
+
+
 
 export async function uploadMedia(
 	file: File,
@@ -70,3 +78,20 @@ export async function uploadMedia(
 		xhr.send(formData);
 	});
 }
+
+
+export async function uploadMediaAndLinkToContext(file: File, context: { type: 'project' | 'block'; id: string }): Promise<MediaItem> {
+	const formData = new FormData();
+	formData.append('file', file);
+
+	const res = await fetch(`/api/v1/admin/media/upload?type=${context.type}&id=${context.id}`, {
+		method: 'POST',
+		body: formData
+	});
+
+	if (!res.ok) throw new Error('Upload failed');
+
+	const json = await res.json();
+	return json.data as MediaItem;
+}
+

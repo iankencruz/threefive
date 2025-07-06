@@ -35,19 +35,17 @@ export type MediaItem = {
 	medium_url?: string;
 	alt_text?: string;
 	file_size?: string;
+	mime_type?: string;
 };
 
 
-export interface Block {
-	type: string;
-	props: Record<string, any>;
-}
+
 
 export interface Page {
 	id: UUID;
 	slug: string;
 	title: string;
-	banner_image_id: UUID | null;
+	cover_image_id: UUID | null;
 	seo_title?: string;
 	seo_description?: string;
 	seo_canonical?: string;
@@ -57,3 +55,21 @@ export interface Page {
 	created_at: string;
 	updated_at: string;
 }
+
+
+export interface Block {
+	type: string;
+	props: Record<string, any>;
+}
+
+
+
+export type ImageBlock = {
+	media_id: string;
+	alt: string;
+	size: 'small' | 'medium' | 'large';
+	alignment: 'left' | 'center' | 'right';
+	object_fit: 'cover' | 'contain';
+	object_position: 'top' | 'center' | 'bottom';
+};
+

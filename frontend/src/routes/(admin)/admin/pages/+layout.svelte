@@ -65,7 +65,7 @@
 	</div>
 
 	<!-- Content area -->
-	<div class="flex-1 overflow-auto">
+	<div class="h-full flex-1 overflow-auto">
 		{@render children()}
 	</div>
 </div>

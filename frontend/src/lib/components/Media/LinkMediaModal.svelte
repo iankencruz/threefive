@@ -7,7 +7,7 @@
 
 	let {
 		open,
-		projectSlug,
+		context,
 		onclose,
 		onlinked,
 		linkedMediaIds = [],
@@ -15,7 +15,7 @@
 		mediaPool = null
 	} = $props<{
 		open: boolean;
-		projectSlug: string;
+		context: { type: 'project' | 'block' | 'page'; id: string };
 		onclose: () => void;
 		onlinked: (media: MediaItem) => void;
 		linkedMediaIds: string[];
@@ -23,6 +23,7 @@
 		mediaPool?: MediaItem[] | null;
 	}>();
 
+	let tab = $state<'link' | 'upload'>('link');
 	let loading = $state(false);
 	let page = $state(1);
 	let totalPages = $state(1);
@@ -30,10 +31,8 @@
 	let totalMedia = $state(0);
 	let allUnlinkedMedia: MediaItem[] = [];
 	let filteredMedia = $state<MediaItem[]>([]);
-
 	let hasLoaded = false;
 
-	// Calculate pagination counts
 	function paginateMediaPool() {
 		const start = (page - 1) * pageSize;
 		const end = page * pageSize;
@@ -51,7 +50,7 @@
 					? [...mediaPool]
 					: mediaPool.filter((m: MediaItem) => !linkedMediaIds.includes(m.id));
 			} else {
-				const res = await fetchMedia(1, 1000); // get all for pool pagination
+				const res = await fetchMedia(1, 1000);
 				allUnlinkedMedia = selectOnly
 					? res.items
 					: res.items.filter((m: MediaItem) => !linkedMediaIds.includes(m.id));
@@ -66,20 +65,17 @@
 		}
 	}
 
-	// Runs once on modal open
 	$effect(() => {
 		if (open && !hasLoaded) {
+			tab = 'link';
 			page = 1;
 			loadMedia();
 			hasLoaded = true;
 		}
 	});
 
-	// Reset flag on close
 	$effect(() => {
-		if (!open) {
-			hasLoaded = false;
-		}
+		if (!open) hasLoaded = false;
 	});
 
 	function handlePageChange(newPage: number) {
@@ -89,91 +85,82 @@
 		}
 	}
 
-	async function linkMedia(item: MediaItem) {
-		if (selectOnly) {
-			onlinked(item);
-			return;
-		}
-
-		try {
-			const res = await fetch(`/api/v1/admin/projects/${projectSlug}/media`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ media_id: item.id, sort_order: 0 })
-			});
-
-			if (!res.ok) throw new Error('Failed to link media');
-			toast.success('Media linked');
-
-			// Remove item from pool
-			allUnlinkedMedia = allUnlinkedMedia.filter((m) => m.id !== item.id);
-
-			// Recalculate pagination (handles backfilling)
-			const currentStart = (page - 1) * pageSize;
-			const currentEnd = page * pageSize;
-
-			filteredMedia = allUnlinkedMedia.slice(currentStart, currentEnd);
-
-			// Update pagination values
-			totalMedia = allUnlinkedMedia.length;
-			totalPages = Math.max(1, Math.ceil(totalMedia / pageSize));
-
-			// If we overshot the page count (e.g. linked last item on last page)
-			if (page > totalPages) {
-				page = totalPages;
-				filteredMedia = allUnlinkedMedia.slice((page - 1) * pageSize, page * pageSize);
-			}
-
-			onlinked(item);
-		} catch (err) {
-			console.error('❌ Failed to link media:', err);
-			toast.error('Failed to link media');
-		}
+	function linkMedia(item: MediaItem) {
+		onlinked(item);
+		if (selectOnly) onclose();
+		allUnlinkedMedia = allUnlinkedMedia.filter((m) => m.id !== item.id);
+		paginateMediaPool();
 	}
 </script>
 
 {#if open}
 	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-		<div class="relative w-full max-w-3xl rounded-lg bg-white shadow-xl">
+		<div class="relative w-full max-w-4xl rounded-lg bg-white shadow-xl">
 			<div class="p-4">
-				<div class="flex items-center justify-between border-b pb-2">
-					<h2 class="text-lg font-semibold">Select Media</h2>
-					<button onclick={onclose} class="text-gray-500 hover:text-red-500">
-						<X />
+				<!-- Tabs -->
+				<div class="mt-4 flex gap-2 border-b text-sm font-medium">
+					<button
+						onclick={() => (tab = 'link')}
+						class="rounded-t px-4 py-2"
+						class:font-bold={tab === 'link'}
+						class:border-b-2={tab === 'link'}
+					>
+						Link Media
+					</button>
+					<button
+						onclick={() => (tab = 'upload')}
+						class="rounded-t px-4 py-2"
+						class:font-bold={tab === 'upload'}
+						class:border-b-2={tab === 'upload'}
+					>
+						Upload Media
 					</button>
 				</div>
 
-				{#if loading}
-					<p class="p-4 text-gray-500">Loading media...</p>
-				{:else if filteredMedia.length === 0}
-					<p class="p-4 text-gray-500">No media available to link.</p>
-				{:else}
-					<ul
-						class="mt-4 grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 xl:gap-x-8"
-					>
-						{#each filteredMedia as item (item.id)}
-							<li
-								class="group relative block overflow-hidden rounded-lg bg-gray-100 ring-1 ring-gray-200 hover:cursor-pointer"
-							>
-								<button class="h-auto w-full" onclick={() => linkMedia(item)}>
-									<img
-										src={item.thumbnail_url || item.url}
-										alt={item.title}
-										class="aspect-video w-full object-cover"
-									/>
-									<div class="p-2">
-										<p class="truncate text-sm font-medium text-gray-900">
-											{item.title || 'Untitled'}
-										</p>
-									</div>
-								</button>
-							</li>
-						{/each}
-					</ul>
+				<!-- Tab Content -->
+				{#if tab === 'link'}
+					{#if loading}
+						<p class="p-4 text-gray-500">Loading media...</p>
+					{:else if filteredMedia.length === 0}
+						<p class="p-4 text-gray-500">No media available to link.</p>
+					{:else}
+						<ul
+							class="mt-4 grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 xl:gap-x-8"
+						>
+							{#each filteredMedia as item (item.id)}
+								<li
+									class="group relative block overflow-hidden rounded-lg bg-gray-100 ring-1 ring-gray-200 hover:cursor-pointer"
+								>
+									<button class="h-auto w-full" onclick={() => linkMedia(item)}>
+										<img
+											src={item.thumbnail_url || item.url}
+											alt={item.title}
+											class="aspect-video w-full object-cover"
+										/>
+										<div class="p-2">
+											<p class="truncate text-sm font-medium text-gray-900">
+												{item.title || 'Untitled'}
+											</p>
+										</div>
+									</button>
+								</li>
+							{/each}
+						</ul>
+					{/if}
+					<Pagination {page} {totalPages} {pageSize} {totalMedia} onchange={handlePageChange} />
+				{:else if tab === 'upload'}
+					<div class="mt-4">
+						<UploadMediaForm
+							{context}
+							onuploaded={(media: MediaItem) => {
+								toast.success('Media uploaded');
+								onlinked(media);
+								loadMedia(); // Refresh list to exclude newly linked
+							}}
+						/>
+					</div>
 				{/if}
 			</div>
-
-			<Pagination {page} {totalPages} {pageSize} {totalMedia} onchange={handlePageChange} />
 		</div>
 	</div>
 {/if}

@@ -21,6 +21,17 @@ export class PageStore {
 	clear() {
 		this.pagesStore.length = 0;
 	}
+
+	async fetchPages() {
+		try {
+			const res = await fetch('/api/v1/admin/pages');
+			if (!res.ok) throw new Error('Failed to fetch pages');
+			const json = await res.json();
+			this.setPages(json.data);
+		} catch (err) {
+			console.error('❌ Failed to fetch pages:', err);
+		}
+	}
 }
 
 export const pages = new PageStore();

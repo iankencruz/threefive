@@ -2,11 +2,7 @@
 	import AddBlockMenu from '$lib/components/Builders/AddBlockMenu.svelte';
 	import BlockRenderer from '$lib/components/Builders/BlockRenderer.svelte';
 	import { getDefaultProps } from '$lib/components/Builders/blockDefaults';
-
-	type Block = {
-		type: string;
-		props: Record<string, any>;
-	};
+	import type { Block } from '$src/lib/types';
 
 	let { content = $bindable() }: { content: Block[] } = $props();
 
@@ -22,15 +18,15 @@
 		content.splice(index, 1);
 	}
 
-	function updateBlock(index: number, newBlock: Block): void {
-		content[index] = newBlock;
+	function updateBlock(index: number, updatedBlock: Block): void {
+		content[index] = updatedBlock;
 	}
 </script>
 
-<div class="space-y-4 rounded-md border bg-gray-50 p-4">
+<div class="space-y-3 rounded-md border bg-gray-50 p-4">
 	{#each content as block, index (index)}
 		<div class="group relative rounded border bg-white p-4 shadow-sm">
-			<BlockRenderer {block} onupdate={(e: CustomEvent<Block>) => updateBlock(index, e.detail)} />
+			<BlockRenderer {block} onupdate={(updatedBlock) => updateBlock(index, updatedBlock)} />
 
 			<!-- Controls -->
 			<div class="absolute -top-2 -right-2 opacity-0 transition group-hover:opacity-100">

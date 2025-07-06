@@ -9,19 +9,18 @@
 	} from '$src/lib/api/projects';
 	import LinkMediaModal from '$lib/components/Media/LinkMediaModal.svelte';
 	import ProjectMediaGrid from '$src/lib/components/Media/ProjectMediaGrid.svelte';
-	import Breadcrumb from '$src/lib/components/Navigation/Breadcrumb.svelte';
-	import type { Project } from '$src/lib/types';
+	import type { Project, MediaItem } from '$src/lib/types';
 	import { slugify, formatDate } from '$src/lib/utils/utilities';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 
-	let loading: boolean = $state(true);
-	let project: Project | null = $state(null);
+	let loading = $state(true);
+	let project = $state<Project | null>(null);
+	let projectMedia = $state<MediaItem[]>([]);
 
-	let editing: boolean = $state(false);
-	let saving: boolean = $state(false);
+	let editing = $state(false);
+	let saving = $state(false);
 
-	// editable fields (copy from loaded project)
 	let title = $state('');
 	let slug = $state('');
 	let description = $state('');
@@ -29,15 +28,14 @@
 
 	let error = $state<string | null>(null);
 	let modalOpen = $state(false);
-	let linkedMediaIds = $state<string[]>([]);
-
 	let coverModalOpen = $state(false);
+	let linkedMediaIds = $state<string[]>([]);
 
 	function handleCoverClick() {
 		coverModalOpen = true;
 	}
 
-	function handleCoverMediaSelected(item: any) {
+	function handleCoverMediaSelected(item: MediaItem) {
 		coverMediaId = item.id;
 		coverModalOpen = false;
 	}
@@ -50,40 +48,39 @@
 		modalOpen = false;
 	}
 
-	function handleMediaLinked(item: any) {
+	async function refreshMediaGrid() {
 		if (!project) return;
+		try {
+			const refreshed = await getProjectBySlug(project.slug);
+			project = refreshed;
+			projectMedia = [...(refreshed.media ?? [])];
+			linkedMediaIds = projectMedia.map((m) => m.id);
+		} catch (err) {
+			console.error('❌ Failed to refresh media:', err);
+			toast.error('Could not refresh media list');
+		}
+	}
 
-		project = {
-			...project,
-			id: project.id, // explicitly required fields
-			title: project.title,
-			slug: project.slug,
-			description: project.description,
-			meta_description: project.meta_description,
-			canonical_url: project.canonical_url,
-			cover_media_id: project.cover_media_id,
-			is_published: project.is_published,
-			published_at: project.published_at,
-			created_at: project.created_at,
-			updated_at: project.updated_at,
-			media: [...(project.media ?? []), item]
-		};
-
-		linkedMediaIds = (project?.media ?? []).map((m) => m.id);
+	// Called when a new media item is linked via modal
+	function handleMediaLinked(item: MediaItem) {
+		if (!project) return;
+		project = { ...project, media: [...(project.media ?? []), item] };
+		projectMedia = [...(project.media ?? [])];
+		linkedMediaIds = projectMedia.map((m) => m.id);
 	}
 
 	$effect(() => {
 		(async () => {
 			loading = true;
-			const slug = page.params.slug;
-
 			try {
-				project = await getProjectBySlug(slug);
-				linkedMediaIds = project?.media?.map((m) => m.id) ?? [];
+				const slugParam = page.params.slug;
+				const fetched = await getProjectBySlug(slugParam);
+				project = fetched;
+				projectMedia = [...(fetched.media ?? [])];
+				linkedMediaIds = projectMedia.map((m) => m.id);
 			} catch (err) {
 				console.error('Failed to load project', err);
 				error = 'Project not found or failed to load';
-				toast.error(error);
 				project = null;
 			} finally {
 				loading = false;
@@ -96,7 +93,6 @@
 			title = project.title;
 			slug = project.slug;
 			description = project.description ?? '';
-			// only set coverMediaId if it still exists in media list
 			if (project.cover_media_id && project.media?.some((m) => m.id === project?.cover_media_id)) {
 				coverMediaId = project.cover_media_id;
 			} else {
@@ -118,71 +114,73 @@
 				description,
 				cover_media_id: coverMediaId
 			});
-			toast.success('Project updated successfully');
+			toast.success('Project updated');
 			editing = false;
-
-			// 🧠 navigate to the new slug if it changed
 
 			if (updated.slug !== page.params.slug) {
 				await goto(`/admin/projects/${updated.slug}`);
 			} else {
-				project = await getProjectBySlug(updated.slug); // ✅ re-fetch full project with media
+				project = await getProjectBySlug(updated.slug);
+				projectMedia = [...(project?.media ?? [])];
+				linkedMediaIds = projectMedia.map((m) => m.id);
 			}
 		} catch (err) {
-			console.error('❌ Save failed:', err);
-			toast.error('Failed to save changes. Please try again.');
+			console.error('Save failed', err);
+			toast.error('Failed to save project');
 		} finally {
 			saving = false;
 		}
 	}
 
-	async function handleLinkMedia(mediaId: string) {
-		if (!project) return;
-		try {
-			await linkMediaToProject(project.slug, mediaId);
-			toast.success('Media linked!');
-			project = await getProjectBySlug(project.slug);
-			linkedMediaIds = project?.media?.map((m) => m.id) ?? [];
-		} catch (err) {
-			console.error('Linking failed', err);
-			toast.error('Failed to link media');
-		}
+	
+async function handleLinkMedia(media: MediaItem) {
+	if (!project) return;
+
+	try {
+		await linkMediaToProject(project.slug, media.id); // extract ID here
+		toast.success('Media linked');
+
+		// refresh full project
+		const refreshed = await getProjectBySlug(project.slug);
+		project = refreshed;
+		projectMedia = [...(refreshed.media ?? [])];
+		linkedMediaIds = projectMedia.map((m) => m.id);
+	} catch (err) {
+		console.error('Link failed', err);
+		toast.error('Failed to link media');
 	}
+}
+
 
 	async function handleUnlinkMedia(mediaId: string) {
-		console.log('Unlinking media with ID:', mediaId);
 		if (!project) return;
-
 		try {
 			await unlinkMediaFromProject(project.slug, mediaId);
+			toast.success('Media unlinked');
 
-			// ✅ If the cover image was just unlinked, clear it locally
 			if (project.cover_media_id === mediaId) {
 				coverMediaId = null;
 			}
 
-			toast.success('Media unlinked!');
-			if (project.cover_media_id === mediaId) {
-				coverMediaId = null;
-			}
 			project = await getProjectBySlug(project.slug);
-			linkedMediaIds = project?.media?.map((m) => m.id) ?? [];
-			saveChanges();
+			projectMedia = [...(project?.media ?? [])];
+			linkedMediaIds = projectMedia.map((m) => m.id);
+			await saveChanges();
 		} catch (err) {
-			console.error('Unlinking failed', err);
+			console.error('Unlink failed', err);
 			toast.error('Failed to unlink media');
 		}
 	}
 
-	async function handleSortMedia(updated: any[]) {
+	async function handleSortMedia(updated: MediaItem[]) {
 		if (!project) return;
-
 		try {
 			const ids = updated.map((m) => m.id);
 			await updateProjectMediaOrder(project.slug, ids);
 			project = { ...project, media: updated };
+			projectMedia = [...updated];
 		} catch (err) {
-			console.error('Sorting failed:', err);
+			console.error('Sort failed', err);
 			toast.error('Failed to update media order');
 		}
 	}
@@ -203,35 +201,23 @@
 
 		{#if editing}
 			<div class="mt-4 space-y-4 border-t border-gray-200 py-4">
-				<label for="title" class="text-sm text-gray-600"> Title:</label>
-				<input
-					type="text"
-					name="title"
-					bind:value={title}
-					class="w-full rounded border border-gray-300 px-3 py-2 text-lg"
-					placeholder="Project title"
-				/>
+				<label class="text-sm text-gray-600">Title</label>
+				<input bind:value={title} class="w-full rounded border border-gray-300 px-3 py-2 text-lg" />
 
-				<label for="slug" class="text-sm text-gray-600">Slug (auto-generated):</label>
+				<label class="text-sm text-gray-600">Slug</label>
 				<input
-					type="text"
-					name="slug"
 					bind:value={slug}
 					disabled
 					class="w-full rounded border border-gray-300 px-3 py-2 text-gray-900"
 				/>
 
-				<label for="description" class="text-sm text-gray-600">Description</label>
+				<label class="text-sm text-gray-600">Description</label>
 				<textarea
 					bind:value={description}
-					name="description"
 					class="w-full rounded border border-gray-300 px-3 py-2 text-sm"
 					rows="5"
-					placeholder="Project description"
 				></textarea>
 
-				<!-- {@debug coverMediaId} -->
-				<!-- Media linking placeholder -->
 				<div class="rounded border bg-gray-50 p-4 text-sm">
 					<p class="text-gray-700">Cover Media ID: {coverMediaId || 'None'}</p>
 					<button class="mt-2 text-xs text-indigo-600 hover:underline" onclick={handleCoverClick}>
@@ -249,28 +235,24 @@
 			</div>
 		{:else}
 			<div class="mt-4 w-full space-y-4 border-t border-gray-200 py-4">
-				<div class="grid grid-cols-2 justify-between space-y-2 text-sm text-gray-400">
+				<div class="grid grid-cols-2 justify-between text-sm text-gray-400">
 					<div>
-						<h2 id="applicant-information-title" class="text-lg font-medium text-gray-900">
-							Title: {project.title}
-						</h2>
-						<p class="mt-2 text-sm text-gray-500">Slug: {project.slug}</p>
+						<h2 class="text-lg font-medium text-gray-900">Title: {project.title}</h2>
+						<p class="mt-1 text-sm text-gray-500">Slug: {project.slug}</p>
 					</div>
-					<div class="justify-self-end text-justify">
+					<div class="justify-self-end text-right">
 						<p>Created: {formatDate(project.created_at, 'relative')}</p>
-						<p>Last Updated: {formatDate(project.updated_at, 'relative')}</p>
+						<p>Updated: {formatDate(project.updated_at, 'relative')}</p>
 					</div>
 				</div>
 
-				<div class="prose prose-sm text-gray-700">
-					<p>{project.description}</p>
-				</div>
+				<p class="prose prose-sm text-gray-700">{project.description}</p>
 
 				<div class="mt-4">
 					<p class="mb-1 text-sm text-gray-500">Cover Image:</p>
 					{#if project.cover_media_id}
-						{#if project.media?.some((m) => m.id === project?.cover_media_id)}
-							{#each project.media as media (media.id)}
+						{#if projectMedia.some((m) => m.id === project?.cover_media_id)}
+							{#each projectMedia as media (media.id)}
 								{#if media.id === project.cover_media_id}
 									<img
 										src={media.medium_url || media.url}
@@ -279,16 +261,16 @@
 									/>
 								{/if}
 							{/each}
-						{:else if project.media?.some((m) => m.id !== project?.cover_media_id)}
+						{:else}
 							<div
-								class="flex aspect-video h-96 w-full items-center justify-center rounded bg-gray-100 text-gray-400 ring-1 ring-gray-200"
+								class="flex h-96 items-center justify-center rounded bg-gray-100 text-gray-400 ring-1 ring-gray-200"
 							>
-								Selected cover image is not linked to this project
+								Selected cover image is not linked
 							</div>
 						{/if}
 					{:else}
 						<div
-							class="flex aspect-video h-96 w-full items-center justify-center rounded bg-gray-100 text-gray-400 ring-1 ring-gray-200"
+							class="flex h-96 items-center justify-center rounded bg-gray-100 text-gray-400 ring-1 ring-gray-200"
 						>
 							No cover image selected
 						</div>
@@ -297,33 +279,30 @@
 			</div>
 		{/if}
 
-		{#if project.media}
-			<ProjectMediaGrid
-				media={project.media}
-				onremove={handleUnlinkMedia}
-				onlink={handleLinkClick}
-				onsort={handleSortMedia}
-			/>
-			<!-- Project Media Modal -->
-			<LinkMediaModal
-				open={modalOpen}
-				projectSlug={project.slug}
-				onclose={handleModalClose}
-				onlinked={handleMediaLinked}
-				{linkedMediaIds}
-			/>
-		{/if}
-		<!-- Cover Media Modal -->
-		{#if project?.media}
-			<LinkMediaModal
-				open={coverModalOpen}
-				projectSlug={project.slug}
-				onclose={() => (coverModalOpen = false)}
-				onlinked={handleCoverMediaSelected}
-				{linkedMediaIds}
-				selectOnly={true}
-				mediaPool={project?.media}
-			/>
-		{/if}
+		<ProjectMediaGrid
+			media={projectMedia}
+			onremove={handleUnlinkMedia}
+			projectSlug={project.slug}
+			onsort={handleSortMedia}
+			onrefresh={refreshMediaGrid}
+		/>
+
+		<LinkMediaModal
+			open={modalOpen}
+			context={{ type: 'project', id: project.slug }}
+			onclose={handleModalClose}
+			onlinked={handleLinkMedia}
+			{linkedMediaIds}
+		/>
+
+		<LinkMediaModal
+			open={coverModalOpen}
+			context={{ type: 'project', id: project.slug }}
+			onclose={() => (coverModalOpen = false)}
+			onlinked={handleCoverMediaSelected}
+			selectOnly={true}
+			mediaPool={projectMedia}
+			{linkedMediaIds}
+		/>
 	{/if}
 </section>

@@ -2,12 +2,13 @@
 	import { toast } from 'svelte-sonner';
 	import PageForm from '$lib/components/Forms/PageForm.svelte';
 	import type { Page } from '$lib/types';
+	import { pages } from '$src/lib/store/pages.svelte';
 
 	let newPage = $state<Page>({
 		id: crypto.randomUUID() as Page['id'],
 		slug: '',
 		title: '',
-		banner_image_id: null,
+		cover_image_id: null,
 		seo_title: '',
 		seo_description: '',
 		seo_canonical: '',
@@ -27,14 +28,15 @@
 			.then(async (res) => {
 				const json = await res.json();
 				if (!res.ok) {
-					toast.error(json.message || '❌ Failed to save');
+					toast.error(json.message || 'Failed to save');
 					return;
 				}
-				toast.success('✅ Page created');
+				toast.success('Page created');
+				await pages.fetchPages();
 			})
 			.catch((err) => {
 				console.error(err);
-				toast.error('❌ Create failed');
+				toast.error('Create failed');
 			});
 	}
 </script>

@@ -27,8 +27,8 @@
 
 			loadedPage = json.data;
 		} catch (err) {
-			console.error('❌ Failed to load page:', err);
-			toast.error('❌ Failed to load page');
+			console.error('Failed to load page:', err);
+			toast.error('Failed to load page');
 		}
 	}
 
@@ -48,7 +48,7 @@
 			.then(async (res) => {
 				const json = await res.json();
 				if (!res.ok) {
-					toast.error(json.message || '❌ Failed to save');
+					toast.error(json.message || 'Failed to save');
 					return;
 				}
 				toast.success('Page updated');
@@ -57,7 +57,7 @@
 			})
 			.catch((err) => {
 				console.error(err);
-				toast.error('❌ Update failed');
+				toast.error('Update failed');
 			});
 	}
 </script>

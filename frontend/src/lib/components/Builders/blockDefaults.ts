@@ -6,11 +6,18 @@ export function getDefaultProps(type: string): Record<string, any> {
 				title: 'Heading Title',
 				description: 'Optional subtext'
 			};
+
 		case 'image':
 			return {
-				mediaId: null,
-				alt: ''
+				mediaId: '',
+				alt: '',
+				size: 'medium',
+				alignment: 'center',
+				objectFit: 'cover',
+				objectPosition: 'center'
 			};
+
+
 		case 'gallery':
 			return {
 				mediaIds: [],

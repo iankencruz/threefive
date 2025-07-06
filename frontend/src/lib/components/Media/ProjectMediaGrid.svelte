@@ -4,14 +4,34 @@
 	import { draggable, droppable, type DragDropState } from '@thisux/sveltednd';
 	import { flip } from 'svelte/animate';
 	import { toast } from 'svelte-sonner';
+	import LinkMediaModal from './LinkMediaModal.svelte';
 
-	let { media, onremove, onrefresh, onlink, onsort } = $props<{
+	let { projectSlug, media, onremove, onrefresh, onsort } = $props<{
+		projectSlug: string;
 		media: MediaItem[];
 		onremove?: (id: string) => void;
 		onrefresh?: () => void;
-		onlink?: () => void;
 		onsort?: (items: MediaItem[]) => void;
 	}>();
+
+	let modalOpen = $state(false);
+
+	async function handleLink(media: MediaItem) {
+		try {
+			const res = await fetch(`/api/v1/admin/projects/${projectSlug}/media`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ media_id: media.id, sort_order: 0 })
+			});
+
+			if (!res.ok) throw new Error('Failed to link media');
+			toast.success(`Linked media "${media.title || 'Untitled'}"`);
+			onrefresh?.();
+		} catch (err) {
+			console.error('❌ Failed to link media:', err);
+			toast.error('Failed to link media');
+		}
+	}
 
 	function handleDrop(state: DragDropState<MediaItem>) {
 		const { draggedItem, sourceContainer, targetContainer } = state;
@@ -27,7 +47,6 @@
 		const [moved] = updated.splice(fromIndex, 1);
 		updated.splice(toIndex, 0, moved);
 
-		// Reassign sort_order
 		const reordered = updated.map((item, index) => ({
 			...item,
 			sort_order: index
@@ -42,7 +61,6 @@
 		e.stopPropagation();
 		e.preventDefault();
 		onremove?.(id);
-		console.log('remove clicked', id);
 	}
 </script>
 
@@ -50,15 +68,13 @@
 	<div class="flex items-center justify-between">
 		<h2 class="text-lg font-semibold text-gray-900">Linked Media</h2>
 
-		{#if onlink}
-			<button
-				onclick={onlink}
-				class="inline-flex items-center gap-1 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 shadow-sm hover:bg-gray-50 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-hidden"
-			>
-				<Link class="size-4" />
-				<span>Link Media</span>
-			</button>
-		{/if}
+		<button
+			onclick={() => (modalOpen = true)}
+			class="inline-flex items-center gap-1 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 shadow-sm hover:bg-gray-50"
+		>
+			<Link class="size-4" />
+			<span>Link Media</span>
+		</button>
 	</div>
 
 	{#if media.length === 0}
@@ -71,14 +87,12 @@
 					class="group relative block rounded-lg bg-gray-100 ring-1 ring-gray-200"
 					animate:flip={{ duration: 300 }}
 				>
-					<!-- ✅ Move draggable here, so it's only the image that's draggable -->
 					<div use:draggable={{ container: index.toString(), dragData: item }} class="cursor-grab">
 						<img
 							src={item.thumbnail_url || item.url}
 							alt={item.alt_text || item.title || 'Media'}
 							class="pointer-events-none aspect-video w-full object-cover transition group-hover:opacity-75"
 						/>
-
 						<div class="p-2">
 							<p class="truncate text-sm font-medium text-gray-900">
 								{item.title || 'Untitled'}
@@ -89,18 +103,23 @@
 						</div>
 					</div>
 
-					<!-- ✅ Properly working remove button -->
-					{#if onremove}
-						<button
-							onclick={(e) => handleRemoveClick(e, item.id)}
-							class="absolute top-1 right-1 inline-flex cursor-pointer items-center rounded-full bg-white p-1 text-gray-500 shadow hover:bg-gray-100 hover:text-red-600"
-						>
-							<Unlink class="size-4" />
-							<span class="sr-only">Remove</span>
-						</button>
-					{/if}
+					<button
+						onclick={(e) => handleRemoveClick(e, item.id)}
+						class="absolute top-1 right-1 inline-flex cursor-pointer items-center rounded-full bg-white p-1 text-gray-500 shadow hover:bg-gray-100 hover:text-red-600"
+					>
+						<Unlink class="size-4" />
+						<span class="sr-only">Remove</span>
+					</button>
 				</li>
 			{/each}
 		</ul>
 	{/if}
+
+	<LinkMediaModal
+		open={modalOpen}
+		context={{ type: 'project', id: projectSlug }}
+		linkedMediaIds={media.map((m: MediaItem) => m.id)}
+		onclose={() => (modalOpen = false)}
+		onlinked={handleLink}
+	/>
 </div>

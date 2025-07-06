@@ -1,21 +1,25 @@
 <script lang="ts">
 	import HeadingBlock from '../Blocks/HeadingBlock.svelte';
+	import type { Block } from '$lib/types';
+	import ImageBlock from '../Blocks/ImageBlock.svelte';
 
 	let {
 		block,
 		onupdate
 	}: {
-		block: { type: string; props: any };
-		onupdate: (updatedBlock: any) => void;
+		block: Block;
+		onupdate: (updated: Block) => void;
 	} = $props();
 
-	function handleUpdate(updatedProps: any) {
-		onupdate({ ...block, props: updatedProps });
+	function handleUpdate(updatedBlock: Block) {
+		onupdate(updatedBlock); // pass it directly
 	}
 </script>
 
-{#if block.type === 'heading'}
-	<HeadingBlock props={block.props} onupdate={handleUpdate} />
+{#if block?.type === 'heading'}
+	<HeadingBlock {block} onupdate={handleUpdate} />
+{:else if block?.type === 'image'}
+	<ImageBlock {block} onupdate={handleUpdate} />
 {:else}
-	<div class="text-red-500">⚠ Unknown block type: {block.type}</div>
+	<div class="text-red-500">⚠ Unknown block type: {block?.type}</div>
 {/if}

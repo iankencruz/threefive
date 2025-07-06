@@ -2,7 +2,9 @@
 	import type { Page } from '$lib/types';
 	import PageBuilder from '$lib/components/Builders/PageBuilder.svelte';
 	import { toast } from 'svelte-sonner';
-	import { page } from '$app/state';
+	import type { MediaItem } from '$lib/types';
+	import { getMediaById } from '$lib/api/media';
+	import LinkMediaModal from '../Media/LinkMediaModal.svelte';
 
 	let {
 		content,
@@ -23,13 +25,28 @@
 			.trim();
 	}
 
-	// function handleSubmit() {
-	// 	onsubmit(content); // emit back to parent
-	// }
-	//
-	// function handleDelete() {
-	// 	ondelete(content); // emit back to parent
-	// }
+	let coverMedia = $state<MediaItem | null>(null);
+	let bannerModalOpen = $state(false);
+
+	$effect(() => {
+		if (content.cover_image_id && !coverMedia) {
+			(async () => {
+				try {
+					coverMedia = await getMediaById(content.cover_image_id!);
+				} catch (e) {
+					console.error('Failed to fetch banner image:', e);
+					coverMedia = null;
+					toast.error('Failed to load banner image. Please try again.');
+				}
+			})();
+		}
+	});
+
+	function handleBannerSelected(item: MediaItem) {
+		coverMedia = item;
+		content.cover_image_id = item.id;
+		bannerModalOpen = false;
+	}
 
 	$effect(() => {
 		if (!content.is_draft && !content.is_published) {
@@ -37,12 +54,8 @@
 		}
 	});
 
-	// Effect to handle mutual exclusivity
 	$effect(() => {
 		if (content.is_published) content.is_draft = false;
-	});
-
-	$effect(() => {
 		if (content.is_draft) content.is_published = false;
 	});
 </script>
@@ -74,14 +87,35 @@
 
 	<!-- Banner Image -->
 	<div>
-		<label for="banner-image" class="block text-sm font-medium text-gray-700">Banner Image</label>
-		<input
-			name="banner-image"
-			type="text"
-			class="mt-1 w-full rounded border px-3 py-2"
-			bind:value={content.banner_image_id}
-			placeholder="Enter media ID manually"
-		/>
+		<p class="block text-sm font-medium text-gray-700">Banner Image</p>
+
+		{#if coverMedia}
+			<div class="relative w-max">
+				<img
+					src={coverMedia.thumbnail_url || coverMedia.url}
+					alt={coverMedia.alt_text || coverMedia.title || 'Banner Image'}
+					class="max-h-40 rounded-md ring-1 ring-gray-200"
+				/>
+				<button
+					class="absolute top-1 right-1 rounded-full bg-white p-1 px-2 text-xs text-gray-600 shadow hover:bg-gray-100"
+					onclick={() => {
+						content.cover_image_id = null;
+						coverMedia = null;
+					}}
+				>
+					clear
+				</button>
+			</div>
+		{:else}
+			<p class="text-sm text-gray-400">No banner image selected</p>
+			<button
+				type="button"
+				onclick={() => (bannerModalOpen = true)}
+				class="mt-2 rounded border border-gray-300 bg-white px-3 py-1.5 text-sm shadow-sm hover:bg-gray-50"
+			>
+				{coverMedia ? 'Change' : 'Select'} Banner Image
+			</button>
+		{/if}
 	</div>
 
 	<!-- SEO Fields -->
@@ -132,12 +166,14 @@
 			<label><input type="checkbox" bind:checked={content.is_published} /> Published</label>
 		</div>
 		<div class="flex gap-x-4">
-			<button
-				onclick={() => ondelete(content)}
-				class="rounded bg-red-600 px-4 py-2 text-white hover:bg-gray-800"
-			>
-				Delete
-			</button>
+			{#if ondelete}
+				<button
+					onclick={() => ondelete?.(content)}
+					class="rounded bg-red-600 px-4 py-2 text-white hover:bg-gray-800"
+				>
+					Delete
+				</button>
+			{/if}
 			<button
 				onclick={() => onsubmit(content)}
 				class="rounded bg-black px-4 py-2 text-white hover:bg-gray-800"
@@ -147,3 +183,12 @@
 		</div>
 	</div>
 </div>
+
+<LinkMediaModal
+	open={bannerModalOpen}
+	onclose={() => (bannerModalOpen = false)}
+	onlinked={handleBannerSelected}
+	context={{ type: 'page', id: content.slug }}
+	selectOnly={true}
+	linkedMediaIds={content.cover_image_id ? [content.cover_image_id] : []}
+/>
