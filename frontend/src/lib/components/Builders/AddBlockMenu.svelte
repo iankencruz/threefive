@@ -4,7 +4,8 @@
 
 	const blockTypes = [
 		{ label: 'Heading', value: 'heading' },
-		{ label: 'Image', value: 'image' }
+		{ label: 'Image', value: 'image' },
+		{ label: 'Rich Text', value: 'richtext' }
 	];
 
 	let { onselect }: { onselect: (type: string) => void } = $props();

@@ -2,6 +2,7 @@
 	import HeadingBlock from '../Blocks/HeadingBlock.svelte';
 	import type { Block } from '$lib/types';
 	import ImageBlock from '../Blocks/ImageBlock.svelte';
+	import RichTextBlock from '../Blocks/RichTextBlock.svelte';
 
 	let {
 		block,
@@ -20,6 +21,8 @@
 	<HeadingBlock {block} onupdate={handleUpdate} />
 {:else if block?.type === 'image'}
 	<ImageBlock {block} onupdate={handleUpdate} />
+{:else if block.type === 'richtext'}
+	<RichTextBlock {block} {onupdate} />
 {:else}
 	<div class="text-red-500">⚠ Unknown block type: {block?.type}</div>
 {/if}

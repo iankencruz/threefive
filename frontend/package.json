@@ -38,9 +38,11 @@
 	},
 	"type": "module",
 	"dependencies": {
+		"@friendofsvelte/tipex": "^0.0.8",
 		"@lucide/svelte": "^0.522.0",
 		"@thisux/sveltednd": "^0.0.20",
 		"dayjs": "^1.11.13",
+		"lowlight": "^3.3.0",
 		"lucide": "^0.523.0",
 		"svelte-sonner": "^1.0.5",
 		"tippy.js": "^6.3.7"

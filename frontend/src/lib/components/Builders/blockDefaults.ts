@@ -28,9 +28,7 @@ export function getDefaultProps(type: string): Record<string, any> {
 				gap: 16
 			};
 		case 'richtext':
-			return {
-				html: '<p>Start writing...</p>'
-			};
+			return { content: '<p>New rich text block</p>' };
 		default:
 			return {};
 	}
