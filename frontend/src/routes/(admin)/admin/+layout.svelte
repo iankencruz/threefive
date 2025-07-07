@@ -4,7 +4,7 @@
 	let { children } = $props();
 </script>
 
-<div class="px-6">
+<div class="">
 	<Breadcrumb />
 	{@render children()}
 </div>

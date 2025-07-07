@@ -15,6 +15,7 @@
 </script>
 
 <Toaster closeButton richColors position="top-right" expand={true} />
-<div class="flex min-h-full w-full flex-col justify-center">
+
+<div class="flex min-h-screen w-full flex-col">
 	{@render children?.()}
 </div>
