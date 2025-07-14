@@ -3,11 +3,13 @@
 	import BlockRenderer from '$lib/components/Builders/BlockRenderer.svelte';
 	import { getDefaultProps } from '$lib/components/Builders/blockDefaults';
 	import type { Block } from '$src/lib/types';
+	import { v4 as uuidv4 } from 'uuid';
 
 	let { content = $bindable() }: { content: Block[] } = $props();
 
 	function insertBlock(index: number, type: string): void {
 		const newBlock: Block = {
+			id: uuidv4(),
 			type,
 			props: getDefaultProps(type)
 		};
@@ -18,13 +20,14 @@
 		content.splice(index, 1);
 	}
 
-	function updateBlock(index: number, updatedBlock: Block): void {
-		content[index] = updatedBlock;
+	function updateBlock(index: number, updated: Block) {
+		content[index] = updated;
+		content = content; // 🧠 ← This is what syncs it back to PageForm
 	}
 </script>
 
 <div class="space-y-3 rounded-md border bg-gray-50 p-4">
-	{#each content as block, index (index)}
+	{#each content as block, index (block.id)}
 		<div class="group relative rounded border bg-white p-4 shadow-sm">
 			<BlockRenderer {block} onupdate={(updatedBlock) => updateBlock(index, updatedBlock)} />
 
