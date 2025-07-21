@@ -1,5 +1,5 @@
 <script>
-	import { auth } from '$src/lib/store/auth.svelte.js';
+	import { auth } from '$lib/store/auth.svelte.js';
 	import { Toaster } from 'svelte-sonner';
 
 	let { data, children } = $props();

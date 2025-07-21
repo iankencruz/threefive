@@ -6,11 +6,11 @@
 		linkMediaToProject,
 		unlinkMediaFromProject,
 		updateProjectMediaOrder
-	} from '$src/lib/api/projects';
+	} from '$lib/api/projects';
 	import LinkMediaModal from '$lib/components/Media/LinkMediaModal.svelte';
-	import ProjectMediaGrid from '$src/lib/components/Media/ProjectMediaGrid.svelte';
-	import type { Project, MediaItem } from '$src/lib/types';
-	import { slugify, formatDate } from '$src/lib/utils/utilities';
+	import ProjectMediaGrid from '$lib/components/Media/ProjectMediaGrid.svelte';
+	import type { Project, MediaItem } from '$lib/types';
+	import { slugify, formatDate } from '$lib/utils/utilities';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 
@@ -132,25 +132,23 @@
 		}
 	}
 
-	
-async function handleLinkMedia(media: MediaItem) {
-	if (!project) return;
+	async function handleLinkMedia(media: MediaItem) {
+		if (!project) return;
 
-	try {
-		await linkMediaToProject(project.slug, media.id); // extract ID here
-		toast.success('Media linked');
+		try {
+			await linkMediaToProject(project.slug, media.id); // extract ID here
+			toast.success('Media linked');
 
-		// refresh full project
-		const refreshed = await getProjectBySlug(project.slug);
-		project = refreshed;
-		projectMedia = [...(refreshed.media ?? [])];
-		linkedMediaIds = projectMedia.map((m) => m.id);
-	} catch (err) {
-		console.error('Link failed', err);
-		toast.error('Failed to link media');
+			// refresh full project
+			const refreshed = await getProjectBySlug(project.slug);
+			project = refreshed;
+			projectMedia = [...(refreshed.media ?? [])];
+			linkedMediaIds = projectMedia.map((m) => m.id);
+		} catch (err) {
+			console.error('Link failed', err);
+			toast.error('Failed to link media');
+		}
 	}
-}
-
 
 	async function handleUnlinkMedia(mediaId: string) {
 		if (!project) return;

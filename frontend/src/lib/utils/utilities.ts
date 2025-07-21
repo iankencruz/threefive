@@ -1,4 +1,4 @@
-import dayjs from "$src/lib/utils/customDayjs";
+import dayjs from "$lib/utils/customDayjs";
 
 // src/lib/utils/slugify.ts
 export function slugify(str: string): string {

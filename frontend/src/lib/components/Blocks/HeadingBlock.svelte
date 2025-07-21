@@ -35,18 +35,6 @@
 			props: { ...localProps }
 		});
 	}
-
-	async function handleLinked(media: MediaItem) {
-		if (context.type === 'project') {
-			await fetch(`/api/v1/admin/projects/${context.id}/media`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ media_id: media.id })
-			});
-		} else if (context.type === 'block') {
-			config.mediaId = media.id;
-		}
-	}
 </script>
 
 <div class="space-y-2">

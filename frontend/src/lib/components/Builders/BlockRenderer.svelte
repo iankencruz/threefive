@@ -22,7 +22,7 @@
 {:else if block?.type === 'image'}
 	<ImageBlock {block} onupdate={handleUpdate} />
 {:else if block.type === 'richtext'}
-	<RichTextBlock {block} {onupdate} />
+	<RichTextBlock {block} onupdate={handleUpdate} />
 {:else}
-	<div class="text-red-500">⚠ Unknown block type: {block?.type}</div>
+	<div class="text-red-500">⚠ Unknown block type: {block?.type as Block}</div>
 {/if}

@@ -1,20 +1,31 @@
 <script lang="ts">
-	import type { Page } from '$lib/types';
+	import type { Block, Page } from '$lib/types';
 	import PageBuilder from '$lib/components/Builders/PageBuilder.svelte';
 	import { toast } from 'svelte-sonner';
 	import type { MediaItem } from '$lib/types';
 	import { getMediaById } from '$lib/api/media';
 	import LinkMediaModal from '../Media/LinkMediaModal.svelte';
+	import BlockRenderer from '../Builders/BlockRenderer.svelte';
+	import { sortBlocks } from '$lib/api/pages';
 
 	let {
 		content,
+		blocks,
 		onsubmit,
 		ondelete
 	}: {
 		content: Page;
-		onsubmit: (data: Page) => void;
+		blocks: Block[];
+		onsubmit: (data: { page: Page; blocks: Block[] }) => void;
 		ondelete?: (data: Page) => void;
 	} = $props();
+
+	// Ensure `blocks` is never undefined for bind
+	if (!blocks) {
+		blocks = [];
+	}
+
+	let localBlocks = $state<Block[]>(blocks);
 
 	function updateSlug(): void {
 		content.slug = content.title
@@ -23,6 +34,12 @@
 			.replace(/\s+/g, '-')
 			.replace(/-+/g, '-')
 			.trim();
+	}
+
+	let previewMode = $state(false);
+
+	function togglePreview() {
+		previewMode = !previewMode;
 	}
 
 	let coverMedia = $state<MediaItem | null>(null);
@@ -58,6 +75,27 @@
 		if (content.is_published) content.is_draft = false;
 		if (content.is_draft) content.is_published = false;
 	});
+
+	async function handleSavePage() {
+		try {
+			await sortBlocks(content.slug, localBlocks); // 👈 persist block order
+			onsubmit({ page: content, blocks: localBlocks }); // 👈 then continue with save
+			toast.success('Page saved');
+		} catch (e) {
+			toast.error('Failed to save page');
+			console.error(e);
+		}
+	}
+
+	function handleReorder(updatedBlocks: Block[]) {
+		// Optionally sort & reindex
+		const reordered = updatedBlocks.map((b, i) => ({
+			...b,
+			sort_order: i
+		}));
+
+		onsubmit({ page: content, blocks: reordered });
+	}
 </script>
 
 <div class="space-y-6 px-4">
@@ -155,8 +193,15 @@
 
 	<!-- Page Builder -->
 	<div>
-		<h3 class="text-sm font-semibold text-gray-800">Content Blocks</h3>
-		<PageBuilder bind:content={content.content} />
+		<!-- Render builder or preview -->
+		{#if previewMode}
+			{#each localBlocks as block (block.id)}
+				<BlockRenderer {block} onupdate={() => {}} />
+			{/each}
+		{:else}
+			<h3 class="text-sm font-semibold text-gray-800">Content Blocks</h3>
+			<PageBuilder bind:blocks={localBlocks} onreorder={handleReorder} />
+		{/if}
 	</div>
 
 	<!-- Save Controls -->
@@ -164,6 +209,15 @@
 		<div class="flex items-center gap-3">
 			<label><input type="checkbox" bind:checked={content.is_draft} /> Draft</label>
 			<label><input type="checkbox" bind:checked={content.is_published} /> Published</label>
+		</div>
+		<!-- Add toggle button -->
+		<div class="mb-4 flex justify-end">
+			<button
+				class="rounded bg-gray-200 px-4 py-1 text-sm hover:bg-gray-300"
+				onclick={togglePreview}
+			>
+				{previewMode ? 'Switch to Edit Mode' : 'Preview Page'}
+			</button>
 		</div>
 		<div class="flex gap-x-4">
 			{#if ondelete}
@@ -175,7 +229,7 @@
 				</button>
 			{/if}
 			<button
-				onclick={() => onsubmit(content)}
+				onclick={() => onsubmit({ page: content, blocks: localBlocks })}
 				class="rounded bg-black px-4 py-2 text-white hover:bg-gray-800"
 			>
 				Save Page

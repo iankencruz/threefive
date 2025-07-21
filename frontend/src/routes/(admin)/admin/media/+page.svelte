@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { fetchMedia, deleteMedia, updateMedia } from '$lib/api/media';
-	import UploadModal from '$src/lib/components/Media/UploadModal.svelte';
-	import MediaGrid from '$src/lib/components/Media/MediaGrid.svelte';
-	import MediaList from '$src/lib/components/Media/MediaList.svelte';
+	import UploadModal from '$lib/components/Media/UploadModal.svelte';
+	import MediaGrid from '$lib/components/Media/MediaGrid.svelte';
+	import MediaList from '$lib/components/Media/MediaList.svelte';
 	import { LayoutGrid, LayoutList } from '@lucide/svelte';
-	import Pagination from '$src/lib/components/Navigation/Pagination.svelte';
+	import Pagination from '$lib/components/Navigation/Pagination.svelte';
 	import { toast } from 'svelte-sonner';
 
 	let view = $state('grid'); // 'list' or 'grid'

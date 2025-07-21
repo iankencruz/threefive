@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { pages } from '$src/lib/store/pages.svelte';
+	import { pages } from '$lib/store/pages.svelte';
 	import { toast } from 'svelte-sonner';
 
 	let { children } = $props();
@@ -55,7 +55,7 @@
 	</div>
 
 	<!-- Main content -->
-	<div class="min-h-screen px-4 py-8">
+	<div class="mx-auto min-h-screen w-full max-w-4xl px-4 py-8">
 		{@render children()}
 	</div>
 </div>

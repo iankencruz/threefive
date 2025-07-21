@@ -1,35 +1,18 @@
 
-export function getDefaultProps(type: string): Record<string, any> {
-	switch (type) {
-		case 'heading':
-			return {
-				title: 'Heading Title',
-				description: 'Optional subtext'
-			};
+// src/lib/components/Builders/blockDefaults.ts
 
-		case 'image':
-			return {
-				mediaId: '',
-				alt: '',
-				size: 'medium',
-				alignment: 'center',
-				objectFit: 'cover',
-				objectPosition: 'center'
-			};
+import type { Block } from '$lib/types';
 
-
-		case 'gallery':
-			return {
-				mediaIds: [],
-				layout: 'grid',
-				columns: 3,
-				showCaptions: true,
-				autoplay: false,
-				gap: 16
-			};
-		case 'richtext':
-			return { content: '<p>New rich text block</p>' };
-		default:
-			return {};
-	}
+export function getDefaultProps(type: Block['type']): Block['props'] {
+  switch (type) {
+    case 'heading':
+      return { text: '', level: 1 };
+    case 'richtext':
+      return { html: '' };
+    case 'image':
+      return { media_id: '' };
+    default:
+      throw new Error(`Unsupported block type: ${type}`);
+  }
 }
+

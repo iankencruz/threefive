@@ -80,17 +80,33 @@ tasks:
     cmds:
       - goose -dir ./backend/db/migrations/ create {{.CLI_ARGS}} sql
 
-  db-up:
+  up:
     desc: Apply all up migrations
     dir: ./backend
     cmds:
       - goose up
 
-  db-down:
+  up-to:
+    desc: Roll back the last migration
+    dir: ./backend
+    cmds:
+      - goose up-to {{.CLI_ARGS}}
+
+
+  down:
     desc: Roll back the last migration
     dir: ./backend
     cmds:
       - goose down
+
+
+  down-to:
+    desc: Roll back the last migration
+    dir: ./backend
+    cmds:
+      - goose down-to {{.CLI_ARGS}}
+
+
 
   db-reset:
     desc: Roll back everything

@@ -2,12 +2,12 @@
 	import { onMount } from 'svelte';
 	import { createProject, getProjects, deleteProjectBySlug } from '$lib/api/projects';
 	import { toast } from 'svelte-sonner';
-	import Drawers from '$src/lib/components/Overlays/Drawers.svelte';
-	import EmptyState from '$src/lib/components/Overlays/EmptyState.svelte';
-	import { formatDate, slugify } from '$src/lib/utils/utilities';
+	import Drawers from '$lib/components/Overlays/Drawers.svelte';
+	import EmptyState from '$lib/components/Overlays/EmptyState.svelte';
+	import { formatDate, slugify } from '$lib/utils/utilities';
 	import { FolderPlus, PaperclipIcon } from '@lucide/svelte';
 	import { Paperclip } from 'lucide';
-	import { auth } from '$src/lib/store/auth.svelte';
+	import { auth } from '$lib/store/auth.svelte';
 
 	let drawerOpen = $state(false);
 	let title = $state('');

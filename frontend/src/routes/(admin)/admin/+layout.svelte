@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Breadcrumb from '$src/lib/components/Navigation/Breadcrumb.svelte';
+	import Breadcrumb from '$lib/components/Navigation/Breadcrumb.svelte';
 
 	let { children } = $props();
 </script>

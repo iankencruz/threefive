@@ -2,7 +2,7 @@
 	import { toast } from 'svelte-sonner';
 	import PageForm from '$lib/components/Forms/PageForm.svelte';
 	import type { Page } from '$lib/types';
-	import { pages } from '$src/lib/store/pages.svelte';
+	import { pages } from '$lib/store/pages.svelte';
 
 	let newPage = $state<Page>({
 		id: crypto.randomUUID() as Page['id'],

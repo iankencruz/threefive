@@ -1,14 +1,16 @@
 <script lang="ts">
+	import type { Block } from '$lib/types';
 	import { Plus } from '@lucide/svelte';
 	import { onDestroy } from 'svelte';
 
-	const blockTypes = [
+	// Strongly typed array
+	const blockTypes: { label: string; value: Block['type'] }[] = [
 		{ label: 'Heading', value: 'heading' },
 		{ label: 'Image', value: 'image' },
 		{ label: 'Rich Text', value: 'richtext' }
 	];
 
-	let { onselect }: { onselect: (type: string) => void } = $props();
+	let { onselect }: { onselect: (type: Block['type']) => void } = $props();
 
 	let open = $state(false);
 
@@ -27,7 +29,7 @@
 			window.removeEventListener('click', handleClick, true);
 		});
 	});
-	function handleSelect(value: string) {
+	function handleSelect(value: Block['type']) {
 		onselect(value);
 		open = false;
 	}

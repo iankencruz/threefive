@@ -57,20 +57,43 @@ export interface Page {
 }
 
 
-export interface Block {
-  id: UUID;
-  type: string;
-  props: Record<string, any>;
+
+export interface BaseBlock {
+  id?: string;
+  sort_order: number;
 }
 
 
+export type HeadingBlock = {
+  id: string;
+  type: 'heading';
+  sort_order: number;
+  props: {
+    text: string;
+    level: number;
+  };
+};
+
+export type RichTextBlock = {
+  id: string;
+  type: 'richtext';
+  sort_order: number;
+  props: {
+    html: string;
+  };
+};
 
 export type ImageBlock = {
-  media_id: string;
-  alt: string;
-  size: 'small' | 'medium' | 'large';
-  alignment: 'left' | 'center' | 'right';
-  object_fit: 'cover' | 'contain';
-  object_position: 'top' | 'center' | 'bottom';
+  id: string;
+  type: 'image';
+  sort_order: number;
+  props: {
+    media_id: string;
+    alt_text?: string;
+    align: 'left' | 'center' | 'right';
+    object_fit?: 'cover' | 'contain' | 'fill' | 'scale-down' | 'none';
+  };
 };
+
+export type Block = HeadingBlock | RichTextBlock | ImageBlock;
 
