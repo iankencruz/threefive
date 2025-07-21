@@ -6,9 +6,32 @@ package generated
 
 import (
 	"github.com/google/uuid"
-	blocks "github.com/iankencruz/threefive/internal/core/blocks"
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+type Block struct {
+	ID         uuid.UUID          `db:"id" json:"id"`
+	ParentType string             `db:"parent_type" json:"parent_type"`
+	ParentID   uuid.UUID          `db:"parent_id" json:"parent_id"`
+	Type       string             `db:"type" json:"type"`
+	SortOrder  int32              `db:"sort_order" json:"sort_order"`
+	CreatedAt  pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt  pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+type HeadingBlock struct {
+	BlockID     uuid.UUID `db:"block_id" json:"block_id"`
+	Title       string    `db:"title" json:"title"`
+	Description *string   `db:"description" json:"description"`
+}
+
+type ImageBlock struct {
+	BlockID   uuid.UUID   `db:"block_id" json:"block_id"`
+	MediaID   pgtype.UUID `db:"media_id" json:"media_id"`
+	AltText   *string     `db:"alt_text" json:"alt_text"`
+	Align     string      `db:"align" json:"align"`
+	ObjectFit string      `db:"object_fit" json:"object_fit"`
+}
 
 type Media struct {
 	ID           uuid.UUID          `db:"id" json:"id"`
@@ -34,7 +57,6 @@ type Page struct {
 	SeoTitle       *string            `db:"seo_title" json:"seo_title"`
 	SeoDescription *string            `db:"seo_description" json:"seo_description"`
 	SeoCanonical   *string            `db:"seo_canonical" json:"seo_canonical"`
-	Content        []blocks.Block     `db:"content" json:"content"`
 	IsDraft        *bool              `db:"is_draft" json:"is_draft"`
 	IsPublished    *bool              `db:"is_published" json:"is_published"`
 	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
@@ -59,6 +81,11 @@ type ProjectMedium struct {
 	ProjectID uuid.UUID `db:"project_id" json:"project_id"`
 	MediaID   uuid.UUID `db:"media_id" json:"media_id"`
 	SortOrder int32     `db:"sort_order" json:"sort_order"`
+}
+
+type RichtextBlock struct {
+	BlockID uuid.UUID `db:"block_id" json:"block_id"`
+	Html    string    `db:"html" json:"html"`
 }
 
 type Session struct {

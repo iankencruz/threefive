@@ -22,7 +22,6 @@ type Handler struct {
 }
 
 func NewHandler(q *generated.Queries, logger *slog.Logger) *Handler {
-
 	repo := NewRepository(q)
 	service := NewProjectService(repo)
 

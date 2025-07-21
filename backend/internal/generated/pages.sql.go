@@ -9,32 +9,30 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	blocks "github.com/iankencruz/threefive/internal/core/blocks"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createPage = `-- name: CreatePage :one
 INSERT INTO pages (
   slug, title, cover_image_id, seo_title, seo_description, seo_canonical,
-  content, is_draft, is_published
+  is_draft, is_published
 )
 VALUES (
   $1, $2, $3, $4, $5, $6,
-  $7, $8, $9
+  $7, $8
 )
-RETURNING id, slug, title, cover_image_id, seo_title, seo_description, seo_canonical, content, is_draft, is_published, created_at, updated_at
+RETURNING id, slug, title, cover_image_id, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at
 `
 
 type CreatePageParams struct {
-	Slug           string         `db:"slug" json:"slug"`
-	Title          string         `db:"title" json:"title"`
-	CoverImageID   pgtype.UUID    `db:"cover_image_id" json:"cover_image_id"`
-	SeoTitle       *string        `db:"seo_title" json:"seo_title"`
-	SeoDescription *string        `db:"seo_description" json:"seo_description"`
-	SeoCanonical   *string        `db:"seo_canonical" json:"seo_canonical"`
-	Content        []blocks.Block `db:"content" json:"content"`
-	IsDraft        *bool          `db:"is_draft" json:"is_draft"`
-	IsPublished    *bool          `db:"is_published" json:"is_published"`
+	Slug           string      `db:"slug" json:"slug"`
+	Title          string      `db:"title" json:"title"`
+	CoverImageID   pgtype.UUID `db:"cover_image_id" json:"cover_image_id"`
+	SeoTitle       *string     `db:"seo_title" json:"seo_title"`
+	SeoDescription *string     `db:"seo_description" json:"seo_description"`
+	SeoCanonical   *string     `db:"seo_canonical" json:"seo_canonical"`
+	IsDraft        *bool       `db:"is_draft" json:"is_draft"`
+	IsPublished    *bool       `db:"is_published" json:"is_published"`
 }
 
 func (q *Queries) CreatePage(ctx context.Context, arg CreatePageParams) (Page, error) {
@@ -45,7 +43,6 @@ func (q *Queries) CreatePage(ctx context.Context, arg CreatePageParams) (Page, e
 		arg.SeoTitle,
 		arg.SeoDescription,
 		arg.SeoCanonical,
-		arg.Content,
 		arg.IsDraft,
 		arg.IsPublished,
 	)
@@ -58,7 +55,6 @@ func (q *Queries) CreatePage(ctx context.Context, arg CreatePageParams) (Page, e
 		&i.SeoTitle,
 		&i.SeoDescription,
 		&i.SeoCanonical,
-		&i.Content,
 		&i.IsDraft,
 		&i.IsPublished,
 		&i.CreatedAt,
@@ -77,7 +73,7 @@ func (q *Queries) DeletePage(ctx context.Context, id uuid.UUID) error {
 }
 
 const getPageByID = `-- name: GetPageByID :one
-SELECT id, slug, title, cover_image_id, seo_title, seo_description, seo_canonical, content, is_draft, is_published, created_at, updated_at FROM pages WHERE id = $1
+SELECT id, slug, title, cover_image_id, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at FROM pages WHERE id = $1
 `
 
 func (q *Queries) GetPageByID(ctx context.Context, id uuid.UUID) (Page, error) {
@@ -91,7 +87,6 @@ func (q *Queries) GetPageByID(ctx context.Context, id uuid.UUID) (Page, error) {
 		&i.SeoTitle,
 		&i.SeoDescription,
 		&i.SeoCanonical,
-		&i.Content,
 		&i.IsDraft,
 		&i.IsPublished,
 		&i.CreatedAt,
@@ -101,7 +96,7 @@ func (q *Queries) GetPageByID(ctx context.Context, id uuid.UUID) (Page, error) {
 }
 
 const getPageBySlug = `-- name: GetPageBySlug :one
-SELECT id, slug, title, cover_image_id, seo_title, seo_description, seo_canonical, content, is_draft, is_published, created_at, updated_at FROM pages WHERE slug = $1
+SELECT id, slug, title, cover_image_id, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at FROM pages WHERE slug = $1
 `
 
 func (q *Queries) GetPageBySlug(ctx context.Context, slug string) (Page, error) {
@@ -115,7 +110,6 @@ func (q *Queries) GetPageBySlug(ctx context.Context, slug string) (Page, error) 
 		&i.SeoTitle,
 		&i.SeoDescription,
 		&i.SeoCanonical,
-		&i.Content,
 		&i.IsDraft,
 		&i.IsPublished,
 		&i.CreatedAt,
@@ -125,7 +119,7 @@ func (q *Queries) GetPageBySlug(ctx context.Context, slug string) (Page, error) 
 }
 
 const getPublishedPageBySlug = `-- name: GetPublishedPageBySlug :one
-SELECT id, slug, title, cover_image_id, seo_title, seo_description, seo_canonical, content, is_draft, is_published, created_at, updated_at FROM pages WHERE slug = $1 AND is_published = true
+SELECT id, slug, title, cover_image_id, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at FROM pages WHERE slug = $1 AND is_published = true
 `
 
 func (q *Queries) GetPublishedPageBySlug(ctx context.Context, slug string) (Page, error) {
@@ -139,7 +133,6 @@ func (q *Queries) GetPublishedPageBySlug(ctx context.Context, slug string) (Page
 		&i.SeoTitle,
 		&i.SeoDescription,
 		&i.SeoCanonical,
-		&i.Content,
 		&i.IsDraft,
 		&i.IsPublished,
 		&i.CreatedAt,
@@ -149,7 +142,7 @@ func (q *Queries) GetPublishedPageBySlug(ctx context.Context, slug string) (Page
 }
 
 const listPages = `-- name: ListPages :many
-SELECT id, slug, title, cover_image_id, seo_title, seo_description, seo_canonical, content, is_draft, is_published, created_at, updated_at FROM pages ORDER BY updated_at DESC
+SELECT id, slug, title, cover_image_id, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at FROM pages ORDER BY updated_at DESC
 `
 
 func (q *Queries) ListPages(ctx context.Context) ([]Page, error) {
@@ -169,7 +162,6 @@ func (q *Queries) ListPages(ctx context.Context) ([]Page, error) {
 			&i.SeoTitle,
 			&i.SeoDescription,
 			&i.SeoCanonical,
-			&i.Content,
 			&i.IsDraft,
 			&i.IsPublished,
 			&i.CreatedAt,
@@ -193,25 +185,23 @@ SET title = $1,
     seo_title = $4,
     seo_description = $5,
     seo_canonical = $6,
-    content = $7,
-    is_draft = $8,
-    is_published = $9,
+    is_draft = $7,
+    is_published = $8,
     updated_at = now()
-WHERE id = $10
-RETURNING id, slug, title, cover_image_id, seo_title, seo_description, seo_canonical, content, is_draft, is_published, created_at, updated_at
+WHERE id = $9
+RETURNING id, slug, title, cover_image_id, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at
 `
 
 type UpdatePageParams struct {
-	Title          string         `db:"title" json:"title"`
-	Slug           string         `db:"slug" json:"slug"`
-	CoverImageID   pgtype.UUID    `db:"cover_image_id" json:"cover_image_id"`
-	SeoTitle       *string        `db:"seo_title" json:"seo_title"`
-	SeoDescription *string        `db:"seo_description" json:"seo_description"`
-	SeoCanonical   *string        `db:"seo_canonical" json:"seo_canonical"`
-	Content        []blocks.Block `db:"content" json:"content"`
-	IsDraft        *bool          `db:"is_draft" json:"is_draft"`
-	IsPublished    *bool          `db:"is_published" json:"is_published"`
-	ID             uuid.UUID      `db:"id" json:"id"`
+	Title          string      `db:"title" json:"title"`
+	Slug           string      `db:"slug" json:"slug"`
+	CoverImageID   pgtype.UUID `db:"cover_image_id" json:"cover_image_id"`
+	SeoTitle       *string     `db:"seo_title" json:"seo_title"`
+	SeoDescription *string     `db:"seo_description" json:"seo_description"`
+	SeoCanonical   *string     `db:"seo_canonical" json:"seo_canonical"`
+	IsDraft        *bool       `db:"is_draft" json:"is_draft"`
+	IsPublished    *bool       `db:"is_published" json:"is_published"`
+	ID             uuid.UUID   `db:"id" json:"id"`
 }
 
 func (q *Queries) UpdatePage(ctx context.Context, arg UpdatePageParams) (Page, error) {
@@ -222,7 +212,6 @@ func (q *Queries) UpdatePage(ctx context.Context, arg UpdatePageParams) (Page, e
 		arg.SeoTitle,
 		arg.SeoDescription,
 		arg.SeoCanonical,
-		arg.Content,
 		arg.IsDraft,
 		arg.IsPublished,
 		arg.ID,
@@ -236,7 +225,6 @@ func (q *Queries) UpdatePage(ctx context.Context, arg UpdatePageParams) (Page, e
 		&i.SeoTitle,
 		&i.SeoDescription,
 		&i.SeoCanonical,
-		&i.Content,
 		&i.IsDraft,
 		&i.IsPublished,
 		&i.CreatedAt,

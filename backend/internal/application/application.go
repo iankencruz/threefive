@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/iankencruz/threefive/internal/auth"
+	"github.com/iankencruz/threefive/internal/blocks"
 	"github.com/iankencruz/threefive/internal/core/s3"
 	"github.com/iankencruz/threefive/internal/core/sessions"
 	"github.com/iankencruz/threefive/internal/generated"
@@ -26,6 +27,7 @@ type Application struct {
 	MediaHandler   *media.Handler
 	ProjectHandler *project.Handler
 	PageHandler    *pages.Handler
+	BlockHandler   *blocks.Handler
 }
 
 func New(
@@ -33,8 +35,8 @@ func New(
 	cfg *Config,
 	db *pgxpool.Pool,
 	sm *sessions.Manager,
-	logger *slog.Logger) *Application {
-
+	logger *slog.Logger,
+) *Application {
 	queries := generated.New(db) // ✅ Initialize sqlc Queries
 
 	// ✅ Initialise S3 uploader here
@@ -46,16 +48,19 @@ func New(
 		cfg.S3.UseSSL,
 		cfg.S3.BaseURL,
 	)
-
 	if err != nil {
 		logger.Error("failed to initialise S3", "err", err)
 		panic(err) // or return error if you propagate
 	}
 
+	blockRepo := blocks.NewRepository(queries)
+	blockService := blocks.NewService(blockRepo)
+
 	authHandler := auth.NewHandler(queries, sm, logger)
 	mediaHandler := media.NewHandler(queries, logger, uploader)
 	projectHandler := project.NewHandler(queries, logger)
-	pageHandler := *pages.NewHandler(queries, logger)
+	pageHandler := *pages.NewHandler(queries, blockRepo, blockService, logger)
+	blockHandler := *blocks.NewHandler(queries, logger)
 
 	return &Application{
 		Config:         cfg,
@@ -66,6 +71,7 @@ func New(
 		MediaHandler:   mediaHandler,
 		ProjectHandler: projectHandler,
 		PageHandler:    &pageHandler,
+		BlockHandler:   &blockHandler,
 	}
 }
 

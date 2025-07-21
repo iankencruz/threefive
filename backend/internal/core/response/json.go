@@ -40,7 +40,7 @@ func WriteJSON(w http.ResponseWriter, statusCode int, message string, data inter
 		return err
 	}
 
-	fmt.Println("✅ WriteJSON sent:", string(js))
+	// fmt.Println("✅ WriteJSON sent:", string(js))
 	return nil
 }
 

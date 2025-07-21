@@ -36,7 +36,6 @@ func Routes(app *Application) http.Handler {
 	// ✅ Versioned API
 	r.Route("/api", func(r chi.Router) {
 		r.Route("/v1", func(r chi.Router) {
-
 			// === / public routes ===
 			r.Group(func(r chi.Router) {
 				r.Get("/home", func(w http.ResponseWriter, r *http.Request) {
@@ -55,7 +54,6 @@ func Routes(app *Application) http.Handler {
 				r.Get("/contact", func(w http.ResponseWriter, r *http.Request) {
 					w.Write([]byte("Contact Page"))
 				})
-
 			})
 
 			// === /auth routes (split inside)
@@ -114,8 +112,15 @@ func Routes(app *Application) http.Handler {
 						r.Get("/", app.PageHandler.Get)
 						r.Put("/", app.PageHandler.Update)
 						// r.Delete("/", app.PageHandler.Delete)
-
+						r.Put("/blocks/sort", app.PageHandler.SortBlocks)
 					})
+				})
+
+				// === /blocks ===
+				r.Route("/blocks", func(r chi.Router) {
+					r.Post("/", app.BlockHandler.Create)
+					r.Put("/{id}", app.BlockHandler.Update)
+					r.Delete("/{id}", app.BlockHandler.Delete)
 				})
 
 				// === TODO: Add galleries, blog, settings etc. here ===
