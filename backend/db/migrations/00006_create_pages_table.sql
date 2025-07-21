@@ -8,7 +8,6 @@ CREATE TABLE IF NOT EXISTS pages (
   seo_title TEXT,
   seo_description TEXT,
   seo_canonical TEXT,
-  content JSONB NOT NULL DEFAULT '[]',
   is_draft BOOLEAN DEFAULT true,
   is_published BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT now(),

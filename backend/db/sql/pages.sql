@@ -2,11 +2,11 @@
 -- name: CreatePage :one
 INSERT INTO pages (
   slug, title, cover_image_id, seo_title, seo_description, seo_canonical,
-  content, is_draft, is_published
+  is_draft, is_published
 )
 VALUES (
   @slug, @title, @cover_image_id, @seo_title, @seo_description, @seo_canonical,
-  @content, @is_draft, @is_published
+  @is_draft, @is_published
 )
 RETURNING *;
 
@@ -31,7 +31,6 @@ SET title = @title,
     seo_title = @seo_title,
     seo_description = @seo_description,
     seo_canonical = @seo_canonical,
-    content = @content,
     is_draft = @is_draft,
     is_published = @is_published,
     updated_at = now()
