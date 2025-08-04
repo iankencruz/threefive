@@ -20,8 +20,17 @@
 	let menuOpen = $state(false);
 	let collapsed = $state(false); // controls full vs compact sidebar
 
-	function isActive(path?: string): boolean {
-		return page.url.pathname === path || page.url.pathname.startsWith(path + '/');
+	function isActive(href: string): boolean {
+		const path = page.url.pathname;
+
+		// Exact match is always active
+		if (path === href) return true;
+
+		// If href is '/' or just '/admin', don't match subroutes
+		if (href === '/admin') return path === '/admin';
+
+		// Match subroutes properly (e.g. /admin/projects)
+		return path.startsWith(href + '/');
 	}
 
 	onMount(async () => {
@@ -52,8 +61,8 @@
 		<a
 			href={item.href}
 			class={`group  flex items-center rounded-md text-sm font-semibold text-gray-700
-			${!collapsed && isActive(item.href) ? 'bg-gray-50 text-indigo-600' : ''}
-			${collapsed && isActive(item.href) ? 'text-indigo-600' : ''}
+			${!collapsed && isActive(item.href ?? '') ? 'bg-gray-50 text-indigo-600' : ''}
+			${collapsed && isActive(item.href ?? '') ? 'text-indigo-600' : ''}
 			${!collapsed ? 'gap-x-4 px-2 py-1  hover:bg-gray-50' : 'justify-center px-2 py-1 hover:bg-transparent'}
 			hover:text-indigo-600`}
 		>
