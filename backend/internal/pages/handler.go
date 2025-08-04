@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
 	"github.com/iankencruz/threefive/internal/blocks"
 	"github.com/iankencruz/threefive/internal/core/response"
 	"github.com/iankencruz/threefive/internal/core/validators"
@@ -34,40 +33,44 @@ func NewHandler(q *generated.Queries, blockRepo *blocks.Repository, blockService
 	}
 }
 
+func (h *Handler) HomePage(w http.ResponseWriter, r *http.Request) {
+	data := "Home Page"
+	response.WriteJSON(w, http.StatusOK, "Home Page Public:", data)
+}
+
+func (h *Handler) ContactPage(w http.ResponseWriter, r *http.Request) {
+	page, err := h.Service.Repo.GetPageBySlug(r.Context(), "contact")
+	if err != nil {
+		response.WriteJSON(w, http.StatusNotFound, "No valid Page found", err)
+		return
+	}
+
+	response.WriteJSON(w, http.StatusOK, "Admin:Get Page success", page)
+}
+
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
-	pages, err := h.Service.Repo.ListPages(r.Context())
+	sort := r.URL.Query().Get("sort") // optional query param
+	pages, err := h.Repo.ListPages(r.Context(), sort)
 	if err != nil {
-		response.WriteJSON(w, http.StatusInternalServerError, "Failed to list pages", err)
+		response.WriteJSON(w, http.StatusInternalServerError, "Failed to fetch pages", nil)
 		return
 	}
-	response.WriteJSON(w, http.StatusOK, "Admin: List Pages success", pages)
+
+	response.WriteJSON(w, http.StatusOK, "✅ Pages fetched", pages)
 }
 
-func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
-	var req CreatePageRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.WriteJSON(w, http.StatusBadRequest, "Invalid request body", err)
-		return
-	}
-
-	v := validators.New()
-	v.Require("title", req.Page.Title)
-
-	if !v.Valid() {
-		response.WriteJSON(w, http.StatusBadRequest, fmt.Sprintf("Validation failed: %v\n", v.Errors), v.Errors)
-		return
-	}
-
-	page, err := h.Service.Create(r.Context(), req.Page)
+func (h *Handler) AboutPage(w http.ResponseWriter, r *http.Request) {
+	page, err := h.Service.Repo.GetPageBySlug(r.Context(), "about")
 	if err != nil {
-		response.WriteJSON(w, http.StatusInternalServerError, "Failed to create page", nil)
+		response.WriteJSON(w, http.StatusNotFound, "No valid Page found", err)
 		return
 	}
-	response.WriteJSON(w, http.StatusCreated, "Create Page success", page)
+
+	response.WriteJSON(w, http.StatusOK, "Admin:Get Page success", page)
 }
 
-// Getter
-func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
+// Getter page by slug
+func (h *Handler) GetAdminPages(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
 
 	if slug == "" {
@@ -81,24 +84,36 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	blocks, err := h.Service.GetPageBlocks(r.Context(), page.ID)
-	if err != nil {
-		response.WriteJSON(w, http.StatusInternalServerError, fmt.Sprintf("Failed to fetch Page Blocks: %v", err), err.Error())
+	response.WriteJSON(w, http.StatusOK, "Admin:Get Page success", page)
+}
+
+func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
+	var req generated.CreatePageParams
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJSON(w, http.StatusBadRequest, "Invalid request body", err)
 		return
 	}
 
-	result := PageWithBlocks{
-		Page:   *page,
-		Blocks: blocks,
+	v := validators.New()
+	v.Require("title", req.Title)
+
+	if !v.Valid() {
+		response.WriteJSON(w, http.StatusBadRequest, fmt.Sprintf("Validation failed: %v\n", v.Errors), v.Errors)
+		return
 	}
 
-	response.WriteJSON(w, http.StatusOK, "Admin:Get Page success", result)
+	page, err := h.Service.Create(r.Context(), req)
+	if err != nil {
+		response.WriteJSON(w, http.StatusInternalServerError, "Failed to create page", err.Error())
+		return
+	}
+	response.WriteJSON(w, http.StatusCreated, "Create Page success", page)
 }
 
 // Update Page
 
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
-	var req UpdatePageWithBlocksRequest
+	var req generated.UpdatePageParams
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJSON(w, http.StatusBadRequest, "Invalid request body", err)
 		return
@@ -110,46 +125,33 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		response.WriteJSON(w, http.StatusNotFound, "Page not found", err)
 		return
 	}
-	req.Page.ID = page.ID
+	req.ID = page.ID
 
-	updated, err := h.Service.UpdateWithBlocks(r.Context(), req)
+	page, err = h.Service.Update(r.Context(), req)
 	if err != nil {
 		response.WriteJSON(w, http.StatusInternalServerError, "Failed to update page.", err.Error())
 		return
 	}
 
-	response.WriteJSON(w, http.StatusOK, "Update Page success", updated)
+	response.WriteJSON(w, http.StatusOK, "Update Page success", page)
 }
 
-func (h *Handler) SortBlocks(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
 	if slug == "" {
 		response.WriteJSON(w, http.StatusBadRequest, "Missing page slug", nil)
 		return
 	}
 
-	var updates []struct {
-		ID        uuid.UUID `json:"id"`
-		SortOrder int       `json:"sort_order"`
-	}
-	if err := response.DecodeJSON(w, r, &updates); err != nil {
-		response.WriteJSON(w, http.StatusBadRequest, "Invalid request body", err.Error())
+	page, err := h.Service.Repo.GetPageBySlug(r.Context(), slug)
+	if err != nil {
+		response.WriteJSON(w, http.StatusInternalServerError, "failed to retrive page via slug", err.Error())
 		return
 	}
 
-	for _, u := range updates {
-		args := generated.UpdateBlockSortOrderParams{
-			ID:        u.ID,
-			SortOrder: int32(u.SortOrder),
-		}
-
-		fmt.Printf("  - BlockID: %s → Order: %d\n", args.ID, args.SortOrder)
-
-		if err := h.BlockRepo.UpdateBlockSortOrder(r.Context(), args); err != nil {
-			response.WriteJSON(w, http.StatusInternalServerError, "Failed to update block", err.Error())
-			return
-		}
+	if err := h.Service.Repo.DeletePage(r.Context(), page.ID); err != nil {
+		response.WriteJSON(w, http.StatusBadRequest, "Invalid request body", err.Error())
+		return
 	}
-
-	response.WriteJSON(w, http.StatusOK, "Block sort updated", nil)
+	response.WriteJSON(w, http.StatusNoContent, "", nil)
 }

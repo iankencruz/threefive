@@ -14,14 +14,14 @@ import (
 
 const createPage = `-- name: CreatePage :one
 INSERT INTO pages (
-  slug, title, cover_image_id, seo_title, seo_description, seo_canonical,
+  slug, title, cover_image_id, seo_title, seo_description, seo_canonical, content,
   is_draft, is_published
 )
 VALUES (
-  $1, $2, $3, $4, $5, $6,
-  $7, $8
+  $1, $2, $3, $4, $5, $6, $7,
+  $8, $9
 )
-RETURNING id, slug, title, cover_image_id, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at
+RETURNING id, slug, title, cover_image_id, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at, content
 `
 
 type CreatePageParams struct {
@@ -31,6 +31,7 @@ type CreatePageParams struct {
 	SeoTitle       *string     `db:"seo_title" json:"seo_title"`
 	SeoDescription *string     `db:"seo_description" json:"seo_description"`
 	SeoCanonical   *string     `db:"seo_canonical" json:"seo_canonical"`
+	Content        *string     `db:"content" json:"content"`
 	IsDraft        *bool       `db:"is_draft" json:"is_draft"`
 	IsPublished    *bool       `db:"is_published" json:"is_published"`
 }
@@ -43,6 +44,7 @@ func (q *Queries) CreatePage(ctx context.Context, arg CreatePageParams) (Page, e
 		arg.SeoTitle,
 		arg.SeoDescription,
 		arg.SeoCanonical,
+		arg.Content,
 		arg.IsDraft,
 		arg.IsPublished,
 	)
@@ -59,6 +61,7 @@ func (q *Queries) CreatePage(ctx context.Context, arg CreatePageParams) (Page, e
 		&i.IsPublished,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Content,
 	)
 	return i, err
 }
@@ -73,7 +76,7 @@ func (q *Queries) DeletePage(ctx context.Context, id uuid.UUID) error {
 }
 
 const getPageByID = `-- name: GetPageByID :one
-SELECT id, slug, title, cover_image_id, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at FROM pages WHERE id = $1
+SELECT id, slug, title, cover_image_id, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at, content FROM pages WHERE id = $1
 `
 
 func (q *Queries) GetPageByID(ctx context.Context, id uuid.UUID) (Page, error) {
@@ -91,12 +94,13 @@ func (q *Queries) GetPageByID(ctx context.Context, id uuid.UUID) (Page, error) {
 		&i.IsPublished,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Content,
 	)
 	return i, err
 }
 
 const getPageBySlug = `-- name: GetPageBySlug :one
-SELECT id, slug, title, cover_image_id, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at FROM pages WHERE slug = $1
+SELECT id, slug, title, cover_image_id, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at, content FROM pages WHERE slug = $1
 `
 
 func (q *Queries) GetPageBySlug(ctx context.Context, slug string) (Page, error) {
@@ -114,12 +118,13 @@ func (q *Queries) GetPageBySlug(ctx context.Context, slug string) (Page, error) 
 		&i.IsPublished,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Content,
 	)
 	return i, err
 }
 
 const getPublishedPageBySlug = `-- name: GetPublishedPageBySlug :one
-SELECT id, slug, title, cover_image_id, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at FROM pages WHERE slug = $1 AND is_published = true
+SELECT id, slug, title, cover_image_id, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at, content FROM pages WHERE slug = $1 AND is_published = true
 `
 
 func (q *Queries) GetPublishedPageBySlug(ctx context.Context, slug string) (Page, error) {
@@ -137,16 +142,17 @@ func (q *Queries) GetPublishedPageBySlug(ctx context.Context, slug string) (Page
 		&i.IsPublished,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Content,
 	)
 	return i, err
 }
 
-const listPages = `-- name: ListPages :many
-SELECT id, slug, title, cover_image_id, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at FROM pages ORDER BY updated_at DESC
+const listPagesByTitleAsc = `-- name: ListPagesByTitleAsc :many
+SELECT id, slug, title, cover_image_id, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at, content FROM pages ORDER BY title ASC
 `
 
-func (q *Queries) ListPages(ctx context.Context) ([]Page, error) {
-	rows, err := q.db.Query(ctx, listPages)
+func (q *Queries) ListPagesByTitleAsc(ctx context.Context) ([]Page, error) {
+	rows, err := q.db.Query(ctx, listPagesByTitleAsc)
 	if err != nil {
 		return nil, err
 	}
@@ -166,6 +172,81 @@ func (q *Queries) ListPages(ctx context.Context) ([]Page, error) {
 			&i.IsPublished,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Content,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPagesByUpdatedAsc = `-- name: ListPagesByUpdatedAsc :many
+SELECT id, slug, title, cover_image_id, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at, content FROM pages ORDER BY updated_at ASC
+`
+
+func (q *Queries) ListPagesByUpdatedAsc(ctx context.Context) ([]Page, error) {
+	rows, err := q.db.Query(ctx, listPagesByUpdatedAsc)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Page
+	for rows.Next() {
+		var i Page
+		if err := rows.Scan(
+			&i.ID,
+			&i.Slug,
+			&i.Title,
+			&i.CoverImageID,
+			&i.SeoTitle,
+			&i.SeoDescription,
+			&i.SeoCanonical,
+			&i.IsDraft,
+			&i.IsPublished,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Content,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPagesByUpdatedDesc = `-- name: ListPagesByUpdatedDesc :many
+SELECT id, slug, title, cover_image_id, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at, content FROM pages ORDER BY updated_at DESC
+`
+
+func (q *Queries) ListPagesByUpdatedDesc(ctx context.Context) ([]Page, error) {
+	rows, err := q.db.Query(ctx, listPagesByUpdatedDesc)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Page
+	for rows.Next() {
+		var i Page
+		if err := rows.Scan(
+			&i.ID,
+			&i.Slug,
+			&i.Title,
+			&i.CoverImageID,
+			&i.SeoTitle,
+			&i.SeoDescription,
+			&i.SeoCanonical,
+			&i.IsDraft,
+			&i.IsPublished,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Content,
 		); err != nil {
 			return nil, err
 		}
@@ -187,9 +268,10 @@ SET title = $1,
     seo_canonical = $6,
     is_draft = $7,
     is_published = $8,
+    content = $9,
     updated_at = now()
-WHERE id = $9
-RETURNING id, slug, title, cover_image_id, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at
+WHERE id = $10
+RETURNING id, slug, title, cover_image_id, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at, content
 `
 
 type UpdatePageParams struct {
@@ -201,6 +283,7 @@ type UpdatePageParams struct {
 	SeoCanonical   *string     `db:"seo_canonical" json:"seo_canonical"`
 	IsDraft        *bool       `db:"is_draft" json:"is_draft"`
 	IsPublished    *bool       `db:"is_published" json:"is_published"`
+	Content        *string     `db:"content" json:"content"`
 	ID             uuid.UUID   `db:"id" json:"id"`
 }
 
@@ -214,6 +297,7 @@ func (q *Queries) UpdatePage(ctx context.Context, arg UpdatePageParams) (Page, e
 		arg.SeoCanonical,
 		arg.IsDraft,
 		arg.IsPublished,
+		arg.Content,
 		arg.ID,
 	)
 	var i Page
@@ -229,6 +313,7 @@ func (q *Queries) UpdatePage(ctx context.Context, arg UpdatePageParams) (Page, e
 		&i.IsPublished,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Content,
 	)
 	return i, err
 }

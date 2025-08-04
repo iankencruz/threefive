@@ -19,7 +19,7 @@ sql:
             go_type:
               import: "github.com/google/uuid"
               type: "UUID"
-          - column: "pages.content"
+          - column: "blogs.content"
             go_type:
               import: "github.com/iankencruz/threefive/internal/core/blocks"
               package: "blocks"

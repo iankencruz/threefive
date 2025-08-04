@@ -11,7 +11,7 @@ type Repository interface {
 	CreatePage(ctx context.Context, arg generated.CreatePageParams) (*generated.Page, error)
 	GetPageByID(ctx context.Context, id uuid.UUID) (*generated.Page, error)
 	GetPageBySlug(ctx context.Context, slug string) (*generated.Page, error)
-	ListPages(ctx context.Context) ([]generated.Page, error)
+	ListPages(ctx context.Context, sort string) ([]generated.Page, error)
 	UpdatePage(ctx context.Context, arg generated.UpdatePageParams) (*generated.Page, error)
 	DeletePage(ctx context.Context, id uuid.UUID) error
 }
@@ -48,8 +48,15 @@ func (r *PageRepository) GetPageBySlug(ctx context.Context, slug string) (*gener
 	return &page, nil
 }
 
-func (r *PageRepository) ListPages(ctx context.Context) ([]generated.Page, error) {
-	return r.q.ListPages(ctx)
+func (r *PageRepository) ListPages(ctx context.Context, sort string) ([]generated.Page, error) {
+	switch sort {
+	case "desc":
+		return r.q.ListPagesByUpdatedAsc(ctx)
+	case "asc":
+		return r.q.ListPagesByTitleAsc(ctx)
+	default:
+		return r.q.ListPagesByUpdatedDesc(ctx) // fallback
+	}
 }
 
 func (r *PageRepository) UpdatePage(ctx context.Context, arg generated.UpdatePageParams) (*generated.Page, error) {

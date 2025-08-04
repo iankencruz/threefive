@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
 	"github.com/iankencruz/threefive/internal/core/response"
 	"github.com/iankencruz/threefive/internal/core/validators"
 	"github.com/iankencruz/threefive/internal/generated"
@@ -67,7 +66,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	response.WriteJSON(w, http.StatusCreated, "✅ Create Project success", project)
 }
 
-func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetAdminProjects(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
 	if slug == "" {
 		response.WriteJSON(w, http.StatusBadRequest, "Missing project slug", nil)
@@ -125,15 +124,14 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
-	idStr := chi.URLParam(r, "id")
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		response.WriteJSON(w, http.StatusBadRequest, "Invalid project ID", nil)
+	slug := chi.URLParam(r, "slug")
+	if slug == "" {
+		response.WriteJSON(w, http.StatusBadRequest, "Missing Page Slug", nil)
 		return
 	}
 
-	if err := h.Service.repo.DeleteProject(r.Context(), id); err != nil {
-		response.WriteJSON(w, http.StatusInternalServerError, "Failed to delete project", err)
+	if err := h.Service.repo.DeleteProject(r.Context(), slug); err != nil {
+		response.WriteJSON(w, http.StatusInternalServerError, "Failed to delete project", err.Error())
 		return
 	}
 	response.WriteJSON(w, http.StatusNoContent, "", nil)

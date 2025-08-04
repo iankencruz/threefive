@@ -19,6 +19,21 @@ type Block struct {
 	UpdatedAt  pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
+type Blog struct {
+	ID             uuid.UUID          `db:"id" json:"id"`
+	Slug           string             `db:"slug" json:"slug"`
+	Title          string             `db:"title" json:"title"`
+	CoverImageID   pgtype.UUID        `db:"cover_image_id" json:"cover_image_id"`
+	SeoDescription *string            `db:"seo_description" json:"seo_description"`
+	SeoTitle       *string            `db:"seo_title" json:"seo_title"`
+	CanonicalUrl   *string            `db:"canonical_url" json:"canonical_url"`
+	IsDraft        *bool              `db:"is_draft" json:"is_draft"`
+	IsPublished    *bool              `db:"is_published" json:"is_published"`
+	PublishedAt    pgtype.Timestamptz `db:"published_at" json:"published_at"`
+	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
 type HeadingBlock struct {
 	BlockID     uuid.UUID `db:"block_id" json:"block_id"`
 	Title       string    `db:"title" json:"title"`
@@ -61,6 +76,7 @@ type Page struct {
 	IsPublished    *bool              `db:"is_published" json:"is_published"`
 	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt      pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	Content        *string            `db:"content" json:"content"`
 }
 
 type Project struct {

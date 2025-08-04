@@ -38,22 +38,13 @@ func Routes(app *Application) http.Handler {
 		r.Route("/v1", func(r chi.Router) {
 			// === / public routes ===
 			r.Group(func(r chi.Router) {
-				r.Get("/home", func(w http.ResponseWriter, r *http.Request) {
-					w.Write([]byte("Home Page"))
-				})
+				r.Get("/home", app.PageHandler.HomePage)
 
-				// r.Get("/about", func(w http.ResponseWriter, r *http.Request) {
-				// 	w.Write([]byte("About Page"))
-				// })
+				r.Get("/about", app.PageHandler.AboutPage)
 
-				// Generated Pages (About, Contact, etc.)
-				// r.Get("/api/v1/pages/{slug}", app.PageHandler.GetPublic)
+				r.Get("/projects", app.MediaHandler.ListMediaHandler) // replace with PageHandler for projects
 
-				r.Get("/projects", app.MediaHandler.ListMediaHandler)
-
-				r.Get("/contact", func(w http.ResponseWriter, r *http.Request) {
-					w.Write([]byte("Contact Page"))
-				})
+				r.Get("/contact", app.PageHandler.ContactPage)
 			})
 
 			// === /auth routes (split inside)
@@ -94,7 +85,7 @@ func Routes(app *Application) http.Handler {
 					r.Get("/", app.ProjectHandler.List)
 					r.Post("/", app.ProjectHandler.Create)
 					r.Route("/{slug}", func(r chi.Router) {
-						r.Get("/", app.ProjectHandler.Get)
+						r.Get("/", app.ProjectHandler.GetAdminProjects)
 						r.Put("/", app.ProjectHandler.Update)
 						r.Delete("/", app.ProjectHandler.Delete)
 
@@ -109,10 +100,21 @@ func Routes(app *Application) http.Handler {
 					r.Get("/", app.PageHandler.List)
 					r.Post("/", app.PageHandler.Create)
 					r.Route("/{slug}", func(r chi.Router) {
-						r.Get("/", app.PageHandler.Get)
+						r.Get("/", app.PageHandler.GetAdminPages)
+						r.Put("/", app.PageHandler.Update)
+						r.Delete("/", app.PageHandler.Delete)
+					})
+				})
+
+				// === /blogs ===
+				r.Route("/blogs", func(r chi.Router) {
+					r.Get("/", app.PageHandler.List)
+					r.Post("/", app.PageHandler.Create)
+					r.Route("/{slug}", func(r chi.Router) {
+						r.Get("/", app.PageHandler.GetAdminPages)
 						r.Put("/", app.PageHandler.Update)
 						// r.Delete("/", app.PageHandler.Delete)
-						r.Put("/blocks/sort", app.PageHandler.SortBlocks)
+						// r.Put("/blocks/sort", app.PageHandler.SortBlocks)
 					})
 				})
 

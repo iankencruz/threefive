@@ -14,7 +14,7 @@ type Repository interface {
 	ListProjects(ctx context.Context) ([]generated.Project, error)
 	ListPublishedProjects(ctx context.Context) ([]generated.Project, error)
 	UpdateProject(ctx context.Context, arg generated.UpdateProjectParams) (*generated.Project, error)
-	DeleteProject(ctx context.Context, id uuid.UUID) error
+	DeleteProject(ctx context.Context, slug string) error
 
 	AddMediaToProject(ctx context.Context, arg generated.AddMediaToProjectParams) error
 	RemoveMediaFromProject(ctx context.Context, arg generated.RemoveMediaFromProjectParams) error
@@ -93,8 +93,8 @@ func (r *ProjectRepository) UpdateProject(ctx context.Context, arg generated.Upd
 	return &project, nil
 }
 
-func (r *ProjectRepository) DeleteProject(ctx context.Context, id uuid.UUID) error {
-	return r.q.DeleteProject(ctx, id)
+func (r *ProjectRepository) DeleteProject(ctx context.Context, slug string) error {
+	return r.q.DeleteProject(ctx, slug)
 }
 
 func (r *ProjectRepository) AddMediaToProject(ctx context.Context, arg generated.AddMediaToProjectParams) error {
