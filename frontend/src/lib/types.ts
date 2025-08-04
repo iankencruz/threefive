@@ -49,7 +49,7 @@ export interface Page {
   seo_title?: string;
   seo_description?: string;
   seo_canonical?: string;
-  content: Block[];
+  content: string;
   is_draft?: boolean;
   is_published?: boolean;
   created_at: string;
@@ -69,8 +69,8 @@ export type HeadingBlock = {
   type: 'heading';
   sort_order: number;
   props: {
-    text: string;
-    level: number;
+    title: string;
+    description: string;
   };
 };
 

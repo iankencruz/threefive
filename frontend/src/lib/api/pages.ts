@@ -47,3 +47,21 @@ export async function getPages(sort: string = 'asc'): Promise<Page[]> {
   }
   return json.data;
 }
+
+
+
+export async function updatePage(data: Page, slug: string): Promise<void> {
+  const res = await fetch(`/api/v1/admin/pages/${slug}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  })
+
+  const json = await res.json()
+  if (!res.ok) {
+    throw new Error(json.message || 'Failed to load pages');
+  }
+
+  return json.data
+
+}

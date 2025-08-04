@@ -1,17 +1,16 @@
 <script>
-	import { auth } from '$lib/store/auth.svelte.js';
 	import { Toaster } from 'svelte-sonner';
 
 	let { data, children } = $props();
 
-	$effect(() => {
-		console.log('Hydrating auth store:', data.user); // ✅ log here
-		if (data.user) {
-			auth.setUser(data.user);
-		} else {
-			auth.clear();
-		}
-	});
+	// $effect(() => {
+	// 	console.log('Hydrating auth store:', data.user); // ✅ log here
+	// 	if (data.user) {
+	// 		auth.setUser(data.user);
+	// 	} else {
+	// 		auth.clear();
+	// 	}
+	// });
 </script>
 
 <Toaster closeButton richColors position="top-right" expand={true} />

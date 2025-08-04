@@ -4,6 +4,7 @@
 	import PageForm from '$lib/components/Forms/PageForm.svelte';
 	import type { Page } from '$lib/types';
 	import { goto } from '$app/navigation';
+	import { updatePage } from '$lib/api/pages';
 
 	async function loadPage(slug: string): Promise<Page> {
 		const res = await fetch(`/api/v1/admin/pages/${slug}`);
@@ -22,17 +23,7 @@
 	console.log('slug:', page.params.slug);
 	async function handleUpdate(data: Page): Promise<void> {
 		try {
-			const res = await fetch(`/api/v1/admin/pages/${page.params.slug}`, {
-				method: 'PUT',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(data)
-			});
-
-			const json = await res.json();
-			if (!res.ok) {
-				toast.error(json.message || 'Failed to save');
-				return;
-			}
+			const res = updatePage(data, page.params.slug);
 
 			toast.success('Page updated');
 			goto('/admin/pages');

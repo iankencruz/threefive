@@ -38,4 +38,4 @@ WHERE id = @id
 RETURNING *;
 
 -- name: DeleteProject :exec
-DELETE FROM projects WHERE id = @id;
+DELETE FROM projects WHERE slug = @slug;

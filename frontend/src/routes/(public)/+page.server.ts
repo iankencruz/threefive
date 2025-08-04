@@ -1,3 +1,4 @@
+export const ssr = true
 
 import type { PageServerLoad } from './$types';
 
