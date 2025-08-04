@@ -1,4 +1,4 @@
-import type { Block } from "$lib/types";
+import type { Block, Page } from "$lib/types";
 
 export async function saveToBackend(content: string) {
   try {
@@ -37,4 +37,13 @@ export async function sortBlocks(slug: string, blocks: Block[]) {
   if (!res.ok) {
     throw new Error('Failed to sort blocks');
   }
+}
+
+export async function getPages(sort: string = 'asc'): Promise<Page[]> {
+  const res = await fetch(`/api/v1/admin/pages?sort=${sort}`);
+  const json = await res.json();
+  if (!res.ok) {
+    throw new Error(json.message || 'Failed to load pages');
+  }
+  return json.data;
 }

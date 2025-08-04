@@ -142,7 +142,7 @@
 							>View project<span class="sr-only">View Project</span></a
 						>
 						<button
-							onclick={() => deleteProject(project.id)}
+							onclick={() => deleteProject(project.slug)}
 							class=" inline-flex items-center rounded-md bg-red-500 px-2 py-1.5 text-sm font-semibold text-white shadow-xs ring-1 ring-gray-300 ring-inset hover:bg-red-700"
 						>
 							Delete

@@ -2,35 +2,14 @@
 	import { page } from '$app/state';
 	import { toast } from 'svelte-sonner';
 	import PageForm from '$lib/components/Forms/PageForm.svelte';
-	import type { Page, Block } from '$lib/types';
+	import type { Page } from '$lib/types';
 	import { goto } from '$app/navigation';
-	import { pages } from '$lib/store/pages.svelte';
-	import { sortBlocks } from '$lib/api/pages';
 
-	let loadedPage = $state<Page | null>(null);
-	let blocks = $state<Block[]>([]);
-	let slug = $state<string | null>(null);
+	async function loadPage(slug: string): Promise<Page> {
+		const res = await fetch(`/api/v1/admin/pages/${slug}`);
+		const data = await res.json();
 
-	// Load page when slug changes
-	$effect(() => {
-		const incomingSlug = page.params.slug;
-		slug = incomingSlug;
-		loadPage(incomingSlug);
-	});
-
-	async function loadPage(slug: string): Promise<void> {
-		try {
-			const res = await fetch(`/api/v1/admin/pages/${slug}`);
-			const json = await res.json();
-
-			if (!res.ok) throw new Error(json.message || 'Unknown error');
-
-			loadedPage = json.data.page;
-			blocks = json.data.blocks ?? [];
-		} catch (err) {
-			console.error('Failed to load page:', err);
-			toast.error('Failed to load page');
-		}
+		return data.data;
 	}
 
 	function handleDelete(data: Page): void {
@@ -40,29 +19,13 @@
 		}
 	}
 
-	async function handleUpdate({ page, blocks }: { page: Page; blocks: Block[] }) {
-		const serializableBlocks = blocks.map((b) => ({
-			...b,
-			props: JSON.parse(JSON.stringify(b.props))
-		}));
-
-		const sortedBlocks = serializableBlocks
-			.sort((a, b) => a.sort_order - b.sort_order)
-			.map((b, i) => ({ ...b, sort_order: i }));
-
+	console.log('slug:', page.params.slug);
+	async function handleUpdate(data: Page): Promise<void> {
 		try {
-			// ✅ 2. Then save the full page + content
-			const payload = {
-				page,
-				blocks: sortedBlocks
-			};
-
-			console.log('🧾 Payload:', payload);
-
-			const res = await fetch(`/api/v1/admin/pages/${page.slug}`, {
+			const res = await fetch(`/api/v1/admin/pages/${page.params.slug}`, {
 				method: 'PUT',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(payload)
+				body: JSON.stringify(data)
 			});
 
 			const json = await res.json();
@@ -72,8 +35,7 @@
 			}
 
 			toast.success('Page updated');
-			pages.updatePage(page);
-			goto(`/admin/pages/${page.slug}`);
+			goto('/admin/pages');
 		} catch (err) {
 			console.error(err);
 			toast.error('Update failed');
@@ -81,8 +43,10 @@
 	}
 </script>
 
-{#if loadedPage}
-	<PageForm content={loadedPage} {blocks} onsubmit={handleUpdate} ondelete={handleDelete} />
-{:else}
-	<p class="text-gray-500">Loading page...</p>
-{/if}
+{#await loadPage(page.params.slug ?? '')}
+	<p>fetching</p>
+{:then data}
+	<PageForm content={data} onsubmit={handleUpdate} ondelete={handleDelete} />
+{:catch error}
+	<p>Something went wrong: {error}</p>
+{/await}
