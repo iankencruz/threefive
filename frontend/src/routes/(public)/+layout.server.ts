@@ -1,13 +1,13 @@
 export const ssr = true
-export const csr = true
+export const csr = false
 
 
 // src/routes/+layout.server.ts
 import type { LayoutServerLoad } from './$types';
 
 export const load: LayoutServerLoad = async ({ locals }) => {
-	return {
-		user: locals.user ?? null
-	};
+  return {
+    user: locals.user
+  };
 };
 
