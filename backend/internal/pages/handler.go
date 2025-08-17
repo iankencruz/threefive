@@ -34,8 +34,14 @@ func NewHandler(q *generated.Queries, blockRepo *blocks.Repository, blockService
 }
 
 func (h *Handler) HomePage(w http.ResponseWriter, r *http.Request) {
-	data := "Home Page"
-	response.WriteJSON(w, http.StatusOK, "Home Page Public:", data)
+	// data := "Home Page"
+	page, err := h.Service.Repo.GetPageBySlug(r.Context(), "home")
+	if err != nil {
+		h.Logger.Error("No valid Page found")
+		response.WriteJSON(w, http.StatusNotFound, "No valid Page found", err)
+		return
+	}
+	response.WriteJSON(w, http.StatusOK, "Home Page Public:", page)
 }
 
 func (h *Handler) ContactPage(w http.ResponseWriter, r *http.Request) {
@@ -62,6 +68,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) AboutPage(w http.ResponseWriter, r *http.Request) {
 	page, err := h.Service.Repo.GetPageBySlug(r.Context(), "about")
 	if err != nil {
+		h.Logger.Error("No valid Page found")
 		response.WriteJSON(w, http.StatusNotFound, "No valid Page found", err)
 		return
 	}

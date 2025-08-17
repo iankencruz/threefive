@@ -12,13 +12,22 @@ export interface NavigationItem {
 }
 
 
+export const navigationBar: NavigationItem[] = [
+  // { label: 'Home', href: '/', icon: Settings },
+  { label: 'About', href: 'about', icon: LogOut },
+  { label: 'Projects', href: 'projects', icon: LogOut },
+  { label: 'Contact', href: 'contact', icon: LogOut },
+];
+
+
 export const userMenuItems: NavigationItem[] = [
   { label: 'Settings', href: '/settings', icon: Settings },
   { label: 'Logout', action: 'logout', icon: LogOut }
 ];
 
 
-export const sidebarNavigation: NavigationItem[] = [
+
+export const adminNavigationBar: NavigationItem[] = [
   {
     label: 'Dashboard',
     href: `/admin`,

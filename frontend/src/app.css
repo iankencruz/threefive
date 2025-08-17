@@ -1,3 +1,21 @@
+@import url('https://fonts.googleapis.com/css2?family=Inconsolata:wght@200..900&display=swap');
 @import 'tailwindcss';
 @plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
+
+
+
+
+@theme {
+  --font-inconsolata: "Inconsolata", sans-serif;
+}
+
+
+
+button.tiptap {
+  @apply rounded border px-2 py-1 text-sm hover:bg-gray-100;
+}
+
+button.tiptap.active {
+  @apply bg-black text-white;
+}

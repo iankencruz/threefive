@@ -66,7 +66,7 @@
 			src="https://tailwindcss.com/plus-assets/img/logos/mark.svg?color=indigo&shade=600"
 			alt="Your Company"
 		/>
-		<h2 class="mt-6 text-center text-2xl/9 font-bold tracking-tight text-gray-900">
+		<h2 class="mt-6 text-center text-2xl/9 font-bold tracking-tight text-gray-100">
 			Sign in to your account
 		</h2>
 		{#if error}
@@ -75,10 +75,10 @@
 	</div>
 
 	<div class="mt-10 sm:mx-auto sm:w-full sm:max-w-[480px]">
-		<div class="bg-white px-6 py-12 shadow-sm sm:rounded-lg sm:px-12">
+		<div class="bg-neutral-800 px-6 py-12 shadow-sm sm:rounded-lg sm:px-12">
 			<form class="space-y-6" onsubmit={handleLogin}>
 				<div>
-					<label for="email" class="block text-sm/6 font-medium text-gray-900">Email address</label>
+					<label for="email" class="block text-sm/6 font-medium text-gray-300">Email address</label>
 					<div class="mt-2">
 						<input
 							type="email"
@@ -93,7 +93,7 @@
 				</div>
 
 				<div>
-					<label for="password" class="block text-sm/6 font-medium text-gray-900">Password</label>
+					<label for="password" class="block text-sm/6 font-medium text-gray-300">Password</label>
 					<div class="mt-2">
 						<input
 							type="password"
@@ -139,7 +139,7 @@
 								</svg>
 							</div>
 						</div>
-						<label for="remember-me" class="block text-sm/6 text-gray-900">Remember me</label>
+						<label for="remember-me" class="block text-sm/6 text-gray-300">Remember me</label>
 					</div>
 
 					<div class="text-sm/6">
@@ -166,7 +166,7 @@
 						<div class="w-full border-t border-gray-200"></div>
 					</div>
 					<div class="relative flex justify-center text-sm/6 font-medium">
-						<span class="bg-white px-6 text-gray-900">Or continue with</span>
+						<span class="bg-neutral-800 px-6 text-gray-300">Or continue with</span>
 					</div>
 				</div>
 

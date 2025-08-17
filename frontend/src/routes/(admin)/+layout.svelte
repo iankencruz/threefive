@@ -5,7 +5,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import {
-		sidebarNavigation,
+		adminNavigationBar,
 		userMenuItems,
 		type NavigationItem
 	} from '$lib/components/Navigation/navigation';
@@ -129,7 +129,7 @@
 							<ul class="flex flex-1 flex-col gap-y-2">
 								<li>
 									<ul class="-mx-2 space-y-1">
-										{@render NavItem(sidebarNavigation)}
+										{@render NavItem(adminNavigationBar)}
 									</ul>
 								</li>
 							</ul>
@@ -174,7 +174,7 @@
 					<ul class="flex flex-1 flex-col">
 						<li>
 							<ul class="-mx-2">
-								{@render NavItem(sidebarNavigation)}
+								{@render NavItem(adminNavigationBar)}
 							</ul>
 						</li>
 					</ul>

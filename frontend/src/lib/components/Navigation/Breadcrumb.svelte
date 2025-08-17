@@ -44,7 +44,7 @@
 </script>
 
 {#if !shouldHide}
-	<nav class="mb-4 text-sm text-gray-500">
+	<nav class="mb-4 px-4 text-sm text-gray-500">
 		<ul class="flex items-center gap-1">
 			{#each breadcrumbs as crumb, i (i)}
 				{#if i > 0}

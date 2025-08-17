@@ -6,7 +6,7 @@
 	import { goto } from '$app/navigation';
 	import EmptyState from '$lib/components/Overlays/EmptyState.svelte';
 	import { auth } from '$lib/store/auth.svelte';
-	import { formatDate } from '$lib/utils/utilities';
+	import { formatDate, slugify } from '$lib/utils/utilities';
 	import { onMount } from 'svelte';
 	import Drawers from '$lib/components/Overlays/Drawers.svelte';
 
@@ -23,6 +23,10 @@
 		is_published: false,
 		created_at: new Date().toISOString(),
 		updated_at: new Date().toISOString()
+	});
+
+	$effect(() => {
+		newPage.slug = slugify(newPage.title);
 	});
 
 	let drawerOpen = $state(false);
@@ -96,7 +100,7 @@
 {:then data}
 	<section class="py-6">
 		<div class="mb-6 flex items-center justify-between">
-			<h1 class="text-2xl font-semibold text-gray-900">Pages</h1>
+			<h1 class=" text-2xl font-semibold text-gray-900">Pages</h1>
 			<button
 				onclick={openCreateDrawer}
 				class="rounded-md border bg-indigo-600 px-3 py-1.5 text-sm text-black text-white hover:bg-black/10"

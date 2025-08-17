@@ -10,7 +10,8 @@ export const load: PageServerLoad = async ({ fetch }) => {
   console.log('pageserverload data:', json.data)
 
   return {
-    Hero: `This is where the Hero Element with data ${json.data} belongs`
+    Hero: json.data,
+    Content: json.data.content
   };
 };
 

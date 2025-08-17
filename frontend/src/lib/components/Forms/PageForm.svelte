@@ -5,6 +5,7 @@
 	import LinkMediaModal from '../Media/LinkMediaModal.svelte';
 	import { Tipex, type TipexEditor } from '@friendofsvelte/tipex';
 	import '@friendofsvelte/tipex/styles/index.css';
+	import TipTap from '../Builders/TipTap.svelte';
 
 	let {
 		content = $bindable(),
@@ -130,13 +131,7 @@
 	<!-- Content -->
 	<div>
 		<label for="content" class="block text-sm font-medium text-gray-700">Content</label>
-		<Tipex
-			{body}
-			bind:tipex={editor}
-			floating
-			focal
-			class="mt-1 h-[35vh] min-h-[15vh] w-full rounded border border-gray-300 bg-white shadow-sm focus:outline-none"
-		/>
+		<TipTap />
 	</div>
 
 	<!-- SEO Fields -->
