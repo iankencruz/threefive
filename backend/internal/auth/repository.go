@@ -12,6 +12,7 @@ type Repository interface {
 	GetUserByEmail(ctx context.Context, email string) (*generated.User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (*generated.User, error)
 	DeleteUserByID(ctx context.Context, id uuid.UUID) error
+	ListUsers(ctx context.Context) ([]generated.User, error)
 }
 
 type AuthRepository struct {
@@ -50,4 +51,8 @@ func (r *AuthRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*genera
 
 func (r *AuthRepository) DeleteUserByID(ctx context.Context, id uuid.UUID) error {
 	return r.q.DeleteUser(ctx, id)
+}
+
+func (r *AuthRepository) ListUsers(ctx context.Context) ([]generated.User, error) {
+	return r.q.ListUsers(ctx)
 }

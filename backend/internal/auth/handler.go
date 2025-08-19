@@ -173,34 +173,11 @@ func (h *Handler) GetAuthenticatedUser(w http.ResponseWriter, r *http.Request) {
 	_ = response.WriteJSON(w, http.StatusOK, "", user)
 }
 
-// func (h *Handler) MeHandler(w http.ResponseWriter, r *http.Request) {
-// 	ctx := r.Context()
-//
-// 	sessionID := ctx.Value(contextkeys.SessionID).(string)
-// 	if sessionID == "" {
-// 		http.Error(w, "Unauthorised", http.StatusUnauthorized)
-// 		return
-// 	}
-//
-// 	userIDStr, err := h.SessionManager.GetString(ctx, sessionID, "userID")
-// 	if err != nil || userIDStr == "" {
-// 		http.Error(w, "Unauthorised", http.StatusUnauthorized)
-// 		return
-// 	}
-//
-// 	userID, err := strconv.Atoi(userIDStr)
-// 	if err != nil {
-// 		http.Error(w, "Invalid user ID", http.StatusInternalServerError)
-// 		return
-// 	}
-//
-// 	user, err := h.Service.GetUserByID(ctx, userID)
-// 	if err != nil {
-// 		http.Error(w, "User not found", http.StatusNotFound)
-// 		return
-// 	}
-//
-// 	response := map[string]any{"user": user}
-// 	w.Header().Set("Content-Type", "application/json")
-// 	_ = json.NewEncoder(w).Encode(response)
-// }
+func (h *Handler) GetAllUsers(w http.ResponseWriter, r *http.Request) {
+	users, err := h.Repo.ListUsers(r.Context())
+	if err != nil {
+		_ = response.WriteJSON(w, http.StatusInternalServerError, "Coult not retrieve user", err)
+	}
+
+	_ = response.WriteJSON(w, http.StatusOK, "", users)
+}

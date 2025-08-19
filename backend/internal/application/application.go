@@ -3,8 +3,10 @@ package application
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
 
 	"github.com/google/uuid"
 	"github.com/iankencruz/threefive/internal/auth"
@@ -85,4 +87,35 @@ func (app *Application) GetUserID(r *http.Request) (uuid.UUID, error) {
 
 func (app *Application) LoadUser(ctx context.Context, userID uuid.UUID) (any, error) {
 	return app.AuthHandler.Service.GetUserByID(ctx, userID)
+}
+
+func (app *Application) EnsureAdminExists() error {
+	var (
+		fname    = "Admin"
+		lname    = "User"
+		email    = os.Getenv("ADMIN_EMAIL")
+		password = os.Getenv("ADMIN_PASSWORD")
+	)
+
+	users, err := app.AuthHandler.Repo.ListUsers(context.Background())
+	if err != nil {
+		fmt.Printf("Error fetching Users: %v", err)
+		return err
+	}
+
+	if len(users) == 0 {
+		fmt.Printf("No Users found. Creating a default admin user...\n")
+		user, err := app.AuthHandler.Service.Register(context.Background(), fname, lname, email, password)
+		if err != nil {
+			fmt.Printf("Error creating a user: %v\n", err)
+			return err
+		}
+
+		fmt.Printf("Default Admin user created: %v.\n", user.Email)
+
+	} else {
+		fmt.Printf("✅ %d user(s) already exist. Skipping admin bootstrap.", len(users))
+	}
+
+	return nil
 }

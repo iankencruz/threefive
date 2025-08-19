@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -58,6 +59,11 @@ func main() {
 		WriteTimeout: 60 * time.Second,
 		IdleTimeout:  90 * time.Second,
 	}
+
+	if err := app.EnsureAdminExists(); err != nil {
+		fmt.Printf("Error bootstrapping admin user: %v", err)
+	}
+
 	if err := srv.ListenAndServe(); err != nil {
 		log.Error("❌ Server error:", slog.Any("error", err))
 	}
