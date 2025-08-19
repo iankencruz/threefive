@@ -6,131 +6,205 @@
 
 	let element = $state<HTMLElement>();
 	let editor = $state<Editor>();
+	let ui = $state(0); // bumps to force a re-render
+
+	let { body = $bindable() } = $props();
+
+	const refreshUI = () => {
+		ui++;
+	};
 
 	onMount(() => {
 		editor = new Editor({
 			element,
-			extensions: [
-				StarterKit.configure({
-					heading: { levels: [1, 2, 3] }
-				}),
-				Underline
-			],
+			extensions: [StarterKit.configure({ heading: { levels: [1, 2, 3] } }), Underline],
 			editorProps: {
-				attributes: {
-					class: 'prose prose-sm sm:prose-base lg:prose-lg m-5 focus:outline-none '
-				}
+				attributes: { class: 'prose prose-sm sm:prose-base lg:prose-lg m-5 focus:outline-none' }
 			},
-			content: '<p>Hello World! 🌍️</p>',
+			content: body,
 			onTransaction: () => {
-				// trigger reactive update so isActive() updates in Svelte
 				editor = editor;
-			}
+			} // keep your UI nudge
+		});
+
+		// Re-render for toolbar states
+		editor.on('selectionUpdate', refreshUI);
+		editor.on('transaction', refreshUI);
+
+		// CRITICAL: push content up to parent
+		editor.on('update', () => {
+			const html = editor?.getHTML();
+			if (html !== body) body = html; // <- updates parent because $bindable
+			refreshUI();
 		});
 	});
 
-	onDestroy(() => editor?.destroy());
+	// Keep editor in sync if parent changes `body` externally
+	$effect(() => {
+		if (editor && editor.getHTML() !== body) {
+			editor.commands.setContent(body, false);
+		}
+	});
 
-	function toggle(cmd: () => void) {
-		cmd();
-		editor = editor; // force refresh state
+	function run(cmd: () => boolean | undefined) {
+		cmd?.();
+		refreshUI();
+	}
+
+	const BLOCK_OPTIONS = [
+		{ value: 'paragraph', label: 'Paragraph' },
+		{ value: 'h1', label: 'Heading 1' },
+		{ value: 'h2', label: 'Heading 2' },
+		{ value: 'h3', label: 'Heading 3' }
+	] as const;
+
+	function currentBlockValue(): string {
+		if (!editor) return 'paragraph';
+		if (editor.isActive('heading', { level: 1 })) return 'h1';
+		if (editor.isActive('heading', { level: 2 })) return 'h2';
+		if (editor.isActive('heading', { level: 3 })) return 'h3';
+		return 'paragraph';
+	}
+
+	function applyBlock(value: string) {
+		const chain = editor?.chain().focus();
+		switch (value) {
+			case 'paragraph':
+				run(() => chain?.setParagraph().run());
+				break;
+			case 'h1':
+				run(() => chain?.toggleHeading({ level: 1 }).run());
+				break;
+			case 'h2':
+				run(() => chain?.toggleHeading({ level: 2 }).run());
+				break;
+			case 'h3':
+				run(() => chain?.toggleHeading({ level: 3 }).run());
+				break;
+		}
 	}
 </script>
 
 {#if editor}
-	<div class="flex flex-wrap gap-1 border border-b bg-gray-50 p-2">
-		<!-- Bold -->
-		<button
-			onclick={() => toggle(() => editor?.chain().focus().toggleBold().run())}
-			class="tiptap"
-			class:active={editor.isActive('bold')}><strong>B</strong></button
+	<!-- Note data-ui={ui} forces Svelte to re-evaluate bindings -->
+	<div
+		class="rte-toolbar flex flex-wrap items-center gap-2 rounded-t-md border bg-gray-50 p-2 shadow-sm"
+		data-ui={ui}
+	>
+		<!-- Paragraph/H1/H2/H3 dropdown -->
+		<select
+			class="tiptap h-8 rounded border bg-white px-2 text-sm"
+			onchange={(e) => applyBlock((e.target as HTMLSelectElement).value)}
+			value={currentBlockValue()}
+			title="Block format"
 		>
+			{#each BLOCK_OPTIONS as opt}
+				<option value={opt.value}>{opt.label}</option>
+			{/each}
+		</select>
 
-		<!-- Italic -->
-		<button
-			onclick={() => toggle(() => editor?.chain().focus().toggleItalic().run())}
-			class="tiptap"
-			class:active={editor.isActive('italic')}><em>I</em></button
-		>
+		<div class="mx-1 h-6 w-px bg-gray-300" />
 
-		<!-- Underline -->
-		<button
-			onclick={() => toggle(() => editor?.chain().focus().toggleUnderline().run())}
-			class="tiptap"
-			class:active={editor.isActive('underline')}><u>U</u></button
-		>
+		<!-- Inline styles -->
+		<div class="inline-flex overflow-hidden rounded border bg-white">
+			<button
+				class="tiptap"
+				data-active={editor?.isActive('bold') ?? false}
+				title="Bold"
+				onclick={() => run(() => editor?.chain().focus().toggleBold().run())}
+				disabled={(editor?.can().chain().focus().toggleBold().run() ?? false) === false}
+				><strong>B</strong></button
+			>
 
-		<!-- Strike -->
-		<button
-			onclick={() => toggle(() => editor?.chain().focus().toggleStrike().run())}
-			class="tiptap"
-			class:active={editor.isActive('strike')}><s>S</s></button
-		>
+			<button
+				class="tiptap"
+				data-active={editor?.isActive('italic') ?? false}
+				title="Italic"
+				onclick={() => run(() => editor?.chain().focus().toggleItalic().run())}
+				disabled={(editor?.can().chain().focus().toggleItalic().run() ?? false) === false}
+				><em>I</em></button
+			>
 
-		<!-- Headings -->
-		<button
-			onclick={() => toggle(() => editor?.chain().focus().toggleHeading({ level: 1 }).run())}
-			class="tiptap"
-			class:active={editor.isActive('heading', { level: 1 })}>H1</button
-		>
-		<button
-			onclick={() => toggle(() => editor?.chain().focus().toggleHeading({ level: 2 }).run())}
-			class="tiptap"
-			class:active={editor.isActive('heading', { level: 2 })}>H2</button
-		>
-		<button
-			onclick={() => toggle(() => editor?.chain().focus().toggleHeading({ level: 3 }).run())}
-			class="tiptap"
-			class:active={editor.isActive('heading', { level: 3 })}>H3</button
-		>
+			<button
+				class="tiptap"
+				data-active={editor?.isActive('underline') ?? false}
+				title="Underline"
+				onclick={() => run(() => editor?.chain().focus().toggleUnderline().run())}
+				disabled={(editor?.can().chain().focus().toggleUnderline().run() ?? false) === false}
+				><u>U</u></button
+			>
 
-		<!-- Paragraph -->
-		<button
-			onclick={() => toggle(() => editor?.chain().focus().setParagraph().run())}
-			class="tiptap"
-			class:active={editor.isActive('paragraph')}>P</button
-		>
+			<button
+				class="tiptap"
+				data-active={editor?.isActive('strike') ?? false}
+				title="Strikethrough"
+				onclick={() => run(() => editor?.chain().focus().toggleStrike().run())}
+				disabled={(editor?.can().chain().focus().toggleStrike().run() ?? false) === false}
+				><s>S</s></button
+			>
+		</div>
 
 		<!-- Lists -->
-		<button
-			onclick={() => toggle(() => editor?.chain().focus().toggleBulletList().run())}
-			class="tiptap"
-			class:active={editor.isActive('bulletList')}>• List</button
-		>
-		<button
-			onclick={() => toggle(() => editor?.chain().focus().toggleOrderedList().run())}
-			class="tiptap"
-			class:active={editor.isActive('orderedList')}>1. List</button
-		>
+		<div class="inline-flex overflow-hidden rounded border bg-white">
+			<button
+				class="tiptap"
+				data-active={editor?.isActive('bulletList') ?? false}
+				title="Bullet list"
+				onclick={() => run(() => editor?.chain().focus().toggleBulletList().run())}>• List</button
+			>
 
-		<!-- Blockquote -->
-		<button
-			onclick={() => toggle(() => editor?.chain().focus().toggleBlockquote().run())}
-			class="tiptap"
-			class:active={editor.isActive('blockquote')}>&ldquo;Quote&rdquo;</button
-		>
+			<button
+				class="tiptap"
+				data-active={editor?.isActive('orderedList') ?? false}
+				title="Numbered list"
+				onclick={() => run(() => editor?.chain().focus().toggleOrderedList().run())}>1. List</button
+			>
+		</div>
 
-		<!-- Code -->
-		<button
-			onclick={() => toggle(() => editor?.chain().focus().toggleCode().run())}
-			class="tiptap"
-			class:active={editor.isActive('code')}>&lt;/&gt;</button
-		>
+		<!-- Blockquote & Code block as buttons -->
+		<div class="inline-flex overflow-hidden rounded border bg-white">
+			<button
+				class="tiptap"
+				data-active={editor?.isActive('blockquote') ?? false}
+				title="Blockquote"
+				onclick={() => run(() => editor?.chain().focus().toggleBlockquote().run())}
+				>&ldquo;Quote&rdquo;</button
+			>
 
-		<!-- Code Block -->
-		<button
-			onclick={() => toggle(() => editor?.chain().focus().toggleCodeBlock().run())}
-			class="tiptap"
-			class:active={editor.isActive('codeBlock')}>[code]</button
-		>
+			<button
+				class="tiptap"
+				data-active={editor?.isActive('codeBlock') ?? false}
+				title="Code block"
+				onclick={() => run(() => editor?.chain().focus().toggleCodeBlock().run())}>[code]</button
+			>
+		</div>
 
-		<!-- Horizontal Rule -->
-		<button onclick={() => editor?.chain().focus().setHorizontalRule().run()}>―</button>
+		<!-- Insert -->
+		<div class="inline-flex overflow-hidden rounded border bg-white">
+			<button
+				class="tiptap"
+				title="Horizontal rule"
+				onclick={() => run(() => editor?.chain().focus().setHorizontalRule().run())}>—</button
+			>
+		</div>
 
 		<!-- Undo / Redo -->
-		<button onclick={() => editor?.chain().focus().undo().run()}>⤺ Undo</button>
-		<button onclick={() => editor?.chain().focus().redo().run()}>⤻ Redo</button>
+		<div class="inline-flex overflow-hidden rounded border bg-white">
+			<button
+				class="tiptap"
+				title="Undo"
+				onclick={() => run(() => editor?.chain().focus().undo().run())}
+				disabled={(editor?.can().chain().focus().undo().run() ?? false) === false}>⤺ Undo</button
+			>
+
+			<button
+				class="tiptap"
+				title="Redo"
+				onclick={() => run(() => editor?.chain().focus().redo().run())}
+				disabled={(editor?.can().chain().focus().redo().run() ?? false) === false}>⤻ Redo</button
+			>
+		</div>
 	</div>
 {/if}
 
-<div bind:this={element} />
+<div class="rounded-b-md border border-t-0 p-2" bind:this={element} />

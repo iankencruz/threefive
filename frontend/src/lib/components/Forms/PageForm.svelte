@@ -3,9 +3,8 @@
 	import { toast } from 'svelte-sonner';
 	import { getMediaById } from '$lib/api/media';
 	import LinkMediaModal from '../Media/LinkMediaModal.svelte';
-	import { Tipex, type TipexEditor } from '@friendofsvelte/tipex';
-	import '@friendofsvelte/tipex/styles/index.css';
 	import TipTap from '../Builders/TipTap.svelte';
+	import { Editor } from '@tiptap/core';
 
 	let {
 		content = $bindable(),
@@ -19,19 +18,12 @@
 
 	let localContent = $state({ ...content });
 
-	let editor = $state<TipexEditor>();
-
-	// Initialise the rich text value from localContent.content
+	// Initialise from existing content
 	let body = $state(localContent.content ?? '');
 
+	// Always mirror editor HTML into the payload
 	$effect(() => {
-		if (!editor) return;
-
-		editor.on('update', () => {
-			const html = editor?.getHTML() ?? '';
-			body = html;
-			localContent.content = html; // 🔁 Save rich text HTML to localContent.content
-		});
+		localContent.content = body;
 	});
 
 	function updateSlug(): void {
@@ -131,7 +123,7 @@
 	<!-- Content -->
 	<div>
 		<label for="content" class="block text-sm font-medium text-gray-700">Content</label>
-		<TipTap />
+		<TipTap bind:body />
 	</div>
 
 	<!-- SEO Fields -->

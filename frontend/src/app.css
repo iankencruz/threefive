@@ -12,10 +12,15 @@
 
 
 
+/* Scoped styling */
 button.tiptap {
-  @apply rounded border px-2 py-1 text-sm hover:bg-gray-100;
+  @apply px-2 py-1 text-sm hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50;
 }
 
 button.tiptap.active {
-  @apply bg-black text-white;
+  @apply bg-gray-200;
+}
+
+select.tiptap {
+  @apply border px-2 py-1 text-sm min-w-32;
 }
