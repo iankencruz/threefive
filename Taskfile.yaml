@@ -78,7 +78,7 @@ tasks:
   db-create:
     desc: Create a new goose migration
     cmds:
-      - goose -dir ./backend/db/migrations/ create {{.CLI_ARGS}} sql
+      - goose -dir ./backend/db/migrations/ -s create {{.CLI_ARGS}} sql
 
   up:
     desc: Apply all up migrations

@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { pages } from '$lib/store/pages.svelte';
 	import { toast } from 'svelte-sonner';
 
 	let { children } = $props();

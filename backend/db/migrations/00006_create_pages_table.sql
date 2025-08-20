@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS pages (
   slug TEXT UNIQUE NOT NULL,
   title TEXT NOT NULL,
   cover_image_id UUID REFERENCES media(id),
+  content TEXT,
   seo_title TEXT,
   seo_description TEXT,
   seo_canonical TEXT,
