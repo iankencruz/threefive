@@ -5,7 +5,8 @@ CREATE TABLE IF NOT EXISTS galleries (
   title TEXT NOT NULL,
   description TEXT,
   slug TEXT UNIQUE NOT NULL,
-  is_published BOOL DEFAULT false,
+  is_published BOOLEAN NOT NULL DEFAULT false,
+  published_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
@@ -30,7 +31,7 @@ CREATE TABLE IF NOT EXISTS gallery_page (
 
 -- +goose Down
 -- +goose StatementBegin
-DROP TABLE IF EXISTS galleries;
-DROP TABLE IF EXISTS gallery_media;
 DROP TABLE IF EXISTS gallery_page;
+DROP TABLE IF EXISTS gallery_media;
+DROP TABLE IF EXISTS galleries;
 -- +goose StatementEnd

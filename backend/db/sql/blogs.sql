@@ -37,10 +37,3 @@ DELETE FROM blogs
 WHERE slug = $1;
 
 
-
-
--- name: GetBlocksByOwner :many
-SELECT id, type, sort_order 
-FROM blocks
-WHERE parent_id = $1
-ORDER BY sort_order ASC;

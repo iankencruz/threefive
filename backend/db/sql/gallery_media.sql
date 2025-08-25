@@ -9,7 +9,7 @@ DELETE FROM gallery_media WHERE gallery_id = @gallery_id AND media_id = @media_i
 SELECT m.*
 FROM gallery_media gm
 JOIN media m ON m.id = gm.media_id
-WHERE gm.project_id = @project_id
+WHERE gm.gallery_id = @gallery_id
 ORDER BY gm.sort_order ASC;
 
 -- name: UpdateGalleryMediaSortOrder :exec
@@ -20,5 +20,6 @@ UPDATE gallery_media gm
 SET sort_order = sorted.sort_order
 FROM sorted
 WHERE gm.gallery_id = @gallery_id
-  AND gm.media_id = @sorted.media_id
+  AND gm.media_id = sorted.media_id;
+
 

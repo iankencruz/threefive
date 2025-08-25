@@ -8,7 +8,6 @@ package generated
 import (
 	"context"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -73,39 +72,6 @@ WHERE slug = $1
 func (q *Queries) DeleteBlog(ctx context.Context, slug string) error {
 	_, err := q.db.Exec(ctx, deleteBlog, slug)
 	return err
-}
-
-const getBlocksByOwner = `-- name: GetBlocksByOwner :many
-SELECT id, type, sort_order 
-FROM blocks
-WHERE parent_id = $1
-ORDER BY sort_order ASC
-`
-
-type GetBlocksByOwnerRow struct {
-	ID        uuid.UUID `db:"id" json:"id"`
-	Type      string    `db:"type" json:"type"`
-	SortOrder int32     `db:"sort_order" json:"sort_order"`
-}
-
-func (q *Queries) GetBlocksByOwner(ctx context.Context, parentID uuid.UUID) ([]GetBlocksByOwnerRow, error) {
-	rows, err := q.db.Query(ctx, getBlocksByOwner, parentID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []GetBlocksByOwnerRow
-	for rows.Next() {
-		var i GetBlocksByOwnerRow
-		if err := rows.Scan(&i.ID, &i.Type, &i.SortOrder); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
 }
 
 const getBlogBySlug = `-- name: GetBlogBySlug :one

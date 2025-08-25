@@ -9,16 +9,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type Block struct {
-	ID         uuid.UUID          `db:"id" json:"id"`
-	ParentType string             `db:"parent_type" json:"parent_type"`
-	ParentID   uuid.UUID          `db:"parent_id" json:"parent_id"`
-	Type       string             `db:"type" json:"type"`
-	SortOrder  int32              `db:"sort_order" json:"sort_order"`
-	CreatedAt  pgtype.Timestamptz `db:"created_at" json:"created_at"`
-	UpdatedAt  pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
-}
-
 type Blog struct {
 	ID             uuid.UUID          `db:"id" json:"id"`
 	Slug           string             `db:"slug" json:"slug"`
@@ -34,18 +24,27 @@ type Blog struct {
 	UpdatedAt      pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
-type HeadingBlock struct {
-	BlockID     uuid.UUID `db:"block_id" json:"block_id"`
-	Title       string    `db:"title" json:"title"`
-	Description *string   `db:"description" json:"description"`
+type Gallery struct {
+	ID          uuid.UUID          `db:"id" json:"id"`
+	Title       string             `db:"title" json:"title"`
+	Description *string            `db:"description" json:"description"`
+	Slug        string             `db:"slug" json:"slug"`
+	IsPublished bool               `db:"is_published" json:"is_published"`
+	PublishedAt pgtype.Timestamptz `db:"published_at" json:"published_at"`
+	CreatedAt   pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
-type ImageBlock struct {
-	BlockID   uuid.UUID   `db:"block_id" json:"block_id"`
-	MediaID   pgtype.UUID `db:"media_id" json:"media_id"`
-	AltText   *string     `db:"alt_text" json:"alt_text"`
-	Align     string      `db:"align" json:"align"`
-	ObjectFit string      `db:"object_fit" json:"object_fit"`
+type GalleryMedium struct {
+	GalleryID uuid.UUID `db:"gallery_id" json:"gallery_id"`
+	MediaID   uuid.UUID `db:"media_id" json:"media_id"`
+	SortOrder int32     `db:"sort_order" json:"sort_order"`
+}
+
+type GalleryPage struct {
+	GalleryID uuid.UUID `db:"gallery_id" json:"gallery_id"`
+	PageID    uuid.UUID `db:"page_id" json:"page_id"`
+	SortOrder int32     `db:"sort_order" json:"sort_order"`
 }
 
 type Media struct {
@@ -69,6 +68,7 @@ type Page struct {
 	Slug           string             `db:"slug" json:"slug"`
 	Title          string             `db:"title" json:"title"`
 	CoverImageID   pgtype.UUID        `db:"cover_image_id" json:"cover_image_id"`
+	Content        *string            `db:"content" json:"content"`
 	SeoTitle       *string            `db:"seo_title" json:"seo_title"`
 	SeoDescription *string            `db:"seo_description" json:"seo_description"`
 	SeoCanonical   *string            `db:"seo_canonical" json:"seo_canonical"`
@@ -76,7 +76,6 @@ type Page struct {
 	IsPublished    *bool              `db:"is_published" json:"is_published"`
 	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt      pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
-	Content        *string            `db:"content" json:"content"`
 }
 
 type Project struct {
@@ -97,11 +96,6 @@ type ProjectMedium struct {
 	ProjectID uuid.UUID `db:"project_id" json:"project_id"`
 	MediaID   uuid.UUID `db:"media_id" json:"media_id"`
 	SortOrder int32     `db:"sort_order" json:"sort_order"`
-}
-
-type RichtextBlock struct {
-	BlockID uuid.UUID `db:"block_id" json:"block_id"`
-	Html    string    `db:"html" json:"html"`
 }
 
 type Session struct {

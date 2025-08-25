@@ -21,7 +21,7 @@ VALUES (
   $1, $2, $3, $4, $5, $6, $7,
   $8, $9
 )
-RETURNING id, slug, title, cover_image_id, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at, content
+RETURNING id, slug, title, cover_image_id, content, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at
 `
 
 type CreatePageParams struct {
@@ -54,6 +54,7 @@ func (q *Queries) CreatePage(ctx context.Context, arg CreatePageParams) (Page, e
 		&i.Slug,
 		&i.Title,
 		&i.CoverImageID,
+		&i.Content,
 		&i.SeoTitle,
 		&i.SeoDescription,
 		&i.SeoCanonical,
@@ -61,7 +62,6 @@ func (q *Queries) CreatePage(ctx context.Context, arg CreatePageParams) (Page, e
 		&i.IsPublished,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.Content,
 	)
 	return i, err
 }
@@ -76,7 +76,7 @@ func (q *Queries) DeletePage(ctx context.Context, id uuid.UUID) error {
 }
 
 const getPageByID = `-- name: GetPageByID :one
-SELECT id, slug, title, cover_image_id, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at, content FROM pages WHERE id = $1
+SELECT id, slug, title, cover_image_id, content, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at FROM pages WHERE id = $1
 `
 
 func (q *Queries) GetPageByID(ctx context.Context, id uuid.UUID) (Page, error) {
@@ -87,6 +87,7 @@ func (q *Queries) GetPageByID(ctx context.Context, id uuid.UUID) (Page, error) {
 		&i.Slug,
 		&i.Title,
 		&i.CoverImageID,
+		&i.Content,
 		&i.SeoTitle,
 		&i.SeoDescription,
 		&i.SeoCanonical,
@@ -94,13 +95,12 @@ func (q *Queries) GetPageByID(ctx context.Context, id uuid.UUID) (Page, error) {
 		&i.IsPublished,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.Content,
 	)
 	return i, err
 }
 
 const getPageBySlug = `-- name: GetPageBySlug :one
-SELECT id, slug, title, cover_image_id, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at, content FROM pages WHERE slug = $1
+SELECT id, slug, title, cover_image_id, content, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at FROM pages WHERE slug = $1
 `
 
 func (q *Queries) GetPageBySlug(ctx context.Context, slug string) (Page, error) {
@@ -111,6 +111,7 @@ func (q *Queries) GetPageBySlug(ctx context.Context, slug string) (Page, error) 
 		&i.Slug,
 		&i.Title,
 		&i.CoverImageID,
+		&i.Content,
 		&i.SeoTitle,
 		&i.SeoDescription,
 		&i.SeoCanonical,
@@ -118,13 +119,12 @@ func (q *Queries) GetPageBySlug(ctx context.Context, slug string) (Page, error) 
 		&i.IsPublished,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.Content,
 	)
 	return i, err
 }
 
 const getPublishedPageBySlug = `-- name: GetPublishedPageBySlug :one
-SELECT id, slug, title, cover_image_id, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at, content FROM pages WHERE slug = $1 AND is_published = true
+SELECT id, slug, title, cover_image_id, content, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at FROM pages WHERE slug = $1 AND is_published = true
 `
 
 func (q *Queries) GetPublishedPageBySlug(ctx context.Context, slug string) (Page, error) {
@@ -135,6 +135,7 @@ func (q *Queries) GetPublishedPageBySlug(ctx context.Context, slug string) (Page
 		&i.Slug,
 		&i.Title,
 		&i.CoverImageID,
+		&i.Content,
 		&i.SeoTitle,
 		&i.SeoDescription,
 		&i.SeoCanonical,
@@ -142,13 +143,12 @@ func (q *Queries) GetPublishedPageBySlug(ctx context.Context, slug string) (Page
 		&i.IsPublished,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.Content,
 	)
 	return i, err
 }
 
 const listPagesByTitleAsc = `-- name: ListPagesByTitleAsc :many
-SELECT id, slug, title, cover_image_id, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at, content FROM pages ORDER BY title ASC
+SELECT id, slug, title, cover_image_id, content, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at FROM pages ORDER BY title ASC
 `
 
 func (q *Queries) ListPagesByTitleAsc(ctx context.Context) ([]Page, error) {
@@ -165,6 +165,7 @@ func (q *Queries) ListPagesByTitleAsc(ctx context.Context) ([]Page, error) {
 			&i.Slug,
 			&i.Title,
 			&i.CoverImageID,
+			&i.Content,
 			&i.SeoTitle,
 			&i.SeoDescription,
 			&i.SeoCanonical,
@@ -172,7 +173,6 @@ func (q *Queries) ListPagesByTitleAsc(ctx context.Context) ([]Page, error) {
 			&i.IsPublished,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.Content,
 		); err != nil {
 			return nil, err
 		}
@@ -185,7 +185,7 @@ func (q *Queries) ListPagesByTitleAsc(ctx context.Context) ([]Page, error) {
 }
 
 const listPagesByUpdatedAsc = `-- name: ListPagesByUpdatedAsc :many
-SELECT id, slug, title, cover_image_id, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at, content FROM pages ORDER BY updated_at ASC
+SELECT id, slug, title, cover_image_id, content, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at FROM pages ORDER BY updated_at ASC
 `
 
 func (q *Queries) ListPagesByUpdatedAsc(ctx context.Context) ([]Page, error) {
@@ -202,6 +202,7 @@ func (q *Queries) ListPagesByUpdatedAsc(ctx context.Context) ([]Page, error) {
 			&i.Slug,
 			&i.Title,
 			&i.CoverImageID,
+			&i.Content,
 			&i.SeoTitle,
 			&i.SeoDescription,
 			&i.SeoCanonical,
@@ -209,7 +210,6 @@ func (q *Queries) ListPagesByUpdatedAsc(ctx context.Context) ([]Page, error) {
 			&i.IsPublished,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.Content,
 		); err != nil {
 			return nil, err
 		}
@@ -222,7 +222,7 @@ func (q *Queries) ListPagesByUpdatedAsc(ctx context.Context) ([]Page, error) {
 }
 
 const listPagesByUpdatedDesc = `-- name: ListPagesByUpdatedDesc :many
-SELECT id, slug, title, cover_image_id, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at, content FROM pages ORDER BY updated_at DESC
+SELECT id, slug, title, cover_image_id, content, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at FROM pages ORDER BY updated_at DESC
 `
 
 func (q *Queries) ListPagesByUpdatedDesc(ctx context.Context) ([]Page, error) {
@@ -239,6 +239,7 @@ func (q *Queries) ListPagesByUpdatedDesc(ctx context.Context) ([]Page, error) {
 			&i.Slug,
 			&i.Title,
 			&i.CoverImageID,
+			&i.Content,
 			&i.SeoTitle,
 			&i.SeoDescription,
 			&i.SeoCanonical,
@@ -246,7 +247,6 @@ func (q *Queries) ListPagesByUpdatedDesc(ctx context.Context) ([]Page, error) {
 			&i.IsPublished,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.Content,
 		); err != nil {
 			return nil, err
 		}
@@ -271,7 +271,7 @@ SET title = $1,
     content = $9,
     updated_at = now()
 WHERE id = $10
-RETURNING id, slug, title, cover_image_id, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at, content
+RETURNING id, slug, title, cover_image_id, content, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at
 `
 
 type UpdatePageParams struct {
@@ -306,6 +306,7 @@ func (q *Queries) UpdatePage(ctx context.Context, arg UpdatePageParams) (Page, e
 		&i.Slug,
 		&i.Title,
 		&i.CoverImageID,
+		&i.Content,
 		&i.SeoTitle,
 		&i.SeoDescription,
 		&i.SeoCanonical,
@@ -313,7 +314,6 @@ func (q *Queries) UpdatePage(ctx context.Context, arg UpdatePageParams) (Page, e
 		&i.IsPublished,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.Content,
 	)
 	return i, err
 }
