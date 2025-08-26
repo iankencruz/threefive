@@ -12,7 +12,7 @@
 <!-- PAGE LAYOUT -->
 <div class="grid min-h-screen w-full grid-cols-1">
 	<!-- Main content -->
-	<div class="mx-auto min-h-screen w-full px-4 py-8">
+	<div class="mx-auto min-h-screen w-full">
 		{@render children()}
 	</div>
 </div>

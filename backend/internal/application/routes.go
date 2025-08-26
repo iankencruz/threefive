@@ -81,6 +81,15 @@ func Routes(app *Application) http.Handler {
 				})
 
 				// === /projects ===
+				r.Route("/galleries", func(r chi.Router) {
+					r.Get("/", app.GalleryHandler.List)
+					r.Post("/", app.GalleryHandler.Create)
+					r.Route("/{slug}", func(r chi.Router) {
+						r.Get("/", app.GalleryHandler.GetAdminGallery)
+					})
+				})
+
+				// === /projects ===
 				r.Route("/projects", func(r chi.Router) {
 					r.Get("/", app.ProjectHandler.List)
 					r.Post("/", app.ProjectHandler.Create)
@@ -116,13 +125,6 @@ func Routes(app *Application) http.Handler {
 						// r.Delete("/", app.PageHandler.Delete)
 						// r.Put("/blocks/sort", app.PageHandler.SortBlocks)
 					})
-				})
-
-				// === /blocks ===
-				r.Route("/blocks", func(r chi.Router) {
-					r.Post("/", app.BlockHandler.Create)
-					r.Put("/{id}", app.BlockHandler.Update)
-					r.Delete("/{id}", app.BlockHandler.Delete)
 				})
 
 				// === TODO: Add galleries, blog, settings etc. here ===

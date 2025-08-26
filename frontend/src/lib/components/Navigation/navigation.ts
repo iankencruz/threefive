@@ -39,6 +39,11 @@ export const adminNavigationBar: NavigationItem[] = [
     icon: FileCode2,
   },
   {
+    label: 'Galleries',
+    href: `/admin/galleries`,
+    icon: FileCode2,
+  },
+  {
     label: 'Projects',
     href: `/admin/projects`,
     icon: FolderClosed,

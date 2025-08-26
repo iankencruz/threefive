@@ -5,21 +5,16 @@ import (
 	"strings"
 
 	"github.com/gosimple/slug"
-	"github.com/iankencruz/threefive/internal/blocks"
 	"github.com/iankencruz/threefive/internal/generated"
 )
 
 type PageService struct {
-	Repo         Repository
-	BlockRepo    *blocks.Repository
-	BlockService *blocks.Service
+	Repo Repository
 }
 
-func NewPageService(repo Repository, blockRepo *blocks.Repository, blockService blocks.Service) *PageService {
+func NewPageService(repo Repository) *PageService {
 	return &PageService{
-		Repo:         repo,
-		BlockRepo:    blockRepo,
-		BlockService: &blockService,
+		Repo: repo,
 	}
 }
 

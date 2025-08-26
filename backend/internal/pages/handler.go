@@ -7,29 +7,24 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/iankencruz/threefive/internal/blocks"
 	"github.com/iankencruz/threefive/internal/core/response"
 	"github.com/iankencruz/threefive/internal/core/validators"
 	"github.com/iankencruz/threefive/internal/generated"
 )
 
 type Handler struct {
-	Repo         Repository
-	Service      *PageService
-	BlockService *blocks.Service
-	BlockRepo    *blocks.Repository
-	Logger       *slog.Logger
+	Repo    Repository
+	Service *PageService
+	Logger  *slog.Logger
 }
 
-func NewHandler(q *generated.Queries, blockRepo *blocks.Repository, blockService *blocks.Service, logger *slog.Logger) *Handler {
+func NewHandler(q *generated.Queries, logger *slog.Logger) *Handler {
 	repo := NewRepository(q)
-	service := NewPageService(repo, blockRepo, *blockService)
+	service := NewPageService(repo)
 	return &Handler{
-		Repo:         repo,
-		Service:      service,
-		BlockService: blockService,
-		BlockRepo:    blockRepo,
-		Logger:       logger,
+		Repo:    repo,
+		Service: service,
+		Logger:  logger,
 	}
 }
 

@@ -27,6 +27,20 @@ export type Project = {
 
 
 
+export type Gallery = {
+  id: UUID;
+  title: string;
+  description: string | null;
+  slug: string;
+  is_published: boolean;
+  published_at: string | null;
+  created_at: string;
+  updated_at: string;
+  media?: MediaItem[]; // or `media?: Media[]` if it's optional
+}
+
+
+
 export type MediaItem = {
   id: UUID;
   title: string;

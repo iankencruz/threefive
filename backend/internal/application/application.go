@@ -10,9 +10,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/iankencruz/threefive/internal/auth"
-	"github.com/iankencruz/threefive/internal/blocks"
 	"github.com/iankencruz/threefive/internal/core/s3"
 	"github.com/iankencruz/threefive/internal/core/sessions"
+	"github.com/iankencruz/threefive/internal/gallery"
 	"github.com/iankencruz/threefive/internal/generated"
 	"github.com/iankencruz/threefive/internal/media"
 	"github.com/iankencruz/threefive/internal/pages"
@@ -29,7 +29,7 @@ type Application struct {
 	MediaHandler   *media.Handler
 	ProjectHandler *project.Handler
 	PageHandler    *pages.Handler
-	BlockHandler   *blocks.Handler
+	GalleryHandler *gallery.Handler
 }
 
 func New(
@@ -55,14 +55,11 @@ func New(
 		panic(err) // or return error if you propagate
 	}
 
-	blockRepo := blocks.NewRepository(queries)
-	blockService := blocks.NewService(blockRepo)
-
 	authHandler := auth.NewHandler(queries, sm, logger)
 	mediaHandler := media.NewHandler(queries, logger, uploader)
 	projectHandler := project.NewHandler(queries, logger)
-	pageHandler := *pages.NewHandler(queries, blockRepo, blockService, logger)
-	blockHandler := *blocks.NewHandler(queries, logger)
+	pageHandler := *pages.NewHandler(queries, logger)
+	galleryHandler := *gallery.NewHandler(queries, logger)
 
 	return &Application{
 		Config:         cfg,
@@ -73,7 +70,7 @@ func New(
 		MediaHandler:   mediaHandler,
 		ProjectHandler: projectHandler,
 		PageHandler:    &pageHandler,
-		BlockHandler:   &blockHandler,
+		GalleryHandler: &galleryHandler,
 	}
 }
 
