@@ -4,6 +4,7 @@
 	import { toast } from 'svelte-sonner';
 	import type { MediaItem } from '$lib/types';
 	import Pagination from '../Navigation/Pagination.svelte';
+	import UploadMediaForm from '../Forms/UploadMediaForm.svelte';
 
 	let {
 		open,
@@ -15,7 +16,7 @@
 		mediaPool = null
 	} = $props<{
 		open: boolean;
-		context: { type: 'project' | 'block' | 'page'; id: string };
+		context: { type: 'project' | 'gallery' | 'block' | 'page'; id: string };
 		onclose: () => void;
 		onlinked: (media: MediaItem) => void;
 		linkedMediaIds: string[];

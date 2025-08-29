@@ -10,13 +10,13 @@ import (
 type Repository interface {
 	CreateGallery(ctx context.Context, arg generated.CreateGalleryParams) (*generated.Gallery, error)
 	GetGalleryByID(ctx context.Context, id uuid.UUID) (*generated.Gallery, error)
-	GetGalleryBySlug(ctx context.Context, slug string) (*generated.Gallery, error)
+	GetGalleryBySlug(ctx context.Context, slug string) (*GalleryWithMedia, error)
 	ListGalleries(ctx context.Context) ([]generated.Gallery, error)
 	DeleteGallery(ctx context.Context, id uuid.UUID) error
 	UpdateGallery(ctx context.Context, arg generated.UpdateGalleryParams) (*generated.Gallery, error)
-	// AddMediaToGallery(ctx context.Context, arg generated.AddMediaToGalleryParams) error
-	// RemoveMediaFromGallery(ctx context.Context, arg generated.RemoveMediaFromGalleryParams) error
-	// ListMediaFromGallery(ctx context.Context, galleryID uuid.UUID) ([]generated.Gallery, error)
+	AddMediaToGallery(ctx context.Context, arg generated.AddMediaToGalleryParams) error
+	RemoveMediaFromGallery(ctx context.Context, arg generated.RemoveMediaFromGalleryParams) error
+	ListMediaFromGallery(ctx context.Context, galleryID uuid.UUID) ([]generated.Media, error)
 	// UpdateGalleryMediaSortOrder(ctx context.Context, arg generated.UpdateGalleryMediaSortOrderParams) error
 }
 
@@ -44,12 +44,24 @@ func (r *GalleryRepository) GetGalleryByID(ctx context.Context, id uuid.UUID) (*
 	return &gallery, nil
 }
 
-func (r *GalleryRepository) GetGalleryBySlug(ctx context.Context, slug string) (*generated.Gallery, error) {
+func (r *GalleryRepository) GetGalleryBySlug(ctx context.Context, slug string) (*GalleryWithMedia, error) {
 	gallery, err := r.q.GetGalleryBySlug(ctx, slug)
 	if err != nil {
 		return nil, err
 	}
-	return &gallery, nil
+	mediaVals, err := r.q.ListMediaForGallery(ctx, gallery.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	mediaPtrs := make([]*generated.Media, len(mediaVals))
+	for i := range mediaVals {
+		mediaPtrs[i] = &mediaVals[i]
+	}
+	return &GalleryWithMedia{
+		Gallery: &gallery,
+		Media:   mediaPtrs,
+	}, nil
 }
 
 func (r *GalleryRepository) ListGalleries(ctx context.Context) ([]generated.Gallery, error) {
@@ -66,4 +78,16 @@ func (r *GalleryRepository) UpdateGallery(ctx context.Context, arg generated.Upd
 		return nil, err
 	}
 	return &gallery, nil
+}
+
+func (r *GalleryRepository) AddMediaToGallery(ctx context.Context, arg generated.AddMediaToGalleryParams) error {
+	return r.q.AddMediaToGallery(ctx, arg)
+}
+
+func (r *GalleryRepository) RemoveMediaFromGallery(ctx context.Context, arg generated.RemoveMediaFromGalleryParams) error {
+	return r.q.RemoveMediaFromGallery(ctx, arg)
+}
+
+func (r *GalleryRepository) ListMediaFromGallery(ctx context.Context, galleryID uuid.UUID) ([]generated.Media, error) {
+	return r.q.ListMediaForGallery(ctx, galleryID)
 }

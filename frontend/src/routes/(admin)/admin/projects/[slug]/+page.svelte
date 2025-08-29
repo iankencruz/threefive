@@ -7,12 +7,13 @@
 		unlinkMediaFromProject,
 		updateProjectMediaOrder
 	} from '$lib/api/projects';
-	import LinkMediaModal from '$lib/components/Media/LinkMediaModal.svelte';
-	import ProjectMediaGrid from '$lib/components/Media/ProjectMediaGrid.svelte';
 	import type { Project, MediaItem } from '$lib/types';
 	import { slugify, formatDate } from '$lib/utils/utilities';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
+
+	import LinkedMediaGrid from '$lib/components/Media/LinkedMediaGrid.svelte';
+	import LinkMediaModal from '$lib/components/Media/LinkMediaModal.svelte';
 
 	let loading = $state(true);
 	let project = $state<Project | null>(null);
@@ -277,10 +278,11 @@
 			</div>
 		{/if}
 
-		<ProjectMediaGrid
+		<LinkedMediaGrid
 			media={projectMedia}
 			onremove={handleUnlinkMedia}
-			projectSlug={project.slug}
+			slug={project.slug}
+			type="projects"
 			onsort={handleSortMedia}
 			onrefresh={refreshMediaGrid}
 		/>

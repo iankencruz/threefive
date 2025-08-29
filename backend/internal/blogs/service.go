@@ -2,91 +2,38 @@ package blogs
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/iankencruz/threefive/internal/blocks"
 	"github.com/iankencruz/threefive/internal/generated"
 )
 
 type BlogService struct {
-	repo         Repository
-	BlockRepo    *blocks.Repository
-	BlockService *blocks.Service
+	repo Repository
 }
 
-func NewBlogService(repo Repository, blockRepo *blocks.Repository, blockServices blocks.Service) *BlogService {
+func NewBlogService(repo Repository) *BlogService {
 	return &BlogService{
-		repo:         repo,
-		BlockRepo:    blockRepo,
-		BlockService: &blockServices,
+		repo: repo,
 	}
 }
 
-func (s *BlogService) GetBySlug(ctx context.Context, slug string) (BlogWithBlocks, error) {
+func (s *BlogService) GetGalleryBySlug(ctx context.Context, slug string) (BlogWithMedia, error) {
 	blog, err := s.repo.GetBySlug(ctx, slug)
 	if err != nil {
-		return BlogWithBlocks{}, err
+		return BlogWithMedia{}, err
 	}
 
-	rawBlocks, err := s.repo.GetBlocksForBlog(ctx, blog.ID)
+	mediaVals, err := s.repo.ListMediaForGallery(ctx, blog.ID)
 	if err != nil {
-		return BlogWithBlocks{}, err
+		return BlogWithMedia{}, err
 	}
 
-	var result []*blocks.BlockWithProps
-	for _, b := range rawBlocks {
-		var props any
-
-		switch b.Type {
-		case "heading":
-			h, err := s.BlockRepo.GetHeadingBlock(ctx, b.ID)
-			if err != nil {
-				return BlogWithBlocks{}, fmt.Errorf("get heading block failed: %w", err)
-			}
-			props = map[string]any{
-				"title":       h.Title,
-				"description": h.Description,
-			}
-
-		case "richtext":
-			rt, err := s.BlockRepo.GetRichTextBlockByID(ctx, b.ID)
-			if err != nil {
-				return BlogWithBlocks{}, fmt.Errorf("get richtext block failed: %w", err)
-			}
-			props = map[string]any{
-				"html": rt.Html,
-			}
-
-		case "image":
-			img, err := s.BlockRepo.GetImageBlock(ctx, b.ID)
-			if err != nil {
-				return BlogWithBlocks{}, fmt.Errorf("get image block failed: %w", err)
-			}
-			props = map[string]any{
-				"media_id":   img.MediaID,
-				"alt_text":   img.AltText,
-				"align":      img.Align,
-				"object_fit": img.ObjectFit,
-			}
-
-		default:
-			props = map[string]any{}
-		}
-
-		result = append(result, &blocks.BlockWithProps{
-			ID:        &b.ID,
-			Type:      b.Type,
-			SortOrder: b.SortOrder,
-			Props:     props,
-		})
+	mediaPtrs := make([]*generated.Media, len(mediaVals))
+	for i := range mediaVals {
+		mediaPtrs[i] = &mediaVals[i]
 	}
 
-	return BlogWithBlocks{
-		Blog:   blog,
-		Blocks: result,
+	return BlogWithMedia{
+		Blog:  &blog,
+		Media: mediaPtrs,
 	}, nil
-}
-
-func (s *BlogService) List(ctx context.Context) ([]generated.Blog, error) {
-	return s.repo.List(ctx)
 }

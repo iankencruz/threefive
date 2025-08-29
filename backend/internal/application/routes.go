@@ -86,6 +86,12 @@ func Routes(app *Application) http.Handler {
 					r.Post("/", app.GalleryHandler.Create)
 					r.Route("/{slug}", func(r chi.Router) {
 						r.Get("/", app.GalleryHandler.GetAdminGallery)
+						// r.Put("/", app.GalleryHandler.Update)
+						// r.Delete("/", app.GalleryHandler.Delete)
+
+						r.Post("/media", app.GalleryHandler.AddMedia)
+						r.Delete("/media", app.GalleryHandler.RemoveMedia)
+						// r.Put("/media/sort", app.GalleryHandler.UpdateSortOrder)
 					})
 				})
 

@@ -1,13 +1,14 @@
 <script lang="ts">
-	import type { MediaItem } from '$src/lib/types';
 	import { Link, Unlink } from '@lucide/svelte';
 	import { draggable, droppable, type DragDropState } from '@thisux/sveltednd';
 	import { flip } from 'svelte/animate';
 	import { toast } from 'svelte-sonner';
 	import LinkMediaModal from './LinkMediaModal.svelte';
+	import type { MediaItem } from '$lib/types';
 
-	let { projectSlug, media, onremove, onrefresh, onsort } = $props<{
-		projectSlug: string;
+	let { slug, type, media, onremove, onrefresh, onsort } = $props<{
+		slug: string;
+		type: string;
 		media: MediaItem[];
 		onremove?: (id: string) => void;
 		onrefresh?: () => void;
@@ -18,7 +19,7 @@
 
 	async function handleLink(media: MediaItem) {
 		try {
-			const res = await fetch(`/api/v1/admin/projects/${projectSlug}/media`, {
+			const res = await fetch(`/api/v1/admin/${type}/${slug}/media`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ media_id: media.id, sort_order: 0 })
@@ -117,7 +118,7 @@
 
 	<LinkMediaModal
 		open={modalOpen}
-		context={{ type: 'project', id: projectSlug }}
+		context={{ type: 'project', id: slug }}
 		linkedMediaIds={media.map((m: MediaItem) => m.id)}
 		onclose={() => (modalOpen = false)}
 		onlinked={handleLink}

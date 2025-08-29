@@ -78,7 +78,7 @@ func (h *Handler) GetAdminProjects(w http.ResponseWriter, r *http.Request) {
 		response.WriteJSON(w, http.StatusNotFound, "Project not found", err)
 		return
 	}
-	response.WriteJSON(w, http.StatusOK, "✅ Admin:Get Project success", project)
+	response.WriteJSON(w, http.StatusOK, "✅ Admin:Get gallery success", project)
 }
 
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
