@@ -65,3 +65,14 @@ export async function updatePage(data: Page, slug: string): Promise<void> {
   return json.data
 
 }
+
+
+export async function deletePage(slug: string): Promise<void> {
+  const res = await fetch(`/api/v1/admin/pages/${slug}`, {
+    method: 'DELETE'
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to delete page (${res.status})`);
+  }
+}
