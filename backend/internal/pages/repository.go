@@ -11,7 +11,7 @@ type Repository interface {
 	CreatePage(ctx context.Context, arg generated.CreatePageParams) (*generated.Page, error)
 	GetPageByID(ctx context.Context, id uuid.UUID) (*generated.Page, error)
 	GetPageBySlug(ctx context.Context, slug string) (*generated.Page, error)
-	ListPages(ctx context.Context, sort string) ([]generated.Page, error)
+	ListPages(ctx context.Context, sort, direction string) ([]generated.Page, error)
 	UpdatePage(ctx context.Context, arg generated.UpdatePageParams) (*generated.Page, error)
 	DeletePage(ctx context.Context, id uuid.UUID) error
 }
@@ -48,14 +48,33 @@ func (r *PageRepository) GetPageBySlug(ctx context.Context, slug string) (*gener
 	return &page, nil
 }
 
-func (r *PageRepository) ListPages(ctx context.Context, sort string) ([]generated.Page, error) {
-	switch sort {
-	case "desc":
-		return r.q.ListPagesByUpdatedAsc(ctx)
-	case "asc":
-		return r.q.ListPagesByTitleAsc(ctx)
+func (r *PageRepository) ListPages(ctx context.Context, field, direction string) ([]generated.Page, error) {
+	switch field {
+	case "title":
+		if direction == "asc" {
+			return r.q.ListPagesByTitleAsc(ctx)
+		}
+		return r.q.ListPagesByTitleDesc(ctx)
+
+	case "created_at":
+		if direction == "asc" {
+			return r.q.ListPagesByCreatedAsc(ctx)
+		}
+		return r.q.ListPagesByCreatedDesc(ctx)
+
+	case "updated_at":
+		if direction == "asc" {
+			return r.q.ListPagesByUpdatedAsc(ctx)
+		}
+		return r.q.ListPagesByUpdatedDesc(ctx)
+	case "status":
+		if direction == "asc" {
+			return r.q.ListPagesByStatusAsc(ctx)
+		}
+		return r.q.ListPagesByStatusDesc(ctx)
+
 	default:
-		return r.q.ListPagesByUpdatedDesc(ctx) // fallback
+		return r.q.ListPagesByUpdatedDesc(ctx)
 	}
 }
 

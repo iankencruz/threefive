@@ -5,9 +5,6 @@
 	import LinkMediaModal from '../Media/LinkMediaModal.svelte';
 	import TipTap from '../Builders/TipTap.svelte';
 	import { Editor } from '@tiptap/core';
-	import { deletePage, updatePage } from '$lib/api/pages';
-	import { page } from '$app/state';
-	import { goto } from '$app/navigation';
 
 	let {
 		content = $bindable(),
@@ -59,32 +56,6 @@
 		coverMedia = item;
 		localContent.cover_image_id = item.id;
 		bannerModalOpen = false;
-	}
-
-	async function handleUpdate(next: Page): Promise<void> {
-		try {
-			await updatePage(next, page.params.slug);
-			toast.success('Page updated');
-			await goto('/admin/pages');
-		} catch (err) {
-			console.error(err);
-			toast.error('Update failed');
-		}
-	}
-
-	async function handleDelete(next: Page): Promise<void> {
-		if (!confirm('Are you sure you want to delete this page? This action cannot be undone.')) {
-			return;
-		}
-
-		try {
-			await deletePage(next.slug); // your DELETE /api/v1/admin/pages/:slug
-			toast.success('Page deleted');
-			await goto('/admin/pages');
-		} catch (err) {
-			console.error(err);
-			toast.error('Delete failed');
-		}
 	}
 </script>
 

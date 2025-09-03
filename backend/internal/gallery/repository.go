@@ -17,7 +17,9 @@ type Repository interface {
 	AddMediaToGallery(ctx context.Context, arg generated.AddMediaToGalleryParams) error
 	RemoveMediaFromGallery(ctx context.Context, arg generated.RemoveMediaFromGalleryParams) error
 	ListMediaFromGallery(ctx context.Context, galleryID uuid.UUID) ([]generated.Media, error)
-	// UpdateGalleryMediaSortOrder(ctx context.Context, arg generated.UpdateGalleryMediaSortOrderParams) error
+	GetByPage(ctx context.Context, pageID uuid.UUID) ([]generated.Gallery, error)
+	LinkToPage(ctx context.Context, galleryID, pageID uuid.UUID) error
+	UnlinkFromPage(ctx context.Context, galleryID, pageID uuid.UUID) error
 }
 
 type GalleryRepository struct {
@@ -90,4 +92,24 @@ func (r *GalleryRepository) RemoveMediaFromGallery(ctx context.Context, arg gene
 
 func (r *GalleryRepository) ListMediaFromGallery(ctx context.Context, galleryID uuid.UUID) ([]generated.Media, error) {
 	return r.q.ListMediaForGallery(ctx, galleryID)
+}
+
+func (r *GalleryRepository) GetByPage(ctx context.Context, pageID uuid.UUID) ([]generated.Gallery, error) {
+	return r.q.GetPageGalleries(ctx, pageID)
+}
+
+func (r *GalleryRepository) LinkToPage(ctx context.Context, galleryID, pageID uuid.UUID) error {
+	args := generated.LinkGalleryToPageParams{
+		GalleryID: galleryID,
+		PageID:    pageID,
+	}
+	return r.q.LinkGalleryToPage(ctx, args)
+}
+
+func (r *GalleryRepository) UnlinkFromPage(ctx context.Context, galleryID, pageID uuid.UUID) error {
+	args := generated.UnlinkGalleryFromPageParams{
+		GalleryID: galleryID,
+		PageID:    pageID,
+	}
+	return r.q.UnlinkGalleryFromPage(ctx, args)
 }

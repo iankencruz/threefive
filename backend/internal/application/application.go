@@ -58,8 +58,8 @@ func New(
 	authHandler := auth.NewHandler(queries, sm, logger)
 	mediaHandler := media.NewHandler(queries, logger, uploader)
 	projectHandler := project.NewHandler(queries, logger)
-	pageHandler := *pages.NewHandler(queries, logger)
 	galleryHandler := *gallery.NewHandler(queries, logger)
+	pageHandler := *pages.NewHandler(queries, galleryHandler.Service, logger)
 
 	return &Application{
 		Config:         cfg,

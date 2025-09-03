@@ -9,6 +9,8 @@
 	import { formatDate, slugify } from '$lib/utils/utilities';
 	import { onMount } from 'svelte';
 	import Drawers from '$lib/components/Overlays/Drawers.svelte';
+	import { page } from '$app/state';
+	import { ChevronDownIcon, ChevronUpIcon } from '@lucide/svelte';
 
 	let newPage = $state<Page>({
 		id: crypto.randomUUID() as Page['id'],
@@ -25,24 +27,50 @@
 		updated_at: new Date().toISOString()
 	});
 
+	// track current sort state
+	let sortField = $state<'title' | 'status' | 'created_at' | 'updated_at'>('updated_at');
+	let sortDirection = $state<'asc' | 'desc'>('desc');
+
+	onMount(() => {
+		const sortParam = page.url.searchParams.get('sort') || 'desc';
+		pageContent = getPages(sortParam as 'asc' | 'desc');
+	});
+
+	// when URL changes, re-fetch
+	$effect(() => {
+		const sortParam = page.url.searchParams.get('sort');
+		if (sortParam) {
+			const [f, d] = sortParam.split(':');
+			if (f === 'title' || f === 'created_at' || f === 'updated_at') {
+				sortField = f;
+			} else {
+				sortField = 'updated_at';
+			}
+			sortDirection = d === 'asc' ? 'asc' : 'desc';
+		}
+		pageContent = getPages(`${sortField}:${sortDirection}`);
+	});
+
 	$effect(() => {
 		newPage.slug = slugify(newPage.title);
 	});
 
+	function toggleSort(field: typeof sortField) {
+		if (sortField === field) {
+			// flip direction if same field
+			sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+		} else {
+			sortField = field;
+			sortDirection = 'asc'; // default new field to asc
+		}
+		goto(`/admin/pages?sort=${sortField}:${sortDirection}`, { replaceState: true });
+	}
+
 	let drawerOpen = $state(false);
-	// let title = $state('');
-	// let slug = $state('');
-	// let description = $state('');
-	// let projects = $state<any[]>([]);
-	// let loading = $state(true);
 
 	$inspect('newPage:', newPage);
 
 	let pageContent = $state<Promise<Page[]> | null>(null);
-
-	onMount(async () => {
-		pageContent = getPages();
-	});
 
 	function openCreateDrawer() {
 		drawerOpen = true;
@@ -121,60 +149,91 @@
 				/>
 			</div>
 		{:else}
-			<ul class="space-y-2">
-				{#each data as page}
-					<li
-						class="flex items-center justify-between gap-x-6 border-t border-gray-200 py-5 first:border-none"
-					>
-						<div class="min-w-0">
-							<div class="flex items-start gap-x-3">
-								<p class="text-sm/6 font-semibold text-gray-900">{page.title}</p>
-
-								{#if page.is_published}
+			<table class="relative min-w-full divide-y divide-gray-300">
+				<thead>
+					<tr>
+						<th
+							scope="col"
+							class="cursor-pointer px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+							onclick={() => toggleSort('title')}
+						>
+							Title
+							{#if sortField === 'title'}
+								<span>{sortDirection === 'asc' ? '▲' : '▼'}</span>
+							{/if}
+						</th>
+						<th
+							scope="col"
+							class="cursor-pointer px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+							onclick={() => toggleSort('status')}
+						>
+							Status
+							{#if sortField === 'status'}
+								<span>{sortDirection === 'asc' ? '▲' : '▼'}</span>
+							{/if}
+						</th>
+						<th
+							scope="col"
+							class="cursor-pointer px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+							onclick={() => toggleSort('created_at')}
+						>
+							Created At
+							{#if sortField === 'created_at'}
+								<span>{sortDirection === 'asc' ? '▲' : '▼'}</span>
+							{/if}
+						</th>
+						<th
+							scope="col"
+							class="cursor-pointer px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+							onclick={() => toggleSort('updated_at')}
+						>
+							Updated At
+							{#if sortField === 'updated_at'}
+								<span>{sortDirection === 'asc' ? '▲' : '▼'}</span>
+							{/if}
+						</th>
+						<th scope="col" class="py-3.5 pr-0 pl-3">
+							Actions
+							<span class="sr-only">Action</span>
+						</th>
+					</tr>
+				</thead>
+				<tbody class="divide-y divide-gray-200 bg-white">
+					{#each data as page}
+						<tr>
+							<td class="py-4 pr-3 pl-4 text-sm font-medium whitespace-nowrap text-gray-900 sm:pl-0"
+								>{page.title}</td
+							>
+							<td class="px-3 py-4 text-sm whitespace-nowrap text-gray-500"
+								>{#if page.is_published}
 									<p
-										class="mt-0.5 rounded-md bg-green-50 px-1.5 py-0.5 text-xs font-medium whitespace-nowrap text-green-700 ring-1 ring-green-600/20 ring-inset"
+										class="mt-0.5 w-fit rounded-md bg-green-50 px-1.5 py-0.5 text-xs font-medium whitespace-nowrap text-green-700 ring-1 ring-green-600/20 ring-inset"
 									>
 										Published
 									</p>
 								{:else}
 									<p
-										class="mt-0.5 rounded-md bg-yellow-50 px-1.5 py-0.5 text-xs font-medium whitespace-nowrap text-yellow-800 ring-1 ring-yellow-600/20 ring-inset"
+										class="mt-0.5 w-fit rounded-md bg-yellow-50 px-1.5 py-0.5 text-xs font-medium whitespace-nowrap text-yellow-800 ring-1 ring-yellow-600/20 ring-inset"
 									>
 										Draft
 									</p>
-								{/if}
-							</div>
-							<div class="mt-1 flex items-center gap-x-2 text-xs/5 text-gray-500">
-								<p class="whitespace-nowrap">
-									<strong>Created</strong>:
-									<time datetime="2023-03-17T00:00Z">{formatDate(page.created_at, 'relative')}</time
-									>
-								</p>
-								<svg viewBox="0 0 2 2" class="size-0.5 fill-current">
-									<circle cx="1" cy="1" r="1" />
-								</svg>
-								<p class="truncate">
-									Created by <span>{auth.user?.first_name} {auth.user?.last_name}</span>
-								</p>
-							</div>
-						</div>
-						<div class="flex flex-none items-center gap-x-2">
-							<a
-								href={`/admin/pages/${page.slug}`}
-								class="hover hidden rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-xs ring-1 ring-gray-300 ring-inset hover:bg-gray-50 sm:block"
-								>View page<span class="sr-only">View page</span></a
+								{/if}</td
 							>
-							<button
-								onclick={() => handleDelete(page.slug)}
-								class=" inline-flex items-center rounded-md bg-red-500 px-2 py-1.5 text-sm font-semibold text-white shadow-xs ring-1 ring-gray-300 ring-inset hover:bg-red-700"
-							>
-								Delete
-								<span class="sr-only">Delete page</span>
-							</button>
-						</div>
-					</li>
-				{/each}
-			</ul>
+							<td class="px-3 py-4 text-sm whitespace-nowrap text-gray-500"
+								><time datetime="2023-03-17T00:00Z">{formatDate(page.created_at, 'relative')}</time>
+							</td>
+							<td class="px-3 py-4 text-sm whitespace-nowrap text-gray-500"
+								><time datetime="2023-03-17T00:00Z">{formatDate(page.updated_at, 'relative')}</time>
+							</td>
+							<td class="py-4 pr-4 pl-3 text-center text-sm whitespace-nowrap sm:pr-0">
+								<a href={`/admin/pages/${page.slug}`} class="text-indigo-600 hover:text-indigo-900"
+									>Edit<span class="sr-only">Edit Action</span></a
+								>
+							</td>
+						</tr>
+					{/each}
+				</tbody>
+			</table>
 		{/if}
 	</section>
 {:catch error}

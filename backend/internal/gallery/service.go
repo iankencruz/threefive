@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/iankencruz/threefive/internal/generated"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -33,4 +34,16 @@ func (s *GalleryService) Update(ctx context.Context, arg generated.UpdateGallery
 	arg.UpdatedAt = ts
 
 	return s.repo.UpdateGallery(ctx, arg)
+}
+
+func (s *GalleryService) ListByPage(ctx context.Context, pageID uuid.UUID) ([]generated.Gallery, error) {
+	return s.repo.GetByPage(ctx, pageID)
+}
+
+func (s *GalleryService) LinkToPage(ctx context.Context, galleryID, pageID uuid.UUID) error {
+	return s.repo.LinkToPage(ctx, galleryID, pageID)
+}
+
+func (s *GalleryService) UnlinkFromPage(ctx context.Context, galleryID, pageID uuid.UUID) error {
+	return s.repo.UnlinkFromPage(ctx, galleryID, pageID)
 }

@@ -32,3 +32,37 @@ func (s *PageService) Update(ctx context.Context, arg generated.UpdatePageParams
 	}
 	return updatedPage, nil
 }
+
+func (s *PageService) ListPages(ctx context.Context, sortParam string) ([]generated.Page, error) {
+	field, direction := parseSortParam(sortParam)
+	return s.Repo.ListPages(ctx, field, direction)
+}
+
+func parseSortParam(sort string) (field, direction string) {
+	if sort == "" {
+		return "updated_at", "desc"
+	}
+
+	parts := strings.Split(sort, ":")
+	if len(parts) != 2 {
+		return "updated_at", "desc"
+	}
+
+	field = strings.ToLower(parts[0])
+	direction = strings.ToLower(parts[1])
+
+	// validate allowed fields
+	switch field {
+	case "title", "created_at", "updated_at", "status":
+		// ok
+	default:
+		field = "updated_at"
+	}
+
+	// validate direction
+	if direction != "asc" && direction != "desc" {
+		direction = "desc"
+	}
+
+	return field, direction
+}

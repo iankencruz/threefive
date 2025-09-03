@@ -118,6 +118,11 @@ func Routes(app *Application) http.Handler {
 						r.Get("/", app.PageHandler.GetAdminPages)
 						r.Put("/", app.PageHandler.Update)
 						r.Delete("/", app.PageHandler.Delete)
+						r.Route("/galleries", func(r chi.Router) {
+							r.Get("/", app.PageHandler.ListPageGalleries)
+							r.Post("/", app.PageHandler.LinkGallery)
+							r.Delete("/{galleryID}", app.PageHandler.UnlinkGallery)
+						})
 					})
 				})
 

@@ -10,9 +10,14 @@
 
 	let { body = $bindable() } = $props();
 
+	let lastBody: string | null = null; // track last applied external body
+
 	const refreshUI = () => {
 		ui++;
 	};
+
+	// flag to prevent infinite update loop
+	let isUpdating = false;
 
 	onMount(() => {
 		editor = new Editor({
@@ -24,25 +29,36 @@
 			content: body,
 			onTransaction: () => {
 				editor = editor;
-			} // keep your UI nudge
+			}
 		});
 
-		// Re-render for toolbar states
 		editor.on('selectionUpdate', refreshUI);
 		editor.on('transaction', refreshUI);
 
-		// CRITICAL: push content up to parent
 		editor.on('update', () => {
 			const html = editor?.getHTML();
-			if (html !== body) body = html; // <- updates parent because $bindable
+			if (html !== body) {
+				body = html; // push up to parent
+				lastBody = html || ''; // mark as synced
+			}
 			refreshUI();
 		});
 	});
 
-	// Keep editor in sync if parent changes `body` externally
+	// ✅ Cleanup editor when component unmounts
+	onDestroy(() => {
+		if (editor) {
+			editor.destroy();
+			editor = undefined;
+		}
+	});
+
+	// 🔑 Only update editor if body changed externally
 	$effect(() => {
-		if (editor && editor.getHTML() !== body) {
+		if (!editor) return;
+		if (body !== lastBody) {
 			editor.commands.setContent(body, false);
+			lastBody = body;
 		}
 	});
 
@@ -86,7 +102,7 @@
 </script>
 
 {#if editor}
-	<!-- Note data-ui={ui} forces Svelte to re-evaluate bindings -->
+	<!-- data-ui={ui} forces Svelte to re-evaluate bindings when selection changes -->
 	<div
 		class="rte-toolbar flex flex-wrap items-center gap-2 rounded-t-md border bg-gray-50 p-2 shadow-sm"
 		data-ui={ui}
@@ -161,7 +177,7 @@
 			>
 		</div>
 
-		<!-- Blockquote & Code block as buttons -->
+		<!-- Blockquote & Code block -->
 		<div class="inline-flex overflow-hidden rounded border bg-white">
 			<button
 				class="tiptap"

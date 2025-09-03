@@ -21,14 +21,6 @@ SELECT * FROM pages WHERE slug = @slug AND is_published = true;
 
 
 
--- name: ListPagesByUpdatedDesc :many
-SELECT * FROM pages ORDER BY updated_at DESC;
-
--- name: ListPagesByUpdatedAsc :many
-SELECT * FROM pages ORDER BY updated_at ASC;
-
--- name: ListPagesByTitleAsc :many
-SELECT * FROM pages ORDER BY title ASC;
   
 
 -- name: UpdatePage :one
@@ -48,3 +40,37 @@ RETURNING *;
 
 -- name: DeletePage :exec
 DELETE FROM pages WHERE id = @id;
+
+
+
+
+-- Table Sorting
+
+-- name: ListPagesByTitleAsc :many
+SELECT * FROM pages ORDER BY title ASC;
+
+-- name: ListPagesByTitleDesc :many
+SELECT * FROM pages ORDER BY title DESC;
+
+-- name: ListPagesByCreatedAsc :many
+SELECT * FROM pages ORDER BY created_at ASC;
+
+-- name: ListPagesByCreatedDesc :many
+SELECT * FROM pages ORDER BY created_at DESC;
+
+-- name: ListPagesByUpdatedAsc :many
+SELECT * FROM pages ORDER BY updated_at ASC;
+
+-- name: ListPagesByUpdatedDesc :many
+SELECT * FROM pages ORDER BY updated_at DESC;
+
+
+-- name: ListPagesByStatusAsc :many
+-- Drafts first, then Published
+SELECT * FROM pages
+ORDER BY is_published ASC, updated_at DESC;
+
+-- name: ListPagesByStatusDesc :many
+-- Published first, then Drafts
+SELECT * FROM pages
+ORDER BY is_published DESC, updated_at DESC;

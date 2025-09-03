@@ -147,12 +147,203 @@ func (q *Queries) GetPublishedPageBySlug(ctx context.Context, slug string) (Page
 	return i, err
 }
 
+const listPagesByCreatedAsc = `-- name: ListPagesByCreatedAsc :many
+SELECT id, slug, title, cover_image_id, content, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at FROM pages ORDER BY created_at ASC
+`
+
+func (q *Queries) ListPagesByCreatedAsc(ctx context.Context) ([]Page, error) {
+	rows, err := q.db.Query(ctx, listPagesByCreatedAsc)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Page
+	for rows.Next() {
+		var i Page
+		if err := rows.Scan(
+			&i.ID,
+			&i.Slug,
+			&i.Title,
+			&i.CoverImageID,
+			&i.Content,
+			&i.SeoTitle,
+			&i.SeoDescription,
+			&i.SeoCanonical,
+			&i.IsDraft,
+			&i.IsPublished,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPagesByCreatedDesc = `-- name: ListPagesByCreatedDesc :many
+SELECT id, slug, title, cover_image_id, content, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at FROM pages ORDER BY created_at DESC
+`
+
+func (q *Queries) ListPagesByCreatedDesc(ctx context.Context) ([]Page, error) {
+	rows, err := q.db.Query(ctx, listPagesByCreatedDesc)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Page
+	for rows.Next() {
+		var i Page
+		if err := rows.Scan(
+			&i.ID,
+			&i.Slug,
+			&i.Title,
+			&i.CoverImageID,
+			&i.Content,
+			&i.SeoTitle,
+			&i.SeoDescription,
+			&i.SeoCanonical,
+			&i.IsDraft,
+			&i.IsPublished,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPagesByStatusAsc = `-- name: ListPagesByStatusAsc :many
+SELECT id, slug, title, cover_image_id, content, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at FROM pages
+ORDER BY is_published ASC, updated_at DESC
+`
+
+// Drafts first, then Published
+func (q *Queries) ListPagesByStatusAsc(ctx context.Context) ([]Page, error) {
+	rows, err := q.db.Query(ctx, listPagesByStatusAsc)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Page
+	for rows.Next() {
+		var i Page
+		if err := rows.Scan(
+			&i.ID,
+			&i.Slug,
+			&i.Title,
+			&i.CoverImageID,
+			&i.Content,
+			&i.SeoTitle,
+			&i.SeoDescription,
+			&i.SeoCanonical,
+			&i.IsDraft,
+			&i.IsPublished,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPagesByStatusDesc = `-- name: ListPagesByStatusDesc :many
+SELECT id, slug, title, cover_image_id, content, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at FROM pages
+ORDER BY is_published DESC, updated_at DESC
+`
+
+// Published first, then Drafts
+func (q *Queries) ListPagesByStatusDesc(ctx context.Context) ([]Page, error) {
+	rows, err := q.db.Query(ctx, listPagesByStatusDesc)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Page
+	for rows.Next() {
+		var i Page
+		if err := rows.Scan(
+			&i.ID,
+			&i.Slug,
+			&i.Title,
+			&i.CoverImageID,
+			&i.Content,
+			&i.SeoTitle,
+			&i.SeoDescription,
+			&i.SeoCanonical,
+			&i.IsDraft,
+			&i.IsPublished,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listPagesByTitleAsc = `-- name: ListPagesByTitleAsc :many
+
 SELECT id, slug, title, cover_image_id, content, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at FROM pages ORDER BY title ASC
 `
 
+// Table Sorting
 func (q *Queries) ListPagesByTitleAsc(ctx context.Context) ([]Page, error) {
 	rows, err := q.db.Query(ctx, listPagesByTitleAsc)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Page
+	for rows.Next() {
+		var i Page
+		if err := rows.Scan(
+			&i.ID,
+			&i.Slug,
+			&i.Title,
+			&i.CoverImageID,
+			&i.Content,
+			&i.SeoTitle,
+			&i.SeoDescription,
+			&i.SeoCanonical,
+			&i.IsDraft,
+			&i.IsPublished,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPagesByTitleDesc = `-- name: ListPagesByTitleDesc :many
+SELECT id, slug, title, cover_image_id, content, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at FROM pages ORDER BY title DESC
+`
+
+func (q *Queries) ListPagesByTitleDesc(ctx context.Context) ([]Page, error) {
+	rows, err := q.db.Query(ctx, listPagesByTitleDesc)
 	if err != nil {
 		return nil, err
 	}
