@@ -14,6 +14,7 @@ type Repository interface {
 	ListPages(ctx context.Context, sort, direction string) ([]generated.Page, error)
 	UpdatePage(ctx context.Context, arg generated.UpdatePageParams) (*generated.Page, error)
 	DeletePage(ctx context.Context, id uuid.UUID) error
+	GetPublicPageWithGalleries(ctx context.Context, slug string) (PageWithGalleries, error)
 }
 
 type PageRepository struct {
@@ -88,4 +89,33 @@ func (r *PageRepository) UpdatePage(ctx context.Context, arg generated.UpdatePag
 
 func (r *PageRepository) DeletePage(ctx context.Context, id uuid.UUID) error {
 	return r.q.DeletePage(ctx, id)
+}
+
+func (r *PageRepository) GetPublicPageWithGalleries(ctx context.Context, slug string) (PageWithGalleries, error) {
+	page, err := r.q.GetPageBySlug(ctx, slug)
+	if err != nil {
+		return PageWithGalleries{}, err
+	}
+
+	galleries, err := r.q.GetPublicPageWithGalleries(ctx, slug)
+	if err != nil {
+		return PageWithGalleries{}, err
+	}
+
+	var enriched []GalleryWithMedia
+	for _, g := range galleries {
+		media, err := r.q.GetMediaForGallery(ctx, g.ID)
+		if err != nil {
+			return PageWithGalleries{}, err
+		}
+		enriched = append(enriched, GalleryWithMedia{
+			Gallery: g,
+			Media:   media,
+		})
+	}
+
+	return PageWithGalleries{
+		Page:      page,
+		Galleries: enriched,
+	}, nil
 }

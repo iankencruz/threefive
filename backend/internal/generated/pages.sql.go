@@ -75,6 +75,48 @@ func (q *Queries) DeletePage(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
+const getMediaForGallery = `-- name: GetMediaForGallery :many
+SELECT m.id, m.url, m.thumbnail_url, m.type, m.is_public, m.title, m.alt_text, m.mime_type, m.file_size, m.sort_order, m.created_at, m.updated_at, m.medium_url
+FROM gallery_media gm
+JOIN media m ON m.id = gm.media_id
+WHERE gm.gallery_id = $1
+ORDER BY gm.sort_order ASC
+`
+
+func (q *Queries) GetMediaForGallery(ctx context.Context, galleryID uuid.UUID) ([]Media, error) {
+	rows, err := q.db.Query(ctx, getMediaForGallery, galleryID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Media
+	for rows.Next() {
+		var i Media
+		if err := rows.Scan(
+			&i.ID,
+			&i.Url,
+			&i.ThumbnailUrl,
+			&i.Type,
+			&i.IsPublic,
+			&i.Title,
+			&i.AltText,
+			&i.MimeType,
+			&i.FileSize,
+			&i.SortOrder,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.MediumUrl,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getPageByID = `-- name: GetPageByID :one
 SELECT id, slug, title, cover_image_id, content, seo_title, seo_description, seo_canonical, is_draft, is_published, created_at, updated_at FROM pages WHERE id = $1
 `
@@ -121,6 +163,44 @@ func (q *Queries) GetPageBySlug(ctx context.Context, slug string) (Page, error) 
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const getPublicPageWithGalleries = `-- name: GetPublicPageWithGalleries :many
+SELECT g.id, g.title, g.description, g.slug, g.is_published, g.published_at, g.created_at, g.updated_at
+FROM galleries g
+JOIN gallery_page gp ON gp.gallery_id = g.id
+JOIN pages p ON gp.page_id = p.id
+WHERE p.slug = $1
+ORDER BY gp.sort_order ASC
+`
+
+func (q *Queries) GetPublicPageWithGalleries(ctx context.Context, slug string) ([]Gallery, error) {
+	rows, err := q.db.Query(ctx, getPublicPageWithGalleries, slug)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Gallery
+	for rows.Next() {
+		var i Gallery
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.Description,
+			&i.Slug,
+			&i.IsPublished,
+			&i.PublishedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getPublishedPageBySlug = `-- name: GetPublishedPageBySlug :one

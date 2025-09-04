@@ -74,3 +74,21 @@ ORDER BY is_published ASC, updated_at DESC;
 -- Published first, then Drafts
 SELECT * FROM pages
 ORDER BY is_published DESC, updated_at DESC;
+
+
+
+
+-- name: GetPublicPageWithGalleries :many
+SELECT g.*
+FROM galleries g
+JOIN gallery_page gp ON gp.gallery_id = g.id
+JOIN pages p ON gp.page_id = p.id
+WHERE p.slug = @slug
+ORDER BY gp.sort_order ASC;
+
+-- name: GetMediaForGallery :many
+SELECT m.*
+FROM gallery_media gm
+JOIN media m ON m.id = gm.media_id
+WHERE gm.gallery_id = @gallery_id
+ORDER BY gm.sort_order ASC;

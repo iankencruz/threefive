@@ -66,3 +66,7 @@ func parseSortParam(sort string) (field, direction string) {
 
 	return field, direction
 }
+
+func (s *PageService) GetPublicPage(ctx context.Context, slug string) (PageWithGalleries, error) {
+	return s.Repo.GetPublicPageWithGalleries(ctx, slug)
+}

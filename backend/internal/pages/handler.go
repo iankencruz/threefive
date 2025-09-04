@@ -237,3 +237,15 @@ func (h *Handler) UnlinkGallery(w http.ResponseWriter, r *http.Request) {
 
 	response.WriteJSON(w, http.StatusOK, "✅ Gallery unlinked", nil)
 }
+
+func (h *Handler) GetPublicPage(w http.ResponseWriter, r *http.Request) {
+	slug := chi.URLParam(r, "slug")
+
+	page, err := h.Service.GetPublicPage(r.Context(), slug)
+	if err != nil {
+		response.WriteJSON(w, http.StatusNotFound, "Page not found", nil)
+		return
+	}
+
+	response.WriteJSON(w, http.StatusOK, "✅ Page fetched", page)
+}
