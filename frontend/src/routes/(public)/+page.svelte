@@ -90,12 +90,6 @@
 								<div class="inline-flex items-center justify-center gap-[492px]">
 									<div class="inline-flex flex-col items-start justify-start gap-10 lg:gap-14">
 										<div class="flex flex-col items-start justify-start gap-4">
-											<h5 class="text-lg leading-relaxed font-medium text-white">
-												{slide.category}
-												{#if slide.categoryHighlight}
-													<span class="text-indigo-400">{slide.categoryHighlight}</span>
-												{/if}
-											</h5>
 											<div
 												class="prose prose-headings:text-white prose-h1:text-7xl prose-code:text-white flex flex-col items-start justify-start gap-2 text-white"
 											>
