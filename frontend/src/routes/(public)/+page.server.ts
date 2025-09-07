@@ -10,8 +10,9 @@ export const load: PageServerLoad = async ({ fetch }) => {
   console.log('pageserverload data:', json.data)
 
   return {
-    Hero: json.data,
-    Content: json.data.content
+    Page: json.data.page,
+    Content: json.data.page.content,
+    Galleries: json.data.galleries
   };
 };
 

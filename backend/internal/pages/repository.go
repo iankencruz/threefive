@@ -97,20 +97,34 @@ func (r *PageRepository) GetPublicPageWithGalleries(ctx context.Context, slug st
 		return PageWithGalleries{}, err
 	}
 
-	galleries, err := r.q.GetPublicPageWithGalleries(ctx, slug)
+	galleries, err := r.q.GetPageGalleries(ctx, page.ID)
 	if err != nil {
-		return PageWithGalleries{}, err
+		// Return empty galleries if none found
+		return PageWithGalleries{
+			Page:      page,
+			Galleries: []GalleryWithMedia{},
+		}, nil
 	}
 
 	var enriched []GalleryWithMedia
-	for _, g := range galleries {
-		media, err := r.q.GetMediaForGallery(ctx, g.ID)
+	for _, gallery := range galleries {
+		media, err := r.q.GetMediaForGallery(ctx, gallery.ID)
 		if err != nil {
-			return PageWithGalleries{}, err
+			// If no media, continue with empty media array
+			enriched = append(enriched, GalleryWithMedia{
+				Gallery: GalleryWithEmbeddedMedia{
+					Gallery: gallery,
+					Media:   []generated.Media{},
+				},
+			})
+			continue
 		}
+
 		enriched = append(enriched, GalleryWithMedia{
-			Gallery: g,
-			Media:   media,
+			Gallery: GalleryWithEmbeddedMedia{
+				Gallery: gallery, // All original gallery fields
+				Media:   media,   // Media embedded inside gallery object
+			},
 		})
 	}
 

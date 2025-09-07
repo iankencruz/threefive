@@ -34,7 +34,7 @@ func NewHandler(q *generated.Queries, galleryService *gallery.GalleryService, lo
 
 func (h *Handler) HomePage(w http.ResponseWriter, r *http.Request) {
 	// data := "Home Page"
-	page, err := h.Service.Repo.GetPageBySlug(r.Context(), "home")
+	page, err := h.Service.Repo.GetPublicPageWithGalleries(r.Context(), "home")
 	if err != nil {
 		h.Logger.Error("No valid Page found")
 		response.WriteJSON(w, http.StatusNotFound, "No valid Page found", err)
@@ -43,8 +43,19 @@ func (h *Handler) HomePage(w http.ResponseWriter, r *http.Request) {
 	response.WriteJSON(w, http.StatusOK, "Home Page Public:", page)
 }
 
+func (h *Handler) AboutPage(w http.ResponseWriter, r *http.Request) {
+	page, err := h.Repo.GetPublicPageWithGalleries(r.Context(), "about")
+	if err != nil {
+		h.Logger.Error("No valid Page found")
+		response.WriteJSON(w, http.StatusNotFound, "No valid Page found", err)
+		return
+	}
+
+	response.WriteJSON(w, http.StatusOK, "Admin:Get Page success", page)
+}
+
 func (h *Handler) ContactPage(w http.ResponseWriter, r *http.Request) {
-	page, err := h.Service.Repo.GetPageBySlug(r.Context(), "contact")
+	page, err := h.Repo.GetPublicPageWithGalleries(r.Context(), "contact")
 	if err != nil {
 		response.WriteJSON(w, http.StatusNotFound, "No valid Page found", err)
 		return
@@ -53,6 +64,22 @@ func (h *Handler) ContactPage(w http.ResponseWriter, r *http.Request) {
 	response.WriteJSON(w, http.StatusOK, "Admin:Get Page success", page)
 }
 
+// Get Public Viewing Pages via slug
+func (h *Handler) GetPublicPage(w http.ResponseWriter, r *http.Request) {
+	slug := chi.URLParam(r, "slug")
+
+	page, err := h.Service.GetPublicPage(r.Context(), slug)
+	if err != nil {
+		response.WriteJSON(w, http.StatusNotFound, "Page not found", nil)
+		return
+	}
+
+	response.WriteJSON(w, http.StatusOK, "✅ Page fetched", page)
+}
+
+// Admin Routes
+
+// [ADMIN] Get List of Pages
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	sortParam := r.URL.Query().Get("sort")
 
@@ -65,18 +92,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	response.WriteJSON(w, http.StatusOK, "✅ Pages fetched", pages)
 }
 
-func (h *Handler) AboutPage(w http.ResponseWriter, r *http.Request) {
-	page, err := h.Service.Repo.GetPageBySlug(r.Context(), "about")
-	if err != nil {
-		h.Logger.Error("No valid Page found")
-		response.WriteJSON(w, http.StatusNotFound, "No valid Page found", err)
-		return
-	}
-
-	response.WriteJSON(w, http.StatusOK, "Admin:Get Page success", page)
-}
-
-// Getter page by slug
+// [ADMIN] Get Individual Page
 func (h *Handler) GetAdminPages(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
 
@@ -94,6 +110,7 @@ func (h *Handler) GetAdminPages(w http.ResponseWriter, r *http.Request) {
 	response.WriteJSON(w, http.StatusOK, "Admin:Get Page success", page)
 }
 
+// [ADMIN] Create Page
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	var req generated.CreatePageParams
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -117,8 +134,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	response.WriteJSON(w, http.StatusCreated, "Create Page success", page)
 }
 
-// Update Page
-
+// [ADMIN] Update Page
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	var req generated.UpdatePageParams
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -143,6 +159,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	response.WriteJSON(w, http.StatusOK, "Update Page success", page)
 }
 
+// [ADMIN] Delete Page
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
 	if slug == "" {
@@ -163,7 +180,7 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	response.WriteJSON(w, http.StatusNoContent, "", nil)
 }
 
-// GET /api/v1/admin/pages/{slug}/galleries
+// [ADMIN] Get List of Galleries linked to page via slug
 func (h *Handler) ListPageGalleries(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
 
@@ -187,7 +204,7 @@ func (h *Handler) ListPageGalleries(w http.ResponseWriter, r *http.Request) {
 	response.WriteJSON(w, http.StatusOK, "✅ Galleries fetched", galleries)
 }
 
-// POST /api/v1/admin/pages/{slug}/galleries
+// [ADMIN] Link a gallery to page  POST
 func (h *Handler) LinkGallery(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
 
@@ -213,7 +230,7 @@ func (h *Handler) LinkGallery(w http.ResponseWriter, r *http.Request) {
 	response.WriteJSON(w, http.StatusOK, "✅ Gallery linked", nil)
 }
 
-// DELETE /api/v1/admin/pages/{slug}/galleries/{galleryID}
+// [ADMIN] Unlink a gallery to page  DELETE
 func (h *Handler) UnlinkGallery(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
 
@@ -236,16 +253,4 @@ func (h *Handler) UnlinkGallery(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.WriteJSON(w, http.StatusOK, "✅ Gallery unlinked", nil)
-}
-
-func (h *Handler) GetPublicPage(w http.ResponseWriter, r *http.Request) {
-	slug := chi.URLParam(r, "slug")
-
-	page, err := h.Service.GetPublicPage(r.Context(), slug)
-	if err != nil {
-		response.WriteJSON(w, http.StatusNotFound, "Page not found", nil)
-		return
-	}
-
-	response.WriteJSON(w, http.StatusOK, "✅ Page fetched", page)
 }
