@@ -6,32 +6,14 @@
 	let isTransitioning = $state(false);
 
 	let { data } = $props();
-	console.log('Home data:', data);
-	console.log('Galleries data:', data.Galleries);
-
-	// Find the specific gallery by slug
-	// @ts-ignore
-	const heroGallery = data.Galleries?.find((item) => item.gallery.slug === 'home-hero-gallery');
 
 	// Create slides from the gallery media or fallback to default slides
 	// @ts-ignore
-	const slides = heroGallery?.gallery.media?.map((mediaItem) => ({
-		bg: mediaItem.url || mediaItem.file_path, // adjust property name based on your media structure
-		category: 'Products / Headphone',
-		title: mediaItem.alt || mediaItem.title || 'AirPods Max',
-		description:
-			mediaItem.description ||
-			'You can listen to music, make phone calls, use Siri, and more with your AirPods Max.'
-	})) || [
-		// Fallback slides if no gallery found
-		{
-			bg: 'https://pagedone.io/asset/uploads/1720172752.png',
-			category: 'Products / Headphone',
-			title: 'AirPods Max',
-			description:
-				'You can listen to music, make phone calls, use Siri, and more with your AirPods Max. The AirPods Max feature a stainless steel frame with a breathable knit mesh canopy and memory foam ear cushions for comfort.'
-		}
-	];
+	const slides = data.HomeGallery.gallery.media?.map((mediaItem) => ({
+		bg: mediaItem.url,
+		title: mediaItem.alt || mediaItem.title,
+		description: mediaItem.description
+	}));
 
 	// @ts-ignore
 	let navOpen = $state(false);
