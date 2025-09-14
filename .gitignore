@@ -75,7 +75,7 @@ tailwind.css
 
 # Air live reload tool
 tmp/
-.air.toml
+# .air.toml
 
 # Database files
 *.db
