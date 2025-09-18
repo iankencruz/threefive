@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export const ssr = true;
 import type { PageServerLoad } from './$types';
 

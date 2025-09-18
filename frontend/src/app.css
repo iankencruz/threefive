@@ -24,3 +24,12 @@ button.tiptap.active {
 select.tiptap {
   @apply border px-2 py-1 text-sm min-w-32;
 }
+
+
+
+
+
+
+.tiptap[data-active='true'] {
+  @apply bg-blue-100 text-blue-800;
+}

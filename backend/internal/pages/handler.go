@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -34,13 +35,28 @@ func NewHandler(q *generated.Queries, galleryService *gallery.GalleryService, lo
 
 func (h *Handler) HomePage(w http.ResponseWriter, r *http.Request) {
 	// data := "Home Page"
-	page, err := h.Service.Repo.GetPublicPageWithGalleries(r.Context(), "home")
+	page, err := h.Service.Repo.GetPageBySlug(r.Context(), "home")
 	if err != nil {
 		h.Logger.Error("No valid Page found")
 		response.WriteJSON(w, http.StatusNotFound, "No valid Page found", err)
 		return
 	}
-	response.WriteJSON(w, http.StatusOK, "Home Page Public:", page)
+
+	heroGallery, err := h.GalleryService.GetGallery(r.Context(), "home-hero-gallery")
+
+	homePageData := struct {
+		*generated.Page                           // embed the original page
+		HeroGallery     *gallery.GalleryWithMedia `json:"hero_gallery"`
+		Status          string                    `json:"status"`
+		Timestamp       int64                     `json:"timestamp"`
+	}{
+		Page:        page,
+		HeroGallery: heroGallery,
+		Status:      "active",
+		Timestamp:   time.Now().Unix(),
+	}
+
+	response.WriteJSON(w, http.StatusOK, "Home Page Public:", homePageData)
 }
 
 func (h *Handler) AboutPage(w http.ResponseWriter, r *http.Request) {

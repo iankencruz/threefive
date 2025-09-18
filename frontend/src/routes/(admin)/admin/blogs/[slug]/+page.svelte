@@ -8,7 +8,6 @@
 		updateProjectMediaOrder
 	} from '$lib/api/projects';
 	import LinkMediaModal from '$lib/components/Media/LinkMediaModal.svelte';
-	import ProjectMediaGrid from '$lib/components/Media/ProjectMediaGrid.svelte';
 	import type { Project, MediaItem } from '$lib/types';
 	import { slugify, formatDate } from '$lib/utils/utilities';
 	import { toast } from 'svelte-sonner';
@@ -276,14 +275,6 @@
 				</div>
 			</div>
 		{/if}
-
-		<ProjectMediaGrid
-			media={projectMedia}
-			onremove={handleUnlinkMedia}
-			projectSlug={project.slug}
-			onsort={handleSortMedia}
-			onrefresh={refreshMediaGrid}
-		/>
 
 		<LinkMediaModal
 			open={modalOpen}

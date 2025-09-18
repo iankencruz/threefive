@@ -47,3 +47,7 @@ func (s *GalleryService) LinkToPage(ctx context.Context, galleryID, pageID uuid.
 func (s *GalleryService) UnlinkFromPage(ctx context.Context, galleryID, pageID uuid.UUID) error {
 	return s.repo.UnlinkFromPage(ctx, galleryID, pageID)
 }
+
+func (s *GalleryService) GetGallery(ctx context.Context, slug string) (*GalleryWithMedia, error) {
+	return s.repo.GetGalleryBySlug(ctx, slug)
+}

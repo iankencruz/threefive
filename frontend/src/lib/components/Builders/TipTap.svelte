@@ -3,10 +3,16 @@
 	import { Editor } from '@tiptap/core';
 	import StarterKit from '@tiptap/starter-kit';
 	import Underline from '@tiptap/extension-underline';
+	import Image from '@tiptap/extension-image';
 
 	let element = $state<HTMLElement>();
 	let editor = $state<Editor>();
 	let ui = $state(0); // bumps to force a re-render
+
+	// Media popup state
+	let showMediaPopup = $state(false);
+	let mediaUrl = $state('');
+	let mediaAlt = $state('');
 
 	let { body = $bindable() } = $props();
 
@@ -22,7 +28,7 @@
 	onMount(() => {
 		editor = new Editor({
 			element,
-			extensions: [StarterKit.configure({ heading: { levels: [1, 2, 3] } }), Underline],
+			extensions: [StarterKit.configure({ heading: { levels: [1, 2, 3] } }), Underline, Image],
 			editorProps: {
 				attributes: { class: 'prose prose-sm sm:prose-base lg:prose-lg m-5 focus:outline-none' }
 			},
@@ -82,6 +88,39 @@
 		return 'paragraph';
 	}
 
+	function openMediaPopup() {
+		mediaUrl = '';
+		mediaAlt = '';
+		showMediaPopup = true;
+	}
+
+	function closeMediaPopup() {
+		showMediaPopup = false;
+		mediaUrl = '';
+		mediaAlt = '';
+	}
+
+	function insertImage() {
+		if (mediaUrl.trim()) {
+			const chain = editor?.chain().focus();
+			chain
+				?.setImage({
+					src: mediaUrl.trim(),
+					alt: mediaAlt.trim() || undefined
+				})
+				.run();
+		}
+		closeMediaPopup();
+	}
+
+	function handleMediaPopupKeydown(e: KeyboardEvent) {
+		if (e.key === 'Escape') {
+			closeMediaPopup();
+		} else if (e.key === 'Enter' && e.ctrlKey) {
+			insertImage();
+		}
+	}
+
 	function applyBlock(value: string) {
 		const chain = editor?.chain().focus();
 		switch (value) {
@@ -114,7 +153,7 @@
 			value={currentBlockValue()}
 			title="Block format"
 		>
-			{#each BLOCK_OPTIONS as opt}
+			{#each BLOCK_OPTIONS as opt (opt.value)}
 				<option value={opt.value}>{opt.label}</option>
 			{/each}
 		</select>
@@ -204,6 +243,18 @@
 			>
 		</div>
 
+		<!-- Image -->
+		<div class="inline-flex overflow-hidden rounded border bg-white">
+			<button
+				class="tiptap"
+				data-active={editor?.isActive('image') ?? false}
+				title="Image"
+				onclick={openMediaPopup}
+			>
+				📷 Image</button
+			>
+		</div>
+
 		<!-- Undo / Redo -->
 		<div class="inline-flex overflow-hidden rounded border bg-white">
 			<button
@@ -224,3 +275,97 @@
 {/if}
 
 <div class="rounded-b-md border border-t-0 p-2" bind:this={element} />
+
+<!-- Media Popup Modal -->
+{#if showMediaPopup}
+	<!-- Overlay -->
+	<div
+		class="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black p-4"
+		onclick={closeMediaPopup}
+		onkeydown={handleMediaPopupKeydown}
+		tabindex="-1"
+	>
+		<!-- Modal Content -->
+		<div
+			class="w-full max-w-md rounded-lg bg-white p-6 shadow-xl"
+			onclick={(e) => e.stopPropagation()}
+		>
+			<div class="mb-4 flex items-center justify-between">
+				<h3 class="text-lg font-semibold text-gray-900">Insert Image</h3>
+				<button
+					onclick={closeMediaPopup}
+					class="text-xl font-semibold text-gray-400 hover:text-gray-600"
+					title="Close"
+				>
+					×
+				</button>
+			</div>
+
+			<div class="space-y-4">
+				<div>
+					<label for="media-url" class="mb-1 block text-sm font-medium text-gray-700">
+						Image URL *
+					</label>
+					<input
+						id="media-url"
+						type="url"
+						bind:value={mediaUrl}
+						placeholder="https://example.com/image.jpg"
+						class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none"
+						autofocus
+					/>
+				</div>
+
+				<div>
+					<label for="media-alt" class="mb-1 block text-sm font-medium text-gray-700">
+						Alt Text (optional)
+					</label>
+					<input
+						id="media-alt"
+						type="text"
+						bind:value={mediaAlt}
+						placeholder="Description of the image"
+						class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none"
+					/>
+				</div>
+
+				{#if mediaUrl.trim()}
+					<div>
+						<label class="mb-2 block text-sm font-medium text-gray-700">Preview:</label>
+						<div class="rounded-md border border-gray-200 bg-gray-50 p-2">
+							<img
+								src={mediaUrl}
+								alt={mediaAlt || 'Image preview'}
+								class="mx-auto h-auto max-h-32 max-w-full rounded"
+								onerror={(e) => {
+									(e.target as HTMLImageElement).style.display = 'none';
+									(e.target as HTMLImageElement).nextElementSibling?.remove();
+									const errorMsg = document.createElement('div');
+									errorMsg.textContent = 'Invalid image URL';
+									errorMsg.className = 'text-red-500 text-sm text-center';
+									(e.target as HTMLImageElement).parentNode?.appendChild(errorMsg);
+								}}
+							/>
+						</div>
+					</div>
+				{/if}
+			</div>
+
+			<div class="mt-6 flex justify-end gap-3">
+				<button
+					onclick={closeMediaPopup}
+					class="rounded-md border border-gray-300 px-4 py-2 text-gray-600 hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:outline-none"
+				>
+					Cancel
+				</button>
+				<button
+					onclick={insertImage}
+					disabled={!mediaUrl.trim()}
+					class="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-300"
+				>
+					Insert Image
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}

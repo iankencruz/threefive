@@ -4,10 +4,10 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-	plugins: [tailwindcss(), sveltekit(), devtoolsJson()],
-	server: {
-		proxy: {
-			'/api': 'http://localhost:8080',
-		}
-	}
+  plugins: [tailwindcss(), sveltekit(), devtoolsJson()],
+  server: {
+    proxy: {
+      '/api': 'http://localhost:8080',
+    }
+  }
 });
