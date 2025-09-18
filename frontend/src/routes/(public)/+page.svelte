@@ -9,11 +9,15 @@
 
 	// Create slides from the gallery media or fallback to default slides
 	// @ts-ignore
-	const slides = data.HomeGallery.gallery.media?.map((mediaItem) => ({
-		bg: mediaItem.url,
-		title: mediaItem.alt || mediaItem.title,
-		description: mediaItem.description
-	}));
+	// const slides = data.HomeGallery.gallery.media?.map((mediaItem) => ({
+	// 	bg: mediaItem.url,
+	// 	title: mediaItem.alt || mediaItem.title,
+	// 	description: mediaItem.description
+	// }));
+
+	const slides = data.HeroGallery;
+
+	console.log('slides: ', slides);
 
 	// @ts-ignore
 	let navOpen = $state(false);
@@ -57,17 +61,17 @@
 	<!-- Navigation -->
 
 	<!-- Slider Section -->
-	<section class="relative h-screen w-full overflow-hidden">
+	<section class="full relative h-screen overflow-hidden">
 		<div class="relative h-full w-full" bind:this={sliderContainer}>
 			{#each slides as slide, index}
 				<div
-					class="absolute inset-0 h-full min-h-[800px] w-full bg-cover bg-center bg-no-repeat pb-24 transition-transform duration-500 ease-in-out lg:pt-[84px]"
-					style="background-image: url('{slide.bg}'); transform: translateX({(index -
+					class=" absolute inset-0 h-full min-h-[800px] w-full bg-cover bg-center bg-no-repeat pb-24 transition-transform duration-500 ease-in-out lg:pt-[84px]"
+					style="background-image: url('{slide.url}'); transform: translateX({(index -
 						currentSlide) *
 						100}%)"
 				>
 					<section class="pt-8 pt-[120px] pb-14">
-						<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+						<div class="container">
 							<div class="inline-flex w-full flex-col items-start justify-start gap-14">
 								<div class="inline-flex items-center justify-center gap-[492px]">
 									<div class="inline-flex flex-col items-start justify-start gap-10 lg:gap-14">

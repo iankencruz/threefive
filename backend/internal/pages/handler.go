@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -47,13 +46,9 @@ func (h *Handler) HomePage(w http.ResponseWriter, r *http.Request) {
 	homePageData := struct {
 		*generated.Page                           // embed the original page
 		HeroGallery     *gallery.GalleryWithMedia `json:"hero_gallery"`
-		Status          string                    `json:"status"`
-		Timestamp       int64                     `json:"timestamp"`
 	}{
 		Page:        page,
 		HeroGallery: heroGallery,
-		Status:      "active",
-		Timestamp:   time.Now().Unix(),
 	}
 
 	response.WriteJSON(w, http.StatusOK, "Home Page Public:", homePageData)

@@ -30,7 +30,7 @@
 <main class="flex h-screen w-full flex-col justify-start bg-black text-white">
 	<div>
 		<nav class="fixed z-10 w-full bg-transparent py-5 transition-all duration-500">
-			<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+			<div class="container">
 				<div class="flex w-full flex-col lg:flex-row">
 					<div class="flex shrink-0 justify-between lg:flex-row">
 						<a href="/" class="flex w-full grow items-center text-2xl font-bold text-white">

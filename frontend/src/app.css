@@ -10,7 +10,11 @@
   --font-inconsolata: "Inconsolata", sans-serif;
 }
 
-
+@utility container {
+  margin-inline: auto;
+  padding-inline: 4rem;
+  max-width: none;
+}
 
 /* Scoped styling */
 button.tiptap {
@@ -24,10 +28,6 @@ button.tiptap.active {
 select.tiptap {
   @apply border px-2 py-1 text-sm min-w-32;
 }
-
-
-
-
 
 
 .tiptap[data-active='true'] {

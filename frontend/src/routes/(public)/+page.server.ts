@@ -3,18 +3,17 @@ export const ssr = true;
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ fetch }) => {
-	const res = await fetch('http://localhost:8080/api/v1/home');
-	const json = await res.json();
+  const res = await fetch('http://localhost:8080/api/v1/home');
+  const json = await res.json();
 
-	const homeGallery = json.data.galleries.find(
-		(item: any) => item.gallery.slug === 'home-hero-gallery'
-	);
-	console.log('Found homeGallery:', homeGallery);
+  console.log('data', json);
+  // console.log('hero_gallery: ', json.data.hero_gallery);
 
-	return {
-		Page: json.data.page,
-		Content: json.data.page.content,
-		HomeGallery: homeGallery,
-		Galleries: json.data.galleries
-	};
+
+
+  return {
+    Page: json.data.page,
+    Content: json.data.content,
+    HeroGallery: json.data.hero_gallery.media
+  };
 };
