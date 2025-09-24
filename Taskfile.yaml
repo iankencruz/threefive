@@ -38,6 +38,17 @@ tasks:
     cmds:
       - go build -o ./tmp/main ./cmd/api
 
+  build-w:
+    desc: Build Go binary only
+    dir: "{{.BACKEND_DIR}}"
+    watch: true
+    sources:
+      - '**/*.go'
+    deps:
+      - task: build
+    cmds:
+      - ./tmp/main
+
   build-front:
     desc: Build SvelteKit for production
     dir: "{{.FRONTEND_DIR}}"
