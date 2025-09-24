@@ -46,9 +46,11 @@ func (h *Handler) HomePage(w http.ResponseWriter, r *http.Request) {
 	homePageData := struct {
 		*generated.Page                           // embed the original page
 		HeroGallery     *gallery.GalleryWithMedia `json:"hero_gallery"`
+		Message         string
 	}{
 		Page:        page,
 		HeroGallery: heroGallery,
+		Message:     "Hello ",
 	}
 
 	response.WriteJSON(w, http.StatusOK, "Home Page Public:", homePageData)

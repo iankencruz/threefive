@@ -11,7 +11,7 @@ import (
 func Routes(app *Application) http.Handler {
 	r := chi.NewRouter()
 
-	// CORS Middleware
+	// CORS Middleware **
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			origin := r.Header.Get("Origin")
@@ -126,7 +126,7 @@ func Routes(app *Application) http.Handler {
 					})
 				})
 
-				// === /blogs ===
+				// === /blogs === //
 				r.Route("/blogs", func(r chi.Router) {
 					r.Get("/", app.PageHandler.List)
 					r.Post("/", app.PageHandler.Create)
