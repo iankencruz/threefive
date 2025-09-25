@@ -1,31 +1,60 @@
+# backend/.air.toml
 root = "."
 testdata_dir = "testdata"
 tmp_dir = "tmp"
 
 [build]
-  args_bin = []
+  # Use Go build directly (not Taskfile since we're already in backend/)
+  cmd = "go build -o ./tmp/main ./cmd/api/main.go"
+  # Binary location after build
   bin = "./tmp/main"
-  cmd = "go-task build"
+  # Additional arguments to pass to the binary
+  args_bin = []
+  # Delay after a file change before rebuilding
   delay = 1000
-  exclude_dir = ["assets", "tmp", "vendor", "testdata"]
+  # Directories to exclude from watching
+  exclude_dir = [
+    "assets", 
+    "tmp", 
+    "vendor", 
+    "testdata", 
+    "bin", 
+    "logs", 
+    "node_modules",
+    "sql/migrations",
+    "internal/shared/sqlc"
+  ]
+  # Files to exclude from watching
   exclude_file = []
-  exclude_regex = ["_test.go"]
-  exclude_unchanged = true
+  # Regex patterns to exclude
+  exclude_regex = [
+    "_test\\.go",
+    "_templ\\.go",
+    "\\.git",
+    "\\.gitignore",
+    "README\\.md"
+  ]
+  # Don't rebuild if only unchanged files
+  exclude_unchanged = false
+  # Follow symbolic links
   follow_symlink = false
-  full_bin = ""
-  include_dir = [".","backend", "cmd", "internal"  ]
-  include_ext = ["go", "templ",  "html"]
-  include_file = []
+  # File extensions to watch
+  include_ext = ["go", "tpl", "tmpl", "html"]
+  # How long to wait before killing the old binary
   kill_delay = "0s"
+  # Build log file
   log = "build-errors.log"
+  # Use polling instead of fsnotify (useful for Docker/VM)
   poll = false
   poll_interval = 0
-  post_cmd = []
-  pre_cmd = []
-  rerun = false
+  # Restart the binary after build
+  rerun = true
+  # Delay before rerunning
   rerun_delay = 500
+  # Send interrupt signal instead of kill
   send_interrupt = false
-  stop_on_error = true
+  # Stop watching when root directory changes
+  stop_on_root = false
 
 [color]
   app = ""
@@ -36,17 +65,11 @@ tmp_dir = "tmp"
 
 [log]
   main_only = false
-  silent = false
   time = true
 
 [misc]
-  clean_on_exit = true
-
-[proxy]
-  app_port = 8080
-  enabled = false
-  proxy_port = 8000
+  clean_on_exit = false
 
 [screen]
-  cleae_on_rebuild = true
+  clear_on_rebuild = true
   keep_scroll = true
