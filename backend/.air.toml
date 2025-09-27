@@ -5,7 +5,8 @@ tmp_dir = "tmp"
 
 [build]
   # Use Go build directly (not Taskfile since we're already in backend/)
-  cmd = "go build -o ./tmp/main ./cmd/api/main.go"
+  # cmd = "go build -o ./tmp/main ./cmd/api/main.go"
+  cmd = "task go:build"
   # Binary location after build
   bin = "./tmp/main"
   # Additional arguments to pass to the binary
@@ -35,7 +36,7 @@ tmp_dir = "tmp"
     "README\\.md"
   ]
   # Don't rebuild if only unchanged files
-  exclude_unchanged = false
+  exclude_unchanged = true
   # Follow symbolic links
   follow_symlink = false
   # File extensions to watch
@@ -68,7 +69,7 @@ tmp_dir = "tmp"
   time = true
 
 [misc]
-  clean_on_exit = false
+  clean_on_exit = true
 
 [screen]
   clear_on_rebuild = true

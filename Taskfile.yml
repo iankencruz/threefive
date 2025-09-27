@@ -1,9 +1,7 @@
 # Taskfile.yml
 version: "3"
 
-dotenv:
-  - ".env"
-  - ".env.local"
+dotenv: ['.env', '.env.local']
 
 vars:
   BACKEND_DIR: ./backend
@@ -12,10 +10,14 @@ vars:
   BINARY_NAME: api
   GO_FILES: ./backend/cmd/api/main.go
 
-env:
-  DATABASE_URL: "{{.DATABASE_URL}}"
-  PORT: '{{.PORT | default "8000"}}'
-  CGO_ENABLED: 0
+  # Database variables
+  # MIGRATIONS_DIR: ./backend/sql/migrations/
+  # GOOSE_DRIVER: postgres
+  GOOSE_FLAGS: -s  # Sequential ordering
+
+
+# Hide task execution statements | true = hide, false = show (default)
+# silent: true
 
 tasks:
   default:
@@ -33,77 +35,105 @@ tasks:
       - task: db:apply
       - task: sqlc:generate
 
-  # Database tasks (Atlas declarative)
-  db:apply:
-    desc: "Apply schema to database"
+  # =====================================
+  # Database tasks (Goose)
+  # =====================================
+  
+  db:up:
+    desc: "Applies database migrations. Use `task db:up` to apply all pending migrations or `task db:up -- <version>` to migrate to a specific version."
     cmds:
-      - atlas schema apply --env local
+      - |
+        {{if .CLI_ARGS}}
+        goose up-to {{.CLI_ARGS}}
+        {{else}}
+        goose up
+        {{end}} 
 
-  db:plan:
-    desc: "Show schema changes (dry run)"
-    cmds:
-      - atlas schema apply --env local --dry-run
 
-  db:inspect:
-    desc: "Inspect current database schema"
-    cmds:
-      - atlas schema inspect --env local
+  # db:up1:
+  #   desc: "Migrate the DB up by 1"
+  #   cmds:
+  #     - goose up-by-one
+  #
+  # db:up-to:
+  #   desc: "Migrate the DB to a specific VERSION (use: task db:down-to -- migration_name)"
+  #   cmds:
+  #     - goose up-to {{.CLI_ARGS}}
 
-  # Needs Rework
-  db:diff:
-    desc: "Show differences between current DB and schema"
+  db:down:
+    desc: "Rollback the last migration"
     cmds:
-      - atlas schema diff --env local --to file://backend/sql/schema.hcl
+      - goose down
 
-  db:clean:
-    desc: "Drop all tables (WARNING: destroys data!)"
-    prompt: "This will drop all tables and data. Are you sure?"
+  db:down-to:
+    desc: "Migrate the DB to a specific VERSION (use: task db:down-to -- migration_name)"
     cmds:
-      - atlas schema clean --env local
+      - goose down-to {{.CLI_ARGS}}
+
+  db:status:
+    desc: "Show migration status"
+    cmds:
+      - goose status
+
+  db:create:
+    desc: "Create new migration (use: task db:create -- migration_name)"
+    cmds:
+      - goose {{.GOOSE_FLAGS}} -dir {{.GOOSE_MIGRATIONS_DIR}} create {{.CLI_ARGS}} sql
 
   db:reset:
-    desc: "Reset database to schema state"
+    desc: "Reset database (rollback all migrations)"
+    prompt: "This will rollback all migrations. Are you sure?"
     cmds:
-      - task: db:clean
-      - task: db:apply
-      - task: sqlc:generate
+      - goose  reset
 
-  # Add to your Taskfile.yml
-  db:dev:create:
-    desc: "Create development database for Atlas"
+  db:redo:
+    desc: "Rollback and re-apply the last migration"
     cmds:
-      - createdb -h localhost -p 5432 -U user threefive_dev || echo "Dev database already exists"
+      - goose  redo
 
-  db:dev:drop:
-    desc: "Drop development database"
+  db:version:
+    desc: "Show current migration version"
     cmds:
-      - dropdb -h localhost -p 5432 -U user threefive_dev --if-exists
+      - goose version
 
+  db:fix:
+    desc: "Fix sequential numbering of migration files"
+    cmds:
+      - goose fix
+
+  db:validate:
+    desc: "Check migration files without running them"
+    cmds:
+      - goose validate
+  
+  # =====================================
   # SQLC tasks
-  sqlc:generate:
+  # =====================================
+  
+  sqlc:
     desc: "Generate Go code from SQL"
     dir: "{{.BACKEND_DIR}}"
+    silent: true
     cmds:
       - sqlc generate
+      - echo "sqlc generate completed."
 
-  sqlc:verify:
-    desc: "Verify SQLC configuration and queries"
-    dir: "{{.BACKEND_DIR}}"
-    cmds:
-      - sqlc verify
 
+  # =====================================
   # Backend tasks
-  backend:tidy:
+  # =====================================
+  
+  go:tidy:
     desc: "Tidy Go modules"
     dir: "{{.BACKEND_DIR}}"
     cmds:
       - go mod tidy
 
-  backend:build:
+  go:build:
     desc: "Build Go binary"
     dir: "{{.BACKEND_DIR}}"
     cmds:
-      - task: _backend:build
+      - go build -o ./tmp/main ./cmd/api/main.go
     sources:
       - "**/*.go"
       - go.mod
@@ -111,21 +141,22 @@ tasks:
     generates:
       - "{{.BUILD_DIR}}/{{.BINARY_NAME}}"
 
-  backend:dev:
+  go:dev:
     desc: "Run backend with hot reload (Air)"
     dir: "{{.BACKEND_DIR}}"
-    deps: [sqlc:generate]
     cmds:
       - air
 
-  backend:run:
+  go:run:
     desc: "Build and run backend"
     cmds:
       - task: backend:build
-      - task: _backend:run
 
+  # =====================================
   # Frontend tasks (Bun + Vite)
-  frontend:deps:
+  # =====================================
+
+  bun:install:
     desc: "Install frontend dependencies (use -- <package> to install specific)"
     dir: "{{.FRONTEND_DIR}}"
     cmds:
@@ -136,50 +167,38 @@ tasks:
           bun install
         fi
 
-  frontend:dev:
+  bun:dev:
     desc: "Run frontend development server"
     dir: "{{.FRONTEND_DIR}}"
     cmds:
       - bun run dev
 
-  frontend:build:
+  bun:build:
     desc: "Build frontend for production"
     dir: "{{.FRONTEND_DIR}}"
     cmds:
       - bun run build
 
-  frontend:preview:
+  bun:preview:
     desc: "Preview production build"
     dir: "{{.FRONTEND_DIR}}"
-    deps: [frontend:build]
+    deps: [bun:build]
     cmds:
       - bun run preview
 
-  # Development workflow
-  dev:
-    desc: "Start full development environment"
-    deps: [sqlc:generate]
-    cmds:
-      - task: _dev:parallel
-
-  dev:backend:
-    desc: "Start only backend development"
-    deps: [sqlc:generate]
-    cmds:
-      - task: backend:dev
-
-  dev:frontend:
-    desc: "Start only frontend development"
-    cmds:
-      - task: frontend:dev
-
+  
+  # =====================================
   # Build everything
+  # =====================================
+
   build:
     desc: "Build both backend and frontend"
     cmds:
       - task: backend:build
       - task: frontend:build
 
+
+  # =====================================
   # Testing
   # test:
   #   desc: "Run all tests"
@@ -187,7 +206,12 @@ tasks:
   #     - task: _test:backend
   #     - task: _test:frontend
 
+
+
+  # =====================================
   # Utilities
+  # =====================================
+
   clean:
     desc: "Clean build artifacts"
     cmds:
@@ -196,64 +220,10 @@ tasks:
       - rm -rf {{.FRONTEND_DIR}}/build
       - rm -rf {{.FRONTEND_DIR}}/dist
       - rm -rf {{.FRONTEND_DIR}}/.svelte-kit
+      - task: go:tidy
 
   health:
     desc: "Check if backend is running"
     cmds:
       - curl -f http://localhost:{{.PORT}}/health || echo "Backend not running"
 
-  psql:
-    desc: "Connect to PostgreSQL database"
-    cmds:
-      - psql "{{.DATABASE_URL}}"
-
-  # Internal tasks (not shown in task --list)
-  _setup:env:
-    internal: true
-    desc: "Setup environment files"
-    cmds:
-      - |
-        if [ ! -f .env ]; then
-          cp .env.example .env 2>/dev/null || echo "Please create .env file with your configuration"
-        fi
-
-  _backend:build:
-    internal: true
-    desc: "Internal: Build backend binary"
-    dir: "{{.BACKEND_DIR}}"
-    cmds:
-      - mkdir -p {{.BUILD_DIR}}
-      - go build -ldflags="-s -w" -o {{.BUILD_DIR}}/{{.BINARY_NAME}} {{.GO_FILES}}
-
-  _backend:run:
-    internal: true
-    desc: "Internal: Run built binary"
-    dir: "{{.BACKEND_DIR}}"
-    cmds:
-      - ./{{.BUILD_DIR}}/{{.BINARY_NAME}}
-
-  _dev:parallel:
-    internal: true
-    desc: "Internal: Run backend and frontend in parallel"
-    cmds:
-      - |
-        trap 'kill $(jobs -p)' EXIT
-        echo "Starting backend..."
-        task backend:dev &
-        echo "Starting frontend..."
-        task frontend:dev &
-        wait
-
-  # _test:backend:
-  #   internal: true
-  #   desc: "Internal: Run backend tests"
-  #   dir: "{{.BACKEND_DIR}}"
-  #   cmds:
-  #     - go test -v ./...
-  #
-  # _test:frontend:
-  #   internal: true
-  #   desc: "Internal: Run frontend tests"
-  #   dir: "{{.FRONTEND_DIR}}"
-  #   cmds:
-  #     - bun run test
