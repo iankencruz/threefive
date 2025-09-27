@@ -1,15 +1,51 @@
+// backend/cmd/api/main.go
 package main
 
 import (
-	"fmt"
+	"context"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
-	"github.com/joho/godotenv"
+	"github.com/iankencruz/threefive/internal/config"
+	"github.com/iankencruz/threefive/internal/server"
 )
 
 func main() {
-	godotenv.Load()
+	// Load configuration
+	cfg := config.Load()
 
-	// ctx := context.Background()
+	// Create server
+	srv, err := server.New(cfg)
+	if err != nil {
+		log.Fatalf("Failed to create server: %v", err)
+	}
 
-	fmt.Printf("Main.go")
+	// Start server in a goroutine
+	go func() {
+		if err := srv.Start(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Server failed to start: %v", err)
+		}
+	}()
+
+	// Wait for interrupt signal to gracefully shutdown
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	log.Println("Server shutting down...")
+
+	// Create a deadline for shutdown
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// Shutdown server
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatalf("Server forced to shutdown: %v", err)
+	}
+
+	log.Println("Server exited")
 }
