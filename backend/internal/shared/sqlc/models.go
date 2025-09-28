@@ -5,10 +5,34 @@
 package sqlc
 
 import (
+	"net/netip"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+type PasswordResetTokens struct {
+	ID        uuid.UUID          `json:"id"`
+	UserID    uuid.UUID          `json:"user_id"`
+	Token     string             `json:"token"`
+	ExpiresAt time.Time          `json:"expires_at"`
+	CreatedAt time.Time          `json:"created_at"`
+	UsedAt    pgtype.Timestamptz `json:"used_at"`
+	IsUsed    pgtype.Bool        `json:"is_used"`
+}
+
+type Sessions struct {
+	ID        uuid.UUID   `json:"id"`
+	UserID    uuid.UUID   `json:"user_id"`
+	Token     string      `json:"token"`
+	ExpiresAt time.Time   `json:"expires_at"`
+	CreatedAt time.Time   `json:"created_at"`
+	UpdatedAt time.Time   `json:"updated_at"`
+	IpAddress *netip.Addr `json:"ip_address"`
+	UserAgent pgtype.Text `json:"user_agent"`
+	IsActive  pgtype.Bool `json:"is_active"`
+}
 
 type Users struct {
 	ID           uuid.UUID `json:"id"`

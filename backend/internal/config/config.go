@@ -11,6 +11,7 @@ import (
 type Config struct {
 	Server   ServerConfig
 	Database DatabaseConfig
+	Frontend FrontendConfig
 }
 
 type ServerConfig struct {
@@ -20,6 +21,10 @@ type ServerConfig struct {
 }
 
 type DatabaseConfig struct {
+	URL string
+}
+
+type FrontendConfig struct {
 	URL string
 }
 
@@ -38,6 +43,9 @@ func Load() *Config {
 		},
 		Database: DatabaseConfig{
 			URL: getEnvRequired("DATABASE_URL"),
+		},
+		Frontend: FrontendConfig{
+			URL: getEnvRequired("FRONTEND_URL"),
 		},
 	}
 

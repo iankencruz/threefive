@@ -53,16 +53,18 @@ func New(cfg *config.Config) (*Server, error) {
 
 // Start starts the HTTP server
 func (s *Server) Start() error {
-	fmt.Printf("🚀 Server starting on http://%s\n", s.config.ServerAddress())
-	fmt.Printf("📊 Environment: %s\n", s.config.Server.Env)
+	fmt.Printf("\n🚀 Server starting on http://%s\n", s.config.ServerAddress())
+	fmt.Printf("📊 Environment: %s\n\n", s.config.Server.Env)
 
 	if s.config.IsDevelopment() {
+		fmt.Println("================================================")
 		fmt.Println("🔥 Development mode")
 
 		// Show connection pool stats in development
 		stats := s.db.Stat()
-		fmt.Printf("📊 DB Pool: %d total, %d idle, %d in-use\n",
+		fmt.Printf("📊 DB Pool: %d | total, %d | idle, | %d in-use\n",
 			stats.TotalConns(), stats.IdleConns(), stats.AcquiredConns())
+		fmt.Println("================================================")
 	}
 
 	return s.server.ListenAndServe()

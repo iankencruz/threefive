@@ -1,7 +1,7 @@
 # Taskfile.yml
 version: "3"
 
-dotenv: ['.env', '.env.local']
+dotenv: [".env", ".env.local"]
 
 vars:
   BACKEND_DIR: ./backend
@@ -10,11 +10,13 @@ vars:
   BINARY_NAME: api
   GO_FILES: ./backend/cmd/api/main.go
 
-  # Database variables
-  # MIGRATIONS_DIR: ./backend/sql/migrations/
-  # GOOSE_DRIVER: postgres
-  GOOSE_FLAGS: -s  # Sequential ordering
+  GO_GROUP: " GO"
+  BUN_GROUP: "  BUN"
 
+  # Database variables
+  GOOSE_MIGRATIONS_DIR: ./backend/sql/migrations/
+  # GOOSE_DRIVER: postgres
+  GOOSE_FLAGS: -s # Sequential ordering
 
 # Hide task execution statements | true = hide, false = show (default)
 # silent: true
@@ -29,16 +31,20 @@ tasks:
   setup:
     desc: "Initial project setup"
     cmds:
-      - task: _setup:env
-      - task: frontend:deps
-      - task: backend:tidy
-      - task: db:apply
-      - task: sqlc:generate
+      - task: go:tidy
+      - task: db:reset
+      - task: db:up
+      - task: sqlc
 
   # =====================================
   # Database tasks (Goose)
   # =====================================
-  
+
+  db:create:
+    desc: "Create new migration (use: task db:create -- migration_name)"
+    cmds:
+      - goose {{.GOOSE_FLAGS}} -dir {{.GOOSE_MIGRATIONS_DIR}} create {{.CLI_ARGS}} sql
+
   db:up:
     desc: "Applies database migrations. Use `task db:up` to apply all pending migrations or `task db:up -- <version>` to migrate to a specific version."
     cmds:
@@ -47,8 +53,7 @@ tasks:
         goose up-to {{.CLI_ARGS}}
         {{else}}
         goose up
-        {{end}} 
-
+        {{end}}
 
   # db:up1:
   #   desc: "Migrate the DB up by 1"
@@ -75,11 +80,6 @@ tasks:
     cmds:
       - goose status
 
-  db:create:
-    desc: "Create new migration (use: task db:create -- migration_name)"
-    cmds:
-      - goose {{.GOOSE_FLAGS}} -dir {{.GOOSE_MIGRATIONS_DIR}} create {{.CLI_ARGS}} sql
-
   db:reset:
     desc: "Reset database (rollback all migrations)"
     prompt: "This will rollback all migrations. Are you sure?"
@@ -105,11 +105,11 @@ tasks:
     desc: "Check migration files without running them"
     cmds:
       - goose validate
-  
+
   # =====================================
   # SQLC tasks
   # =====================================
-  
+
   sqlc:
     desc: "Generate Go code from SQL"
     dir: "{{.BACKEND_DIR}}"
@@ -118,11 +118,10 @@ tasks:
       - sqlc generate
       - echo "sqlc generate completed."
 
-
   # =====================================
   # Backend tasks
   # =====================================
-  
+
   go:tidy:
     desc: "Tidy Go modules"
     dir: "{{.BACKEND_DIR}}"
@@ -151,10 +150,6 @@ tasks:
     desc: "Build and run backend"
     cmds:
       - task: backend:build
-
-  # =====================================
-  # Frontend tasks (Bun + Vite)
-  # =====================================
 
   bun:install:
     desc: "Install frontend dependencies (use -- <package> to install specific)"
@@ -186,7 +181,6 @@ tasks:
     cmds:
       - bun run preview
 
-  
   # =====================================
   # Build everything
   # =====================================
@@ -197,7 +191,6 @@ tasks:
       - task: backend:build
       - task: frontend:build
 
-
   # =====================================
   # Testing
   # test:
@@ -205,8 +198,6 @@ tasks:
   #   cmds:
   #     - task: _test:backend
   #     - task: _test:frontend
-
-
 
   # =====================================
   # Utilities
@@ -226,4 +217,3 @@ tasks:
     desc: "Check if backend is running"
     cmds:
       - curl -f http://localhost:{{.PORT}}/health || echo "Backend not running"
-

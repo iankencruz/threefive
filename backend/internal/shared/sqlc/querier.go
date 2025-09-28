@@ -11,11 +11,23 @@ import (
 )
 
 type Querier interface {
+	CleanupExpiredPasswordResetTokens(ctx context.Context) error
+	CleanupExpiredSessions(ctx context.Context) error
+	CreatePasswordResetToken(ctx context.Context, arg CreatePasswordResetTokenParams) (PasswordResetTokens, error)
+	CreateSession(ctx context.Context, arg CreateSessionParams) (Sessions, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (Users, error)
+	DeactivateAllUserSessions(ctx context.Context, userID uuid.UUID) error
+	DeactivateSession(ctx context.Context, token string) error
 	DeleteUser(ctx context.Context, id uuid.UUID) error
+	GetActiveSessionsByUserID(ctx context.Context, userID uuid.UUID) ([]Sessions, error)
+	GetPasswordResetToken(ctx context.Context, token string) (GetPasswordResetTokenRow, error)
+	GetSessionByToken(ctx context.Context, token string) (GetSessionByTokenRow, error)
 	GetUserByEmail(ctx context.Context, email string) (Users, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (Users, error)
 	ListUsers(ctx context.Context) ([]Users, error)
+	UpdateSessionExpiry(ctx context.Context, arg UpdateSessionExpiryParams) (Sessions, error)
+	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
+	UsePasswordResetToken(ctx context.Context, token string) error
 }
 
 var _ Querier = (*Queries)(nil)
