@@ -12,8 +12,6 @@ func Routes(handler *Handler, middleware *Middleware) http.Handler {
 
 	// Public auth routes (no authentication required)
 	r.Group(func(r chi.Router) {
-		r.Use(middleware.RequireNoAuth) // Prevent already authenticated users
-
 		r.Post("/register", handler.Register)
 		r.Post("/login", handler.Login)
 		r.Post("/request-password-reset", handler.RequestPasswordReset)

@@ -28,13 +28,41 @@ tasks:
       - task --list
 
   # Setup
-  setup:
+  project:setup:
     desc: "Initial project setup"
     cmds:
       - task: go:tidy
       - task: db:reset
       - task: db:up
       - task: sqlc
+
+  dev:setup:
+    desc: Ensures Podman machine is running, then runs the dev:next task.
+    cmds:
+      - echo "Attempting to start Podman machine. This may show an 'already running' error, but it's expected and will be ignored."
+      - task: podman:start
+      - task: podman:up
+
+  podman:start:
+    desc: "Start podman machine"
+    internal: true
+    silent: true
+    cmds:
+      - echo "Starting Podman machine"
+      - podman machine start || true
+
+  podman:stop:
+    desc: "Stop podman machine"
+    cmds:
+      - echo "Stopping Podman machine"
+      - podman machine stop
+
+  podman:up:
+    desc: "Run compose file"
+    internal: true
+    cmds:
+      - echo "Stopping Podman machine"
+      - podman compose up -d
 
   # =====================================
   # Database tasks (Goose)
@@ -166,20 +194,56 @@ tasks:
     desc: "Run frontend development server"
     dir: "{{.FRONTEND_DIR}}"
     cmds:
-      - bun run dev
+      - bun --bun run dev
 
   bun:build:
     desc: "Build frontend for production"
     dir: "{{.FRONTEND_DIR}}"
     cmds:
-      - bun run build
+      - bun --bun run build
 
   bun:preview:
     desc: "Preview production build"
     dir: "{{.FRONTEND_DIR}}"
     deps: [bun:build]
     cmds:
-      - bun run preview
+      - bun --bun run preview
+
+  bun:lint:
+    desc: "Lint frontend code with Biome"
+    dir: "{{.FRONTEND_DIR}}"
+    cmds:
+      - bunx biome lint ./src
+
+  bun:lint:fix:
+    desc: "Lint and fix frontend code"
+    dir: "{{.FRONTEND_DIR}}"
+    cmds:
+      - bunx biome lint --write ./src
+
+  bun:format:
+    desc: "Format frontend code with Biome"
+    dir: "{{.FRONTEND_DIR}}"
+    cmds:
+      - bunx biome format --write ./src
+
+  bun:format:check:
+    desc: "Check frontend code formatting"
+    dir: "{{.FRONTEND_DIR}}"
+    cmds:
+      - bunx biome format ./src
+
+  bun:check:
+    desc: "Run Biome check (lint + format)"
+    dir: "{{.FRONTEND_DIR}}"
+    cmds:
+      - bunx biome check ./src
+
+  bun:fix:
+    desc: "Fix all issues (lint + format)"
+    dir: "{{.FRONTEND_DIR}}"
+    cmds:
+      - bunx biome check --write ./src
 
   # =====================================
   # Build everything

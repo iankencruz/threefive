@@ -6,7 +6,7 @@ meta {
 
 post {
   url: http://localhost:8000/auth/register
-  body: json
+  body: formUrlEncoded
   auth: inherit
 }
 
@@ -16,11 +16,29 @@ headers {
 
 body:json {
   {
-    "first_name": "John",
-    "last_name": "Doe",
-    "email": "john@example.com",
-    "password": "password123"
+    "first_name": "Admin",
+    "last_name": "User",
+    "email": "admin@example.com",
+    "password": "Password!123"
   }
+}
+
+body:form-urlencoded {
+  first_name: {{first_name}}
+  last_name: {{last_name}}
+  email: {{email}}
+  password: {{password}}
+}
+
+body:multipart-form {
+  : 
+}
+
+vars:pre-request {
+  email: admin@example.com
+  first_name: admin
+  last_name: user
+  password: Password!123
 }
 
 settings {
