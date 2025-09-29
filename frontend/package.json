@@ -7,10 +7,15 @@
     "dev": "vite dev",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "bunx biome lint --write",
     "prepare": "svelte-kit sync || echo ''",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
+    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+    "lint": "bunx biome lint ./src",
+    "lint:fix": "bunx biome lint --write ./src",
+    "format": "bunx biome format --write ./src",
+    "format:check": "bunx biome format ./src",
+    "biome:check": "bunx biome check ./src",
+    "biome:fix": "bunx biome check --write ./src"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.4",
