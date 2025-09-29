@@ -1,11 +1,12 @@
-<script>
-	import { Toaster } from 'svelte-sonner';
-
-	let { data, children } = $props();
+<script lang="ts">
+	import '../app.css';
+	import favicon from '$lib/assets/favicon.svg';
+	
+	const { children } = $props();
 </script>
 
-<Toaster closeButton richColors position="top-right" expand={true} />
+<svelte:head>
+	<link rel="icon" href={favicon} />
+</svelte:head>
 
-<div class="font-inconsolata">
-	{@render children?.()}
-</div>
+{@render children?.()}
