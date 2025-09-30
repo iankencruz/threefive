@@ -5,12 +5,86 @@
 package sqlc
 
 import (
+	"database/sql/driver"
+	"fmt"
 	"net/netip"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+type StorageType string
+
+const (
+	StorageTypeLocal StorageType = "local"
+	StorageTypeS3    StorageType = "s3"
+)
+
+func (e *StorageType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = StorageType(s)
+	case string:
+		*e = StorageType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for StorageType: %T", src)
+	}
+	return nil
+}
+
+type NullStorageType struct {
+	StorageType StorageType `json:"storage_type"`
+	Valid       bool        `json:"valid"` // Valid is true if StorageType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullStorageType) Scan(value interface{}) error {
+	if value == nil {
+		ns.StorageType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.StorageType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullStorageType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.StorageType), nil
+}
+
+type Media struct {
+	ID               uuid.UUID          `json:"id"`
+	Filename         string             `json:"filename"`
+	OriginalFilename string             `json:"original_filename"`
+	MimeType         string             `json:"mime_type"`
+	SizeBytes        int64              `json:"size_bytes"`
+	Width            pgtype.Int4        `json:"width"`
+	Height           pgtype.Int4        `json:"height"`
+	StorageType      StorageType        `json:"storage_type"`
+	StoragePath      string             `json:"storage_path"`
+	S3Bucket         pgtype.Text        `json:"s3_bucket"`
+	S3Key            pgtype.Text        `json:"s3_key"`
+	S3Region         pgtype.Text        `json:"s3_region"`
+	Url              pgtype.Text        `json:"url"`
+	ThumbnailUrl     pgtype.Text        `json:"thumbnail_url"`
+	UploadedBy       uuid.UUID          `json:"uploaded_by"`
+	CreatedAt        time.Time          `json:"created_at"`
+	UpdatedAt        time.Time          `json:"updated_at"`
+	DeletedAt        pgtype.Timestamptz `json:"deleted_at"`
+}
+
+type MediaRelations struct {
+	ID         uuid.UUID   `json:"id"`
+	MediaID    uuid.UUID   `json:"media_id"`
+	EntityType string      `json:"entity_type"`
+	EntityID   uuid.UUID   `json:"entity_id"`
+	SortOrder  pgtype.Int4 `json:"sort_order"`
+	CreatedAt  time.Time   `json:"created_at"`
+}
 
 type PasswordResetTokens struct {
 	ID        uuid.UUID          `json:"id"`

@@ -13,6 +13,7 @@ import (
 type Querier interface {
 	CleanupExpiredPasswordResetTokens(ctx context.Context) error
 	CleanupExpiredSessions(ctx context.Context) error
+	CreateMedia(ctx context.Context, arg CreateMediaParams) (Media, error)
 	CreatePasswordResetToken(ctx context.Context, arg CreatePasswordResetTokenParams) (PasswordResetTokens, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Sessions, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (Users, error)
@@ -20,11 +21,23 @@ type Querier interface {
 	DeactivateSession(ctx context.Context, token string) error
 	DeleteUser(ctx context.Context, id uuid.UUID) error
 	GetActiveSessionsByUserID(ctx context.Context, userID uuid.UUID) ([]Sessions, error)
+	GetEntitiesForMedia(ctx context.Context, mediaID uuid.UUID) ([]GetEntitiesForMediaRow, error)
+	GetMediaByID(ctx context.Context, id uuid.UUID) (Media, error)
+	GetMediaForEntity(ctx context.Context, arg GetMediaForEntityParams) ([]Media, error)
+	GetMediaStats(ctx context.Context) (GetMediaStatsRow, error)
 	GetPasswordResetToken(ctx context.Context, token string) (GetPasswordResetTokenRow, error)
 	GetSessionByToken(ctx context.Context, token string) (GetSessionByTokenRow, error)
 	GetUserByEmail(ctx context.Context, email string) (Users, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (Users, error)
+	HardDeleteMedia(ctx context.Context, id uuid.UUID) error
+	// Media Relations Queries
+	LinkMediaToEntity(ctx context.Context, arg LinkMediaToEntityParams) (MediaRelations, error)
+	ListMedia(ctx context.Context, arg ListMediaParams) ([]Media, error)
+	ListMediaByUser(ctx context.Context, uploadedBy uuid.UUID) ([]Media, error)
 	ListUsers(ctx context.Context) ([]Users, error)
+	SoftDeleteMedia(ctx context.Context, id uuid.UUID) error
+	UnlinkMediaFromEntity(ctx context.Context, arg UnlinkMediaFromEntityParams) error
+	UpdateMedia(ctx context.Context, arg UpdateMediaParams) (Media, error)
 	UpdateSessionExpiry(ctx context.Context, arg UpdateSessionExpiryParams) (Sessions, error)
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
 	UsePasswordResetToken(ctx context.Context, token string) error
