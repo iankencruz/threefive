@@ -6,7 +6,7 @@ meta {
 
 post {
   url: http://localhost:8000/auth/login
-  body: json
+  body: formUrlEncoded
   auth: inherit
 }
 
@@ -14,11 +14,9 @@ headers {
   Content-Type: application/json
 }
 
-body:json {
-  {
-    "email": "john@example.com",
-    "password": "Password!123"
-  }
+body:form-urlencoded {
+  email: {{email}}
+  password: {{password}}
 }
 
 settings {
