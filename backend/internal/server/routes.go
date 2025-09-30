@@ -24,11 +24,11 @@ func setupRouter(cfg *config.Config, db *pgxpool.Pool, queries *sqlc.Queries) ht
 	// Application-level middleware
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{cfg.Frontend.URL}, // From config
-		AllowCredentials: true,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "Cookie"},
 		ExposedHeaders:   []string{"Set-Cookie"},
 		MaxAge:           300,
+		AllowCredentials: true,
 	}))
 
 	// Create session manager
