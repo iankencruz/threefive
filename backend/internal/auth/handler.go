@@ -2,6 +2,7 @@
 package auth
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -82,6 +83,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	// Login user
 	user, session, err := h.service.Login(r.Context(), req, r)
 	if err != nil {
+		fmt.Print("Error Here")
 		responses.WriteErr(w, err)
 		return
 	}

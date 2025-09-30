@@ -1,3 +1,4 @@
+import { PUBLIC_API_URL } from "$env/static/public";
 import type {
   AuthResponse,
   LoginRequest,
@@ -34,7 +35,7 @@ async function fetchAPI<T>(url: string, options: RequestInit = {}): Promise<T> {
 export const authApi = {
   // Register new user
   async register(data: RegisterRequest): Promise<AuthResponse> {
-    return fetchAPI<AuthResponse>("/auth/register", {
+    return fetchAPI<AuthResponse>(`${PUBLIC_API_URL}/auth/register`, {
       method: "POST",
       body: JSON.stringify(data),
     });
@@ -42,7 +43,7 @@ export const authApi = {
 
   // Login user
   async login(data: LoginRequest): Promise<AuthResponse> {
-    return fetchAPI<AuthResponse>("/auth/login", {
+    return fetchAPI<AuthResponse>(`${PUBLIC_API_URL}/auth/login`, {
       method: "POST",
       body: JSON.stringify(data),
     });
@@ -50,21 +51,21 @@ export const authApi = {
 
   // Logout current session
   async logout(): Promise<{ message: string }> {
-    return fetchAPI("/auth/logout", {
+    return fetchAPI(`${PUBLIC_API_URL}/auth/logout`, {
       method: "POST",
     });
   },
 
   // Logout all sessions
   async logoutAll(): Promise<{ message: string }> {
-    return fetchAPI("/auth/logout-all", {
+    return fetchAPI(`${PUBLIC_API_URL}/auth/logout-all`, {
       method: "POST",
     });
   },
 
   // Get current user
   async me(): Promise<User> {
-    return fetchAPI<User>("/auth/me");
+    return fetchAPI<User>(`${PUBLIC_API_URL}/auth/me`);
   },
 
   // Change password
