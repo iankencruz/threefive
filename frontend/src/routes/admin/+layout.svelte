@@ -1,5 +1,7 @@
 <script lang="ts">
 // Will add auth check here later
+const js = "js"
+console.log("js", js)
 </script>
 
 <div class="admin-layout">
