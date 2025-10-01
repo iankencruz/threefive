@@ -14,7 +14,7 @@ vars:
   BUN_GROUP: "  BUN"
 
   # Database variables
-  GOOSE_MIGRATIONS_DIR: ./backend/sql/migrations/
+  # GOOSE_MIGRATIONS_DIR: ./backend/sql/migrations/
   # GOOSE_DRIVER: postgres
   GOOSE_FLAGS: -s # Sequential ordering
 
@@ -27,7 +27,6 @@ tasks:
     cmds:
       - task --list
 
-  # Setup
   project:setup:
     desc: "Initial project setup"
     cmds:
@@ -45,6 +44,7 @@ tasks:
 
   podman:start:
     desc: "Start podman machine"
+    platforms: [darwin]
     internal: true
     silent: true
     cmds:
@@ -71,7 +71,9 @@ tasks:
   db:create:
     desc: "Create new migration (use: task db:create -- migration_name)"
     cmds:
-      - goose {{.GOOSE_FLAGS}} -dir {{.GOOSE_MIGRATIONS_DIR}} create {{.CLI_ARGS}} sql
+      - goose {{.GOOSE_FLAGS}} -dir {{.GOOSE_MIGRATION_DIR}} create {{.CLI_ARGS}} sql
+    requires:
+      vars: [GOOSE_MIGRATION_DIR]
 
   db:up:
     desc: "Applies database migrations. Use `task db:up` to apply all pending migrations or `task db:up -- <version>` to migrate to a specific version."
