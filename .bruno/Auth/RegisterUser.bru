@@ -1,0 +1,69 @@
+meta {
+  name: Register User
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base-url}}/auth/register
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "first_name": "John",
+    "last_name": "Doe",
+    "email": "john.doe.{{timestamp}}@example.com",
+    "password": "SecurePass123!"
+  }
+}
+
+vars:pre-request {
+  timestamp: {{Date.now()}}
+}
+
+assert {
+  res.status: eq 201
+  res.body.user.first_name: eq John
+  res.body.user.last_name: eq Doe
+  res.body.user.id: isDefined
+  res.body.message: eq Registration successful
+}
+
+tests {
+  test("should return 201 on successful registration", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+  
+  test("should return user object without sensitive data", function() {
+    const user = res.getBody().user;
+    expect(user).to.be.an('object');
+    expect(user.id).to.exist;
+    expect(user.email).to.exist;
+    expect(user.password).to.be.undefined;
+    expect(user.password_hash).to.be.undefined;
+  });
+  
+  test("should set session cookie", function() {
+    const cookies = res.getHeaders()['set-cookie'];
+    expect(cookies).to.exist;
+    expect(cookies.some(c => c.includes('session_token'))).to.be.true;
+  });
+}
+
+docs {
+  # Register User
+  
+  Creates a new user account.
+  Uses dynamic timestamp in email to avoid duplicates.
+  
+  ## Validation Rules:
+  - First/Last name: 2-50 chars, letters and spaces only
+  - Email: Valid format
+  - Password: Min 8 chars, must include uppercase, lowercase, number, special char
+  
+  ## Error Cases to Test Manually:
+  
+  ### Missing Required Fields (400)
+```json

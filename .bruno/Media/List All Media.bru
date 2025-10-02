@@ -1,0 +1,29 @@
+meta {
+  name: List All Media
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base-url}}/api/v1/media?page=1&limit=20
+  body: formUrlEncoded
+  auth: inherit
+}
+
+params:query {
+  page: 1
+  limit: 20
+}
+
+headers {
+  Cookie: session_token=OU8QcXL4li2qmZgZG2DC50iHuM3EBDQg4pq8njOyDgs=
+}
+
+body:form-urlencoded {
+  email: {{email}}
+  password: {{password}}
+}
+
+settings {
+  encodeUrl: true
+}

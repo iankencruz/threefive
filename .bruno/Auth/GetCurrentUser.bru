@@ -1,0 +1,42 @@
+meta {
+  name: Get Current User
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base-url}}/auth/me
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.email: isDefined
+  res.body.id: isDefined
+  res.body.first_name: isDefined
+  res.body.last_name: isDefined
+}
+
+tests {
+  test("should return 200 status", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("should return current user", function() {
+    expect(res.getBody().email).to.exist;
+    expect(res.getBody().id).to.exist;
+  });
+  
+  test("should not return sensitive data", function() {
+    expect(res.getBody().password).to.be.undefined;
+    expect(res.getBody().password_hash).to.be.undefined;
+  });
+}
+
+docs {
+  # Get Current User
+  
+  Returns the currently authenticated user's information.
+  Requires valid session cookie.
+}

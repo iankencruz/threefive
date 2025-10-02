@@ -1,3 +1,7 @@
+headers {
+  Cookie: session_token=OU8QcXL4li2qmZgZG2DC50iHuM3EBDQg4pq8njOyDgs=
+}
+
 auth {
   mode: basic
 }
@@ -10,4 +14,25 @@ auth:basic {
 vars:pre-request {
   email: admin@example.com
   password: Password!123
+}
+
+script:pre-request {
+  // Auto-attach saved session token to all requests
+  const sessionToken = bru.getEnvVar('session_token');
+  
+  if (sessionToken) {
+    req.setHeader('Cookie', `session_token=${sessionToken}`);
+    console.log('🍪 Attaching session token:', sessionToken.substring(0, 20) + '...');
+  } else {
+    console.log('⚠️ No session token found');
+  }
+}
+
+docs {
+  # API Collection
+  
+  ## Authentication
+  1. First run "Login User" to get a session token
+  2. Token is automatically saved and used in all subsequent requests
+  3. To logout, run "Logout" which clears the token
 }

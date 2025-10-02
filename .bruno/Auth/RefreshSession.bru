@@ -1,0 +1,33 @@
+meta {
+  name: Refresh Session
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{base-url}}/auth/refresh
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.message: eq Session refreshed successfully
+}
+
+tests {
+  test("should return 200 status", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("should return success message", function() {
+    expect(res.getBody().message).to.include('Session refreshed');
+  });
+}
+
+docs {
+  # Refresh Session
+  
+  Extends the current session expiration time.
+  Call this periodically to keep user logged in during active use.
+}
