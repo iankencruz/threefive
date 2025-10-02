@@ -21,7 +21,7 @@ const (
 	StorageTypeS3    StorageType = "s3"
 )
 
-func (e *StorageType) Scan(src interface{}) error {
+func (e *StorageType) Scan(src any) error {
 	switch s := src.(type) {
 	case []byte:
 		*e = StorageType(s)
@@ -39,7 +39,7 @@ type NullStorageType struct {
 }
 
 // Scan implements the Scanner interface.
-func (ns *NullStorageType) Scan(value interface{}) error {
+func (ns *NullStorageType) Scan(value any) error {
 	if value == nil {
 		ns.StorageType, ns.Valid = "", false
 		return nil

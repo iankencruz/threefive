@@ -10,17 +10,19 @@ import (
 	"github.com/iankencruz/threefive/internal/shared/errors"
 	"github.com/iankencruz/threefive/internal/shared/responses"
 	"github.com/iankencruz/threefive/internal/shared/session"
+	"github.com/iankencruz/threefive/internal/shared/sqlc"
 	"github.com/iankencruz/threefive/internal/shared/validation"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// Handler handles HTTP requests for authentication
 type Handler struct {
 	service        *Service
 	sessionManager *session.Manager
 }
 
-// NewHandler creates a new auth handler
-func NewHandler(service *Service, sessionManager *session.Manager) *Handler {
+// NewHandler creates a new auth handler with its own service
+func NewHandler(db *pgxpool.Pool, queries *sqlc.Queries, sessionManager *session.Manager) *Handler {
+	service := NewService(db, queries, sessionManager)
 	return &Handler{
 		service:        service,
 		sessionManager: sessionManager,
@@ -51,7 +53,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	h.sessionManager.SetSessionCookie(w, session.Token)
 
 	// Return user data (without sensitive info)
-	userResponse := map[string]interface{}{
+	userResponse := map[string]any{
 		"id":         user.ID,
 		"email":      user.Email,
 		"first_name": user.FirstName,
@@ -59,7 +61,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		"created_at": user.CreatedAt,
 	}
 
-	response := map[string]interface{}{
+	response := map[string]any{
 		"user":    userResponse,
 		"message": "Registration successful",
 	}
@@ -92,7 +94,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	h.sessionManager.SetSessionCookie(w, session.Token)
 
 	// Return user data (without sensitive info)
-	userResponse := map[string]interface{}{
+	userResponse := map[string]any{
 		"id":         user.ID,
 		"email":      user.Email,
 		"first_name": user.FirstName,
@@ -100,7 +102,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		"created_at": user.CreatedAt,
 	}
 
-	response := map[string]interface{}{
+	response := map[string]any{
 		"user":    userResponse,
 		"message": "Login successful",
 	}
@@ -123,7 +125,7 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	// Clear session cookie
 	h.sessionManager.ClearSessionCookie(w)
 
-	response := map[string]interface{}{
+	response := map[string]any{
 		"message": "Logout successful",
 	}
 
@@ -145,7 +147,7 @@ func (h *Handler) LogoutAll(w http.ResponseWriter, r *http.Request) {
 	// Clear current session cookie
 	h.sessionManager.ClearSessionCookie(w)
 
-	response := map[string]interface{}{
+	response := map[string]any{
 		"message": "Logged out from all devices",
 	}
 
@@ -157,7 +159,7 @@ func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
 	// Get current user from context (middleware ensures this exists)
 	user := MustGetUserFromContext(r.Context())
 
-	userResponse := map[string]interface{}{
+	userResponse := map[string]any{
 		"id":         user.ID,
 		"email":      user.Email,
 		"first_name": user.FirstName,
@@ -193,7 +195,7 @@ func (h *Handler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	// Clear session cookie (user needs to login again)
 	h.sessionManager.ClearSessionCookie(w)
 
-	response := map[string]interface{}{
+	response := map[string]any{
 		"message": "Password changed successfully. Please login again.",
 	}
 
@@ -220,7 +222,7 @@ func (h *Handler) RequestPasswordReset(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := map[string]interface{}{
+	response := map[string]any{
 		"message": "If an account with that email exists, a password reset link has been sent.",
 	}
 
@@ -247,7 +249,7 @@ func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := map[string]interface{}{
+	response := map[string]any{
 		"message": "Password reset successful. Please login with your new password.",
 	}
 
@@ -267,9 +269,9 @@ func (h *Handler) GetSessions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Format sessions for response (hide sensitive info)
-	var sessionResponses []map[string]interface{}
+	var sessionResponses []map[string]any
 	for _, session := range sessions {
-		sessionResponse := map[string]interface{}{
+		sessionResponse := map[string]any{
 			"id":         session.ID,
 			"created_at": session.CreatedAt,
 			"updated_at": session.UpdatedAt,
@@ -289,7 +291,7 @@ func (h *Handler) GetSessions(w http.ResponseWriter, r *http.Request) {
 		sessionResponses = append(sessionResponses, sessionResponse)
 	}
 
-	response := map[string]interface{}{
+	response := map[string]any{
 		"sessions": sessionResponses,
 	}
 
@@ -322,7 +324,7 @@ func (h *Handler) RevokeSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := map[string]interface{}{
+	response := map[string]any{
 		"message": "Session revoked successfully",
 	}
 
@@ -341,7 +343,7 @@ func (h *Handler) RefreshSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := map[string]interface{}{
+	response := map[string]any{
 		"message": "Session refreshed successfully",
 	}
 

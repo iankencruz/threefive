@@ -8,13 +8,18 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/iankencruz/threefive/internal/shared/sqlc"
+	"github.com/iankencruz/threefive/internal/shared/storage"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Handler struct {
 	service *Service
 }
 
-func NewHandler(service *Service) *Handler {
+// NewHandler creates a new media handler with its own service
+func NewHandler(db *pgxpool.Pool, queries *sqlc.Queries, storage storage.Storage) *Handler {
+	service := NewService(db, queries, storage)
 	return &Handler{
 		service: service,
 	}
@@ -44,7 +49,7 @@ func (h *Handler) UploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	// Upload file (service handles file opening)
+	// Upload file
 	media, err := h.service.UploadFile(r.Context(), header, userID)
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, err.Error())
@@ -95,7 +100,7 @@ func (h *Handler) ListMediaHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := map[string]interface{}{
+	response := map[string]any{
 		"data": media,
 		"pagination": map[string]int{
 			"page":  page,
@@ -239,7 +244,7 @@ func (h *Handler) GetEntityMediaHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	respondJSON(w, http.StatusOK, map[string]interface{}{
+	respondJSON(w, http.StatusOK, map[string]any{
 		"entity_type": entityType,
 		"entity_id":   entityID,
 		"media":       media,
@@ -259,7 +264,7 @@ func (h *Handler) GetStatsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // Helper functions for JSON responses
-func respondJSON(w http.ResponseWriter, status int, data interface{}) {
+func respondJSON(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(data)

@@ -6,24 +6,19 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 	"github.com/iankencruz/threefive/internal/auth"
-	"github.com/iankencruz/threefive/internal/config"
+	"github.com/iankencruz/threefive/internal/media"
 	"github.com/iankencruz/threefive/internal/shared/middleware"
-	"github.com/iankencruz/threefive/internal/shared/session"
-	"github.com/iankencruz/threefive/internal/shared/sqlc"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// setupRouter configures basic routes
-func setupRouter(cfg *config.Config, db *pgxpool.Pool, queries *sqlc.Queries) http.Handler {
+func (s *Server) setupRouter() http.Handler {
 	r := chi.NewRouter()
 
 	// Global middleware
 	r.Use(middleware.RequestLogger)
 	r.Use(middleware.Recovery)
 
-	// Application-level middleware
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{cfg.Frontend.URL}, // From config
+		AllowedOrigins:   []string{s.config.Frontend.URL},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "Cookie"},
 		ExposedHeaders:   []string{"Set-Cookie"},
@@ -31,37 +26,25 @@ func setupRouter(cfg *config.Config, db *pgxpool.Pool, queries *sqlc.Queries) ht
 		AllowCredentials: true,
 	}))
 
-	// Create session manager
-	sessionConfig := session.DefaultConfig()
-	sessionManager := session.NewManager(db, queries, sessionConfig)
-
-	// Auth middleware (auth package)
-	authMW := auth.NewMiddleware(sessionManager)
-
-	// Create Auth Service
-	authService := auth.NewService(db, queries, sessionManager)
-	authHandler := auth.NewHandler(authService, sessionManager)
-	authMiddleware := auth.NewMiddleware(sessionManager)
-
 	// Mount auth routes
-	authRoutes := auth.Routes(authHandler, authMiddleware)
-	r.Mount("/auth", authRoutes)
+	auth.RegisterRoutes(r, s.authHandler, s.sessionManager)
 
 	// Basic routes
 	r.Get("/", homeHandler)
-	r.Get("/health", healthHandler(db))
+	r.Get("/health", healthHandler(s.db))
 
-	// ===========================
-	// NOTE: API versioning
-	// ===========================
-
+	// API v1 routes
 	r.Route("/api/v1", func(r chi.Router) {
-		// Auth Middleware
-		r.Use(authMW.RequireAuth)
+		// Auth middleware
+		r.Use(auth.NewMiddleware(s.sessionManager).RequireAuth)
 
-		// Register feature routes
+		// Mount feature routes
+		media.RegisterRoutes(r, s.mediaHandler)
+		// user.RegisterRoutes(r, s.userHandler)
+		// project.RegisterRoutes(r, s.projectHandler)
+
 		r.Get("/status", statusHandler)
-		r.Get("/db-test", dbTestHandler(queries))
+		r.Get("/db-test", dbTestHandler)
 	})
 
 	return r

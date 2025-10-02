@@ -32,7 +32,7 @@ func WriteErr(w http.ResponseWriter, err error) {
 }
 
 // WriteJSON writes a JSON response with custom status code
-func WriteJSON(w http.ResponseWriter, statusCode int, data interface{}) {
+func WriteJSON(w http.ResponseWriter, statusCode int, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 
@@ -42,11 +42,11 @@ func WriteJSON(w http.ResponseWriter, statusCode int, data interface{}) {
 }
 
 // Convenience functions
-func WriteCreated(w http.ResponseWriter, data interface{}) {
+func WriteCreated(w http.ResponseWriter, data any) {
 	WriteJSON(w, http.StatusCreated, data)
 }
 
-func WriteOK(w http.ResponseWriter, data interface{}) {
+func WriteOK(w http.ResponseWriter, data any) {
 	WriteJSON(w, http.StatusOK, data)
 }
 

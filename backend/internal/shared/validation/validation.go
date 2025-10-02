@@ -275,7 +275,7 @@ func (v *Validator) StrongPassword(field, value string) {
 }
 
 // ParseAndValidateJSON parses JSON request body and validates it
-func ParseAndValidateJSON(r *http.Request, dest interface{}, validateFn func(*Validator)) error {
+func ParseAndValidateJSON(r *http.Request, dest any, validateFn func(*Validator)) error {
 	// Parse JSON
 	if err := json.NewDecoder(r.Body).Decode(dest); err != nil {
 		return errors.BadRequest("Invalid JSON format", "invalid_json")
