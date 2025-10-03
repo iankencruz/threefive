@@ -1,7 +1,5 @@
 <script lang="ts">
 // Will add auth check here later
-const js = "js"
-console.log("js", js)
 </script>
 
 <div class="admin-layout">
@@ -10,6 +8,7 @@ console.log("js", js)
 		<nav>
 			<a href="/admin">Dashboard</a>
 			<a href="/admin/users">Users</a>
+			<a href="/admin/media">Media</a>
 			<a href="/admin/settings">Settings</a>
 		</nav>
 	</aside>

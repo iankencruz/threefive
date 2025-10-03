@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/iankencruz/threefive/internal/auth"
 	"github.com/iankencruz/threefive/internal/shared/sqlc"
 	"github.com/iankencruz/threefive/internal/shared/storage"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -28,12 +29,9 @@ func NewHandler(db *pgxpool.Pool, queries *sqlc.Queries, storage storage.Storage
 // UploadHandler handles file uploads
 // POST /api/v1/media/upload
 func (h *Handler) UploadHandler(w http.ResponseWriter, r *http.Request) {
-	// Get user ID from context (set by auth middleware)
-	userID, ok := r.Context().Value("user_id").(uuid.UUID)
-	if !ok {
-		respondError(w, http.StatusUnauthorized, "unauthorized")
-		return
-	}
+
+	// ✅ Get user from context using auth helper
+	user := auth.MustGetUserFromContext(r.Context())
 
 	// Parse multipart form (max 50MB)
 	if err := r.ParseMultipartForm(50 << 20); err != nil {
@@ -50,7 +48,7 @@ func (h *Handler) UploadHandler(w http.ResponseWriter, r *http.Request) {
 	defer file.Close()
 
 	// Upload file
-	media, err := h.service.UploadFile(r.Context(), header, userID)
+	media, err := h.service.UploadFile(r.Context(), header, user.ID)
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -114,12 +112,9 @@ func (h *Handler) ListMediaHandler(w http.ResponseWriter, r *http.Request) {
 // DeleteMediaHandler soft deletes media
 // DELETE /api/v1/media/{id}
 func (h *Handler) DeleteMediaHandler(w http.ResponseWriter, r *http.Request) {
-	// Get user ID from context
-	userID, ok := r.Context().Value("user_id").(uuid.UUID)
-	if !ok {
-		respondError(w, http.StatusUnauthorized, "unauthorized")
-		return
-	}
+
+	// ✅ Get user from context using auth helper
+	user := auth.MustGetUserFromContext(r.Context())
 
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
@@ -135,7 +130,7 @@ func (h *Handler) DeleteMediaHandler(w http.ResponseWriter, r *http.Request) {
 	if hardDelete {
 		deleteErr = h.service.HardDeleteMedia(r.Context(), id)
 	} else {
-		deleteErr = h.service.DeleteMedia(r.Context(), id, userID)
+		deleteErr = h.service.DeleteMedia(r.Context(), id, user.ID)
 	}
 
 	if deleteErr != nil {

@@ -62,10 +62,10 @@ func isDevelopment() bool {
 type queryTracer struct{}
 
 func (t *queryTracer) TraceQueryStart(ctx context.Context, conn *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
-	log.Printf("🔍 SQL: %s", data.SQL)
-	if len(data.Args) > 0 {
-		log.Printf("🔍 Args: %v", data.Args)
-	}
+	// log.Printf("🔍 SQL: %s", data.SQL)
+	// if len(data.Args) > 0 {
+	// 	log.Printf("🔍 Args: %v", data.Args)
+	// }
 	return ctx
 }
 
