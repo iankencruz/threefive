@@ -52,6 +52,9 @@ func (s *S3Storage) Upload(ctx context.Context, input UploadInput) (*UploadResul
 	// Upload to S3/MinIO
 	_, err := s.client.PutObject(ctx, s.bucket, filename, input.File, input.Size, minio.PutObjectOptions{
 		ContentType: input.ContentType,
+		UserMetadata: map[string]string{
+			"x-amz-acl": "public-read",
+		},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to upload to S3: %w", err)
