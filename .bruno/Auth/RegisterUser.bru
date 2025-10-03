@@ -1,7 +1,7 @@
 meta {
   name: Register User
   type: http
-  seq: 1
+  seq: 2
 }
 
 post {
@@ -14,14 +14,12 @@ body:json {
   {
     "first_name": "John",
     "last_name": "Doe",
-    "email": "john.doe.{{timestamp}}@example.com",
+    "email": "john.doe@example.com",
     "password": "SecurePass123!"
   }
 }
 
-vars:pre-request {
-  timestamp: {{Date.now()}}
-}
+
 
 assert {
   res.status: eq 201
@@ -66,4 +64,4 @@ docs {
   ## Error Cases to Test Manually:
   
   ### Missing Required Fields (400)
-```json
+}
