@@ -14,6 +14,92 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type PageStatus string
+
+const (
+	PageStatusDraft     PageStatus = "draft"
+	PageStatusPublished PageStatus = "published"
+	PageStatusArchived  PageStatus = "archived"
+)
+
+func (e *PageStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = PageStatus(s)
+	case string:
+		*e = PageStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for PageStatus: %T", src)
+	}
+	return nil
+}
+
+type NullPageStatus struct {
+	PageStatus PageStatus `json:"page_status"`
+	Valid      bool       `json:"valid"` // Valid is true if PageStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullPageStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.PageStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.PageStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullPageStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.PageStatus), nil
+}
+
+type PageType string
+
+const (
+	PageTypeGeneric PageType = "generic"
+	PageTypeProject PageType = "project"
+	PageTypeBlog    PageType = "blog"
+)
+
+func (e *PageType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = PageType(s)
+	case string:
+		*e = PageType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for PageType: %T", src)
+	}
+	return nil
+}
+
+type NullPageType struct {
+	PageType PageType `json:"page_type"`
+	Valid    bool     `json:"valid"` // Valid is true if PageType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullPageType) Scan(value interface{}) error {
+	if value == nil {
+		ns.PageType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.PageType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullPageType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.PageType), nil
+}
+
 type StorageType string
 
 const (
@@ -21,7 +107,7 @@ const (
 	StorageTypeS3    StorageType = "s3"
 )
 
-func (e *StorageType) Scan(src any) error {
+func (e *StorageType) Scan(src interface{}) error {
 	switch s := src.(type) {
 	case []byte:
 		*e = StorageType(s)
@@ -39,7 +125,7 @@ type NullStorageType struct {
 }
 
 // Scan implements the Scanner interface.
-func (ns *NullStorageType) Scan(value any) error {
+func (ns *NullStorageType) Scan(value interface{}) error {
 	if value == nil {
 		ns.StorageType, ns.Valid = "", false
 		return nil
@@ -54,6 +140,39 @@ func (ns NullStorageType) Value() (driver.Value, error) {
 		return nil, nil
 	}
 	return string(ns.StorageType), nil
+}
+
+type BlockHeader struct {
+	ID         uuid.UUID   `json:"id"`
+	BlockID    uuid.UUID   `json:"block_id"`
+	Heading    string      `json:"heading"`
+	Subheading pgtype.Text `json:"subheading"`
+	Level      pgtype.Text `json:"level"`
+}
+
+type BlockHero struct {
+	ID       uuid.UUID   `json:"id"`
+	BlockID  uuid.UUID   `json:"block_id"`
+	Title    string      `json:"title"`
+	Subtitle pgtype.Text `json:"subtitle"`
+	ImageID  pgtype.UUID `json:"image_id"`
+	CtaText  pgtype.Text `json:"cta_text"`
+	CtaUrl   pgtype.Text `json:"cta_url"`
+}
+
+type BlockRichtext struct {
+	ID      uuid.UUID `json:"id"`
+	BlockID uuid.UUID `json:"block_id"`
+	Content string    `json:"content"`
+}
+
+type Blocks struct {
+	ID        uuid.UUID `json:"id"`
+	PageID    uuid.UUID `json:"page_id"`
+	Type      string    `json:"type"`
+	SortOrder int32     `json:"sort_order"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type Media struct {
@@ -84,6 +203,57 @@ type MediaRelations struct {
 	EntityID   uuid.UUID   `json:"entity_id"`
 	SortOrder  pgtype.Int4 `json:"sort_order"`
 	CreatedAt  time.Time   `json:"created_at"`
+}
+
+type PageBlogData struct {
+	ID          uuid.UUID   `json:"id"`
+	PageID      uuid.UUID   `json:"page_id"`
+	Excerpt     pgtype.Text `json:"excerpt"`
+	ReadingTime pgtype.Int4 `json:"reading_time"`
+	IsFeatured  pgtype.Bool `json:"is_featured"`
+	CreatedAt   time.Time   `json:"created_at"`
+	UpdatedAt   time.Time   `json:"updated_at"`
+}
+
+type PageProjectData struct {
+	ID            uuid.UUID   `json:"id"`
+	PageID        uuid.UUID   `json:"page_id"`
+	ClientName    pgtype.Text `json:"client_name"`
+	ProjectYear   pgtype.Int4 `json:"project_year"`
+	ProjectUrl    pgtype.Text `json:"project_url"`
+	Technologies  []byte      `json:"technologies"`
+	ProjectStatus pgtype.Text `json:"project_status"`
+	CreatedAt     time.Time   `json:"created_at"`
+	UpdatedAt     time.Time   `json:"updated_at"`
+}
+
+type PageSeo struct {
+	ID              uuid.UUID   `json:"id"`
+	PageID          uuid.UUID   `json:"page_id"`
+	MetaTitle       pgtype.Text `json:"meta_title"`
+	MetaDescription pgtype.Text `json:"meta_description"`
+	OgTitle         pgtype.Text `json:"og_title"`
+	OgDescription   pgtype.Text `json:"og_description"`
+	OgImageID       pgtype.UUID `json:"og_image_id"`
+	CanonicalUrl    pgtype.Text `json:"canonical_url"`
+	RobotsIndex     pgtype.Bool `json:"robots_index"`
+	RobotsFollow    pgtype.Bool `json:"robots_follow"`
+	CreatedAt       time.Time   `json:"created_at"`
+	UpdatedAt       time.Time   `json:"updated_at"`
+}
+
+type Pages struct {
+	ID              uuid.UUID          `json:"id"`
+	Title           string             `json:"title"`
+	Slug            string             `json:"slug"`
+	PageType        PageType           `json:"page_type"`
+	Status          NullPageStatus     `json:"status"`
+	FeaturedImageID pgtype.UUID        `json:"featured_image_id"`
+	AuthorID        uuid.UUID          `json:"author_id"`
+	CreatedAt       time.Time          `json:"created_at"`
+	UpdatedAt       time.Time          `json:"updated_at"`
+	PublishedAt     pgtype.Timestamptz `json:"published_at"`
+	DeletedAt       pgtype.Timestamptz `json:"deleted_at"`
 }
 
 type PasswordResetTokens struct {
