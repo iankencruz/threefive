@@ -7,6 +7,7 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/iankencruz/threefive/internal/auth"
 	"github.com/iankencruz/threefive/internal/media"
+	"github.com/iankencruz/threefive/internal/pages"
 	"github.com/iankencruz/threefive/internal/shared/middleware"
 )
 
@@ -18,7 +19,7 @@ func (s *Server) setupRouter() http.Handler {
 	r.Use(middleware.Recovery)
 
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{s.config.Frontend.URL},
+		AllowedOrigins:   []string{s.Config.Frontend.URL},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "Cookie"},
 		ExposedHeaders:   []string{"Set-Cookie"},
@@ -27,19 +28,20 @@ func (s *Server) setupRouter() http.Handler {
 	}))
 
 	// Mount auth routes
-	auth.RegisterRoutes(r, s.authHandler, s.sessionManager)
+	auth.RegisterRoutes(r, s.AuthHandler, s.SessionManager)
 
 	// Basic routes
 	r.Get("/", homeHandler)
-	r.Get("/health", healthHandler(s.db))
+	r.Get("/health", healthHandler(s.DB))
 
 	// API v1 routes
 	r.Route("/api/v1", func(r chi.Router) {
 		// Auth middleware
-		r.Use(auth.NewMiddleware(s.sessionManager).RequireAuth)
+		r.Use(auth.NewMiddleware(s.SessionManager).RequireAuth)
 
 		// Mount feature routes
-		media.RegisterRoutes(r, s.mediaHandler)
+		media.RegisterRoutes(r, s.MediaHandler)
+		pages.RegisterRoutes(r, s.PageHandler, s.SessionManager)
 		// user.RegisterRoutes(r, s.userHandler)
 		// project.RegisterRoutes(r, s.projectHandler)
 

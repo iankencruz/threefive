@@ -134,7 +134,7 @@ func (s *Service) GetPageBlocks(ctx context.Context, pageID uuid.UUID) ([]BlockR
 				blockResp.Data = HeaderBlockData{
 					Heading:    header.Heading,
 					Subheading: nullTextToPtr(header.Subheading),
-					Level:      header.Level,
+					Level:      pgTextToString(header.Level),
 				}
 			}
 		}
@@ -203,7 +203,7 @@ func (s *Service) createHeaderBlock(ctx context.Context, qtx *sqlc.Queries, bloc
 		BlockID:    blockID,
 		Heading:    header.Heading,
 		Subheading: strToNullText(header.Subheading),
-		Level:      header.Level,
+		Level:      stringToPgText(header.Level),
 	})
 	if err != nil {
 		return errors.Internal("Failed to create header block", err)
@@ -215,6 +215,20 @@ func (s *Service) createHeaderBlock(ctx context.Context, qtx *sqlc.Queries, bloc
 // ============================================
 // Helper Functions for Nullable Types
 // ============================================
+
+func stringToPgText(s string) pgtype.Text {
+	if s == "" {
+		return pgtype.Text{Valid: false}
+	}
+	return pgtype.Text{String: s, Valid: true}
+}
+
+func pgTextToString(pt pgtype.Text) string {
+	if !pt.Valid {
+		return ""
+	}
+	return pt.String
+}
 
 func strToNullText(s *string) pgtype.Text {
 	if s == nil || *s == "" {
@@ -241,5 +255,6 @@ func nullUUIDToPtr(nu pgtype.UUID) *uuid.UUID {
 	if !nu.Valid {
 		return nil
 	}
-	return &nu.Bytes
+	id := uuid.UUID(nu.Bytes)
+	return &id
 }

@@ -42,9 +42,9 @@ WHERE deleted_at IS NULL
 `
 
 type CountPagesParams struct {
-	Status   PageStatus `json:"status"`
-	PageType PageType   `json:"page_type"`
-	AuthorID uuid.UUID  `json:"author_id"`
+	Status   NullPageStatus `json:"status"`
+	PageType NullPageType   `json:"page_type"`
+	AuthorID pgtype.UUID    `json:"author_id"`
 }
 
 func (q *Queries) CountPages(ctx context.Context, arg CountPagesParams) (int64, error) {
@@ -205,12 +205,12 @@ LIMIT $6 OFFSET $5
 `
 
 type ListPagesParams struct {
-	Status    PageStatus `json:"status"`
-	PageType  PageType   `json:"page_type"`
-	AuthorID  uuid.UUID  `json:"author_id"`
-	SortBy    string     `json:"sort_by"`
-	OffsetVal int32      `json:"offset_val"`
-	LimitVal  int32      `json:"limit_val"`
+	Status    NullPageStatus `json:"status"`
+	PageType  NullPageType   `json:"page_type"`
+	AuthorID  pgtype.UUID    `json:"author_id"`
+	SortBy    string         `json:"sort_by"`
+	OffsetVal int32          `json:"offset_val"`
+	LimitVal  int32          `json:"limit_val"`
 }
 
 func (q *Queries) ListPages(ctx context.Context, arg ListPagesParams) ([]Pages, error) {
@@ -262,9 +262,9 @@ LIMIT $3 OFFSET $2
 `
 
 type ListPublishedPagesParams struct {
-	PageType  PageType `json:"page_type"`
-	OffsetVal int32    `json:"offset_val"`
-	LimitVal  int32    `json:"limit_val"`
+	PageType  NullPageType `json:"page_type"`
+	OffsetVal int32        `json:"offset_val"`
+	LimitVal  int32        `json:"limit_val"`
 }
 
 func (q *Queries) ListPublishedPages(ctx context.Context, arg ListPublishedPagesParams) ([]Pages, error) {

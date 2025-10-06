@@ -9,6 +9,7 @@ import (
 	"github.com/iankencruz/threefive/internal/auth"
 	"github.com/iankencruz/threefive/internal/config"
 	"github.com/iankencruz/threefive/internal/media"
+	"github.com/iankencruz/threefive/internal/pages"
 	"github.com/iankencruz/threefive/internal/shared/database"
 	"github.com/iankencruz/threefive/internal/shared/session"
 	"github.com/iankencruz/threefive/internal/shared/sqlc"
@@ -17,14 +18,15 @@ import (
 )
 
 type Server struct {
-	config         *config.Config
-	server         *http.Server
-	db             *pgxpool.Pool
-	queries        *sqlc.Queries
-	storage        storage.Storage
-	sessionManager *session.Manager
-	authHandler    *auth.Handler
-	mediaHandler   *media.Handler
+	Config         *config.Config
+	Server         *http.Server
+	DB             *pgxpool.Pool
+	Queries        *sqlc.Queries
+	Storage        storage.Storage
+	SessionManager *session.Manager
+	AuthHandler    *auth.Handler
+	MediaHandler   *media.Handler
+	PageHandler    *pages.Handler
 }
 
 // New creates a new server instance with all dependencies initialized
@@ -67,27 +69,29 @@ func New(cfg *config.Config) (*Server, error) {
 	// 4. Initialize feature handlers (they create their own services)
 	authHandler := auth.NewHandler(db, queries, sessionManager)
 	mediaHandler := media.NewHandler(db, queries, storageInstance)
+	pageHandler := pages.NewHandler(db, queries)
 	// userHandler := user.NewHandler(db, queries)
 	// projectHandler := project.NewHandler(db, queries)
 
 	// Create server instance
 	srv := &Server{
-		config:  cfg,
-		db:      db,
-		queries: queries,
-		storage: storageInstance,
+		Config:  cfg,
+		DB:      db,
+		Queries: queries,
+		Storage: storageInstance,
 
-		sessionManager: sessionManager,
+		SessionManager: sessionManager,
 
-		authHandler:  authHandler,
-		mediaHandler: mediaHandler,
+		AuthHandler:  authHandler,
+		MediaHandler: mediaHandler,
+		PageHandler:  pageHandler,
 	}
 
 	// 5. Setup router with all initialized components
 	router := srv.setupRouter()
 
 	// 6. Create HTTP server
-	srv.server = &http.Server{
+	srv.Server = &http.Server{
 		Addr:         cfg.ServerAddress(),
 		Handler:      router,
 		ReadTimeout:  15 * time.Second,
@@ -100,37 +104,37 @@ func New(cfg *config.Config) (*Server, error) {
 
 // Start starts the HTTP server
 func (s *Server) Start() error {
-	fmt.Printf("\n🚀 Server starting on http://%s\n", s.config.ServerAddress())
-	fmt.Printf("📊 Environment: %s\n\n", s.config.Server.Env)
+	fmt.Printf("\n🚀 Server starting on http://%s\n", s.Config.ServerAddress())
+	fmt.Printf("📊 Environment: %s\n\n", s.Config.Server.Env)
 
-	if s.config.IsDevelopment() {
+	if s.Config.IsDevelopment() {
 		fmt.Println("================================================")
 		fmt.Println("🔥 Development mode")
 
-		stats := s.db.Stat()
+		stats := s.DB.Stat()
 		fmt.Printf("📊 DB Pool: %d total, %d idle, %d in-use\n",
 			stats.TotalConns(), stats.IdleConns(), stats.AcquiredConns())
-		fmt.Printf("💾 Storage Type: %s\n", s.storage.Type())
+		fmt.Printf("💾 Storage Type: %s\n", s.Storage.Type())
 		fmt.Println("================================================")
 	}
 
 	// Start background cleanup routine
 	ctx := context.Background()
-	s.sessionManager.StartCleanupRoutine(ctx, 1*time.Hour)
+	s.SessionManager.StartCleanupRoutine(ctx, 1*time.Hour)
 
-	return s.server.ListenAndServe()
+	return s.Server.ListenAndServe()
 }
 
 // Shutdown gracefully shuts down the server
 func (s *Server) Shutdown(ctx context.Context) error {
 	fmt.Println("🛑 Shutting down server...")
 
-	if s.db != nil {
-		s.db.Close()
+	if s.DB != nil {
+		s.DB.Close()
 		fmt.Println("✅ Database pool closed")
 	}
 
-	return s.server.Shutdown(ctx)
+	return s.Server.Shutdown(ctx)
 }
 
 // Basic handlers...

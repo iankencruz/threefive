@@ -42,7 +42,7 @@ func ValidateHeroBlockData(v *validation.Validator, data map[string]interface{},
 	v.MaxLength(fieldPrefix+".data.title", title, 200)
 
 	// CTA validation (if both are provided or neither)
-	ctaText, hasCtaText := data["cta_text"].(string)
+	_, hasCtaText := data["cta_text"].(string)
 	ctaURL, hasCtaURL := data["cta_url"].(string)
 
 	if hasCtaText && !hasCtaURL {

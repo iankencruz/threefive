@@ -29,9 +29,9 @@ WHERE slug = @slug AND deleted_at IS NULL;
 -- name: ListPages :many
 SELECT * FROM pages
 WHERE deleted_at IS NULL
-  AND (@status::page_status IS NULL OR status = @status)
-  AND (@page_type::page_type IS NULL OR page_type = @page_type)
-  AND (@author_id::uuid IS NULL OR author_id = @author_id)
+  AND (sqlc.narg('status')::page_status IS NULL OR status = sqlc.narg('status'))
+  AND (sqlc.narg('page_type')::page_type IS NULL OR page_type = sqlc.narg('page_type'))
+  AND (sqlc.narg('author_id')::uuid IS NULL OR author_id = sqlc.narg('author_id'))
 ORDER BY 
   CASE WHEN @sort_by::text = 'created_at_desc' THEN created_at END DESC,
   CASE WHEN @sort_by::text = 'created_at_asc' THEN created_at END ASC,
@@ -46,16 +46,16 @@ LIMIT @limit_val OFFSET @offset_val;
 SELECT * FROM pages
 WHERE status = 'published' 
   AND deleted_at IS NULL
-  AND (@page_type::page_type IS NULL OR page_type = @page_type)
+  AND (sqlc.narg('page_type')::page_type IS NULL OR page_type = sqlc.narg('page_type'))
 ORDER BY published_at DESC
 LIMIT @limit_val OFFSET @offset_val;
 
 -- name: CountPages :one
 SELECT COUNT(*) FROM pages
 WHERE deleted_at IS NULL
-  AND (@status::page_status IS NULL OR status = @status)
-  AND (@page_type::page_type IS NULL OR page_type = @page_type)
-  AND (@author_id::uuid IS NULL OR author_id = @author_id);
+  AND (sqlc.narg('status')::page_status IS NULL OR status = sqlc.narg('status'))
+  AND (sqlc.narg('page_type')::page_type IS NULL OR page_type = sqlc.narg('page_type'))
+  AND (sqlc.narg('author_id')::uuid IS NULL OR author_id = sqlc.narg('author_id'));
 
 -- name: UpdatePage :one
 UPDATE pages
