@@ -184,7 +184,7 @@ func (s *Service) ListPages(ctx context.Context, limit, offset int32) (*PageList
 	}, nil
 }
 
-// UpdatePage updates a page
+// UpdatePage updates a page with all its relations in a transaction
 func (s *Service) UpdatePage(ctx context.Context, pageID uuid.UUID, req UpdatePageRequest) (*PageResponse, error) {
 	// Check slug uniqueness if slug is being updated
 	if req.Slug != nil {
@@ -200,8 +200,17 @@ func (s *Service) UpdatePage(ctx context.Context, pageID uuid.UUID, req UpdatePa
 		}
 	}
 
-	// Update page
-	_, err := s.queries.UpdatePage(ctx, sqlc.UpdatePageParams{
+	// Start transaction
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return nil, errors.Internal("Failed to start transaction", err)
+	}
+	defer tx.Rollback(ctx)
+
+	qtx := s.queries.WithTx(tx)
+
+	// 1. Update basic page fields
+	_, err = qtx.UpdatePage(ctx, sqlc.UpdatePageParams{
 		ID:              pageID,
 		Title:           pointerToString(req.Title),
 		Slug:            pointerToString(req.Slug),
@@ -215,6 +224,48 @@ func (s *Service) UpdatePage(ctx context.Context, pageID uuid.UUID, req UpdatePa
 		return nil, errors.Internal("Failed to update page", err)
 	}
 
+	// 2. Update blocks if provided
+	if req.Blocks != nil {
+		// Delete existing blocks
+		if err := qtx.DeleteBlocksByPageID(ctx, pageID); err != nil {
+			return nil, errors.Internal("Failed to delete old blocks", err)
+		}
+
+		// Create new blocks
+		if len(*req.Blocks) > 0 {
+			if err := s.blockService.CreateBlocks(ctx, qtx, pageID, *req.Blocks); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	// 3. Update SEO if provided
+	if req.SEO != nil {
+		if err := s.updateSEO(ctx, qtx, pageID, req.SEO); err != nil {
+			return nil, err
+		}
+	}
+
+	// 4. Update project data if provided
+	if req.ProjectData != nil {
+		if err := s.updateProjectData(ctx, qtx, pageID, req.ProjectData); err != nil {
+			return nil, err
+		}
+	}
+
+	// 5. Update blog data if provided
+	if req.BlogData != nil {
+		if err := s.updateBlogData(ctx, qtx, pageID, req.BlogData); err != nil {
+			return nil, err
+		}
+	}
+
+	// Commit transaction
+	if err := tx.Commit(ctx); err != nil {
+		return nil, errors.Internal("Failed to commit transaction", err)
+	}
+
+	// Get full page with all relations
 	return s.GetPageByID(ctx, pageID)
 }
 
@@ -481,4 +532,52 @@ func bytesToStringSlice(val []byte) []string {
 		return []string{}
 	}
 	return result
+}
+
+// Helper functions for updating metadata
+
+func (s *Service) updateSEO(ctx context.Context, qtx *sqlc.Queries, pageID uuid.UUID, req *SEORequest) error {
+	_, err := qtx.UpsertPageSEO(ctx, sqlc.UpsertPageSEOParams{
+		PageID:          pageID,
+		MetaTitle:       stringToPgText(req.MetaTitle),
+		MetaDescription: stringToPgText(req.MetaDescription),
+		OgTitle:         stringToPgText(req.OGTitle),
+		OgDescription:   stringToPgText(req.OGDescription),
+		OgImageID:       uuidToNullUUID(req.OGImageID),
+		CanonicalUrl:    stringToPgText(req.CanonicalURL),
+		RobotsIndex:     boolToPgBool(req.RobotsIndex),
+		RobotsFollow:    boolToPgBool(req.RobotsFollow),
+	})
+	if err != nil {
+		return errors.Internal("Failed to update SEO data", err)
+	}
+	return nil
+}
+
+func (s *Service) updateProjectData(ctx context.Context, qtx *sqlc.Queries, pageID uuid.UUID, req *ProjectDataRequest) error {
+	_, err := qtx.UpsertProjectData(ctx, sqlc.UpsertProjectDataParams{
+		PageID:        pageID,
+		ClientName:    stringToPgText(req.ClientName),
+		ProjectYear:   intToPgInt4(req.ProjectYear),
+		ProjectUrl:    stringToPgText(req.ProjectURL),
+		Technologies:  stringSliceToBytes(req.Technologies),
+		ProjectStatus: stringToPgText(req.ProjectStatus),
+	})
+	if err != nil {
+		return errors.Internal("Failed to update project data", err)
+	}
+	return nil
+}
+
+func (s *Service) updateBlogData(ctx context.Context, qtx *sqlc.Queries, pageID uuid.UUID, req *BlogDataRequest) error {
+	_, err := qtx.UpsertBlogData(ctx, sqlc.UpsertBlogDataParams{
+		PageID:      pageID,
+		Excerpt:     stringToPgText(req.Excerpt),
+		ReadingTime: intToPgInt4(req.ReadingTime),
+		IsFeatured:  pgtype.Bool{Bool: false, Valid: true},
+	})
+	if err != nil {
+		return errors.Internal("Failed to update blog data", err)
+	}
+	return nil
 }
