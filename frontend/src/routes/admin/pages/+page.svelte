@@ -130,6 +130,7 @@ const getTypeColor = (type: string) => {
 										onclick={() => goto(`/admin/pages/${page.id}/edit`)}
 										aria-label="Edit page"
 									>
+                    {console.log("Page ID",  page.id)}
 										<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 											<path
 												stroke-linecap="round"

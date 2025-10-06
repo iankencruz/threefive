@@ -1,35 +1,70 @@
-<!-- frontend/src/routes/admin/pages/new/+page.svelte -->
+<!-- frontend/src/routes/admin/pages/[id]/edit/+page.svelte -->
 <script lang="ts">
 import { goto } from "$app/navigation";
+import { page } from "$app/stores";
 import BlockEditor from "$lib/components/blocks/BlockEditor.svelte";
+import { PUBLIC_API_URL } from "$env/static/public";
 
 type PageType = "generic" | "project" | "blog";
 type PageStatus = "draft" | "published";
 
+interface PageData {
+	page: {
+		id: string;
+		title: string;
+		slug: string;
+		page_type: PageType;
+		status: PageStatus;
+		blocks: any[];
+		seo?: {
+			meta_title?: string;
+			meta_description?: string;
+			og_title?: string;
+			og_description?: string;
+			robots_index?: boolean;
+			robots_follow?: boolean;
+		};
+		project_data?: {
+			client_name?: string;
+			project_year?: number;
+			project_url?: string;
+			technologies?: string[];
+			project_status?: string;
+		};
+		blog_data?: {
+			excerpt?: string;
+			reading_time?: number;
+		};
+	};
+}
+
+let { data } = $props<{ data: PageData }>();
+
 let formData = $state({
-	title: "",
-	slug: "",
-	page_type: "generic" as PageType,
-	status: "draft" as PageStatus,
-	blocks: [],
+	title: data.page.title,
+	slug: data.page.slug,
+	page_type: data.page.page_type,
+	status: data.page.status,
+	blocks: data.page.blocks || [],
 	seo: {
-		meta_title: "",
-		meta_description: "",
-		og_title: "",
-		og_description: "",
-		robots_index: true,
-		robots_follow: true,
+		meta_title: data.page.seo?.meta_title || "",
+		meta_description: data.page.seo?.meta_description || "",
+		og_title: data.page.seo?.og_title || "",
+		og_description: data.page.seo?.og_description || "",
+		robots_index: data.page.seo?.robots_index ?? true,
+		robots_follow: data.page.seo?.robots_follow ?? true,
 	},
 	project_data: {
-		client_name: "",
-		project_year: new Date().getFullYear(),
-		project_url: "",
-		technologies: [] as string[],
-		project_status: "completed",
+		client_name: data.page.project_data?.client_name || "",
+		project_year:
+			data.page.project_data?.project_year || new Date().getFullYear(),
+		project_url: data.page.project_data?.project_url || "",
+		technologies: data.page.project_data?.technologies || [],
+		project_status: data.page.project_data?.project_status || "completed",
 	},
 	blog_data: {
-		excerpt: "",
-		reading_time: 0,
+		excerpt: data.page.blog_data?.excerpt || "",
+		reading_time: data.page.blog_data?.reading_time || 0,
 	},
 });
 
@@ -37,25 +72,6 @@ let errors = $state<Record<string, string>>({});
 let loading = $state(false);
 let currentTab = $state<"content" | "seo" | "metadata">("content");
 let newTech = $state("");
-let slugManuallyEdited = $state(false);
-let seoTitleManuallyEdited = $state(false);
-
-// Auto-generate slug from title
-$effect(() => {
-	if (formData.title && !slugManuallyEdited) {
-		formData.slug = formData.title
-			.toLowerCase()
-			.replace(/[^a-z0-9]+/g, "-")
-			.replace(/^-|-$/g, "");
-	}
-});
-
-// Auto-fill SEO meta title from page title
-$effect(() => {
-	if (formData.title && !seoTitleManuallyEdited) {
-		formData.seo.meta_title = formData.title;
-	}
-});
 
 const addTechnology = () => {
 	if (
@@ -95,128 +111,174 @@ const handleSubmit = async () => {
 			blog_data: formData.page_type === "blog" ? formData.blog_data : undefined,
 		};
 
-		const response = await fetch("/api/v1/pages", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify(payload),
-		});
+		const response = await fetch(
+			`${PUBLIC_API_URL}/api/v1/pages/${data.page.id}`,
+			{
+				method: "PUT",
+				credentials: "include",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(payload),
+			},
+		);
 
 		if (!response.ok) {
 			const error = await response.json();
-			if (error.errors) {
-				error.errors.forEach((e: any) => {
-					errors[e.field] = e.message;
-				});
-			} else {
-				errors.general = error.message || "Failed to create page";
-			}
-			return;
+			throw new Error(error.message || "Failed to update page");
 		}
 
 		goto("/admin/pages");
-	} catch (error) {
-		errors.general = "An unexpected error occurred";
+	} catch (err) {
+		if (err instanceof Error) {
+			errors.submit = err.message;
+		}
+	} finally {
+		loading = false;
+	}
+};
+
+const handleDelete = async () => {
+	if (!confirm("Are you sure you want to delete this page?")) {
+		return;
+	}
+
+	loading = true;
+	try {
+		const response = await fetch(
+			`${PUBLIC_API_URL}/api/v1/pages/${data.page.id}`,
+			{
+				method: "DELETE",
+				credentials: "include",
+			},
+		);
+
+		if (!response.ok) {
+			throw new Error("Failed to delete page");
+		}
+
+		goto("/admin/pages");
+	} catch (err) {
+		if (err instanceof Error) {
+			errors.submit = err.message;
+		}
 	} finally {
 		loading = false;
 	}
 };
 </script>
 
-<div class="max-w-5xl mx-auto">
-	<!-- Header -->
+<div class="max-w-5xl mx-auto p-8">
 	<div class="mb-8">
-		<div class="flex items-center gap-4 mb-4">
+		<div class="flex items-center justify-between">
+			<div>
+				<button
+					class="text-gray-600 hover:text-gray-900 mb-4 flex items-center gap-2 transition-colors"
+					onclick={() => goto("/admin/pages")}
+				>
+					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M15 19l-7-7 7-7"
+						/>
+					</svg>
+					Back to Pages
+				</button>
+				<h1 class="text-3xl font-bold text-gray-900">Edit Page</h1>
+				<p class="text-gray-600 mt-2">Update your page content and settings</p>
+			</div>
 			<button
-				onclick={() => goto('/admin/pages')}
-				class="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-				aria-label="Go back"
+				class="px-4 py-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg font-medium transition-colors"
+				onclick={handleDelete}
+				disabled={loading}
 			>
-				<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-				</svg>
+				Delete Page
 			</button>
-			<h1 class="text-3xl font-bold text-gray-900">Create New Page</h1>
 		</div>
 	</div>
 
-	{#if errors.general}
-		<div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-			{errors.general}
+	{#if errors.submit}
+		<div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+			{errors.submit}
 		</div>
 	{/if}
 
-	<form onsubmit={(e) => (e.preventDefault(), handleSubmit())}>
-		<div class="bg-white rounded-lg shadow">
-			<!-- Tabs -->
+	<form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="space-y-6">
+		<div class="bg-white rounded-lg shadow-sm border border-gray-200">
 			<div class="border-b border-gray-200">
-				<nav class="flex gap-8 px-6" aria-label="Tabs">
+				<nav class="flex gap-8 px-8 pt-6">
 					<button
 						type="button"
-						onclick={() => currentTab = 'content'}
-						class="py-4 px-1 border-b-2 font-medium text-sm transition-colors {currentTab === 'content' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
+						class="pb-4 px-1 border-b-2 font-medium transition-colors {currentTab === 'content'
+							? 'border-blue-600 text-blue-600'
+							: 'border-transparent text-gray-600 hover:text-gray-900'}"
+						onclick={() => (currentTab = "content")}
 					>
 						Content
 					</button>
 					<button
 						type="button"
-						onclick={() => currentTab = 'seo'}
-						class="py-4 px-1 border-b-2 font-medium text-sm transition-colors {currentTab === 'seo' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
+						class="pb-4 px-1 border-b-2 font-medium transition-colors {currentTab === 'seo'
+							? 'border-blue-600 text-blue-600'
+							: 'border-transparent text-gray-600 hover:text-gray-900'}"
+						onclick={() => (currentTab = "seo")}
 					>
 						SEO
 					</button>
-					<button
-						type="button"
-						onclick={() => currentTab = 'metadata'}
-						class="py-4 px-1 border-b-2 font-medium text-sm transition-colors {currentTab === 'metadata' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
-					>
-						{formData.page_type === 'project' ? 'Project Data' : formData.page_type === 'blog' ? 'Blog Data' : 'Metadata'}
-					</button>
+					{#if formData.page_type !== "generic"}
+						<button
+							type="button"
+							class="pb-4 px-1 border-b-2 font-medium transition-colors {currentTab === 'metadata'
+								? 'border-blue-600 text-blue-600'
+								: 'border-transparent text-gray-600 hover:text-gray-900'}"
+							onclick={() => (currentTab = "metadata")}
+						>
+							{formData.page_type === "project" ? "Project Data" : "Blog Data"}
+						</button>
+					{/if}
 				</nav>
 			</div>
 
-			<div class="p-6">
-				{#if currentTab === 'content'}
-					<!-- Basic Info -->
-					<div class="space-y-6 mb-8">
+			<div class="p-8">
+				{#if currentTab === "content"}
+					<div class="space-y-6">
 						<div class="grid grid-cols-2 gap-6">
 							<div>
-								<label class="block text-sm font-medium text-gray-700 mb-2">
-									Title <span class="text-red-500">*</span>
-								</label>
+								<label class="block text-sm font-medium text-gray-700 mb-2"
+									>Title <span class="text-red-500">*</span></label
+								>
 								<input
 									type="text"
 									bind:value={formData.title}
 									required
 									class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-									placeholder="Enter page title"
+									placeholder="Page title"
 								/>
-								{#if errors.title}
-									<p class="mt-1 text-sm text-red-600">{errors.title}</p>
-								{/if}
 							</div>
 
 							<div>
-								<label class="block text-sm font-medium text-gray-700 mb-2">
-									Slug <span class="text-red-500">*</span>
-								</label>
+								<label class="block text-sm font-medium text-gray-700 mb-2"
+									>Slug <span class="text-red-500">*</span></label
+								>
 								<input
 									type="text"
 									bind:value={formData.slug}
 									required
+									pattern="[a-z0-9-]+"
 									class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 									placeholder="page-slug"
 								/>
-								{#if errors.slug}
-									<p class="mt-1 text-sm text-red-600">{errors.slug}</p>
-								{/if}
+								<p class="mt-1 text-sm text-gray-500">
+									URL-friendly version (lowercase, hyphens only)
+								</p>
 							</div>
 						</div>
 
 						<div class="grid grid-cols-2 gap-6">
 							<div>
-								<label class="block text-sm font-medium text-gray-700 mb-2">
-									Page Type <span class="text-red-500">*</span>
-								</label>
+								<label class="block text-sm font-medium text-gray-700 mb-2">Page Type</label>
 								<select
 									bind:value={formData.page_type}
 									class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -228,9 +290,7 @@ const handleSubmit = async () => {
 							</div>
 
 							<div>
-								<label class="block text-sm font-medium text-gray-700 mb-2">
-									Status <span class="text-red-500">*</span>
-								</label>
+								<label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
 								<select
 									bind:value={formData.status}
 									class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -242,12 +302,11 @@ const handleSubmit = async () => {
 						</div>
 					</div>
 
-					<!-- Blocks Section using BlockEditor Component -->
-					<div class="border-t border-gray-200 pt-8">
+					<div class="border-t border-gray-200 pt-8 mt-8">
 						<BlockEditor bind:blocks={formData.blocks} />
 					</div>
 
-				{:else if currentTab === 'seo'}
+				{:else if currentTab === "seo"}
 					<div class="space-y-6">
 						<div>
 							<label class="block text-sm font-medium text-gray-700 mb-2">Meta Title</label>
@@ -258,7 +317,9 @@ const handleSubmit = async () => {
 								class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 								placeholder="Page title for search engines (60 chars max)"
 							/>
-							<p class="mt-1 text-sm text-gray-500">{formData.seo.meta_title.length}/60 characters</p>
+							<p class="mt-1 text-sm text-gray-500">
+								{formData.seo.meta_title.length}/60 characters
+							</p>
 						</div>
 
 						<div>
@@ -270,7 +331,9 @@ const handleSubmit = async () => {
 								class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 								placeholder="Brief description for search results (160 chars max)"
 							></textarea>
-							<p class="mt-1 text-sm text-gray-500">{formData.seo.meta_description.length}/160 characters</p>
+							<p class="mt-1 text-sm text-gray-500">
+								{formData.seo.meta_description.length}/160 characters
+							</p>
 						</div>
 
 						<div>
@@ -297,18 +360,26 @@ const handleSubmit = async () => {
 
 						<div class="flex gap-6">
 							<label class="flex items-center gap-2">
-								<input type="checkbox" bind:checked={formData.seo.robots_index} class="w-4 h-4 text-blue-600 rounded" />
+								<input
+									type="checkbox"
+									bind:checked={formData.seo.robots_index}
+									class="w-4 h-4 text-blue-600 rounded"
+								/>
 								<span class="text-sm text-gray-700">Allow search engines to index</span>
 							</label>
 							<label class="flex items-center gap-2">
-								<input type="checkbox" bind:checked={formData.seo.robots_follow} class="w-4 h-4 text-blue-600 rounded" />
+								<input
+									type="checkbox"
+									bind:checked={formData.seo.robots_follow}
+									class="w-4 h-4 text-blue-600 rounded"
+								/>
 								<span class="text-sm text-gray-700">Allow search engines to follow links</span>
 							</label>
 						</div>
 					</div>
 
-				{:else if currentTab === 'metadata'}
-					{#if formData.page_type === 'project'}
+				{:else if currentTab === "metadata"}
+					{#if formData.page_type === "project"}
 						<div class="space-y-6">
 							<div class="grid grid-cols-2 gap-6">
 								<div>
@@ -349,13 +420,13 @@ const handleSubmit = async () => {
 									<input
 										type="text"
 										bind:value={newTech}
-										onkeydown={(e) => e.key === 'Enter' && (e.preventDefault(), addTechnology())}
+										onkeydown={(e) => e.key === "Enter" && (e.preventDefault(), addTechnology())}
 										class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-										placeholder="Add a technology"
+										placeholder="Add technology (e.g., React, Node.js)"
 									/>
 									<button
-										onclick={addTechnology}
 										type="button"
+										onclick={addTechnology}
 										class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
 									>
 										Add
@@ -363,17 +434,16 @@ const handleSubmit = async () => {
 								</div>
 								<div class="flex flex-wrap gap-2">
 									{#each formData.project_data.technologies as tech}
-										<span class="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+										<span
+											class="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+										>
 											{tech}
 											<button
-												onclick={() => removeTechnology(tech)}
 												type="button"
-												class="hover:text-blue-900"
-												aria-label="Remove {tech}"
+												onclick={() => removeTechnology(tech)}
+												class="hover:text-blue-600"
 											>
-												<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-												</svg>
+												×
 											</button>
 										</span>
 									{/each}
@@ -392,57 +462,51 @@ const handleSubmit = async () => {
 								</select>
 							</div>
 						</div>
-
-					{:else if formData.page_type === 'blog'}
+					{:else if formData.page_type === "blog"}
 						<div class="space-y-6">
 							<div>
 								<label class="block text-sm font-medium text-gray-700 mb-2">Excerpt</label>
 								<textarea
 									bind:value={formData.blog_data.excerpt}
-									maxlength="500"
 									rows="4"
+									maxlength="300"
 									class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-									placeholder="Brief summary of the blog post (500 chars max)"
+									placeholder="Brief excerpt or summary of the blog post"
 								></textarea>
-								<p class="mt-1 text-sm text-gray-500">{formData.blog_data.excerpt.length}/500 characters</p>
 							</div>
 
 							<div>
-								<label class="block text-sm font-medium text-gray-700 mb-2">Reading Time (minutes)</label>
+								<label class="block text-sm font-medium text-gray-700 mb-2"
+									>Reading Time (minutes)</label
+								>
 								<input
 									type="number"
 									bind:value={formData.blog_data.reading_time}
 									min="0"
 									class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-									placeholder="Estimated reading time in minutes"
+									placeholder="Estimated reading time"
 								/>
 							</div>
-						</div>
-
-					{:else}
-						<div class="text-center py-12 text-gray-500">
-							<p>No additional metadata required for generic pages.</p>
 						</div>
 					{/if}
 				{/if}
 			</div>
 		</div>
 
-		<!-- Footer Actions -->
-		<div class="mt-6 flex justify-end gap-4">
+		<div class="flex justify-end gap-4">
 			<button
 				type="button"
-				onclick={() => goto('/admin/pages')}
-				class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+				class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors"
+				onclick={() => goto("/admin/pages")}
 			>
 				Cancel
 			</button>
 			<button
 				type="submit"
 				disabled={loading}
-				class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+				class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 			>
-				{loading ? 'Creating...' : 'Create Page'}
+				{loading ? "Saving..." : "Update Page"}
 			</button>
 		</div>
 	</form>

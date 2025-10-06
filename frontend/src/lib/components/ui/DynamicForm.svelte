@@ -45,7 +45,7 @@ interface Props {
 
 let {
 	config,
-	formData = {},
+	formData = $bindable({}),
 	errors = {},
 	loading = false,
 	class: className = "",
@@ -54,13 +54,15 @@ let {
 	children,
 }: Props = $props();
 
-// Initialize form data
+// Initialize SYNCHRONOUSLY before render
+config.fields.forEach((field) => {
+	if (!(field.name in formData)) {
+		formData[field.name] = "";
+	}
+});
+
 $effect(() => {
-	config.fields.forEach((field) => {
-		if (formData[field.name] === undefined) {
-			formData[field.name] = "";
-		}
-	});
+	onchange?.(formData);
 });
 
 function handleSubmit(e: SubmitEvent) {
