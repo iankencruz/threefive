@@ -2,6 +2,8 @@
 <script lang="ts">
 import { goto } from "$app/navigation";
 import type { PageData } from "./$types";
+import { PUBLIC_API_URL } from "$env/static/public";
+import { browser } from "$app/environment";
 
 let { data }: { data: PageData } = $props();
 
@@ -38,6 +40,13 @@ const getTypeColor = (type: string) => {
 			return "bg-gray-100 text-gray-800";
 	}
 };
+
+function navigateToExternal(url: string) {
+	if (browser) {
+		// Ensure this runs only in the browser environment
+		window.location.href = url;
+	}
+}
 </script>
 
 <div class="max-w-7xl mx-auto">
@@ -158,9 +167,10 @@ const getTypeColor = (type: string) => {
                       {#if page.status === 'published'}
                           <button
                               class="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                              onclick={() => goto(`/${page.slug}`)}
+                              onclick={() => navigateToExternal(`/${page.slug}`)}
                               aria-label="View page"
                           >
+                      {console.log("public page: ", `${PUBLIC_API_URL}/${page.slug}`)}
                               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path
                                       stroke-linecap="round"

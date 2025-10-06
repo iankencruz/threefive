@@ -1,4 +1,4 @@
-<!-- frontend/src/lib/components/blocks/forms/BlockEditor.svelte -->
+<!-- frontend/src/lib/components/blocks/BlockEditor.svelte -->
 <script lang="ts">
 import HeaderBlockForm from "./forms/HeaderBlockForm.svelte";
 import HeroBlockForm from "./forms/HeroBlockForm.svelte";
@@ -19,12 +19,22 @@ interface Props {
 
 let { blocks = $bindable([]), onUpdate }: Props = $props();
 
-const addBlock = (type: BlockType) => {
+// Track which separator is showing the menu
+let activeSeparator = $state<number | null>(null);
+
+const addBlockAt = (type: BlockType, position: number) => {
 	const newBlock: Block = {
 		type,
 		data: getDefaultBlockData(type),
 	};
-	blocks = [...blocks, newBlock];
+
+	// Insert block at specific position
+	const newBlocks = [...blocks];
+	newBlocks.splice(position, 0, newBlock);
+	blocks = newBlocks;
+
+	// Close the menu
+	activeSeparator = null;
 	onUpdate?.(blocks);
 };
 
@@ -52,6 +62,10 @@ const updateBlockData = (index: number, data: Record<string, any>) => {
 	onUpdate?.(blocks);
 };
 
+const toggleSeparator = (index: number) => {
+	activeSeparator = activeSeparator === index ? null : index;
+};
+
 const getDefaultBlockData = (type: BlockType): Record<string, any> => {
 	switch (type) {
 		case "hero":
@@ -77,34 +91,29 @@ const getBlockTypeColor = (type: BlockType) => {
 			return "bg-gray-100 text-gray-800";
 	}
 };
+
+// Close separator menu when clicking outside
+$effect(() => {
+	const handleClick = (e: MouseEvent) => {
+		const target = e.target as HTMLElement;
+		if (
+			!target.closest(".separator-menu") &&
+			!target.closest(".separator-trigger")
+		) {
+			activeSeparator = null;
+		}
+	};
+
+	if (activeSeparator !== null) {
+		document.addEventListener("click", handleClick);
+		return () => document.removeEventListener("click", handleClick);
+	}
+});
 </script>
 
 <div class="block-editor">
 	<div class="flex justify-between items-center mb-6">
 		<h2 class="text-xl font-semibold text-gray-900">Content Blocks</h2>
-		<div class="flex gap-2">
-			<button
-				onclick={() => addBlock('hero')}
-				type="button"
-				class="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 text-sm font-medium transition-colors"
-			>
-				+ Hero
-			</button>
-			<button
-				onclick={() => addBlock('richtext')}
-				type="button"
-				class="px-3 py-1.5 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 text-sm font-medium transition-colors"
-			>
-				+ Rich Text
-			</button>
-			<button
-				onclick={() => addBlock('header')}
-				type="button"
-				class="px-3 py-1.5 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 text-sm font-medium transition-colors"
-			>
-				+ Header
-			</button>
-		</div>
 	</div>
 
 	{#if blocks.length === 0}
@@ -112,11 +121,81 @@ const getBlockTypeColor = (type: BlockType) => {
 			<svg class="w-12 h-12 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
 			</svg>
-			<p class="text-gray-600">No blocks added yet. Click a button above to add content blocks.</p>
+			<p class="text-gray-600 mb-4">No blocks added yet. Click below to add your first block.</p>
+			
+			<!-- Initial Add Block Menu -->
+			<div class="flex justify-center gap-2">
+				<button
+					onclick={() => addBlockAt('hero', 0)}
+					type="button"
+					class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors"
+				>
+					+ Hero Block
+				</button>
+				<button
+					onclick={() => addBlockAt('richtext', 0)}
+					type="button"
+					class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium transition-colors"
+				>
+					+ Rich Text
+				</button>
+				<button
+					onclick={() => addBlockAt('header', 0)}
+					type="button"
+					class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium transition-colors"
+				>
+					+ Header
+				</button>
+			</div>
 		</div>
 	{:else}
-		<div class="space-y-4">
+		<div class="space-y-1">
+			<!-- Insert separator at the top -->
+			<div class="relative">
+				<button
+					type="button"
+					class="separator-trigger w-full py-2 flex items-center justify-center group hover:bg-gray-50 rounded transition-colors"
+					onclick={(e) => { e.stopPropagation(); toggleSeparator(0); }}
+				>
+					<div class="flex items-center gap-2 text-gray-400 group-hover:text-gray-600">
+						<div class="flex-1 h-px bg-gray-200 group-hover:bg-gray-300"></div>
+						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+						</svg>
+						<span class="text-sm font-medium">Add Block</span>
+						<div class="flex-1 h-px bg-gray-200 group-hover:bg-gray-300"></div>
+					</div>
+				</button>
+
+				{#if activeSeparator === 0}
+					<div class="separator-menu absolute top-full left-1/2 -translate-x-1/2 z-10 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 p-2 flex gap-2">
+						<button
+							onclick={() => addBlockAt('hero', 0)}
+							type="button"
+							class="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 text-sm font-medium transition-colors whitespace-nowrap"
+						>
+							Hero Block
+						</button>
+						<button
+							onclick={() => addBlockAt('richtext', 0)}
+							type="button"
+							class="px-4 py-2 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 text-sm font-medium transition-colors whitespace-nowrap"
+						>
+							Rich Text
+						</button>
+						<button
+							onclick={() => addBlockAt('header', 0)}
+							type="button"
+							class="px-4 py-2 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 text-sm font-medium transition-colors whitespace-nowrap"
+						>
+							Header
+						</button>
+					</div>
+				{/if}
+			</div>
+
 			{#each blocks as block, index (index)}
+				<!-- Block Content -->
 				<div class="border border-gray-200 rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow">
 					<div class="flex justify-between items-start mb-4">
 						<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium capitalize {getBlockTypeColor(block.type)}">
@@ -164,6 +243,50 @@ const getBlockTypeColor = (type: BlockType) => {
 						<RichTextBlockForm bind:data={block.data} onchange={(data) => updateBlockData(index, data)} />
 					{:else if block.type === 'header'}
 						<HeaderBlockForm bind:data={block.data} onchange={(data) => updateBlockData(index, data)} />
+					{/if}
+				</div>
+
+				<!-- Insert separator after each block -->
+				<div class="relative">
+					<button
+						type="button"
+						class="separator-trigger w-full py-2 flex items-center justify-center group hover:bg-gray-50 rounded transition-colors"
+						onclick={(e) => { e.stopPropagation(); toggleSeparator(index + 1); }}
+					>
+						<div class="flex items-center gap-2 text-gray-400 group-hover:text-gray-600">
+							<div class="flex-1 h-px bg-gray-200 group-hover:bg-gray-300"></div>
+							<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+							</svg>
+							<span class="text-sm font-medium">Add Block</span>
+							<div class="flex-1 h-px bg-gray-200 group-hover:bg-gray-300"></div>
+						</div>
+					</button>
+
+					{#if activeSeparator === index + 1}
+						<div class="separator-menu absolute top-full left-1/2 -translate-x-1/2 z-10 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 p-2 flex gap-2">
+							<button
+								onclick={() => addBlockAt('hero', index + 1)}
+								type="button"
+								class="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 text-sm font-medium transition-colors whitespace-nowrap"
+							>
+								Hero Block
+							</button>
+							<button
+								onclick={() => addBlockAt('richtext', index + 1)}
+								type="button"
+								class="px-4 py-2 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 text-sm font-medium transition-colors whitespace-nowrap"
+							>
+								Rich Text
+							</button>
+							<button
+								onclick={() => addBlockAt('header', index + 1)}
+								type="button"
+								class="px-4 py-2 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 text-sm font-medium transition-colors whitespace-nowrap"
+							>
+								Header
+							</button>
+						</div>
 					{/if}
 				</div>
 			{/each}
