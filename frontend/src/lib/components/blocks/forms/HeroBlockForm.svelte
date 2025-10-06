@@ -39,6 +39,12 @@ const formConfig: FormConfig = {
 			colSpan: 12,
 		},
 		{
+			name: "media",
+			type: "media",
+			label: "Image",
+			colSpan: 12,
+		},
+		{
 			name: "cta_text",
 			type: "text",
 			label: "CTA Text",

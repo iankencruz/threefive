@@ -1,3 +1,4 @@
+// frontend/src/lib/api/media.ts
 import { PUBLIC_API_URL } from "$env/static/public";
 
 interface Media {
@@ -8,7 +9,9 @@ interface Media {
   size_bytes: number;
   width?: number;
   height?: number;
-  url: string;
+  storage_type: string;
+  storage_path: string; // Added this field
+  url?: string; // Made optional since it might be null
   thumbnail_url?: string;
   created_at: string;
 }
@@ -19,6 +22,7 @@ interface MediaListResponse {
     page: number;
     limit: number;
     total?: number;
+    total_pages?: number; // Added for pagination
   };
 }
 
@@ -43,6 +47,16 @@ async function fetchAPI<T>(url: string, options: RequestInit = {}): Promise<T> {
   }
 
   return data as T;
+}
+
+// Helper function to get the correct media URL
+export function getMediaUrl(media: Media): string {
+  // If url exists, use it
+  if (media.url) return media.url;
+
+  // Otherwise, build URL from storage_path
+  const baseUrl = PUBLIC_API_URL || "http://localhost:8080";
+  return `${baseUrl}/uploads/${media.storage_path || media.filename}`;
 }
 
 export const mediaApi = {
