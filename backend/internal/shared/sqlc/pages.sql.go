@@ -315,23 +315,31 @@ UPDATE pages
 SET 
     title = COALESCE($1, title),
     slug = COALESCE($2, slug),
-    featured_image_id = $3,
+    status = COALESCE($3, status),
+    featured_image_id = $4,
+    published_at = CASE 
+        WHEN $3 = 'published' AND published_at IS NULL 
+        THEN NOW() 
+        ELSE published_at 
+    END,
     updated_at = NOW()
-WHERE id = $4 AND deleted_at IS NULL
+WHERE id = $5 AND deleted_at IS NULL
 RETURNING id, title, slug, page_type, status, featured_image_id, author_id, created_at, updated_at, published_at, deleted_at
 `
 
 type UpdatePageParams struct {
-	Title           string      `json:"title"`
-	Slug            string      `json:"slug"`
-	FeaturedImageID pgtype.UUID `json:"featured_image_id"`
-	ID              uuid.UUID   `json:"id"`
+	Title           string         `json:"title"`
+	Slug            string         `json:"slug"`
+	Status          NullPageStatus `json:"status"`
+	FeaturedImageID pgtype.UUID    `json:"featured_image_id"`
+	ID              uuid.UUID      `json:"id"`
 }
 
 func (q *Queries) UpdatePage(ctx context.Context, arg UpdatePageParams) (Pages, error) {
 	row := q.db.QueryRow(ctx, updatePage,
 		arg.Title,
 		arg.Slug,
+		arg.Status,
 		arg.FeaturedImageID,
 		arg.ID,
 	)

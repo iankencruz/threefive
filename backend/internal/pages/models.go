@@ -27,9 +27,14 @@ type CreatePageRequest struct {
 
 // UpdatePageRequest represents the request to update a page
 type UpdatePageRequest struct {
-	Title           *string    `json:"title,omitempty"`
-	Slug            *string    `json:"slug,omitempty"`
-	FeaturedImageID *uuid.UUID `json:"featured_image_id,omitempty"`
+	Title           *string                `json:"title,omitempty"`
+	Slug            *string                `json:"slug,omitempty"`
+	Status          *string                `json:"status,omitempty"`
+	FeaturedImageID *uuid.UUID             `json:"featured_image_id,omitempty"`
+	Blocks          *[]blocks.BlockRequest `json:"blocks,omitempty"`
+	SEO             *SEORequest            `json:"seo,omitempty"`
+	ProjectData     *ProjectDataRequest    `json:"project_data,omitempty"`
+	BlogData        *BlogDataRequest       `json:"blog_data,omitempty"`
 }
 
 // UpdatePageStatusRequest represents the request to change page status

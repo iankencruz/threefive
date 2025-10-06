@@ -81,6 +81,11 @@ func (r *UpdatePageRequest) Validate(v *validation.Validator) {
 		v.MinLength("slug", *r.Slug, 1)
 		v.MaxLength("slug", *r.Slug, 200)
 	}
+
+	// Status validation (if provided)
+	if r.Status != nil {
+		v.In("status", *r.Status, ValidPageStatuses)
+	}
 }
 
 // Validate validates an UpdatePageStatusRequest
@@ -145,6 +150,7 @@ func (r *ProjectDataRequest) Validate(v *validation.Validator) {
 	if r.ProjectStatus != nil {
 		v.In("project_data.project_status", *r.ProjectStatus, ValidProjectStatuses)
 	}
+
 }
 
 // Validate validates BlogDataRequest

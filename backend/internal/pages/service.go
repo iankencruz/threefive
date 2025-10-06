@@ -59,7 +59,7 @@ func (s *Service) CreatePage(ctx context.Context, req CreatePageRequest, userID 
 		Title:           req.Title,
 		Slug:            req.Slug,
 		PageType:        sqlc.PageType(req.PageType),
-		Status:          statusToNullPageStatus(req.Status),
+		Status:          statusToNullPageStatus(&req.Status),
 		FeaturedImageID: uuidToPgUUID(req.FeaturedImageID),
 		AuthorID:        userID,
 	})
@@ -205,6 +205,7 @@ func (s *Service) UpdatePage(ctx context.Context, pageID uuid.UUID, req UpdatePa
 		ID:              pageID,
 		Title:           pointerToString(req.Title),
 		Slug:            pointerToString(req.Slug),
+		Status:          statusToNullPageStatus(req.Status),
 		FeaturedImageID: uuidToPgUUID(req.FeaturedImageID),
 	})
 	if err != nil {
@@ -221,7 +222,7 @@ func (s *Service) UpdatePage(ctx context.Context, pageID uuid.UUID, req UpdatePa
 func (s *Service) UpdatePageStatus(ctx context.Context, pageID uuid.UUID, status string) error {
 	_, err := s.queries.UpdatePageStatus(ctx, sqlc.UpdatePageStatusParams{
 		ID:     pageID,
-		Status: statusToNullPageStatus(status),
+		Status: statusToNullPageStatus(&status),
 	})
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -416,9 +417,12 @@ func timeToPgTimestamp(val *time.Time) pgtype.Timestamp {
 	return pgtype.Timestamp{Time: *val, Valid: true}
 }
 
-func statusToNullPageStatus(status string) sqlc.NullPageStatus {
+func statusToNullPageStatus(s *string) sqlc.NullPageStatus {
+	if s == nil {
+		return sqlc.NullPageStatus{Valid: false}
+	}
 	return sqlc.NullPageStatus{
-		PageStatus: sqlc.PageStatus(status),
+		PageStatus: sqlc.PageStatus(*s),
 		Valid:      true,
 	}
 }

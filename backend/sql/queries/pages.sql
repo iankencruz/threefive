@@ -62,7 +62,13 @@ UPDATE pages
 SET 
     title = COALESCE(@title, title),
     slug = COALESCE(@slug, slug),
+    status = COALESCE(@status, status),
     featured_image_id = @featured_image_id,
+    published_at = CASE 
+        WHEN @status = 'published' AND published_at IS NULL 
+        THEN NOW() 
+        ELSE published_at 
+    END,
     updated_at = NOW()
 WHERE id = @id AND deleted_at IS NULL
 RETURNING *;
