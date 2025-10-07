@@ -71,26 +71,9 @@ let formData = $state<Record<string, any>>(
 		: getDefaultFormData(),
 );
 
-// ✅ Watch for changes in initialFormData (when loading existing data)
+// ✅ Notify parent of changes with untrack to prevent loops
 $effect(() => {
-	if (initialFormData && Object.keys(initialFormData).length > 0) {
-		// Merge with defaults to ensure all fields have values
-		formData = { ...getDefaultFormData(), ...initialFormData };
-	}
-});
-
-// Notify parent of changes (skip first render)
-let isFirstRender = $state(true);
-
-$effect(() => {
-	// Create dependency on formData
-	const _ = JSON.stringify(formData);
-
-	if (isFirstRender) {
-		isFirstRender = false;
-		return;
-	}
-
+	// Only call onchange, don't read initialFormData
 	if (onchange) {
 		onchange(formData);
 	}

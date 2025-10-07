@@ -72,4 +72,5 @@ const handleChange = (updatedData: Record<string, any>) => {
 	config={formConfig} 
 	formData={data} 
 	onchange={handleChange}
+  asForm={true}
 />
