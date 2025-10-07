@@ -1,8 +1,7 @@
-<!-- frontend/src/lib/components/blocks/forms/RichtextBlockForm.svelte -->
+
+<!-- frontend/src/lib/components/blocks/forms/RichTextBlockForm.svelte -->
 <script lang="ts">
-import DynamicForm, {
-	type FormConfig,
-} from "$components/ui/DynamicForm.svelte";
+import RichTextEditor from "$components/ui/RichTextEditor.svelte";
 
 interface RichtextBlockData {
 	content: string;
@@ -15,30 +14,22 @@ interface Props {
 
 let { data = $bindable({ content: "" }), onchange }: Props = $props();
 
-const formConfig: FormConfig = {
-	fields: [
-		{
-			name: "content",
-			type: "textarea",
-			label: "Content",
-			placeholder: "Enter your content here...",
-			required: true,
-			rows: 8,
-			colSpan: 12,
-			helperText: "You can use Markdown formatting (future: WYSIWYG editor)",
-		},
-	],
-	hideSubmitButton: true,
-};
-
-const handleChange = (updatedData: Record<string, any>) => {
-	data = updatedData as RichtextBlockData;
-	onchange?.(data);
-};
+// Watch for content changes and notify parent
+$effect(() => {
+	if (onchange) {
+		onchange(data);
+	}
+});
 </script>
 
-<DynamicForm 
-	config={formConfig} 
-	formData={data} 
-	onchange={handleChange}
-/>
+<div class="space-y-2">
+	<label class="block text-sm font-medium text-gray-700">
+		Content
+		<span class="text-red-500">*</span>
+	</label>
+	<RichTextEditor bind:value={data.content} />
+	<p class="text-xs text-gray-500">
+		Use the rich text editor to format your content with headings, lists, images, and more.
+	</p>
+</div>
+
