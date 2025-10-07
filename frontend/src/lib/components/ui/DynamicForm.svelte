@@ -35,13 +35,28 @@ interface FormConfig {
 
 interface Props {
 	config: FormConfig;
-	onSubmit: (data: Record<string, any>) => void | Promise<void>;
+	formData?: Record<string, any>;
+	onSubmit?: (data: Record<string, any>) => void | Promise<void>;
+	onchange?: (data: Record<string, any>) => void; // ✅ Add this
+	errors?: Record<string, string>; // ✅ Add this
 	children?: import("svelte").Snippet;
 }
 
-let { config, onSubmit, children }: Props = $props();
+let {
+	config,
+	formData: initialFormData, // ✅ Rename to avoid confusion
+	onSubmit,
+	onchange,
+	errors = {}, // ✅ Accept errors from parent
+	children,
+}: Props = $props();
 
-let errors = $state<Record<string, string>>({});
+// ✅ Watch for changes in formData and call onchange
+$effect(() => {
+	if (onchange) {
+		onchange(formData);
+	}
+});
 
 // Initialize form data with default values immediately
 let formData = $state<Record<string, any>>(
@@ -61,7 +76,9 @@ function getColSpanClass(colSpan?: number): string {
 
 async function handleSubmit(e: SubmitEvent) {
 	e.preventDefault();
-	await onSubmit(formData);
+	if (onSubmit) {
+		await onSubmit(formData);
+	}
 }
 
 function handleMediaChange(fieldName: string, mediaId: string | null) {

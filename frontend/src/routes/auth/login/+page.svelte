@@ -7,7 +7,14 @@ import { authApi } from "$api/auth";
 import { authStore } from "$stores/auth.svelte";
 import { goto } from "$app/navigation";
 
-let formData = $state({
+interface FormData {
+	first_name: string;
+	last_name: string;
+	email: string;
+	password: string;
+}
+
+let formData: FormData = $state({
 	first_name: "",
 	last_name: "",
 	email: "",
@@ -95,7 +102,7 @@ async function handleSubmit(data: Record<string, any>) {
         {formData}
 				{errors}
 				{loading}
-				onsubmit={handleSubmit}
+				submit={handleSubmit}
 			/>
 
 			<div class="mt-4 text-center">
