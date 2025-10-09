@@ -73,6 +73,27 @@ let loading = $state(false);
 let currentTab = $state<"content" | "seo" | "metadata">("content");
 let newTech = $state("");
 
+// Add these tracking flags for auto-generation
+let slugManuallyEdited = $state(false);
+let seoTitleManuallyEdited = $state(false);
+
+// Auto-generate slug from title (only if not manually edited)
+$effect(() => {
+	if (formData.title && !slugManuallyEdited) {
+		formData.slug = formData.title
+			.toLowerCase()
+			.replace(/[^a-z0-9]+/g, "-")
+			.replace(/^-|-$/g, "");
+	}
+});
+
+// Auto-fill SEO meta title from page title (only if not manually edited)
+$effect(() => {
+	if (formData.title && !seoTitleManuallyEdited) {
+		formData.seo.meta_title = formData.title;
+	}
+});
+
 const addTechnology = () => {
 	if (
 		newTech.trim() &&
@@ -139,11 +160,8 @@ const handleSubmit = async () => {
 };
 
 const handleDelete = async () => {
-	if (!confirm("Are you sure you want to delete this page?")) {
-		return;
-	}
+	if (!confirm("Are you sure you want to delete this page?")) return;
 
-	loading = true;
 	try {
 		const response = await fetch(
 			`${PUBLIC_API_URL}/api/v1/pages/${data.page.id}`,
@@ -159,67 +177,38 @@ const handleDelete = async () => {
 
 		goto("/admin/pages");
 	} catch (err) {
-		if (err instanceof Error) {
-			errors.submit = err.message;
-		}
-	} finally {
-		loading = false;
+		alert(err instanceof Error ? err.message : "Failed to delete page");
 	}
 };
 </script>
 
-<div class="max-w-5xl mx-auto p-8">
-<div class="mb-8">
-    <div class="flex items-center justify-between">
-        <div>
-            <button
-                class="text-gray-600 hover:text-gray-900 mb-4 flex items-center gap-2 transition-colors"
-                onclick={() => goto("/admin/pages")}
-            >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M15 19l-7-7 7-7"
-                    />
-                </svg>
-                Back to Pages
-            </button>
-            <h1 class="text-3xl font-bold text-gray-900">Edit Page</h1>
-            <p class="text-gray-600 mt-2">Update your page content and settings</p>
-        </div>
-        <div class="flex items-center gap-3">
-            <button
-                class="px-4 py-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg font-medium transition-colors flex items-center gap-2"
-                onclick={() => window.open(`/admin/pages/${data.page.id}/preview`, '_blank')}
-            >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-                Preview
-            </button>
-            <button
-                class="px-4 py-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg font-medium transition-colors"
-                onclick={handleDelete}
-                disabled={loading}
-            >
-                Delete Page
-            </button>
-        </div>
-    </div>
-</div>
-	{#if errors.submit}
-		<div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-			{errors.submit}
-		</div>
-	{/if}
+<div class="min-h-screen bg-gray-50 py-8 px-4">
+	<form onsubmit={handleSubmit} class="max-w-5xl mx-auto">
+		<div class="bg-white rounded-lg shadow">
+			<div class="border-b border-gray-200 px-8 py-6">
+				<div class="flex items-center justify-between">
+					<div>
+						<h1 class="text-2xl font-bold text-gray-900">Edit Page</h1>
+						<p class="mt-1 text-sm text-gray-600">
+							Update your page content and settings
+						</p>
+					</div>
+					<button
+						type="button"
+						onclick={handleDelete}
+						class="px-4 py-2 border border-red-300 rounded-lg text-red-700 hover:bg-red-50 font-medium transition-colors"
+					>
+						Delete Page
+					</button>
+				</div>
 
-	<form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="space-y-6">
-		<div class="bg-white rounded-lg shadow-sm border border-gray-200">
-			<div class="border-b border-gray-200">
-				<nav class="flex gap-8 px-8 pt-6">
+				{#if errors.submit}
+					<div class="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+						<p class="text-sm text-red-800">{errors.submit}</p>
+					</div>
+				{/if}
+
+				<nav class="flex gap-8 mt-6 border-b border-gray-200">
 					<button
 						type="button"
 						class="pb-4 px-1 border-b-2 font-medium transition-colors {currentTab === 'content'
@@ -276,8 +265,9 @@ const handleDelete = async () => {
 								<input
 									type="text"
 									bind:value={formData.slug}
+									oninput={() => slugManuallyEdited = true}
 									required
-									pattern="[a-z0-9\-]+"
+									pattern="[a-z0-9-]+"
 									class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 									placeholder="page-slug"
 								/>
@@ -324,6 +314,7 @@ const handleDelete = async () => {
 							<input
 								type="text"
 								bind:value={formData.seo.meta_title}
+								oninput={() => seoTitleManuallyEdited = true}
 								maxlength="60"
 								class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 								placeholder="Page title for search engines (60 chars max)"
@@ -374,15 +365,16 @@ const handleDelete = async () => {
 								<input
 									type="checkbox"
 									bind:checked={formData.seo.robots_index}
-									class="w-4 h-4 text-blue-600 rounded"
+									class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
 								/>
 								<span class="text-sm text-gray-700">Allow search engines to index</span>
 							</label>
+
 							<label class="flex items-center gap-2">
 								<input
 									type="checkbox"
 									bind:checked={formData.seo.robots_follow}
-									class="w-4 h-4 text-blue-600 rounded"
+									class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
 								/>
 								<span class="text-sm text-gray-700">Allow search engines to follow links</span>
 							</label>
@@ -392,17 +384,17 @@ const handleDelete = async () => {
 				{:else if currentTab === "metadata"}
 					{#if formData.page_type === "project"}
 						<div class="space-y-6">
-							<div class="grid grid-cols-2 gap-6">
-								<div>
-									<label class="block text-sm font-medium text-gray-700 mb-2">Client Name</label>
-									<input
-										type="text"
-										bind:value={formData.project_data.client_name}
-										class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-										placeholder="Client or company name"
-									/>
-								</div>
+							<div>
+								<label class="block text-sm font-medium text-gray-700 mb-2">Client Name</label>
+								<input
+									type="text"
+									bind:value={formData.project_data.client_name}
+									class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+									placeholder="Client or company name"
+								/>
+							</div>
 
+							<div class="grid grid-cols-2 gap-6">
 								<div>
 									<label class="block text-sm font-medium text-gray-700 mb-2">Project Year</label>
 									<input
@@ -413,25 +405,25 @@ const handleDelete = async () => {
 										class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 									/>
 								</div>
-							</div>
 
-							<div>
-								<label class="block text-sm font-medium text-gray-700 mb-2">Project URL</label>
-								<input
-									type="url"
-									bind:value={formData.project_data.project_url}
-									class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-									placeholder="https://example.com"
-								/>
+								<div>
+									<label class="block text-sm font-medium text-gray-700 mb-2">Project URL</label>
+									<input
+										type="url"
+										bind:value={formData.project_data.project_url}
+										class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+										placeholder="https://project-url.com"
+									/>
+								</div>
 							</div>
 
 							<div>
 								<label class="block text-sm font-medium text-gray-700 mb-2">Technologies</label>
-								<div class="flex gap-2 mb-3">
+								<div class="flex gap-2 mb-2">
 									<input
 										type="text"
 										bind:value={newTech}
-										onkeydown={(e) => e.key === "Enter" && (e.preventDefault(), addTechnology())}
+										onkeydown={(e) => e.key === 'Enter' && (e.preventDefault(), addTechnology())}
 										class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 										placeholder="Add technology (e.g., React, Node.js)"
 									/>
@@ -445,16 +437,16 @@ const handleDelete = async () => {
 								</div>
 								<div class="flex flex-wrap gap-2">
 									{#each formData.project_data.technologies as tech}
-										<span
-											class="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
-										>
+										<span class="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
 											{tech}
 											<button
 												type="button"
 												onclick={() => removeTechnology(tech)}
-												class="hover:text-blue-600"
+												class="hover:text-blue-900"
 											>
-												×
+												<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+												</svg>
 											</button>
 										</span>
 									{/each}
@@ -504,7 +496,7 @@ const handleDelete = async () => {
 			</div>
 		</div>
 
-		<div class="flex justify-end gap-4">
+		<div class="flex justify-end gap-4 mt-6">
 			<button
 				type="button"
 				class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors"
