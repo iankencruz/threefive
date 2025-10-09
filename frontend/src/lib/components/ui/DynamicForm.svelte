@@ -26,7 +26,7 @@ interface FormField {
 	inputClass?: string;
 }
 
-interface FormConfig {
+export interface FormConfig {
 	fields: FormField[];
 	submitText?: string;
 	showSubmit?: boolean;
