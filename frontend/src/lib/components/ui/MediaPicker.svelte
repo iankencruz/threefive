@@ -1,4 +1,5 @@
 <script lang="ts">
+import { PUBLIC_API_URL } from "$env/static/public";
 import { mediaApi, type Media, getMediaUrl } from "$api/media";
 import { onMount } from "svelte";
 
@@ -43,7 +44,7 @@ onMount(async () => {
 async function loadSelectedMedia() {
 	try {
 		const response = await fetch(
-			`${import.meta.env.PUBLIC_API_URL || "http://localhost:8080"}/api/v1/media/${value}`,
+			`${PUBLIC_API_URL || "localhost:8080"}/api/v1/media/${value}`,
 			{
 				credentials: "include",
 			},
