@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/iankencruz/threefive/internal/shared/sqlc"
 	"github.com/iankencruz/threefive/internal/shared/storage"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Server struct {
@@ -87,10 +89,16 @@ func New(cfg *config.Config) (*Server, error) {
 		PageHandler:  pageHandler,
 	}
 
-	// 5. Setup router with all initialized components
+	// 5. Create default admin user if it doesn't exist
+	if err := srv.createDefaultAdminUser(context.Background()); err != nil {
+		log.Printf("Warning: Failed to create default admin user: %v", err)
+		// Don't fail server startup if this fails
+	}
+
+	// 6. Setup router with all initialized components
 	router := srv.setupRouter()
 
-	// 6. Create HTTP server
+	// 7. Create HTTP server
 	srv.Server = &http.Server{
 		Addr:         cfg.ServerAddress(),
 		Handler:      router,
@@ -100,6 +108,49 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 
 	return srv, nil
+}
+
+// createDefaultAdminUser creates a default admin user if it doesn't exist
+func (s *Server) createDefaultAdminUser(ctx context.Context) error {
+	defaultEmail := "admin@example.com"
+	defaultPassword := "Password!123"
+
+	// Check if admin user already exists
+	_, err := s.Queries.GetUserByEmail(ctx, defaultEmail)
+	if err == nil {
+		// User already exists
+		log.Printf("Default admin user already exists: %s", defaultEmail)
+		return nil
+	}
+
+	// // If error is not "no rows", something went wrong
+	// if err != pgx.ErrNoRows {
+	// 	return fmt.Errorf("failed to check existing admin user: %w", err)
+	// }
+
+	// Hash the default password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(defaultPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	// Create the admin user
+	user, err := s.Queries.CreateUser(ctx, sqlc.CreateUserParams{
+		FirstName:    "Admin",
+		LastName:     "User",
+		Email:        defaultEmail,
+		PasswordHash: string(hashedPassword),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create admin user: %w", err)
+	}
+
+	log.Printf("✅ Default admin user created successfully!")
+	log.Printf("   Email: %s", user.Email)
+	log.Printf("   Password: %s", defaultPassword)
+	log.Printf("   ⚠️  IMPORTANT: Change this password after first login!")
+
+	return nil
 }
 
 // Start starts the HTTP server

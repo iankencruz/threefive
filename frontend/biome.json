@@ -10,7 +10,8 @@
   },
   "formatter": {
     "enabled": true,
-    "indentStyle": "tab"
+    "indentStyle": "tab",
+    "attributePosition": "multiline"
   },
   "linter": {
     "enabled": true,
@@ -20,7 +21,8 @@
   },
   "javascript": {
     "formatter": {
-      "quoteStyle": "double"
+      "quoteStyle": "double",
+      "attributePosition": "multiline"
     }
   },
   "assist": {
@@ -45,6 +47,10 @@
             "noUnusedImports": "off"
           }
         }
+      },
+      "formatter": {
+        "indentStyle": "tab",
+        "attributePosition": "multiline"
       }
     }
   ]

@@ -213,12 +213,15 @@ const filteredMedia = $derived(
 {#if showModal}
 	<div class="fixed inset-0 z-50 overflow-y-auto">
 		<div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+			<!-- Overlay -->
 			<div 
-				class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"
+				class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
 				onclick={() => showModal = false}
+				aria-hidden="true"
 			></div>
 
-			<div class="inline-block w-full max-w-6xl my-8 overflow-hidden text-left align-middle transition-all transform bg-white rounded-lg shadow-xl">
+			<!-- Modal Content - added 'relative' class -->
+			<div class="relative inline-block w-full max-w-6xl my-8 overflow-hidden text-left align-middle transition-all transform bg-white rounded-lg shadow-xl">
 				<!-- Header -->
 				<div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
 					<h3 class="text-lg font-semibold text-gray-900">Select Media</h3>
@@ -326,7 +329,7 @@ const filteredMedia = $derived(
 										alt={m.original_filename}
 										class="w-full h-full object-cover"
 									/>
-									<div class="absolute inset-0 bg-black/30 hover:bg-black/0 bg-opacity-0 group-hover:bg-opacity-30 transition-all flex items-center justify-center">
+									<div class="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center">
 										<svg class="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
 										</svg>
@@ -340,21 +343,11 @@ const filteredMedia = $derived(
 							<table class="min-w-full divide-y divide-gray-200">
 								<thead class="bg-gray-50">
 									<tr>
-										<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-											Preview
-										</th>
-										<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-											Filename
-										</th>
-										<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-											Size
-										</th>
-										<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-											Uploaded
-										</th>
-										<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-											Action
-										</th>
+										<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preview</th>
+										<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Filename</th>
+										<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
+										<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Uploaded</th>
+										<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
 									</tr>
 								</thead>
 								<tbody class="bg-white divide-y divide-gray-200">

@@ -101,8 +101,8 @@ async function handleSubmit(data: Record<string, any>) {
 				config={formConfig}
         {formData}
 				{errors}
-				{loading}
-				submit={handleSubmit}
+				onSubmit={handleSubmit}
+        asForm={true}
 			/>
 
 			<div class="mt-4 text-center">

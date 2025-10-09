@@ -7,6 +7,7 @@ import DynamicForm, {
 interface HeroBlockData {
 	title: string;
 	subtitle?: string;
+	image_id?: string; // ✅ Changed from optional to match backend
 	cta_text?: string;
 	cta_url?: string;
 }
@@ -17,7 +18,13 @@ interface Props {
 }
 
 let {
-	data = $bindable({ title: "", subtitle: "", cta_text: "", cta_url: "" }),
+	data = $bindable({
+		title: "",
+		subtitle: "",
+		image_id: "", // ✅ Initialize with image_id
+		cta_text: "",
+		cta_url: "",
+	}),
 	onchange,
 }: Props = $props();
 
@@ -39,9 +46,9 @@ const formConfig: FormConfig = {
 			colSpan: 12,
 		},
 		{
-			name: "media",
+			name: "image_id", // ✅ Changed from "media" to "image_id"
 			type: "media",
-			label: "Image",
+			label: "Background Image",
 			colSpan: 12,
 		},
 		{
@@ -59,7 +66,6 @@ const formConfig: FormConfig = {
 			colSpan: 6,
 		},
 	],
-	hideSubmitButton: true,
 };
 
 const handleChange = (updatedData: Record<string, any>) => {
@@ -72,5 +78,4 @@ const handleChange = (updatedData: Record<string, any>) => {
 	config={formConfig} 
 	formData={data} 
 	onchange={handleChange}
-  asForm={true}
 />

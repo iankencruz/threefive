@@ -308,19 +308,18 @@ const filteredMedia = $derived(
 {#if showMediaPopup}
 	<div class="fixed inset-0 z-50 overflow-y-auto" onkeydown={handleMediaPopupKeydown} role="dialog" aria-modal="true" tabindex="-1">
 		<div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-			<div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onclick={closeMediaPopup}></div>
+			<!-- Overlay - must be behind modal content -->
+			<div 
+				class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" 
+				onclick={closeMediaPopup}
+				aria-hidden="true"
+			></div>
 
-			<div class="inline-block w-full max-w-5xl my-8 overflow-hidden text-left align-middle transition-all transform bg-white rounded-lg shadow-xl">
+			<!-- Modal content - must be above overlay with relative positioning -->
+			<div class="relative inline-block w-full max-w-5xl my-8 overflow-hidden text-left align-middle transition-all transform bg-white rounded-lg shadow-xl">
 				<div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
 					<h3 class="text-lg font-semibold text-gray-900">Insert Image</h3>
 					<button type="button" onclick={closeMediaPopup} class="text-2xl text-gray-400 hover:text-gray-600 transition-colors" title="Close (Esc)">×</button>
-				</div>
-
-				<div class="px-6 py-3 bg-gray-50 border-b border-gray-200">
-					<div class="flex gap-2">
-						<button type="button" onclick={() => insertMode = 'library'} class="px-4 py-2 rounded-lg font-medium transition-colors {insertMode === 'library' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}">Media Library</button>
-						<button type="button" onclick={() => insertMode = 'url'} class="px-4 py-2 rounded-lg font-medium transition-colors {insertMode === 'url' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}">Insert by URL</button>
-					</div>
 				</div>
 
 				{#if insertMode === 'library'}
