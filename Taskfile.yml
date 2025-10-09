@@ -59,10 +59,15 @@ tasks:
 
   podman:up:
     desc: "Run compose file"
-    internal: true
     cmds:
-      - echo "Stopping Podman machine"
+      - echo "Starting compose containers"
       - podman compose up -d
+
+  podman:down:
+    desc: "Stop compose containers"
+    cmds:
+      - echo "Stopping compose containers"
+      - podman compose down
 
   # =====================================
   # Database tasks (Goose)
