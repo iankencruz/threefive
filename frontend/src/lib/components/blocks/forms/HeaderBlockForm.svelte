@@ -4,7 +4,7 @@ import DynamicForm, {
 	type FormConfig,
 } from "$components/ui/DynamicForm.svelte";
 
-interface HeaderBlockData {
+export interface HeaderBlockData {
 	heading: string;
 	subheading?: string;
 	level: string;

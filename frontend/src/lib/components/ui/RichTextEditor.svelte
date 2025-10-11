@@ -365,7 +365,7 @@ const filteredMedia = $derived(
 									<button type="button" onclick={() => selectMediaFromLibrary(m)} class="group relative aspect-square rounded-lg overflow-hidden border-2 transition-all hover:border-blue-500 {selectedMediaItem?.id === m.id ? 'border-blue-600 ring-2 ring-blue-600' : 'border-gray-200'}">
 										<img src={getMediaUrl(m)} alt={m.original_filename} class="w-full h-full object-cover group-hover:scale-105 transition-transform" />
 										{#if selectedMediaItem?.id === m.id}
-											<div class="absolute inset-0 bg-blue-600 bg-opacity-20 flex items-center justify-center">
+											<div class="absolute inset-0 bg-blue-600/20  flex items-center justify-center">
 												<svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" /></svg>
 											</div>
 										{/if}

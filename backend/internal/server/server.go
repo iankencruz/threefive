@@ -157,6 +157,7 @@ func (s *Server) createDefaultAdminUser(ctx context.Context) error {
 func (s *Server) Start() error {
 	fmt.Printf("\n🚀 Server starting on http://%s\n", s.Config.ServerAddress())
 	fmt.Printf("📊 Environment: %s\n\n", s.Config.Server.Env)
+	fmt.Printf("📁 Storage: %s\n\n", s.Config.Storage.S3Endpoint)
 
 	if s.Config.IsDevelopment() {
 		fmt.Println("================================================")

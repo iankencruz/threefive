@@ -1,15 +1,29 @@
 <!-- frontend/src/lib/components/blocks/BlockEditor.svelte -->
 <script lang="ts">
-import HeaderBlockForm from "./forms/HeaderBlockForm.svelte";
-import HeroBlockForm from "./forms/HeroBlockForm.svelte";
-import RichTextBlockForm from "./forms/RichTextBlockForm.svelte";
+import HeaderBlockForm, {
+	type HeaderBlockData,
+} from "./forms/HeaderBlockForm.svelte";
+import HeroBlockForm, {
+	type HeroBlockData,
+} from "./forms/HeroBlockForm.svelte";
+import RichTextBlockForm, {
+	type RichtextBlockData,
+} from "./forms/RichTextBlockForm.svelte";
 
-type BlockType = "hero" | "richtext" | "header";
+interface BlockTypeMap {
+	hero: HeroBlockData;
+	richtext: RichtextBlockData;
+	header: HeaderBlockData;
+	// gallery: GalleryBlockData; // ✅ Just add new ones here
+}
+
+type BlockType = keyof BlockTypeMap;
+type BlockData = BlockTypeMap[BlockType];
 
 interface Block {
 	id?: string;
 	type: BlockType;
-	data: Record<string, any>;
+	data: BlockData;
 }
 
 interface Props {

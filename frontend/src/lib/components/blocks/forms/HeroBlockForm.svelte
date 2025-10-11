@@ -4,7 +4,7 @@ import DynamicForm, {
 	type FormConfig,
 } from "$components/ui/DynamicForm.svelte";
 
-interface HeroBlockData {
+export interface HeroBlockData {
 	title: string;
 	subtitle?: string;
 	image_id?: string; // ✅ Changed from optional to match backend

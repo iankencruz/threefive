@@ -3,7 +3,7 @@
 <script lang="ts">
 import RichTextEditor from "$components/ui/RichTextEditor.svelte";
 
-interface RichtextBlockData {
+export interface RichtextBlockData {
 	content: string;
 }
 
