@@ -99,3 +99,4 @@ config.yml
 # Coverage reports
 coverage.out
 coverage.html
+.env.production
