@@ -261,7 +261,7 @@ const filteredMedia = $derived(
 	{#if editor}
 		<div class="flex flex-wrap items-center gap-2 border-b bg-gray-50 p-2" data-ui={ui}>
 			<select
-				class="h-8 rounded border bg-white px-2 text-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+				class="h-8 rounded border min-w-44 bg-white px-2 text-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
 				onchange={(e) => applyBlock((e.target as HTMLSelectElement).value)}
 				value={currentBlockValue()}
 				title="Block format"
