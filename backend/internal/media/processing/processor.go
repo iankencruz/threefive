@@ -75,7 +75,7 @@ type Processor struct {
 
 // NewProcessor creates a new media processor
 func NewProcessor(config ProcessorConfig, workDir string) (*Processor, error) {
-	if err := os.MkdirAll(workDir, 0755); err != nil {
+	if err := os.MkdirAll(workDir, 0o755); err != nil {
 		return nil, fmt.Errorf("failed to create work directory: %w", err)
 	}
 
@@ -174,10 +174,24 @@ func (p *Processor) ProcessVideo(ctx context.Context, inputPath, filename string
 		"-b:a", "128k",
 	}
 
+	// FIXED: Proper scaling that maintains aspect ratio
 	if p.config.VideoMaxWidth > 0 || p.config.VideoMaxHeight > 0 {
-		scale := fmt.Sprintf("scale='min(%d,iw)':min(%d,ih):force_original_aspect_ratio=decrease",
-			p.config.VideoMaxWidth, p.config.VideoMaxHeight)
-		args = append(args, "-vf", scale)
+		maxW := p.config.VideoMaxWidth
+		maxH := p.config.VideoMaxHeight
+
+		// Only scale if video exceeds max dimensions
+		if info.Width > maxW || info.Height > maxH {
+			// Use -2 to maintain even dimensions (required for h264)
+			if info.Width > info.Height {
+				// Landscape/square - limit by width
+				scale := fmt.Sprintf("scale=%d:-2", maxW)
+				args = append(args, "-vf", scale)
+			} else {
+				// Portrait - limit by height
+				scale := fmt.Sprintf("scale=-2:%d", maxH)
+				args = append(args, "-vf", scale)
+			}
+		}
 	}
 
 	args = append(args, "-movflags", "+faststart", outputPath)
