@@ -105,7 +105,6 @@ type Querier interface {
 	UpdateBlogData(ctx context.Context, arg UpdateBlogDataParams) (PageBlogData, error)
 	UpdateHeaderBlock(ctx context.Context, arg UpdateHeaderBlockParams) (BlockHeader, error)
 	UpdateHeroBlock(ctx context.Context, arg UpdateHeroBlockParams) (BlockHero, error)
-	UpdateMedia(ctx context.Context, arg UpdateMediaParams) (Media, error)
 	UpdatePage(ctx context.Context, arg UpdatePageParams) (Pages, error)
 	UpdatePageSEO(ctx context.Context, arg UpdatePageSEOParams) (PageSeo, error)
 	UpdatePageStatus(ctx context.Context, arg UpdatePageStatusParams) (Pages, error)

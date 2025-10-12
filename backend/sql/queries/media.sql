@@ -10,13 +10,11 @@ INSERT INTO media (
     height,
     storage_type, 
     storage_path, 
-    thumbnail_path,
-    medium_path,
-    large_path,
-    path,
     s3_bucket, 
     s3_key, 
     s3_region,
+    url,
+    thumbnail_url,
     uploaded_by
 )
 VALUES (
@@ -28,13 +26,11 @@ VALUES (
     @height,
     @storage_type, 
     @storage_path,
-    @thumbnail_path,
-    @medium_path,
-    @large_path,
-    @path,
     @s3_bucket, 
     @s3_key, 
     @s3_region,
+    @url,
+    @thumbnail_url,
     @uploaded_by
 )
 RETURNING *;
@@ -53,20 +49,6 @@ LIMIT @limit_val OFFSET @offset_val;
 SELECT * FROM media
 WHERE uploaded_by = @uploaded_by AND deleted_at IS NULL
 ORDER BY created_at DESC;
-
--- name: UpdateMedia :one
-UPDATE media
-SET 
-    filename = COALESCE(@filename, filename),
-    original_filename = COALESCE(@original_filename, original_filename),
-    storage_path = COALESCE(@storage_path, storage_path),
-    thumbnail_path = COALESCE(@thumbnail_path, thumbnail_path),
-    medium_path = COALESCE(@medium_path, medium_path),
-    large_path = COALESCE(@large_path, large_path),
-    path = COALESCE(@path, path),
-    updated_at = NOW()
-WHERE id = @id AND deleted_at IS NULL
-RETURNING *;
 
 -- name: SoftDeleteMedia :exec
 UPDATE media

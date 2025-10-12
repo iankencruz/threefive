@@ -17,13 +17,11 @@ CREATE TABLE media (
     height INTEGER,
     storage_type storage_type NOT NULL DEFAULT 'local',
     storage_path TEXT NOT NULL,
-    thumbnail_path TEXT,
-    medium_path TEXT,
-    large_path TEXT,
-    path TEXT,
     s3_bucket VARCHAR(255),
     s3_key TEXT,
     s3_region VARCHAR(50),
+    url TEXT,
+    thumbnail_url TEXT,
     uploaded_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -36,6 +34,8 @@ CREATE INDEX idx_media_created_at ON media(created_at);
 CREATE INDEX idx_media_mime_type ON media(mime_type);
 CREATE INDEX idx_media_storage_type ON media(storage_type);
 CREATE INDEX idx_media_deleted_at ON media(deleted_at) WHERE deleted_at IS NULL;
+CREATE INDEX idx_media_url ON media(url) WHERE url IS NOT NULL;
+CREATE INDEX idx_media_thumbnail_url ON media(thumbnail_url) WHERE thumbnail_url IS NOT NULL;
 
 -- Media relationships table (polymorphic)
 CREATE TABLE media_relations (
