@@ -1,7 +1,6 @@
 <!-- frontend/src/lib/components/blocks/display/HeroBlock.svelte -->
 <script lang="ts">
 import { onMount } from "svelte";
-import { getMediaUrl, type Media } from "$api/media";
 import { PUBLIC_API_URL } from "$env/static/public";
 
 interface HeroBlockData {
@@ -10,6 +9,22 @@ interface HeroBlockData {
 	image_id?: string | null;
 	cta_text?: string | null;
 	cta_url?: string | null;
+}
+
+interface Media {
+	id: string;
+	filename: string;
+	original_filename: string;
+	mime_type: string;
+	url: string;
+	original_url?: string;
+	large_url?: string;
+	medium_url?: string;
+	thumbnail_url?: string;
+	width?: number;
+	height?: number;
+	size_bytes: number;
+	created_at: string;
 }
 
 interface Props {
@@ -59,19 +74,59 @@ async function loadMedia(imageId: string) {
 		loading = false;
 	}
 }
+
+function isVideo(mimeType: string): boolean {
+	return mimeType.startsWith("video/");
+}
+
+function isImage(mimeType: string): boolean {
+	return mimeType.startsWith("image/");
+}
+
+// Get the appropriate image URL - prefer large_url for hero sections
+function getImageUrl(media: Media): string {
+	return media.large_url || media.url;
+}
+
+// Get the video URL - use url which contains the optimized video
+function getVideoUrl(media: Media): string {
+	return media.url;
+}
+
+// Get poster image for video
+function getVideoPoster(media: Media): string {
+	return media.thumbnail_url || "";
+}
 </script>
 
 <section class="relative overflow-hidden">
 	{#if media && !loading && !error}
-		<!-- Hero with Background Image -->
+		<!-- Hero with Background Media -->
 		<div class="relative min-h-[500px] md:min-h-[600px] flex items-center">
-			<!-- Background Image -->
+			<!-- Background Media -->
 			<div class="absolute inset-0">
-				<img
-					src={getMediaUrl(media)}
-					alt={data.title}
-					class="w-full h-full object-cover"
-				/>
+				{#if isVideo(media.mime_type)}
+					<!-- Video Background - Optimized MP4 -->
+					<video
+						src={getVideoUrl(media)}
+						poster={getVideoPoster(media)}
+						autoplay
+						muted
+						loop
+						playsinline
+						class="w-full h-full object-cover"
+					>
+						<track kind="captions" />
+					</video>
+				{:else if isImage(media.mime_type)}
+					<!-- Image Background - Large variant (1920px) -->
+					<img
+						src={getImageUrl(media)}
+						alt={data.title}
+						class="w-full h-full object-cover"
+					/>
+				{/if}
+				
 				<!-- Gradient Overlay -->
 				<div class="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent"></div>
 			</div>
@@ -104,7 +159,7 @@ async function loadMedia(imageId: string) {
 			</div>
 		</div>
 	{:else}
-		<!-- Hero without Image (Gradient Background) -->
+		<!-- Hero without Media (Gradient Background) -->
 		<div class="relative bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800">
 			<div class="container mx-auto px-4 py-20 md:py-32 max-w-6xl">
 				<div class="text-center text-white">
@@ -138,10 +193,21 @@ async function loadMedia(imageId: string) {
 	{/if}
 	
 	{#if loading}
-		<div class="absolute inset-0 flex items-center justify-center bg-gray-100">
+		<div class="min-h-[500px] flex items-center justify-center bg-gray-100">
 			<div class="flex flex-col items-center gap-3">
 				<div class="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-				<p class="text-sm text-gray-600">Loading image...</p>
+				<p class="text-sm text-gray-600">Loading media...</p>
+			</div>
+		</div>
+	{/if}
+	
+	{#if error}
+		<div class="min-h-[500px] flex items-center justify-center bg-gray-100">
+			<div class="text-center">
+				<svg class="w-16 h-16 mx-auto text-red-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+				</svg>
+				<p class="text-gray-600 text-lg">Failed to load media</p>
 			</div>
 		</div>
 	{/if}

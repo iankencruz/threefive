@@ -8,7 +8,6 @@ import (
 	"mime/multipart"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/google/uuid"
 	"github.com/iankencruz/threefive/internal/media/processing"
@@ -47,6 +46,23 @@ func NewService(db *pgxpool.Pool, queries *sqlc.Queries, storage storage.Storage
 	}
 }
 
+// VariantUploadResult holds all uploaded variant URLs and paths
+type VariantUploadResult struct {
+	OriginalURL  string
+	LargeURL     string
+	MediumURL    string
+	ThumbnailURL string
+
+	OriginalPath  string
+	LargePath     string
+	MediumPath    string
+	ThumbnailPath string
+
+	Width  int
+	Height int
+	Size   int64
+}
+
 // UploadFile uploads a file to storage and creates a media record
 func (s *Service) UploadFile(ctx context.Context, file *multipart.FileHeader, userID uuid.UUID) (*sqlc.Media, error) {
 	if err := s.validateFile(file); err != nil {
@@ -64,24 +80,253 @@ func (s *Service) UploadFile(ctx context.Context, file *multipart.FileHeader, us
 	isImage := processing.IsImageFile(filename)
 	isVideo := processing.IsVideoFile(filename)
 
-	var uploadResult *storage.UploadResult
-
 	// Process media if processor is available
 	if s.processor != nil && (isImage || isVideo) {
-		uploadResult, err = s.processAndUpload(ctx, src, filename, contentType, file.Size, isImage, isVideo)
-		if err != nil {
-			// Fall back to direct upload if processing fails
-			fmt.Printf("Warning: Processing failed, falling back to direct upload: %v\n", err)
-			src.Seek(0, io.SeekStart)
-			uploadResult, err = s.directUpload(ctx, src, filename, contentType, file.Size)
-			if err != nil {
-				return nil, err
-			}
+		if isImage {
+			return s.processAndUploadImageVariants(ctx, src, filename, contentType, file.Filename, userID)
+		} else if isVideo {
+			return s.processAndUploadVideo(ctx, src, filename, contentType, file.Filename, file.Size, userID)
 		}
-	} else {
-		uploadResult, err = s.directUpload(ctx, src, filename, contentType, file.Size)
+	}
+
+	// Fall back to direct upload
+	fmt.Printf("Warning: Processing not available, falling back to direct upload\n")
+	return s.directUploadMedia(ctx, src, filename, contentType, file.Filename, file.Size, userID)
+}
+
+// processAndUploadImageVariants processes an image into multiple variants and uploads them
+func (s *Service) processAndUploadImageVariants(ctx context.Context, src io.Reader, filename, contentType, originalFilename string, userID uuid.UUID) (*sqlc.Media, error) {
+	// Process image into variants
+	variants, err := s.processor.ProcessImageVariants(ctx, src, filename)
+	if err != nil {
+		fmt.Printf("Warning: Image variant processing failed: %v\n", err)
+		// Fall back to direct upload
+		src.(io.Seeker).Seek(0, io.SeekStart)
+		return s.directUploadMedia(ctx, src, filename, contentType, originalFilename, 0, userID)
+	}
+
+	// Upload all variants
+	variantResult, err := s.uploadImageVariants(ctx, variants)
+	if err != nil {
+		return nil, fmt.Errorf("failed to upload image variants: %w", err)
+	}
+
+	// Clean up temporary files
+	defer func() {
+		os.Remove(variants.Original.ProcessedPath)
+		os.Remove(variants.Large.ProcessedPath)
+		os.Remove(variants.Medium.ProcessedPath)
+		os.Remove(variants.Thumbnail.ProcessedPath)
+	}()
+
+	// Determine storage type values
+	var s3Bucket, s3Key, s3Region *string
+	if s.storage.Type() == storage.StorageTypeS3 {
+		bucket := ""
+		key := variantResult.LargePath
+		region := ""
+		s3Bucket = &bucket
+		s3Key = &key
+		s3Region = &region
+	}
+
+	// Create media record with all variant URLs
+	media, err := s.queries.CreateMedia(ctx, sqlc.CreateMediaParams{
+		Filename:         filepath.Base(variantResult.LargePath),
+		OriginalFilename: originalFilename,
+		MimeType:         "image/webp",
+		SizeBytes:        variantResult.Size,
+		Width:            intToNullInt32(variantResult.Width),
+		Height:           intToNullInt32(variantResult.Height),
+		StorageType:      sqlc.StorageType(s.storage.Type()),
+		StoragePath:      variantResult.LargePath,
+		S3Bucket:         toNullString(s3Bucket),
+		S3Key:            toNullString(s3Key),
+		S3Region:         toNullString(s3Region),
+		Url:              toNullString(&variantResult.LargeURL), // Deprecated, kept for backwards compat
+		OriginalUrl:      toNullString(&variantResult.OriginalURL),
+		LargeUrl:         toNullString(&variantResult.LargeURL),
+		MediumUrl:        toNullString(&variantResult.MediumURL),
+		ThumbnailUrl:     toNullString(&variantResult.ThumbnailURL),
+		OriginalPath:     toNullString(&variantResult.OriginalPath),
+		LargePath:        toNullString(&variantResult.LargePath),
+		MediumPath:       toNullString(&variantResult.MediumPath),
+		ThumbnailPath:    toNullString(&variantResult.ThumbnailPath),
+		UploadedBy:       userID,
+	})
+	if err != nil {
+		// Clean up uploaded files on error
+		s.storage.Delete(ctx, variantResult.OriginalPath)
+		s.storage.Delete(ctx, variantResult.LargePath)
+		s.storage.Delete(ctx, variantResult.MediumPath)
+		s.storage.Delete(ctx, variantResult.ThumbnailPath)
+		return nil, errors.Internal("Failed to create media record", err)
+	}
+
+	return &media, nil
+}
+
+// uploadImageVariants uploads all image variants to storage
+func (s *Service) uploadImageVariants(ctx context.Context, variants *processing.ImageVariants) (*VariantUploadResult, error) {
+	result := &VariantUploadResult{
+		Width:  variants.Large.Width,
+		Height: variants.Large.Height,
+		Size:   variants.Large.Size,
+	}
+
+	// Upload original
+	originalFile, err := os.Open(variants.Original.ProcessedPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open original: %w", err)
+	}
+	defer originalFile.Close()
+
+	originalUpload, err := s.storage.Upload(ctx, storage.UploadInput{
+		File:         originalFile,
+		Filename:     filepath.Base(variants.Original.ProcessedPath),
+		ContentType:  "image/webp",
+		Size:         variants.Original.Size,
+		GenerateName: true,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to upload original: %w", err)
+	}
+	result.OriginalURL = originalUpload.URL
+	result.OriginalPath = originalUpload.Path
+
+	// Upload large
+	largeFile, err := os.Open(variants.Large.ProcessedPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open large: %w", err)
+	}
+	defer largeFile.Close()
+
+	largeUpload, err := s.storage.Upload(ctx, storage.UploadInput{
+		File:         largeFile,
+		Filename:     filepath.Base(variants.Large.ProcessedPath),
+		ContentType:  "image/webp",
+		Size:         variants.Large.Size,
+		GenerateName: true,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to upload large: %w", err)
+	}
+	result.LargeURL = largeUpload.URL
+	result.LargePath = largeUpload.Path
+
+	// Upload medium
+	mediumFile, err := os.Open(variants.Medium.ProcessedPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open medium: %w", err)
+	}
+	defer mediumFile.Close()
+
+	mediumUpload, err := s.storage.Upload(ctx, storage.UploadInput{
+		File:         mediumFile,
+		Filename:     filepath.Base(variants.Medium.ProcessedPath),
+		ContentType:  "image/webp",
+		Size:         variants.Medium.Size,
+		GenerateName: true,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to upload medium: %w", err)
+	}
+	result.MediumURL = mediumUpload.URL
+	result.MediumPath = mediumUpload.Path
+
+	// Upload thumbnail
+	thumbnailFile, err := os.Open(variants.Thumbnail.ProcessedPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open thumbnail: %w", err)
+	}
+	defer thumbnailFile.Close()
+
+	thumbnailUpload, err := s.storage.Upload(ctx, storage.UploadInput{
+		File:         thumbnailFile,
+		Filename:     filepath.Base(variants.Thumbnail.ProcessedPath),
+		ContentType:  "image/webp",
+		Size:         variants.Thumbnail.Size,
+		GenerateName: true,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to upload thumbnail: %w", err)
+	}
+	result.ThumbnailURL = thumbnailUpload.URL
+	result.ThumbnailPath = thumbnailUpload.Path
+
+	return result, nil
+}
+
+// processAndUploadVideo processes a video and uploads it
+func (s *Service) processAndUploadVideo(ctx context.Context, src io.Reader, filename, contentType, originalFilename string, size int64, userID uuid.UUID) (*sqlc.Media, error) {
+	// Save to temp file for video processing
+	tempPath := filepath.Join(s.processor.WorkDir(), "temp_"+filename)
+	tempFile, err := os.Create(tempPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create temp file: %w", err)
+	}
+
+	if _, err := io.Copy(tempFile, src); err != nil {
+		tempFile.Close()
+		os.Remove(tempPath)
+		return nil, fmt.Errorf("failed to save temp file: %w", err)
+	}
+	tempFile.Close()
+	defer os.Remove(tempPath)
+
+	// Process video
+	processResult, err := s.processor.ProcessVideo(ctx, tempPath, filename)
+	if err != nil {
+		fmt.Printf("Warning: Video processing failed: %v\n", err)
+		// Fall back to direct upload
+		srcFile, err := os.Open(tempPath)
 		if err != nil {
 			return nil, err
+		}
+		defer srcFile.Close()
+		return s.directUploadMedia(ctx, srcFile, filename, contentType, originalFilename, size, userID)
+	}
+
+	// Upload processed video
+	processedFile, err := os.Open(processResult.ProcessedPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open processed file: %w", err)
+	}
+	defer processedFile.Close()
+	defer os.Remove(processResult.ProcessedPath)
+
+	uploadResult, err := s.storage.Upload(ctx, storage.UploadInput{
+		File:         processedFile,
+		Filename:     filepath.Base(processResult.ProcessedPath),
+		ContentType:  "video/mp4",
+		Size:         processResult.Size,
+		GenerateName: true,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to upload processed video: %w", err)
+	}
+
+	// Upload video thumbnail if exists
+	var thumbnailURL string
+	var thumbnailPath string
+	if processResult.ThumbnailPath != "" {
+		thumbFile, err := os.Open(processResult.ThumbnailPath)
+		if err == nil {
+			defer thumbFile.Close()
+			defer os.Remove(processResult.ThumbnailPath)
+
+			thumbInfo, _ := thumbFile.Stat()
+			thumbResult, err := s.storage.Upload(ctx, storage.UploadInput{
+				File:         thumbFile,
+				Filename:     filepath.Base(processResult.ThumbnailPath),
+				ContentType:  "image/jpeg",
+				Size:         thumbInfo.Size(),
+				GenerateName: true,
+			})
+			if err == nil {
+				thumbnailURL = thumbResult.URL
+				thumbnailPath = thumbResult.Path
+			}
 		}
 	}
 
@@ -93,28 +338,29 @@ func (s *Service) UploadFile(ctx context.Context, file *multipart.FileHeader, us
 		s3Region = &uploadResult.S3Region
 	}
 
-	// Create media record - NOTE: Capital U in Url and ThumbnailUrl
+	// Create media record
 	media, err := s.queries.CreateMedia(ctx, sqlc.CreateMediaParams{
 		Filename:         uploadResult.Filename,
-		OriginalFilename: file.Filename,
-		MimeType:         contentType,
+		OriginalFilename: originalFilename,
+		MimeType:         "video/mp4",
 		SizeBytes:        uploadResult.Size,
-		Width:            intToNullInt32(uploadResult.Width),
-		Height:           intToNullInt32(uploadResult.Height),
+		Width:            intToNullInt32(processResult.Width),
+		Height:           intToNullInt32(processResult.Height),
 		StorageType:      sqlc.StorageType(s.storage.Type()),
 		StoragePath:      uploadResult.Path,
 		S3Bucket:         toNullString(s3Bucket),
 		S3Key:            toNullString(s3Key),
 		S3Region:         toNullString(s3Region),
-		Url:              toNullString(&uploadResult.URL),          // Capital U
-		ThumbnailUrl:     toNullString(&uploadResult.ThumbnailURL), // Capital U
+		Url:              toNullString(&uploadResult.URL),
+		LargeUrl:         toNullString(&uploadResult.URL), // Video uses same URL for large
+		ThumbnailUrl:     toNullString(&thumbnailURL),
+		ThumbnailPath:    toNullString(&thumbnailPath),
 		UploadedBy:       userID,
 	})
 	if err != nil {
 		s.storage.Delete(ctx, uploadResult.Path)
-		if uploadResult.ThumbnailURL != "" {
-			thumbPath := strings.TrimPrefix(uploadResult.ThumbnailURL, s.storage.GetURL(""))
-			s.storage.Delete(ctx, thumbPath)
+		if thumbnailURL != "" {
+			s.storage.Delete(ctx, thumbnailPath)
 		}
 		return nil, errors.Internal("Failed to create media record", err)
 	}
@@ -122,103 +368,47 @@ func (s *Service) UploadFile(ctx context.Context, file *multipart.FileHeader, us
 	return &media, nil
 }
 
-// processAndUpload processes media and uploads the results
-func (s *Service) processAndUpload(ctx context.Context, src io.Reader, filename, contentType string, size int64, isImage, isVideo bool) (*storage.UploadResult, error) {
-	var processResult *processing.ProcessResult
-	var err error
-
-	if isImage {
-		processResult, err = s.processor.ProcessImage(ctx, src, filename)
-		if err != nil {
-			return nil, fmt.Errorf("image processing failed: %w", err)
-		}
-	} else if isVideo {
-		// Save to temp file for video processing
-		tempPath := filepath.Join(s.processor.WorkDir(), "temp_"+filename)
-		tempFile, err := os.Create(tempPath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create temp file: %w", err)
-		}
-
-		if _, err := io.Copy(tempFile, src); err != nil {
-			tempFile.Close()
-			os.Remove(tempPath)
-			return nil, fmt.Errorf("failed to save temp file: %w", err)
-		}
-		tempFile.Close()
-
-		processResult, err = s.processor.ProcessVideo(ctx, tempPath, filename)
-		if err != nil {
-			os.Remove(tempPath)
-			return nil, fmt.Errorf("video processing failed: %w", err)
-		}
-
-		defer os.Remove(tempPath)
-	}
-
-	// Upload processed file
-	processedFile, err := os.Open(processResult.ProcessedPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open processed file: %w", err)
-	}
-	defer processedFile.Close()
-	defer os.Remove(processResult.ProcessedPath)
-
-	// Determine new content type
-	newContentType := contentType
-	if processResult.Format == "webp" {
-		newContentType = "image/webp"
-	} else if processResult.Format == "mp4" {
-		newContentType = "video/mp4"
-	}
-
+// directUploadMedia uploads a file directly without processing
+func (s *Service) directUploadMedia(ctx context.Context, src io.Reader, filename, contentType, originalFilename string, size int64, userID uuid.UUID) (*sqlc.Media, error) {
 	uploadResult, err := s.storage.Upload(ctx, storage.UploadInput{
-		File:         processedFile,
-		Filename:     filepath.Base(processResult.ProcessedPath),
-		ContentType:  newContentType,
-		Size:         processResult.Size,
-		GenerateName: true,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to upload processed file: %w", err)
-	}
-
-	uploadResult.Width = processResult.Width
-	uploadResult.Height = processResult.Height
-
-	// Upload thumbnail if exists
-	if processResult.ThumbnailPath != "" {
-		thumbFile, err := os.Open(processResult.ThumbnailPath)
-		if err == nil {
-			defer thumbFile.Close()
-			defer os.Remove(processResult.ThumbnailPath)
-
-			thumbInfo, _ := thumbFile.Stat()
-			thumbResult, err := s.storage.Upload(ctx, storage.UploadInput{
-				File:         thumbFile,
-				Filename:     filepath.Base(processResult.ThumbnailPath),
-				ContentType:  "image/webp",
-				Size:         thumbInfo.Size(),
-				GenerateName: true,
-			})
-			if err == nil {
-				uploadResult.ThumbnailURL = thumbResult.URL
-			}
-		}
-	}
-
-	return uploadResult, nil
-}
-
-// directUpload uploads a file directly without processing
-func (s *Service) directUpload(ctx context.Context, src io.Reader, filename, contentType string, size int64) (*storage.UploadResult, error) {
-	return s.storage.Upload(ctx, storage.UploadInput{
 		File:         src,
 		Filename:     filename,
 		ContentType:  contentType,
 		Size:         size,
 		GenerateName: true,
 	})
+	if err != nil {
+		return nil, errors.Internal("Failed to upload file", err)
+	}
+
+	// Determine storage type values
+	var s3Bucket, s3Key, s3Region *string
+	if s.storage.Type() == storage.StorageTypeS3 {
+		s3Bucket = &uploadResult.S3Bucket
+		s3Key = &uploadResult.S3Key
+		s3Region = &uploadResult.S3Region
+	}
+
+	media, err := s.queries.CreateMedia(ctx, sqlc.CreateMediaParams{
+		Filename:         uploadResult.Filename,
+		OriginalFilename: originalFilename,
+		MimeType:         contentType,
+		SizeBytes:        uploadResult.Size,
+		StorageType:      sqlc.StorageType(s.storage.Type()),
+		StoragePath:      uploadResult.Path,
+		S3Bucket:         toNullString(s3Bucket),
+		S3Key:            toNullString(s3Key),
+		S3Region:         toNullString(s3Region),
+		Url:              toNullString(&uploadResult.URL),
+		LargeUrl:         toNullString(&uploadResult.URL),
+		UploadedBy:       userID,
+	})
+	if err != nil {
+		s.storage.Delete(ctx, uploadResult.Path)
+		return nil, errors.Internal("Failed to create media record", err)
+	}
+
+	return &media, nil
 }
 
 // GetMediaByID retrieves a media record by ID
@@ -242,7 +432,7 @@ func (s *Service) ListMedia(ctx context.Context, limit, offset int32) ([]sqlc.Me
 	return media, nil
 }
 
-// DeleteMedia soft deletes a media record and removes file from storage
+// DeleteMedia soft deletes a media record and removes files from storage
 func (s *Service) DeleteMedia(ctx context.Context, id uuid.UUID, userID uuid.UUID) error {
 	media, err := s.queries.GetMediaByID(ctx, id)
 	if err != nil {
@@ -253,16 +443,23 @@ func (s *Service) DeleteMedia(ctx context.Context, id uuid.UUID, userID uuid.UUI
 		return errors.Forbidden("Cannot delete media uploaded by another user", "forbidden")
 	}
 
-	if err := s.storage.Delete(ctx, media.StoragePath); err != nil {
-		fmt.Printf("Warning: failed to delete file from storage: %v\n", err)
+	// Delete all variant files
+	if media.OriginalPath.Valid && media.OriginalPath.String != "" {
+		s.storage.Delete(ctx, media.OriginalPath.String)
+	}
+	if media.LargePath.Valid && media.LargePath.String != "" {
+		s.storage.Delete(ctx, media.LargePath.String)
+	}
+	if media.MediumPath.Valid && media.MediumPath.String != "" {
+		s.storage.Delete(ctx, media.MediumPath.String)
+	}
+	if media.ThumbnailPath.Valid && media.ThumbnailPath.String != "" {
+		s.storage.Delete(ctx, media.ThumbnailPath.String)
 	}
 
-	// NOTE: Capital U in ThumbnailUrl
-	if media.ThumbnailUrl.Valid && media.ThumbnailUrl.String != "" {
-		thumbPath := strings.TrimPrefix(media.ThumbnailUrl.String, s.storage.GetURL(""))
-		if err := s.storage.Delete(ctx, thumbPath); err != nil {
-			fmt.Printf("Warning: failed to delete thumbnail from storage: %v\n", err)
-		}
+	// Delete from old storage_path field for backwards compatibility
+	if media.StoragePath != "" {
+		s.storage.Delete(ctx, media.StoragePath)
 	}
 
 	if err := s.queries.SoftDeleteMedia(ctx, id); err != nil {
@@ -279,16 +476,18 @@ func (s *Service) HardDeleteMedia(ctx context.Context, id uuid.UUID) error {
 		return errors.NotFound("Media not found", "media_not_found")
 	}
 
-	if err := s.storage.Delete(ctx, media.StoragePath); err != nil {
-		fmt.Printf("Warning: failed to delete file from storage: %v\n", err)
+	// Delete all variant files
+	if media.OriginalPath.Valid && media.OriginalPath.String != "" {
+		s.storage.Delete(ctx, media.OriginalPath.String)
 	}
-
-	// NOTE: Capital U in ThumbnailUrl
-	if media.ThumbnailUrl.Valid && media.ThumbnailUrl.String != "" {
-		thumbPath := strings.TrimPrefix(media.ThumbnailUrl.String, s.storage.GetURL(""))
-		if err := s.storage.Delete(ctx, thumbPath); err != nil {
-			fmt.Printf("Warning: failed to delete thumbnail from storage: %v\n", err)
-		}
+	if media.LargePath.Valid && media.LargePath.String != "" {
+		s.storage.Delete(ctx, media.LargePath.String)
+	}
+	if media.MediumPath.Valid && media.MediumPath.String != "" {
+		s.storage.Delete(ctx, media.MediumPath.String)
+	}
+	if media.ThumbnailPath.Valid && media.ThumbnailPath.String != "" {
+		s.storage.Delete(ctx, media.ThumbnailPath.String)
 	}
 
 	if err := s.queries.HardDeleteMedia(ctx, id); err != nil {
@@ -349,7 +548,7 @@ type MediaStats struct {
 
 // validateFile validates uploaded file
 func (s *Service) validateFile(file *multipart.FileHeader) error {
-	maxSize := int64(50 << 20) // 50MB
+	maxSize := int64(100 << 20) // 100MB
 	if processing.IsVideoFile(file.Filename) {
 		maxSize = 200 << 20 // 200MB
 	}

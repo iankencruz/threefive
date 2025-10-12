@@ -321,7 +321,7 @@ const filteredMedia = $derived(
 	>
 		<div class="flex min-h-screen items-center justify-center p-4">
 			<div
-				class="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+				class="fixed inset-0 bg-black/50 transition-opacity"
 			></div>
 
 			<div
@@ -465,7 +465,7 @@ const filteredMedia = $derived(
 									</div>
 
 									<!-- Info Overlay -->
-									<div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-opacity flex items-end">
+									<div class="absolute inset-0 bg-black/15  group-hover:bg-opacity-50 transition-opacity flex items-end">
 										<div class="w-full p-3 text-white opacity-0 group-hover:opacity-100 transition-opacity">
 											<p class="text-sm font-medium truncate">{m.original_filename}</p>
 											<p class="text-xs">{formatFileSize(m.size_bytes)}</p>

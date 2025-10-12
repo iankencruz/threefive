@@ -14,7 +14,14 @@ INSERT INTO media (
     s3_key, 
     s3_region,
     url,
+    original_url,
+    large_url,
+    medium_url,
     thumbnail_url,
+    original_path,
+    large_path,
+    medium_path,
+    thumbnail_path,
     uploaded_by
 )
 VALUES (
@@ -30,7 +37,14 @@ VALUES (
     @s3_key, 
     @s3_region,
     @url,
+    @original_url,
+    @large_url,
+    @medium_url,
     @thumbnail_url,
+    @original_path,
+    @large_path,
+    @medium_path,
+    @thumbnail_path,
     @uploaded_by
 )
 RETURNING *;

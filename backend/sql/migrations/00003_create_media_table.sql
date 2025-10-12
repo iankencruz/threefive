@@ -20,8 +20,20 @@ CREATE TABLE media (
     s3_bucket VARCHAR(255),
     s3_key TEXT,
     s3_region VARCHAR(50),
-    url TEXT,
+    
+    -- URL fields for different variants
+    url TEXT, -- Deprecated - kept for backwards compatibility
+    original_url TEXT,
+    large_url TEXT,
+    medium_url TEXT,
     thumbnail_url TEXT,
+    
+    -- Path fields for different variants
+    original_path TEXT,
+    large_path TEXT,
+    medium_path TEXT,
+    thumbnail_path TEXT,
+    
     uploaded_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -35,7 +47,17 @@ CREATE INDEX idx_media_mime_type ON media(mime_type);
 CREATE INDEX idx_media_storage_type ON media(storage_type);
 CREATE INDEX idx_media_deleted_at ON media(deleted_at) WHERE deleted_at IS NULL;
 CREATE INDEX idx_media_url ON media(url) WHERE url IS NOT NULL;
+CREATE INDEX idx_media_original_url ON media(original_url) WHERE original_url IS NOT NULL;
+CREATE INDEX idx_media_large_url ON media(large_url) WHERE large_url IS NOT NULL;
+CREATE INDEX idx_media_medium_url ON media(medium_url) WHERE medium_url IS NOT NULL;
 CREATE INDEX idx_media_thumbnail_url ON media(thumbnail_url) WHERE thumbnail_url IS NOT NULL;
+
+-- Comments explaining the columns
+COMMENT ON COLUMN media.url IS 'Deprecated - use variant-specific URLs instead';
+COMMENT ON COLUMN media.original_url IS 'URL to original unprocessed file';
+COMMENT ON COLUMN media.large_url IS 'URL to large variant (1920px) - for hero sections';
+COMMENT ON COLUMN media.medium_url IS 'URL to medium variant (1024px) - for general content';
+COMMENT ON COLUMN media.thumbnail_url IS 'URL to thumbnail variant (300px) - for previews';
 
 -- Media relationships table (polymorphic)
 CREATE TABLE media_relations (

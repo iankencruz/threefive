@@ -91,6 +91,8 @@ function addFiles(files: File[]) {
 	});
 }
 
+// Replace the uploadFile function in your admin/media/+page.svelte
+
 async function uploadFile(uploadState: UploadState) {
 	const formData = new FormData();
 	formData.append("file", uploadState.file);
@@ -100,10 +102,19 @@ async function uploadFile(uploadState: UploadState) {
 
 		xhr.upload.addEventListener("progress", (e) => {
 			if (e.lengthComputable) {
-				uploadState.progress = Math.round((e.loaded / e.total) * 100);
+				const progress = Math.round((e.loaded / e.total) * 100);
 
-				if (uploadState.progress === 100) {
-					uploadState.status = "processing";
+				// Find the index and update the specific upload state
+				const index = uploads.findIndex((u) => u.file === uploadState.file);
+				if (index !== -1) {
+					uploads[index].progress = progress;
+
+					if (progress === 100) {
+						uploads[index].status = "processing";
+					}
+
+					// Trigger reactivity
+					uploads = uploads;
 				}
 			}
 		});
@@ -127,13 +138,29 @@ async function uploadFile(uploadState: UploadState) {
 			xhr.send(formData);
 		});
 
-		uploadState.status = "success";
-		uploadState.media = uploadedMedia;
+		// Find and update the upload state to success
+		const index = uploads.findIndex((u) => u.file === uploadState.file);
+		if (index !== -1) {
+			uploads[index].status = "success";
+			uploads[index].media = uploadedMedia;
+			uploads = uploads;
+		}
+
+		// Add to media list
 		media = [uploadedMedia, ...media];
+
+		// Remove from uploads after 2 seconds
+		setTimeout(() => {
+			uploads = uploads.filter((u) => u.file !== uploadState.file);
+		}, 2000);
 	} catch (error) {
-		uploadState.status = "error";
-		uploadState.error =
-			error instanceof Error ? error.message : "Upload failed";
+		const index = uploads.findIndex((u) => u.file === uploadState.file);
+		if (index !== -1) {
+			uploads[index].status = "error";
+			uploads[index].error =
+				error instanceof Error ? error.message : "Upload failed";
+			uploads = uploads;
+		}
 	}
 }
 

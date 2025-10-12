@@ -20,7 +20,7 @@ const formatDate = (dateString: string) => {
 </svelte:head>
 
 <!-- Preview Banner - Sticky at top -->
-<div class="sticky top-0 z-50 bg-yellow-500 text-black px-4 py-3 shadow-lg">
+<div class="@container sticky top-0 z-50 bg-yellow-500 text-black px-4 py-3 shadow-lg">
 	<div class="max-w-7xl mx-auto flex items-center justify-between">
 		<div class="flex items-center gap-3">
 			<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

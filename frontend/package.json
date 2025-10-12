@@ -37,6 +37,7 @@
     "@tiptap/extension-image": "^3.6.5",
     "@tiptap/extension-underline": "^3.6.5",
     "@tiptap/starter-kit": "^3.6.5",
-    "lucide-svelte": "^0.545.0"
+    "lucide-svelte": "^0.545.0",
+    "svelte-sonner": "^1.0.5"
   }
 }

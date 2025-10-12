@@ -176,24 +176,36 @@ type Blocks struct {
 }
 
 type Media struct {
-	ID               uuid.UUID          `json:"id"`
-	Filename         string             `json:"filename"`
-	OriginalFilename string             `json:"original_filename"`
-	MimeType         string             `json:"mime_type"`
-	SizeBytes        int64              `json:"size_bytes"`
-	Width            pgtype.Int4        `json:"width"`
-	Height           pgtype.Int4        `json:"height"`
-	StorageType      StorageType        `json:"storage_type"`
-	StoragePath      string             `json:"storage_path"`
-	S3Bucket         pgtype.Text        `json:"s3_bucket"`
-	S3Key            pgtype.Text        `json:"s3_key"`
-	S3Region         pgtype.Text        `json:"s3_region"`
-	Url              pgtype.Text        `json:"url"`
-	ThumbnailUrl     pgtype.Text        `json:"thumbnail_url"`
-	UploadedBy       uuid.UUID          `json:"uploaded_by"`
-	CreatedAt        time.Time          `json:"created_at"`
-	UpdatedAt        time.Time          `json:"updated_at"`
-	DeletedAt        pgtype.Timestamptz `json:"deleted_at"`
+	ID               uuid.UUID   `json:"id"`
+	Filename         string      `json:"filename"`
+	OriginalFilename string      `json:"original_filename"`
+	MimeType         string      `json:"mime_type"`
+	SizeBytes        int64       `json:"size_bytes"`
+	Width            pgtype.Int4 `json:"width"`
+	Height           pgtype.Int4 `json:"height"`
+	StorageType      StorageType `json:"storage_type"`
+	StoragePath      string      `json:"storage_path"`
+	S3Bucket         pgtype.Text `json:"s3_bucket"`
+	S3Key            pgtype.Text `json:"s3_key"`
+	S3Region         pgtype.Text `json:"s3_region"`
+	// Deprecated - use variant-specific URLs instead
+	Url pgtype.Text `json:"url"`
+	// URL to original unprocessed file
+	OriginalUrl pgtype.Text `json:"original_url"`
+	// URL to large variant (1920px) - for hero sections
+	LargeUrl pgtype.Text `json:"large_url"`
+	// URL to medium variant (1024px) - for general content
+	MediumUrl pgtype.Text `json:"medium_url"`
+	// URL to thumbnail variant (300px) - for previews
+	ThumbnailUrl  pgtype.Text        `json:"thumbnail_url"`
+	OriginalPath  pgtype.Text        `json:"original_path"`
+	LargePath     pgtype.Text        `json:"large_path"`
+	MediumPath    pgtype.Text        `json:"medium_path"`
+	ThumbnailPath pgtype.Text        `json:"thumbnail_path"`
+	UploadedBy    uuid.UUID          `json:"uploaded_by"`
+	CreatedAt     time.Time          `json:"created_at"`
+	UpdatedAt     time.Time          `json:"updated_at"`
+	DeletedAt     pgtype.Timestamptz `json:"deleted_at"`
 }
 
 type MediaRelations struct {

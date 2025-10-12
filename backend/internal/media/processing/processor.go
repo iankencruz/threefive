@@ -65,6 +65,21 @@ type ProcessResult struct {
 	Format        string
 }
 
+// ImageVariants contains all generated image sizes
+type ImageVariants struct {
+	Original  *ProcessResult
+	Large     *ProcessResult
+	Medium    *ProcessResult
+	Thumbnail *ProcessResult
+}
+
+// VariantConfig holds size configurations for each variant
+type VariantConfig struct {
+	Name      string
+	MaxWidth  int
+	MaxHeight int
+}
+
 // Processor handles media processing operations
 type Processor struct {
 	config     ProcessorConfig
@@ -97,7 +112,94 @@ func NewProcessor(config ProcessorConfig, workDir string) (*Processor, error) {
 	}, nil
 }
 
-// ProcessImage processes an image file (converts to WebP)
+// DefaultVariants returns the default variant configurations
+func DefaultVariants() []VariantConfig {
+	return []VariantConfig{
+		{Name: "original", MaxWidth: 0, MaxHeight: 0},      // No resize
+		{Name: "large", MaxWidth: 1920, MaxHeight: 1920},   // For hero sections
+		{Name: "medium", MaxWidth: 1024, MaxHeight: 1024},  // For content
+		{Name: "thumbnail", MaxWidth: 300, MaxHeight: 300}, // For previews
+	}
+}
+
+// ProcessImageVariants processes an image and generates all variants
+func (p *Processor) ProcessImageVariants(ctx context.Context, input io.Reader, filename string) (*ImageVariants, error) {
+	// Decode original image
+	img, format, err := image.Decode(input)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode image: %w", err)
+	}
+
+	bounds := img.Bounds()
+	originalWidth := bounds.Dx()
+	originalHeight := bounds.Dy()
+
+	baseFilename := strings.TrimSuffix(filename, filepath.Ext(filename))
+
+	variants := &ImageVariants{}
+
+	// Generate each variant
+	for _, config := range DefaultVariants() {
+		var processedImg image.Image
+		var width, height int
+
+		if config.MaxWidth == 0 && config.MaxHeight == 0 {
+			// Original - no resizing
+			processedImg = img
+			width = originalWidth
+			height = originalHeight
+		} else {
+			// Resize
+			processedImg = p.resizeImageToMax(img, originalWidth, originalHeight, config.MaxWidth, config.MaxHeight)
+			bounds := processedImg.Bounds()
+			width = bounds.Dx()
+			height = bounds.Dy()
+		}
+
+		// Encode as WebP
+		variantFilename := fmt.Sprintf("%s_%s.webp", baseFilename, config.Name)
+		variantPath := filepath.Join(p.workDir, variantFilename)
+
+		if err := p.encodeWebP(processedImg, variantPath); err != nil {
+			return nil, fmt.Errorf("failed to encode %s variant: %w", config.Name, err)
+		}
+
+		fileInfo, err := os.Stat(variantPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to stat %s variant: %w", config.Name, err)
+		}
+
+		result := &ProcessResult{
+			ProcessedPath: variantPath,
+			Width:         width,
+			Height:        height,
+			Size:          fileInfo.Size(),
+			Format:        "webp",
+		}
+
+		// Assign to appropriate variant
+		switch config.Name {
+		case "original":
+			variants.Original = result
+		case "large":
+			variants.Large = result
+		case "medium":
+			variants.Medium = result
+		case "thumbnail":
+			variants.Thumbnail = result
+		}
+	}
+
+	fmt.Printf("✅ Generated image variants for %s (original format: %s)\n", filename, format)
+	fmt.Printf("   Original: %dx%d (%d bytes)\n", variants.Original.Width, variants.Original.Height, variants.Original.Size)
+	fmt.Printf("   Large: %dx%d (%d bytes)\n", variants.Large.Width, variants.Large.Height, variants.Large.Size)
+	fmt.Printf("   Medium: %dx%d (%d bytes)\n", variants.Medium.Width, variants.Medium.Height, variants.Medium.Size)
+	fmt.Printf("   Thumbnail: %dx%d (%d bytes)\n", variants.Thumbnail.Width, variants.Thumbnail.Height, variants.Thumbnail.Size)
+
+	return variants, nil
+}
+
+// ProcessImage processes an image file (converts to WebP) - DEPRECATED, use ProcessImageVariants
 func (p *Processor) ProcessImage(ctx context.Context, input io.Reader, filename string) (*ProcessResult, error) {
 	img, format, err := image.Decode(input)
 	if err != nil {
@@ -194,7 +296,7 @@ func (p *Processor) ProcessVideo(ctx context.Context, inputPath, filename string
 		}
 	}
 
-	args = append(args, "-movflags", "+faststart", outputPath)
+	args = append(args, "-movflags", "+faststart", "-y", outputPath)
 
 	cmd := exec.CommandContext(ctx, p.ffmpegCmd, args...)
 	if output, err := cmd.CombinedOutput(); err != nil {
@@ -265,6 +367,35 @@ func (p *Processor) resizeImage(img image.Image, width, height int) image.Image 
 	return resized
 }
 
+// resizeImageToMax resizes an image to fit within max dimensions while maintaining aspect ratio
+func (p *Processor) resizeImageToMax(img image.Image, width, height, maxW, maxH int) image.Image {
+	// If image is already smaller, return as-is
+	if width <= maxW && height <= maxH {
+		return img
+	}
+
+	ratio := float64(width) / float64(height)
+	newWidth := maxW
+	newHeight := int(float64(newWidth) / ratio)
+
+	if newHeight > maxH {
+		newHeight = maxH
+		newWidth = int(float64(newHeight) * ratio)
+	}
+
+	resized := image.NewRGBA(image.Rect(0, 0, newWidth, newHeight))
+
+	for y := 0; y < newHeight; y++ {
+		for x := 0; x < newWidth; x++ {
+			srcX := x * width / newWidth
+			srcY := y * height / newHeight
+			resized.Set(x, y, img.At(srcX, srcY))
+		}
+	}
+
+	return resized
+}
+
 // generateImageThumbnail generates a thumbnail for an image
 func (p *Processor) generateImageThumbnail(img image.Image, baseFilename string) (string, error) {
 	thumbImg := p.resizeToThumbnail(img)
@@ -290,6 +421,7 @@ func (p *Processor) generateVideoThumbnail(ctx context.Context, videoPath, baseF
 		"-vframes", "1",
 		"-vf", fmt.Sprintf("scale=%d:%d:force_original_aspect_ratio=decrease",
 			p.config.ThumbnailWidth, p.config.ThumbnailHeight),
+		"-y",
 		thumbPath,
 	}
 

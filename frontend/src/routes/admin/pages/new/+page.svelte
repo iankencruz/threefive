@@ -2,6 +2,7 @@
 <script lang="ts">
 import { goto } from "$app/navigation";
 import BlockEditor from "$lib/components/blocks/BlockEditor.svelte";
+import { toast } from "svelte-sonner";
 
 type PageType = "generic" | "project" | "blog";
 type PageStatus = "draft" | "published";
@@ -113,6 +114,7 @@ const handleSubmit = async () => {
 			return;
 		}
 
+		toast.success("Page Created");
 		goto("/admin/pages");
 	} catch (error) {
 		errors.general = "An unexpected error occurred";
