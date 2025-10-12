@@ -1,3 +1,5 @@
+-- backend/sql/migrations/00003_create_media_table.sql
+
 -- +goose Up
 -- +goose StatementBegin
 
@@ -15,11 +17,13 @@ CREATE TABLE media (
     height INTEGER,
     storage_type storage_type NOT NULL DEFAULT 'local',
     storage_path TEXT NOT NULL,
+    thumbnail_path TEXT,
+    medium_path TEXT,
+    large_path TEXT,
+    path TEXT,
     s3_bucket VARCHAR(255),
     s3_key TEXT,
     s3_region VARCHAR(50),
-    url TEXT,
-    thumbnail_url TEXT,
     uploaded_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

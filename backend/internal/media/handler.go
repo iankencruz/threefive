@@ -29,12 +29,11 @@ func NewHandler(db *pgxpool.Pool, queries *sqlc.Queries, storage storage.Storage
 // UploadHandler handles file uploads
 // POST /api/v1/media/upload
 func (h *Handler) UploadHandler(w http.ResponseWriter, r *http.Request) {
-
 	// ✅ Get user from context using auth helper
 	user := auth.MustGetUserFromContext(r.Context())
 
-	// Parse multipart form (max 50MB)
-	if err := r.ParseMultipartForm(50 << 20); err != nil {
+	// Parse multipart form (max 100MB)
+	if err := r.ParseMultipartForm(100 << 20); err != nil {
 		respondError(w, http.StatusBadRequest, "failed to parse form: "+err.Error())
 		return
 	}
@@ -112,7 +111,6 @@ func (h *Handler) ListMediaHandler(w http.ResponseWriter, r *http.Request) {
 // DeleteMediaHandler soft deletes media
 // DELETE /api/v1/media/{id}
 func (h *Handler) DeleteMediaHandler(w http.ResponseWriter, r *http.Request) {
-
 	// ✅ Get user from context using auth helper
 	user := auth.MustGetUserFromContext(r.Context())
 

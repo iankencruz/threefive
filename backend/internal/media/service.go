@@ -221,14 +221,30 @@ func (s *Service) GetMediaStats(ctx context.Context) (*sqlc.GetMediaStatsRow, er
 // Validation helpers
 
 func (s *Service) validateFile(file *multipart.FileHeader) error {
-	// Max file size: 50MB
-	const maxFileSize = 50 * 1024 * 1024
+	ext := strings.ToLower(filepath.Ext(file.Filename))
+
+	// Different size limits based on file type
+	var maxFileSize int64
+	videoExtensions := map[string]bool{".mp4": true, ".mov": true, ".avi": true}
+
+	if videoExtensions[ext] {
+		maxFileSize = 200 * 1024 * 1024 // 200MB for videos
+	} else {
+		maxFileSize = 50 * 1024 * 1024 // 50MB for images/docs
+	}
+
 	if file.Size > maxFileSize {
-		return errors.BadRequest("File size exceeds 50MB limit", "file_too_large")
+		fileType := "file"
+		if videoExtensions[ext] {
+			fileType = "video"
+		}
+		return errors.BadRequest(
+			fmt.Sprintf("File size exceeds %dMB limit for %ss", maxFileSize/(1024*1024), fileType),
+			"file_too_large",
+		)
 	}
 
 	// Validate file extension
-	ext := strings.ToLower(filepath.Ext(file.Filename))
 	allowedExtensions := map[string]bool{
 		".jpg":  true,
 		".jpeg": true,

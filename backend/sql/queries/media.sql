@@ -1,3 +1,5 @@
+-- backend/sql/queries/media.sql
+
 -- name: CreateMedia :one
 INSERT INTO media (
     filename, 
@@ -8,11 +10,13 @@ INSERT INTO media (
     height,
     storage_type, 
     storage_path, 
+    thumbnail_path,
+    medium_path,
+    large_path,
+    path,
     s3_bucket, 
     s3_key, 
     s3_region,
-    url,
-    thumbnail_url,
     uploaded_by
 )
 VALUES (
@@ -23,12 +27,14 @@ VALUES (
     @width, 
     @height,
     @storage_type, 
-    @storage_path, 
+    @storage_path,
+    @thumbnail_path,
+    @medium_path,
+    @large_path,
+    @path,
     @s3_bucket, 
     @s3_key, 
     @s3_region,
-    @url,
-    @thumbnail_url,
     @uploaded_by
 )
 RETURNING *;
@@ -53,8 +59,11 @@ UPDATE media
 SET 
     filename = COALESCE(@filename, filename),
     original_filename = COALESCE(@original_filename, original_filename),
-    url = COALESCE(@url, url),
-    thumbnail_url = COALESCE(@thumbnail_url, thumbnail_url),
+    storage_path = COALESCE(@storage_path, storage_path),
+    thumbnail_path = COALESCE(@thumbnail_path, thumbnail_path),
+    medium_path = COALESCE(@medium_path, medium_path),
+    large_path = COALESCE(@large_path, large_path),
+    path = COALESCE(@path, path),
     updated_at = NOW()
 WHERE id = @id AND deleted_at IS NULL
 RETURNING *;
