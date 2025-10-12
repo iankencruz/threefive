@@ -14,6 +14,7 @@ import (
 )
 
 const createMedia = `-- name: CreateMedia :one
+
 INSERT INTO media (
     filename, 
     original_filename, 
@@ -23,11 +24,13 @@ INSERT INTO media (
     height,
     storage_type, 
     storage_path, 
+    thumbnail_path,
+    medium_path,
+    large_path,
+    path,
     s3_bucket, 
     s3_key, 
     s3_region,
-    url,
-    thumbnail_url,
     uploaded_by
 )
 VALUES (
@@ -38,15 +41,17 @@ VALUES (
     $5, 
     $6,
     $7, 
-    $8, 
-    $9, 
-    $10, 
+    $8,
+    $9,
+    $10,
     $11,
     $12,
-    $13,
-    $14
+    $13, 
+    $14, 
+    $15,
+    $16
 )
-RETURNING id, filename, original_filename, mime_type, size_bytes, width, height, storage_type, storage_path, s3_bucket, s3_key, s3_region, url, thumbnail_url, uploaded_by, created_at, updated_at, deleted_at
+RETURNING id, filename, original_filename, mime_type, size_bytes, width, height, storage_type, storage_path, thumbnail_path, medium_path, large_path, path, s3_bucket, s3_key, s3_region, uploaded_by, created_at, updated_at, deleted_at
 `
 
 type CreateMediaParams struct {
@@ -58,14 +63,17 @@ type CreateMediaParams struct {
 	Height           pgtype.Int4 `json:"height"`
 	StorageType      StorageType `json:"storage_type"`
 	StoragePath      string      `json:"storage_path"`
+	ThumbnailPath    pgtype.Text `json:"thumbnail_path"`
+	MediumPath       pgtype.Text `json:"medium_path"`
+	LargePath        pgtype.Text `json:"large_path"`
+	Path             pgtype.Text `json:"path"`
 	S3Bucket         pgtype.Text `json:"s3_bucket"`
 	S3Key            pgtype.Text `json:"s3_key"`
 	S3Region         pgtype.Text `json:"s3_region"`
-	Url              pgtype.Text `json:"url"`
-	ThumbnailUrl     pgtype.Text `json:"thumbnail_url"`
 	UploadedBy       uuid.UUID   `json:"uploaded_by"`
 }
 
+// backend/sql/queries/media.sql
 func (q *Queries) CreateMedia(ctx context.Context, arg CreateMediaParams) (Media, error) {
 	row := q.db.QueryRow(ctx, createMedia,
 		arg.Filename,
@@ -76,11 +84,13 @@ func (q *Queries) CreateMedia(ctx context.Context, arg CreateMediaParams) (Media
 		arg.Height,
 		arg.StorageType,
 		arg.StoragePath,
+		arg.ThumbnailPath,
+		arg.MediumPath,
+		arg.LargePath,
+		arg.Path,
 		arg.S3Bucket,
 		arg.S3Key,
 		arg.S3Region,
-		arg.Url,
-		arg.ThumbnailUrl,
 		arg.UploadedBy,
 	)
 	var i Media
@@ -94,11 +104,13 @@ func (q *Queries) CreateMedia(ctx context.Context, arg CreateMediaParams) (Media
 		&i.Height,
 		&i.StorageType,
 		&i.StoragePath,
+		&i.ThumbnailPath,
+		&i.MediumPath,
+		&i.LargePath,
+		&i.Path,
 		&i.S3Bucket,
 		&i.S3Key,
 		&i.S3Region,
-		&i.Url,
-		&i.ThumbnailUrl,
 		&i.UploadedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -147,7 +159,7 @@ func (q *Queries) GetEntitiesForMedia(ctx context.Context, mediaID uuid.UUID) ([
 }
 
 const getMediaByID = `-- name: GetMediaByID :one
-SELECT id, filename, original_filename, mime_type, size_bytes, width, height, storage_type, storage_path, s3_bucket, s3_key, s3_region, url, thumbnail_url, uploaded_by, created_at, updated_at, deleted_at FROM media
+SELECT id, filename, original_filename, mime_type, size_bytes, width, height, storage_type, storage_path, thumbnail_path, medium_path, large_path, path, s3_bucket, s3_key, s3_region, uploaded_by, created_at, updated_at, deleted_at FROM media
 WHERE id = $1 AND deleted_at IS NULL
 `
 
@@ -164,11 +176,13 @@ func (q *Queries) GetMediaByID(ctx context.Context, id uuid.UUID) (Media, error)
 		&i.Height,
 		&i.StorageType,
 		&i.StoragePath,
+		&i.ThumbnailPath,
+		&i.MediumPath,
+		&i.LargePath,
+		&i.Path,
 		&i.S3Bucket,
 		&i.S3Key,
 		&i.S3Region,
-		&i.Url,
-		&i.ThumbnailUrl,
 		&i.UploadedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -178,7 +192,7 @@ func (q *Queries) GetMediaByID(ctx context.Context, id uuid.UUID) (Media, error)
 }
 
 const getMediaForEntity = `-- name: GetMediaForEntity :many
-SELECT m.id, m.filename, m.original_filename, m.mime_type, m.size_bytes, m.width, m.height, m.storage_type, m.storage_path, m.s3_bucket, m.s3_key, m.s3_region, m.url, m.thumbnail_url, m.uploaded_by, m.created_at, m.updated_at, m.deleted_at
+SELECT m.id, m.filename, m.original_filename, m.mime_type, m.size_bytes, m.width, m.height, m.storage_type, m.storage_path, m.thumbnail_path, m.medium_path, m.large_path, m.path, m.s3_bucket, m.s3_key, m.s3_region, m.uploaded_by, m.created_at, m.updated_at, m.deleted_at
 FROM media m
 INNER JOIN media_relations mr ON m.id = mr.media_id
 WHERE mr.entity_type = $1 
@@ -211,11 +225,13 @@ func (q *Queries) GetMediaForEntity(ctx context.Context, arg GetMediaForEntityPa
 			&i.Height,
 			&i.StorageType,
 			&i.StoragePath,
+			&i.ThumbnailPath,
+			&i.MediumPath,
+			&i.LargePath,
+			&i.Path,
 			&i.S3Bucket,
 			&i.S3Key,
 			&i.S3Region,
-			&i.Url,
-			&i.ThumbnailUrl,
 			&i.UploadedBy,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -299,7 +315,7 @@ func (q *Queries) LinkMediaToEntity(ctx context.Context, arg LinkMediaToEntityPa
 }
 
 const listMedia = `-- name: ListMedia :many
-SELECT id, filename, original_filename, mime_type, size_bytes, width, height, storage_type, storage_path, s3_bucket, s3_key, s3_region, url, thumbnail_url, uploaded_by, created_at, updated_at, deleted_at FROM media
+SELECT id, filename, original_filename, mime_type, size_bytes, width, height, storage_type, storage_path, thumbnail_path, medium_path, large_path, path, s3_bucket, s3_key, s3_region, uploaded_by, created_at, updated_at, deleted_at FROM media
 WHERE deleted_at IS NULL
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $1
@@ -329,11 +345,13 @@ func (q *Queries) ListMedia(ctx context.Context, arg ListMediaParams) ([]Media, 
 			&i.Height,
 			&i.StorageType,
 			&i.StoragePath,
+			&i.ThumbnailPath,
+			&i.MediumPath,
+			&i.LargePath,
+			&i.Path,
 			&i.S3Bucket,
 			&i.S3Key,
 			&i.S3Region,
-			&i.Url,
-			&i.ThumbnailUrl,
 			&i.UploadedBy,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -350,7 +368,7 @@ func (q *Queries) ListMedia(ctx context.Context, arg ListMediaParams) ([]Media, 
 }
 
 const listMediaByUser = `-- name: ListMediaByUser :many
-SELECT id, filename, original_filename, mime_type, size_bytes, width, height, storage_type, storage_path, s3_bucket, s3_key, s3_region, url, thumbnail_url, uploaded_by, created_at, updated_at, deleted_at FROM media
+SELECT id, filename, original_filename, mime_type, size_bytes, width, height, storage_type, storage_path, thumbnail_path, medium_path, large_path, path, s3_bucket, s3_key, s3_region, uploaded_by, created_at, updated_at, deleted_at FROM media
 WHERE uploaded_by = $1 AND deleted_at IS NULL
 ORDER BY created_at DESC
 `
@@ -374,11 +392,13 @@ func (q *Queries) ListMediaByUser(ctx context.Context, uploadedBy uuid.UUID) ([]
 			&i.Height,
 			&i.StorageType,
 			&i.StoragePath,
+			&i.ThumbnailPath,
+			&i.MediumPath,
+			&i.LargePath,
+			&i.Path,
 			&i.S3Bucket,
 			&i.S3Key,
 			&i.S3Region,
-			&i.Url,
-			&i.ThumbnailUrl,
 			&i.UploadedBy,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -428,18 +448,24 @@ UPDATE media
 SET 
     filename = COALESCE($1, filename),
     original_filename = COALESCE($2, original_filename),
-    url = COALESCE($3, url),
-    thumbnail_url = COALESCE($4, thumbnail_url),
+    storage_path = COALESCE($3, storage_path),
+    thumbnail_path = COALESCE($4, thumbnail_path),
+    medium_path = COALESCE($5, medium_path),
+    large_path = COALESCE($6, large_path),
+    path = COALESCE($7, path),
     updated_at = NOW()
-WHERE id = $5 AND deleted_at IS NULL
-RETURNING id, filename, original_filename, mime_type, size_bytes, width, height, storage_type, storage_path, s3_bucket, s3_key, s3_region, url, thumbnail_url, uploaded_by, created_at, updated_at, deleted_at
+WHERE id = $8 AND deleted_at IS NULL
+RETURNING id, filename, original_filename, mime_type, size_bytes, width, height, storage_type, storage_path, thumbnail_path, medium_path, large_path, path, s3_bucket, s3_key, s3_region, uploaded_by, created_at, updated_at, deleted_at
 `
 
 type UpdateMediaParams struct {
 	Filename         string      `json:"filename"`
 	OriginalFilename string      `json:"original_filename"`
-	Url              pgtype.Text `json:"url"`
-	ThumbnailUrl     pgtype.Text `json:"thumbnail_url"`
+	StoragePath      string      `json:"storage_path"`
+	ThumbnailPath    pgtype.Text `json:"thumbnail_path"`
+	MediumPath       pgtype.Text `json:"medium_path"`
+	LargePath        pgtype.Text `json:"large_path"`
+	Path             pgtype.Text `json:"path"`
 	ID               uuid.UUID   `json:"id"`
 }
 
@@ -447,8 +473,11 @@ func (q *Queries) UpdateMedia(ctx context.Context, arg UpdateMediaParams) (Media
 	row := q.db.QueryRow(ctx, updateMedia,
 		arg.Filename,
 		arg.OriginalFilename,
-		arg.Url,
-		arg.ThumbnailUrl,
+		arg.StoragePath,
+		arg.ThumbnailPath,
+		arg.MediumPath,
+		arg.LargePath,
+		arg.Path,
 		arg.ID,
 	)
 	var i Media
@@ -462,11 +491,13 @@ func (q *Queries) UpdateMedia(ctx context.Context, arg UpdateMediaParams) (Media
 		&i.Height,
 		&i.StorageType,
 		&i.StoragePath,
+		&i.ThumbnailPath,
+		&i.MediumPath,
+		&i.LargePath,
+		&i.Path,
 		&i.S3Bucket,
 		&i.S3Key,
 		&i.S3Region,
-		&i.Url,
-		&i.ThumbnailUrl,
 		&i.UploadedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,

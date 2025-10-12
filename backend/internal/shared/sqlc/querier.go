@@ -32,6 +32,7 @@ type Querier interface {
 	// Hero Block Queries
 	// ============================================
 	CreateHeroBlock(ctx context.Context, arg CreateHeroBlockParams) (BlockHero, error)
+	// backend/sql/queries/media.sql
 	CreateMedia(ctx context.Context, arg CreateMediaParams) (Media, error)
 	// backend/sql/queries/pages.sql
 	CreatePage(ctx context.Context, arg CreatePageParams) (Pages, error)

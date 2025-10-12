@@ -185,11 +185,13 @@ type Media struct {
 	Height           pgtype.Int4        `json:"height"`
 	StorageType      StorageType        `json:"storage_type"`
 	StoragePath      string             `json:"storage_path"`
+	ThumbnailPath    pgtype.Text        `json:"thumbnail_path"`
+	MediumPath       pgtype.Text        `json:"medium_path"`
+	LargePath        pgtype.Text        `json:"large_path"`
+	Path             pgtype.Text        `json:"path"`
 	S3Bucket         pgtype.Text        `json:"s3_bucket"`
 	S3Key            pgtype.Text        `json:"s3_key"`
 	S3Region         pgtype.Text        `json:"s3_region"`
-	Url              pgtype.Text        `json:"url"`
-	ThumbnailUrl     pgtype.Text        `json:"thumbnail_url"`
 	UploadedBy       uuid.UUID          `json:"uploaded_by"`
 	CreatedAt        time.Time          `json:"created_at"`
 	UpdatedAt        time.Time          `json:"updated_at"`

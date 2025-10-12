@@ -2,7 +2,7 @@
 import { PUBLIC_API_URL } from "$env/static/public";
 import { mediaApi, type Media, getMediaUrl } from "$api/media";
 import { onMount } from "svelte";
-import { ImageUp } from "lucide-svelte";
+import { ImageUp, CheckCircle, AlertCircle, Loader2 } from "lucide-svelte";
 
 interface Props {
 	value?: string;
@@ -28,6 +28,10 @@ let searchQuery = $state("");
 let uploadFile = $state<File | null>(null);
 let uploading = $state(false);
 let uploadProgress = $state(0);
+let uploadStatus = $state<"uploading" | "processing" | "success" | "error">(
+	"uploading",
+);
+let uploadError = $state<string>("");
 
 // View mode: 'grid' or 'list'
 let viewMode = $state<"grid" | "list">("grid");
@@ -69,8 +73,6 @@ async function loadSelectedMedia() {
 	}
 }
 
-// ... rest of your functions stay the same ...
-
 async function openPicker() {
 	showModal = true;
 	currentPage = 1;
@@ -110,7 +112,6 @@ async function handleFileSelect(e: Event) {
 async function handleUpload() {
 	if (!uploadFile) return;
 
-	// Check file size on client side first
 	const maxSize = uploadFile.type.startsWith("video/") ? 200 : 50; // MB
 	const fileSizeMB = uploadFile.size / (1024 * 1024);
 
@@ -121,31 +122,42 @@ async function handleUpload() {
 
 	uploading = true;
 	uploadProgress = 0;
+	uploadStatus = "uploading";
+	uploadError = "";
 
 	try {
-		// Create FormData
 		const formData = new FormData();
 		formData.append("file", uploadFile);
 
-		// Upload with progress tracking
 		const xhr = new XMLHttpRequest();
 
 		xhr.upload.addEventListener("progress", (e) => {
 			if (e.lengthComputable) {
 				uploadProgress = Math.round((e.loaded / e.total) * 100);
+
+				// When upload completes, show processing status
+				if (uploadProgress === 100) {
+					uploadStatus = "processing";
+				}
 			}
 		});
 
 		const uploaded = await new Promise<Media>((resolve, reject) => {
 			xhr.addEventListener("load", () => {
 				if (xhr.status === 201) {
+					uploadStatus = "success";
 					resolve(JSON.parse(xhr.responseText));
 				} else {
-					reject(new Error("Upload failed"));
+					uploadStatus = "error";
+					const error = JSON.parse(xhr.responseText);
+					reject(new Error(error.error || "Upload failed"));
 				}
 			});
 
-			xhr.addEventListener("error", () => reject(new Error("Upload failed")));
+			xhr.addEventListener("error", () => {
+				uploadStatus = "error";
+				reject(new Error("Network error during upload"));
+			});
 
 			xhr.open("POST", `${PUBLIC_API_URL}/api/v1/media/upload`);
 			xhr.withCredentials = true;
@@ -157,12 +169,18 @@ async function handleUpload() {
 		uploadFile = null;
 	} catch (err) {
 		console.error("Upload failed:", err);
-		alert("Failed to upload file");
+		uploadError = err instanceof Error ? err.message : "Upload failed";
+		uploadStatus = "error";
 	} finally {
-		uploading = false;
-		uploadProgress = 0;
+		setTimeout(() => {
+			uploading = false;
+			uploadProgress = 0;
+			uploadStatus = "uploading";
+			uploadError = "";
+		}, 2000);
 	}
 }
+
 function selectMedia(m: Media) {
 	selectedMedia = m;
 	value = m.id;
@@ -174,11 +192,6 @@ function clearSelection() {
 	selectedMedia = null;
 	value = "";
 	onchange?.(null);
-}
-
-// ✅ Helper to check if media is a video
-function isVideo(mimeType: string): boolean {
-	return mimeType.startsWith("video/");
 }
 
 function formatFileSize(bytes: number): string {
@@ -195,409 +208,366 @@ function formatDate(dateString: string): string {
 	});
 }
 
+function isImage(m: Media): boolean {
+	return m.mime_type.startsWith("image/");
+}
+
+function isVideo(m: Media): boolean {
+	return m.mime_type.startsWith("video/");
+}
+
+function getProcessingMessage(): string {
+	if (!uploadFile) return "Processing...";
+
+	if (isImage({ mime_type: uploadFile.type } as Media)) {
+		return "Converting to WebP and generating thumbnail...";
+	} else if (isVideo({ mime_type: uploadFile.type } as Media)) {
+		return "Optimizing video and extracting thumbnail...";
+	}
+	return "Processing file...";
+}
+
 const filteredMedia = $derived(
 	media.filter((m) => {
-		if (!searchQuery) return true;
-		const query = searchQuery.toLowerCase();
-		return (
-			m.filename.toLowerCase().includes(query) ||
-			m.original_filename.toLowerCase().includes(query)
-		);
+		if (!searchQuery.trim()) return true;
+		return m.original_filename
+			.toLowerCase()
+			.includes(searchQuery.toLowerCase());
 	}),
 );
 </script>
 
-<div class="media-picker">
-  {#if label}
-    <label class="block text-sm font-medium text-gray-700 mb-2">
-      {label}
-      {#if required}
-        <span class="text-red-500">*</span>
-      {/if}
-    </label>
-  {/if}
+<div class="space-y-2">
+	{#if label}
+		<label class="block text-sm font-medium text-gray-700">
+			{label}
+			{#if required}
+				<span class="text-red-500">*</span>
+			{/if}
+		</label>
+	{/if}
 
-  {#if selectedMedia}
-    <div
-      class="relative group border-2 border-gray-300 rounded-lg overflow-hidden"
-    >
-      <img
-        src={getMediaUrl(selectedMedia)}
-        alt={selectedMedia.original_filename}
-        class="w-full h-48 group-hover:h-80 object-cover"
-      />
-      <div
-        class="absolute inset-0 bg-black/20 bg-opacity-0 group-hover:bg-opacity-50 transition-all flex items-center justify-center gap-2"
-      >
-        <button
-          type="button"
-          onclick={openPicker}
-          class="opacity-0 group-hover:opacity-100 transition-opacity px-4 py-2 bg-white text-gray-900 rounded-lg font-medium hover:bg-gray-100"
-        >
-          Change
-        </button>
-        <button
-          type="button"
-          onclick={clearSelection}
-          class="opacity-0 group-hover:opacity-100 transition-opacity px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700"
-        >
-          Remove
-        </button>
-      </div>
-    </div>
-    <p class="mt-2 text-sm text-gray-500">{selectedMedia.original_filename}</p>
-  {:else}
-    <button
-      type="button"
-      onclick={openPicker}
-      class="w-full h-48 border-2 border-dashed border-gray-300 rounded-lg hover:border-gray-400 transition-colors flex flex-col items-center justify-center gap-3 text-gray-500 hover:text-gray-700"
-    >
-      <svg
-        class="w-12 h-12"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-        />
-      </svg>
-      <span class="font-medium">Select Image</span>
-    </button>
-  {/if}
+	{#if selectedMedia}
+		<!-- Selected Media Preview -->
+		<div class="relative group border-2 border-gray-200 rounded-lg p-4 bg-gray-50">
+			<button
+				type="button"
+				onclick={clearSelection}
+				class="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+				title="Remove"
+			>
+				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+				</svg>
+			</button>
 
-  {#if error}
-    <p class="mt-2 text-sm text-red-600">{error}</p>
-  {/if}
+			<div class="flex items-center gap-4">
+				<!-- Use thumbnail if available, fallback to main URL -->
+				<img
+					src={selectedMedia.thumbnail_url || getMediaUrl(selectedMedia)}
+					alt={selectedMedia.original_filename}
+					class="w-20 h-20 object-cover rounded"
+				/>
+				<div class="flex-1 min-w-0">
+					<p class="text-sm font-medium text-gray-900 truncate">
+						{selectedMedia.original_filename}
+					</p>
+					<p class="text-xs text-gray-500">
+						{formatFileSize(selectedMedia.size_bytes)}
+						{#if selectedMedia.width && selectedMedia.height}
+							• {selectedMedia.width}×{selectedMedia.height}
+						{/if}
+					</p>
+					<!-- Show if it's WebP processed -->
+					{#if selectedMedia.mime_type === 'image/webp'}
+						<span class="inline-flex items-center gap-1 mt-1 text-xs text-green-600 font-medium">
+							<CheckCircle class="w-3 h-3" />
+							WebP Optimized
+						</span>
+					{/if}
+				</div>
+				<button
+					type="button"
+					onclick={openPicker}
+					class="px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-700"
+				>
+					Change
+				</button>
+			</div>
+		</div>
+	{:else}
+		<!-- Select Media Button -->
+		<button
+			type="button"
+			onclick={openPicker}
+			class="w-full border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors"
+		>
+			<ImageUp class="mx-auto h-12 w-12 text-gray-400 mb-2" />
+			<p class="text-sm text-gray-600">Click to select or upload media</p>
+			<p class="text-xs text-gray-400 mt-1">Images will be converted to WebP • Videos will be optimized</p>
+		</button>
+	{/if}
+
+	{#if error}
+		<p class="text-sm text-red-600">{error}</p>
+	{/if}
 </div>
 
+<!-- Media Picker Modal -->
 {#if showModal}
-  <div class="fixed inset-0 z-50 overflow-y-auto">
-    <div
-      class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0"
-    >
-      <!-- Overlay -->
-      <div
-        class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
-        onclick={() => (showModal = false)}
-        aria-hidden="true"
-      ></div>
+	<div
+		class="fixed inset-0 z-50 overflow-y-auto"
+		onclick={() => (showModal = false)}
+	>
+		<div class="flex min-h-screen items-center justify-center p-4">
+			<div
+				class="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+			></div>
 
-      <!-- Modal Content - added 'relative' class -->
-      <div
-        class="relative inline-block w-full max-w-6xl my-8 overflow-hidden text-left align-middle transition-all transform bg-white rounded-lg shadow-xl"
-      >
-        <!-- Header -->
-        <div
-          class="flex items-center justify-between px-6 py-4 border-b border-gray-200"
-        >
-          <h3 class="text-lg font-semibold text-gray-900">Select Media</h3>
-          <button
-            type="button"
-            onclick={() => (showModal = false)}
-            class="text-gray-400 hover:text-gray-600"
-          >
-            <svg
-              class="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
-        </div>
+			<div
+				class="relative bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden"
+				onclick={(e) => e.stopPropagation()}
+			>
+				<!-- Header -->
+				<div class="border-b border-gray-200 px-6 py-4">
+					<div class="flex items-center justify-between">
+						<div class="flex-1">
+							<h2 class="text-xl font-semibold text-gray-900">Select Media</h2>
+							<p class="text-sm text-gray-500 mt-1">
+								Upload new or select existing media
+							</p>
+						</div>
 
-        <!-- Toolbar -->
-        <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
-          <div class="flex gap-4 items-center">
-            <!-- Search -->
-            <div class="relative flex-1">
-              <svg
-                class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
-              <input
-                type="text"
-                bind:value={searchQuery}
-                placeholder="Search media..."
-                class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
+						<!-- Upload Status -->
+						{#if uploading}
+							<div class="flex items-center gap-3 px-4 py-2 bg-blue-50 rounded-lg mr-4">
+								{#if uploadStatus === 'uploading'}
+									<Loader2 class="w-5 h-5 text-blue-600 animate-spin" />
+									<div>
+										<p class="text-sm font-medium text-blue-900">Uploading...</p>
+										<p class="text-xs text-blue-600">{uploadProgress}%</p>
+									</div>
+								{:else if uploadStatus === 'processing'}
+									<Loader2 class="w-5 h-5 text-yellow-600 animate-spin" />
+									<div>
+										<p class="text-sm font-medium text-yellow-900">Processing</p>
+										<p class="text-xs text-yellow-600">{getProcessingMessage()}</p>
+									</div>
+								{:else if uploadStatus === 'success'}
+									<CheckCircle class="w-5 h-5 text-green-600" />
+									<p class="text-sm font-medium text-green-900">Success!</p>
+								{:else if uploadStatus === 'error'}
+									<AlertCircle class="w-5 h-5 text-red-600" />
+									<div>
+										<p class="text-sm font-medium text-red-900">Error</p>
+										<p class="text-xs text-red-600">{uploadError}</p>
+									</div>
+								{/if}
+							</div>
+						{/if}
 
-            <!-- View Toggle -->
-            <div class="flex border border-gray-300 rounded-lg overflow-hidden">
-              <button
-                type="button"
-                onclick={() => (viewMode = "grid")}
-                class="px-3 py-2 {viewMode === 'grid'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-50'}"
-              >
-                <svg
-                  class="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
-                  />
-                </svg>
-              </button>
-              <button
-                type="button"
-                onclick={() => (viewMode = "list")}
-                class="px-3 py-2 {viewMode === 'list'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-50'}"
-              >
-                <svg
-                  class="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                </svg>
-              </button>
-            </div>
+						<button
+							onclick={() => (showModal = false)}
+							class="text-gray-400 hover:text-gray-600"
+						>
+							<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+							</svg>
+						</button>
+					</div>
 
-            <!-- Upload Button -->
-            <label
-              class="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 cursor-pointer flex items-center gap-2"
-            >
-              {#if uploading}
-                <ImageUp />
-                Uploading...
-              {:else}
-                <svg
-                  class="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                  />
-                </svg>
-                Upload
-              {/if}
-              <input
-                type="file"
-                accept={ACCEPTED_FILE_TYPES}
-                onchange={handleFileSelect}
-                class="hidden"
-                disabled={uploading}
-              />
-            </label>
-          </div>
-        </div>
+					<!-- Search and Actions -->
+					<div class="flex gap-3 mt-4">
+						<input
+							type="text"
+							bind:value={searchQuery}
+							placeholder="Search media..."
+							class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						/>
+						
+						<!-- View Toggle -->
+						<div class="flex border border-gray-300 rounded-lg overflow-hidden">
+							<button
+								onclick={() => (viewMode = "grid")}
+								class="px-3 py-2 {viewMode === 'grid' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}"
+							>
+								<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+								</svg>
+							</button>
+							<button
+								onclick={() => (viewMode = "list")}
+								class="px-3 py-2 {viewMode === 'list' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}"
+							>
+								<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+								</svg>
+							</button>
+						</div>
 
-        <!-- Content -->
-        <div class="px-6 py-6 max-h-[600px] overflow-y-auto">
-          {#if loading}
-            <div class="flex items-center justify-center py-12">
-              <svg
-                class="animate-spin h-8 w-8 text-gray-400"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  class="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  stroke-width="4"
-                ></circle>
-                <path
-                  class="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
-            </div>
-          {:else if filteredMedia.length === 0}
-            <div class="text-center py-12 text-gray-500">
-              <svg
-                class="w-12 h-12 mx-auto mb-3 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
-              </svg>
-              <p>No media found</p>
-            </div>
-          {:else if viewMode === "grid"}
-            <!-- Grid View -->
-            <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {#each filteredMedia as m (m.id)}
-                <button
-                  type="button"
-                  onclick={() => selectMedia(m)}
-                  class="relative aspect-square rounded-lg overflow-hidden border-2 border-gray-200 hover:border-blue-500 transition-colors group"
-                >
-                  <img
-                    src={getMediaUrl(m)}
-                    alt={m.original_filename}
-                    class="w-full h-full object-cover"
-                  />
-                  <div
-                    class="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center"
-                  >
-                    <svg
-                      class="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                  </div>
-                </button>
-              {/each}
-            </div>
-          {:else}
-            <!-- List View -->
-            <div class="bg-white rounded-lg shadow overflow-hidden">
-              <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                  <tr>
-                    <th
-                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >Preview</th
-                    >
-                    <th
-                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >Filename</th
-                    >
-                    <th
-                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >Size</th
-                    >
-                    <th
-                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >Uploaded</th
-                    >
-                    <th
-                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >Action</th
-                    >
-                  </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                  {#each filteredMedia as m (m.id)}
-                    <tr class="hover:bg-gray-50 transition-colors">
-                      <td class="px-6 py-4 whitespace-nowrap">
-                        <img
-                          src={getMediaUrl(m)}
-                          alt={m.original_filename}
-                          class="h-12 w-12 object-cover rounded"
-                        />
-                      </td>
-                      <td class="px-6 py-4">
-                        <div
-                          class="text-sm font-medium text-gray-900 truncate max-w-xs"
-                        >
-                          {m.original_filename}
-                        </div>
-                      </td>
-                      <td
-                        class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
-                      >
-                        {formatFileSize(m.size_bytes)}
-                      </td>
-                      <td
-                        class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
-                      >
-                        {formatDate(m.created_at)}
-                      </td>
-                      <td
-                        class="px-6 py-4 whitespace-nowrap text-sm font-medium"
-                      >
-                        <button
-                          type="button"
-                          onclick={() => selectMedia(m)}
-                          class="text-blue-600 hover:text-blue-900"
-                        >
-                          Select
-                        </button>
-                      </td>
-                    </tr>
-                  {/each}
-                </tbody>
-              </table>
-            </div>
-          {/if}
-        </div>
+						<!-- Upload Button -->
+						<label class="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 cursor-pointer flex items-center gap-2">
+							{#if uploading}
+								<Loader2 class="w-5 h-5 animate-spin" />
+								Uploading...
+							{:else}
+								<ImageUp class="w-5 h-5" />
+								Upload
+							{/if}
+							<input
+								type="file"
+								accept={ACCEPTED_FILE_TYPES}
+								onchange={handleFileSelect}
+								class="hidden"
+								disabled={uploading}
+							/>
+						</label>
+					</div>
+				</div>
 
-        <!-- Pagination -->
-        {#if totalPages > 1}
-          <div
-            class="px-6 py-4 border-t border-gray-200 flex items-center justify-between"
-          >
-            <button
-              type="button"
-              onclick={() => changePage(currentPage - 1)}
-              disabled={currentPage === 1}
-              class="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
-            >
-              Previous
-            </button>
-            <span class="text-sm text-gray-600">
-              Page {currentPage} of {totalPages}
-            </span>
-            <button
-              type="button"
-              onclick={() => changePage(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              class="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
-            >
-              Next
-            </button>
-          </div>
-        {/if}
-      </div>
-    </div>
-  </div>
+				<!-- Content -->
+				<div class="px-6 py-6 max-h-[600px] overflow-y-auto">
+					{#if loading}
+						<div class="flex items-center justify-center py-12">
+							<Loader2 class="w-8 h-8 text-gray-400 animate-spin" />
+						</div>
+					{:else if filteredMedia.length === 0}
+						<div class="text-center py-12">
+							<ImageUp class="mx-auto h-12 w-12 text-gray-400 mb-4" />
+							<p class="text-gray-500">No media found. Upload your first file!</p>
+						</div>
+					{:else if viewMode === "grid"}
+						<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+							{#each filteredMedia as m (m.id)}
+								<button
+									onclick={() => selectMedia(m)}
+									class="group relative aspect-square rounded-lg overflow-hidden bg-gray-100 hover:ring-2 hover:ring-blue-500 transition-all"
+								>
+									<!-- Use thumbnail if available -->
+									<img
+										src={m.thumbnail_url || getMediaUrl(m)}
+										alt={m.original_filename}
+										class="w-full h-full object-cover"
+									/>
+									
+									<!-- Badges -->
+									<div class="absolute top-2 right-2 flex gap-1">
+										{#if m.mime_type === 'image/webp'}
+											<span class="px-2 py-1 bg-green-500 text-white text-xs rounded-full font-medium">
+												WebP
+											</span>
+										{/if}
+										{#if isVideo(m)}
+											<span class="px-2 py-1 bg-purple-500 text-white text-xs rounded-full font-medium">
+												Video
+											</span>
+										{/if}
+									</div>
+
+									<!-- Info Overlay -->
+									<div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-opacity flex items-end">
+										<div class="w-full p-3 text-white opacity-0 group-hover:opacity-100 transition-opacity">
+											<p class="text-sm font-medium truncate">{m.original_filename}</p>
+											<p class="text-xs">{formatFileSize(m.size_bytes)}</p>
+										</div>
+									</div>
+
+									<!-- Selected Check -->
+									{#if selectedMedia?.id === m.id}
+										<div class="absolute inset-0 bg-blue-500 bg-opacity-20 flex items-center justify-center">
+											<div class="bg-blue-500 rounded-full p-2">
+												<CheckCircle class="w-6 h-6 text-white" />
+											</div>
+										</div>
+									{/if}
+								</button>
+							{/each}
+						</div>
+					{:else}
+						<!-- List View -->
+						<div class="bg-white rounded-lg shadow overflow-hidden">
+							<table class="min-w-full divide-y divide-gray-200">
+								<thead class="bg-gray-50">
+									<tr>
+										<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Preview</th>
+										<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Filename</th>
+										<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Size</th>
+										<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+										<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+									</tr>
+								</thead>
+								<tbody class="divide-y divide-gray-200">
+									{#each filteredMedia as m (m.id)}
+										<tr class="hover:bg-gray-50">
+											<td class="px-6 py-4">
+												<img
+													src={m.thumbnail_url || getMediaUrl(m)}
+													alt={m.original_filename}
+													class="h-12 w-12 object-cover rounded"
+												/>
+											</td>
+											<td class="px-6 py-4">
+												<div class="text-sm font-medium text-gray-900 truncate max-w-xs">
+													{m.original_filename}
+												</div>
+											</td>
+											<td class="px-6 py-4 text-sm text-gray-500">
+												{formatFileSize(m.size_bytes)}
+											</td>
+											<td class="px-6 py-4">
+												{#if m.mime_type === 'image/webp'}
+													<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+														WebP
+													</span>
+												{:else if isVideo(m)}
+													<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+														Video
+													</span>
+												{:else}
+													<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+														{m.mime_type.split('/')[1].toUpperCase()}
+													</span>
+												{/if}
+											</td>
+											<td class="px-6 py-4">
+												<button
+													onclick={() => selectMedia(m)}
+													class="text-blue-600 hover:text-blue-700 font-medium text-sm"
+												>
+													Select
+												</button>
+											</td>
+										</tr>
+									{/each}
+								</tbody>
+							</table>
+						</div>
+					{/if}
+
+					<!-- Pagination -->
+					{#if totalPages > 1}
+						<div class="flex items-center justify-center gap-2 mt-6">
+							<button
+								onclick={() => changePage(currentPage - 1)}
+								disabled={currentPage === 1}
+								class="px-3 py-1 border rounded disabled:opacity-50"
+							>
+								Previous
+							</button>
+							<span class="text-sm text-gray-600">
+								Page {currentPage} of {totalPages}
+							</span>
+							<button
+								onclick={() => changePage(currentPage + 1)}
+								disabled={currentPage === totalPages}
+								class="px-3 py-1 border rounded disabled:opacity-50"
+							>
+								Next
+							</button>
+						</div>
+					{/if}
+				</div>
+			</div>
+		</div>
+	</div>
 {/if}
