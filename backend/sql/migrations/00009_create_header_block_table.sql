@@ -1,7 +1,7 @@
 -- +goose Up
 -- +goose StatementBegin
 -- Header block data
-CREATE TABLE block_header (
+CREATE TABLE IF NOT EXISTS block_header (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     block_id UUID UNIQUE NOT NULL REFERENCES blocks(id) ON DELETE CASCADE,
     heading TEXT NOT NULL,

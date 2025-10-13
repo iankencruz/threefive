@@ -1,7 +1,7 @@
 -- +goose Up
 -- +goose StatementBegin
 -- Richtext block data
-CREATE TABLE block_richtext (
+CREATE TABLE IF NOT EXISTS block_richtext (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     block_id UUID UNIQUE NOT NULL REFERENCES blocks(id) ON DELETE CASCADE,
     content TEXT NOT NULL

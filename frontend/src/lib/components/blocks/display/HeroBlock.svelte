@@ -99,6 +99,44 @@ function getVideoPoster(media: Media): string {
 }
 </script>
 
+
+
+
+<!-- Hero without Media (Gradient Background) -->
+{#snippet fallback(data : HeroBlockData)}
+		<div class="relative bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800">
+			<div class="container mx-auto px-4 py-20 md:py-32 max-w-6xl">
+				<div class="text-center text-white">
+					<h1 class="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
+						{data.title}
+					</h1>
+					
+					{#if data.subtitle}
+						<p class="text-xl md:text-2xl text-blue-100 mb-8 max-w-3xl mx-auto leading-relaxed">
+							{data.subtitle}
+						</p>
+					{/if}
+					
+					{#if data.cta_text && data.cta_url}
+						<a
+							href={data.cta_url}
+							class="inline-flex items-center gap-2 bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-blue-50 transition-all shadow-lg hover:shadow-xl hover:scale-105"
+						>
+							{data.cta_text}
+							<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+							</svg>
+						</a>
+					{/if}
+				</div>
+			</div>
+			
+			<!-- Decorative gradient overlay -->
+			<div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none"></div>
+		</div>
+
+{/snippet}
+
 <section class="relative overflow-hidden">
 	{#if media && !loading && !error}
 		<!-- Hero with Background Media -->
@@ -132,9 +170,9 @@ function getVideoPoster(media: Media): string {
 			</div>
 			
 			<!-- Content -->
-			<div class="relative z-10 container mx-auto px-4 py-20 md:py-32 max-w-6xl">
-				<div class="max-w-2xl text-white">
-					<h1 class="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
+			<div class="@container absolute z-10 container mx-auto px-4 max-w-6xl left-12 bottom-8">
+				<div class="w-full text-white">
+					<h1 class="@max-lg:text-2xl @lg:@max-2xl:text-5xl @2xl:text-7xl @5xl:text-9xl font-bold mb-6 leading-tight">
 						{data.title}
 					</h1>
 					
@@ -160,36 +198,7 @@ function getVideoPoster(media: Media): string {
 		</div>
 	{:else}
 		<!-- Hero without Media (Gradient Background) -->
-		<div class="relative bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800">
-			<div class="container mx-auto px-4 py-20 md:py-32 max-w-6xl">
-				<div class="text-center text-white">
-					<h1 class="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
-						{data.title}
-					</h1>
-					
-					{#if data.subtitle}
-						<p class="text-xl md:text-2xl text-blue-100 mb-8 max-w-3xl mx-auto leading-relaxed">
-							{data.subtitle}
-						</p>
-					{/if}
-					
-					{#if data.cta_text && data.cta_url}
-						<a
-							href={data.cta_url}
-							class="inline-flex items-center gap-2 bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-blue-50 transition-all shadow-lg hover:shadow-xl hover:scale-105"
-						>
-							{data.cta_text}
-							<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-							</svg>
-						</a>
-					{/if}
-				</div>
-			</div>
-			
-			<!-- Decorative gradient overlay -->
-			<div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none"></div>
-		</div>
+    {@render fallback(data)}
 	{/if}
 	
 	{#if loading}

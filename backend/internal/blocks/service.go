@@ -3,6 +3,7 @@ package blocks
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/iankencruz/threefive/internal/shared/errors"
@@ -152,6 +153,7 @@ func (s *Service) GetPageBlocks(ctx context.Context, pageID uuid.UUID) ([]BlockR
 func (s *Service) createHeroBlock(ctx context.Context, qtx *sqlc.Queries, blockID uuid.UUID, data map[string]interface{}) error {
 	heroData, err := ParseBlockData(TypeHero, data)
 	if err != nil {
+		fmt.Printf("Error: %v\n", err)
 		return errors.BadRequest("Invalid hero block data", "invalid_block_data")
 	}
 

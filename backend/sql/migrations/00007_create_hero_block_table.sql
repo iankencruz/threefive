@@ -1,7 +1,7 @@
 -- +goose Up
 -- +goose StatementBegin
 -- Hero block data
-CREATE TABLE block_hero (
+CREATE TABLE IF NOT EXISTS block_hero (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     block_id UUID UNIQUE NOT NULL REFERENCES blocks(id) ON DELETE CASCADE,
     title TEXT NOT NULL,
