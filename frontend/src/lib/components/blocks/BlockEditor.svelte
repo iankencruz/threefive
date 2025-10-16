@@ -1,14 +1,8 @@
 <!-- frontend/src/lib/components/blocks/BlockEditor.svelte -->
 <script lang="ts">
-import HeaderBlockForm, {
-	type HeaderBlockData,
-} from "./forms/HeaderBlockForm.svelte";
-import HeroBlockForm, {
-	type HeroBlockData,
-} from "./forms/HeroBlockForm.svelte";
-import RichTextBlockForm, {
-	type RichtextBlockData,
-} from "./forms/RichTextBlockForm.svelte";
+import HeaderBlockForm, { type HeaderBlockData } from "./forms/HeaderBlockForm.svelte";
+import HeroBlockForm, { type HeroBlockData } from "./forms/HeroBlockForm.svelte";
+import RichTextBlockForm, { type RichtextBlockData } from "./forms/RichTextBlockForm.svelte";
 
 interface BlockTypeMap {
 	hero: HeroBlockData;
@@ -62,10 +56,7 @@ const moveBlock = (index: number, direction: "up" | "down") => {
 	const newIndex = direction === "up" ? index - 1 : index + 1;
 
 	if (newIndex >= 0 && newIndex < newBlocks.length) {
-		[newBlocks[index], newBlocks[newIndex]] = [
-			newBlocks[newIndex],
-			newBlocks[index],
-		];
+		[newBlocks[index], newBlocks[newIndex]] = [newBlocks[newIndex], newBlocks[index]];
 		blocks = newBlocks;
 		onUpdate?.(blocks);
 	}
@@ -110,10 +101,7 @@ const getBlockTypeColor = (type: BlockType) => {
 $effect(() => {
 	const handleClick = (e: MouseEvent) => {
 		const target = e.target as HTMLElement;
-		if (
-			!target.closest(".separator-menu") &&
-			!target.closest(".separator-trigger")
-		) {
+		if (!target.closest(".separator-menu") && !target.closest(".separator-trigger")) {
 			activeSeparator = null;
 		}
 	};
@@ -253,11 +241,11 @@ $effect(() => {
 					</div>
 
 					{#if block.type === 'hero'}
-						<HeroBlockForm bind:data={block.data} onchange={(data) => updateBlockData(index, data)} />
+						<HeroBlockForm data={block.data} onchange={(data) => updateBlockData(index, data)} />
 					{:else if block.type === 'richtext'}
-						<RichTextBlockForm bind:data={block.data} onchange={(data) => updateBlockData(index, data)} />
+						<RichTextBlockForm data={block.data} onchange={(data) => updateBlockData(index, data)} />
 					{:else if block.type === 'header'}
-						<HeaderBlockForm bind:data={block.data} onchange={(data) => updateBlockData(index, data)} />
+						<HeaderBlockForm data={block.data} onchange={(data) => updateBlockData(index, data)} />
 					{/if}
 				</div>
 

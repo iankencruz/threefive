@@ -175,7 +175,7 @@ tasks:
     generates:
       - "{{.BUILD_DIR}}/{{.BINARY_NAME}}"
 
-  go:dev:
+  go:
     desc: "Run backend with hot reload (Air)"
     dir: "{{.BACKEND_DIR}}"
     cmds:
@@ -197,7 +197,7 @@ tasks:
           bun install
         fi
 
-  bun:dev:
+  bun:
     desc: "Run frontend development server"
     dir: "{{.FRONTEND_DIR}}"
     cmds:
