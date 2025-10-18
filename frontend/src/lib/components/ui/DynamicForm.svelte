@@ -5,6 +5,7 @@ import Input from "./Input.svelte";
 import { ImageUp, CheckCircle } from "lucide-svelte";
 import { PUBLIC_API_URL } from "$env/static/public";
 import type { Media } from "$api/media";
+import { untrack } from "svelte";
 import MediaPicker from "./MediaPicker.svelte";
 
 interface FormField {
@@ -61,18 +62,28 @@ function getDefaultFormData(formConfig: FormConfig): Record<string, any> {
 	);
 }
 
-// Initialize formData - use derived state that safely handles undefined config
-let formData = $state<Record<string, any>>({});
+// Initialize formData immediately with defaults to prevent undefined binding
+let formData = $state<Record<string, any>>(
+	config?.fields
+		? initialFormData && Object.keys(initialFormData).length > 0
+			? { ...getDefaultFormData(config), ...initialFormData }
+			: getDefaultFormData(config)
+		: {},
+);
 
-// Initialize formData when config is available
+// Update formData when initialFormData changes (e.g., page reload with saved data)
 $effect(() => {
-	if (!config?.fields) return;
+	if (!config?.fields || !initialFormData || Object.keys(initialFormData).length === 0) return;
 
+	// Merge new initialFormData with defaults
 	const defaults = getDefaultFormData(config);
-	formData =
-		initialFormData && Object.keys(initialFormData).length > 0
-			? { ...defaults, ...initialFormData }
-			: defaults;
+	const merged = { ...defaults, ...initialFormData };
+
+	// Only update if different (to avoid unnecessary updates)
+	const hasChanges = Object.keys(merged).some((key) => formData[key] !== merged[key]);
+	if (hasChanges) {
+		formData = merged;
+	}
 });
 
 // Media picker state
@@ -80,10 +91,11 @@ let showMediaPicker = $state(false);
 let currentMediaField = $state<string>("");
 let selectedMediaCache = $state<Map<string, Media>>(new Map());
 
-// Notify parent of changes
+// Notify parent of changes (with untrack to prevent infinite loops)
 $effect(() => {
 	if (onchange && Object.keys(formData).length > 0) {
-		onchange(formData);
+		// Use untrack to prevent parent updates from triggering this effect
+		untrack(() => onchange(formData));
 	}
 });
 
@@ -170,11 +182,35 @@ $effect(() => {
 	if (!config?.fields) return;
 
 	config.fields.forEach((field) => {
-		if (field.type === "media" && formData[field.name]) {
+		if (
+			field.type === "media" &&
+			formData[field.name] &&
+			!selectedMediaCache.has(formData[field.name])
+		) {
 			loadMediaInfo(formData[field.name]);
 		}
 	});
 });
+
+// Also load media info when initialFormData changes (page reload with existing data)
+$effect(() => {
+	if (!initialFormData || !config?.fields) return;
+
+	config.fields.forEach((field) => {
+		if (
+			field.type === "media" &&
+			initialFormData[field.name] &&
+			!selectedMediaCache.has(initialFormData[field.name])
+		) {
+			loadMediaInfo(initialFormData[field.name]);
+		}
+	});
+});
+
+// Ensure all fields have a value in formData (never undefined)
+function ensureFieldValue(fieldName: string): string | number {
+	return formData[fieldName] ?? "";
+}
 </script>
 
 {#snippet mediaFieldInput(field: FormField)}
@@ -321,7 +357,7 @@ $effect(() => {
 {/if}
 
 <!-- Media Picker Modal -->
-<MediaPicker 
-	bind:show={showMediaPicker}
+<MediaPicker
+  show={showMediaPicker}
 	onselect={handleMediaSelect}
 />

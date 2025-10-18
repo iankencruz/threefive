@@ -11,20 +11,29 @@ interface Props {
 
 let { show, onselect, onclose }: Props = $props();
 
+// Media
 let media = $state<Media[]>([]);
 let loading = $state(false);
 let searchQuery = $state("");
+
+// Uploading
 let uploadFile = $state<File | null>(null);
 let uploading = $state(false);
 let uploadProgress = $state(0);
 let uploadStatus = $state<"uploading" | "processing" | "success" | "error">("uploading");
 let uploadError = $state<string>("");
+
+// View Mode & Pagination
 let viewMode = $state<"grid" | "list">("grid");
 let currentPage = $state(1);
 let totalPages = $state(1);
 let limit = $state(20);
 
 const ACCEPTED_FILE_TYPES = "image/*,video/*,video/mp4,video/quicktime,.mp4,.mov,.avi,.gif";
+
+$effect(() => {
+	console.log("mediapicker modal show: ", show);
+});
 
 // Load media when modal opens
 $effect(() => {
