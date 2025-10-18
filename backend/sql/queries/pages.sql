@@ -88,11 +88,19 @@ RETURNING *;
 
 -- name: SoftDeletePage :exec
 UPDATE pages
-SET deleted_at = NOW(), updated_at = NOW()
-WHERE id = @id;
+SET 
+    slug = CONCAT('deleted_', EXTRACT(EPOCH FROM NOW())::bigint, '_', id::text, '_', slug),
+    deleted_at = NOW(), 
+    updated_at = NOW()
+WHERE id = @id AND deleted_at IS NULL;
 
 -- name: HardDeletePage :exec
 DELETE FROM pages WHERE id = @id;
+
+-- name: PurgeOldDeletedPages :execrows
+DELETE FROM pages 
+WHERE deleted_at IS NOT NULL 
+  AND deleted_at < @cutoff_date;
 
 -- name: CheckSlugExists :one
 SELECT EXISTS(

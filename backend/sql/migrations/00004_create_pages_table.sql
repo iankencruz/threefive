@@ -13,7 +13,7 @@ CREATE TABLE pages (
     
     -- Basic info
     title TEXT NOT NULL,
-    slug TEXT UNIQUE NOT NULL,
+    slug TEXT NOT NULL,
     page_type page_type NOT NULL DEFAULT 'generic',
     
     -- Status
@@ -34,8 +34,13 @@ CREATE TABLE pages (
     CONSTRAINT title_not_empty CHECK (trim(title) <> '')
 );
 
--- Indexes for performance
-CREATE INDEX idx_pages_slug ON pages(slug) WHERE deleted_at IS NULL;
+-- Unique constraint only for non-deleted pages
+CREATE UNIQUE INDEX idx_pages_unique_slug 
+ON pages(slug) 
+WHERE deleted_at IS NULL;
+
+-- Other indexes for performance
+CREATE INDEX idx_pages_slug ON pages(slug);
 CREATE INDEX idx_pages_status ON pages(status) WHERE deleted_at IS NULL;
 CREATE INDEX idx_pages_type ON pages(page_type) WHERE deleted_at IS NULL;
 CREATE INDEX idx_pages_author ON pages(author_id) WHERE deleted_at IS NULL;

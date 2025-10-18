@@ -1,3 +1,4 @@
+// backend/internal/server/server.go
 package server
 
 import (
@@ -9,6 +10,7 @@ import (
 
 	"github.com/iankencruz/threefive/internal/auth"
 	"github.com/iankencruz/threefive/internal/config"
+	"github.com/iankencruz/threefive/internal/jobs"
 	"github.com/iankencruz/threefive/internal/media"
 	"github.com/iankencruz/threefive/internal/pages"
 	"github.com/iankencruz/threefive/internal/shared/database"
@@ -29,6 +31,7 @@ type Server struct {
 	AuthHandler    *auth.Handler
 	MediaHandler   *media.Handler
 	PageHandler    *pages.Handler
+	CleanupWorker  *jobs.PageCleanupWorker // Add cleanup worker
 }
 
 // New creates a new server instance with all dependencies initialized
@@ -71,9 +74,13 @@ func New(cfg *config.Config) (*Server, error) {
 	// 4. Initialize feature handlers (they create their own services)
 	authHandler := auth.NewHandler(db, queries, sessionManager)
 	mediaHandler := media.NewHandler(db, queries, storageInstance)
-	pageHandler := pages.NewHandler(db, queries)
-	// userHandler := user.NewHandler(db, queries)
-	// projectHandler := project.NewHandler(db, queries)
+	pageHandler := pages.NewHandler(db, queries, cfg)
+
+	// 5. Initialize cleanup worker if enabled
+	var cleanupWorker *jobs.PageCleanupWorker
+	if cfg.AutoPurgeEnabled {
+		cleanupWorker = jobs.NewPageCleanupWorker(queries, cfg.AutoPurgeRetentionDays)
+	}
 
 	// Create server instance
 	srv := &Server{
@@ -84,21 +91,22 @@ func New(cfg *config.Config) (*Server, error) {
 
 		SessionManager: sessionManager,
 
-		AuthHandler:  authHandler,
-		MediaHandler: mediaHandler,
-		PageHandler:  pageHandler,
+		AuthHandler:   authHandler,
+		MediaHandler:  mediaHandler,
+		PageHandler:   pageHandler,
+		CleanupWorker: cleanupWorker,
 	}
 
-	// 5. Create default admin user if it doesn't exist
+	// 6. Create default admin user if it doesn't exist
 	if err := srv.createDefaultAdminUser(context.Background()); err != nil {
 		log.Printf("Warning: Failed to create default admin user: %v", err)
 		// Don't fail server startup if this fails
 	}
 
-	// 6. Setup router with all initialized components
+	// 7. Setup router with all initialized components
 	router := srv.setupRouter()
 
-	// 7. Create HTTP server
+	// 8. Create HTTP server
 	srv.Server = &http.Server{
 		Addr:         cfg.ServerAddress(),
 		Handler:      router,
@@ -110,54 +118,11 @@ func New(cfg *config.Config) (*Server, error) {
 	return srv, nil
 }
 
-// createDefaultAdminUser creates a default admin user if it doesn't exist
-func (s *Server) createDefaultAdminUser(ctx context.Context) error {
-	defaultEmail := "admin@example.com"
-	defaultPassword := "Password!123"
-
-	// Check if admin user already exists
-	_, err := s.Queries.GetUserByEmail(ctx, defaultEmail)
-	if err == nil {
-		// User already exists
-		log.Printf("Default admin user already exists: %s", defaultEmail)
-		return nil
-	}
-
-	// // If error is not "no rows", something went wrong
-	// if err != pgx.ErrNoRows {
-	// 	return fmt.Errorf("failed to check existing admin user: %w", err)
-	// }
-
-	// Hash the default password
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(defaultPassword), bcrypt.DefaultCost)
-	if err != nil {
-		return fmt.Errorf("failed to hash password: %w", err)
-	}
-
-	// Create the admin user
-	user, err := s.Queries.CreateUser(ctx, sqlc.CreateUserParams{
-		FirstName:    "Admin",
-		LastName:     "User",
-		Email:        defaultEmail,
-		PasswordHash: string(hashedPassword),
-	})
-	if err != nil {
-		return fmt.Errorf("failed to create admin user: %w", err)
-	}
-
-	log.Printf("✅ Default admin user created successfully!")
-	log.Printf("   Email: %s", user.Email)
-	log.Printf("   Password: %s", defaultPassword)
-	log.Printf("   ⚠️  IMPORTANT: Change this password after first login!")
-
-	return nil
-}
-
-// Start starts the HTTP server
+// Start starts the HTTP server and background workers
 func (s *Server) Start() error {
 	fmt.Printf("\n🚀 Server starting on http://%s\n", s.Config.ServerAddress())
 	fmt.Printf("📊 Environment: %s\n\n", s.Config.Server.Env)
-	fmt.Printf("📁 Storage: %s\n\n", s.Config.Storage.S3Endpoint)
+	fmt.Printf("📁 Storage: %s\n\n", s.Storage.Type())
 
 	if s.Config.IsDevelopment() {
 		fmt.Println("================================================")
@@ -170,69 +135,83 @@ func (s *Server) Start() error {
 		fmt.Println("================================================")
 	}
 
-	// Start background cleanup routine
+	// Start background cleanup routine for sessions
 	ctx := context.Background()
 	s.SessionManager.StartCleanupRoutine(ctx, 1*time.Hour)
+
+	// Start page cleanup worker if enabled
+	if s.CleanupWorker != nil {
+		s.CleanupWorker.Start(ctx)
+		log.Printf("✅ Page cleanup worker started (retention: %d days)", s.Config.AutoPurgeRetentionDays)
+	} else {
+		log.Println("ℹ️  Page auto-purge disabled")
+	}
 
 	return s.Server.ListenAndServe()
 }
 
-// Shutdown gracefully shuts down the server
+// Shutdown gracefully shuts down the server and background workers
 func (s *Server) Shutdown(ctx context.Context) error {
 	fmt.Println("🛑 Shutting down server...")
 
+	// Stop cleanup worker first
+	if s.CleanupWorker != nil {
+		s.CleanupWorker.Stop()
+		fmt.Println("✅ Page cleanup worker stopped")
+	}
+
+	// Close database connection
 	if s.DB != nil {
 		s.DB.Close()
 		fmt.Println("✅ Database pool closed")
 	}
 
+	// Shutdown HTTP server
 	return s.Server.Shutdown(ctx)
 }
 
-// Basic handlers...
-func homeHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"message": "Welcome to the API", "version": "1.0.0"}`))
-}
+// createDefaultAdminUser creates a default admin user if one doesn't exist
+func (s *Server) createDefaultAdminUser(ctx context.Context) error {
+	// Check if any users exist
+	// If this is your first time, there won't be a CountUsers method
+	// You can implement it or just try to create the user and handle the error
 
-func healthHandler(db *pgxpool.Pool) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
-		defer cancel()
+	defaultEmail := "admin@threefive.local"
+	defaultPassword := "admin123"
 
-		if err := db.Ping(ctx); err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusServiceUnavailable)
-			w.Write([]byte(`{"status": "error", "database": "disconnected"}`))
-			return
-		}
-
-		stats := db.Stat()
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		response := fmt.Sprintf(`{
-            "status": "ok", 
-            "service": "backend",
-            "database": "connected",
-            "pool": {
-                "total": %d,
-                "idle": %d,
-                "in_use": %d
-            }
-        }`, stats.TotalConns(), stats.IdleConns(), stats.AcquiredConns())
-		w.Write([]byte(response))
+	// Check if user exists
+	_, err := s.Queries.GetUserByEmail(ctx, defaultEmail)
+	if err == nil {
+		// User already exists
+		return nil
 	}
+
+	// Hash password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(defaultPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	// Create user
+	user, err := s.Queries.CreateUser(ctx, sqlc.CreateUserParams{
+		Email:        defaultEmail,
+		PasswordHash: string(hashedPassword),
+		FirstName:    "Admin",
+		LastName:     "User",
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create user: %w", err)
+	}
+
+	log.Println("================================================")
+	log.Println("🔐 Default admin user created!")
+	log.Printf("   Email: %s", user.Email)
+	log.Printf("   Password: %s", defaultPassword)
+	log.Printf("   ⚠️  IMPORTANT: Change this password after first login!")
+	log.Println("================================================")
+
+	return nil
 }
 
-func statusHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"api": "v1", "status": "running"}`))
-}
-
-func dbTestHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"database": "connection_test_ok", "sqlc": "ready"}`))
-}
+// Rest of your server methods (setupRouter, handlers, etc.)
+// ... keep all your existing methods below this point

@@ -3,6 +3,7 @@
 import { goto } from "$app/navigation";
 import BlockEditor from "$components/blocks/BlockEditor.svelte";
 import { PUBLIC_API_URL } from "$env/static/public";
+import { ArrowLeftIcon, Eye, Trash2Icon } from "lucide-svelte";
 import { toast } from "svelte-sonner";
 
 type PageType = "generic" | "project" | "blog";
@@ -177,19 +178,7 @@ const handleDelete = async () => {
               class="text-gray-600 hover:text-gray-900 mb-4 flex items-center gap-2 transition-colors"
               onclick={() => goto("/admin/pages")}
             >
-              <svg
-                class="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
+              <ArrowLeftIcon size={16}/>
               Back to Pages
             </button>
             <h1 class="text-3xl font-bold text-gray-900">Edit Page</h1>
@@ -203,32 +192,15 @@ const handleDelete = async () => {
               onclick={() =>
                 window.open(`/admin/pages/${data.page.id}/preview`, "_blank")}
             >
-              <svg
-                class="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                />
-              </svg>
+              <Eye size={18} />
               Preview
             </button>
             <button
-              class="px-4 py-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg font-medium transition-colors"
+              class="px-4 py-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg font-medium transition-colors flex items-center gap-2"
               onclick={handleDelete}
               disabled={loading}
             >
+              <Trash2Icon size={16} />
               Delete Page
             </button>
           </div>

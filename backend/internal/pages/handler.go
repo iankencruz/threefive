@@ -2,6 +2,7 @@
 package pages
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/iankencruz/threefive/internal/auth"
 	"github.com/iankencruz/threefive/internal/blocks"
+	"github.com/iankencruz/threefive/internal/config"
 	"github.com/iankencruz/threefive/internal/shared/responses"
 	"github.com/iankencruz/threefive/internal/shared/sqlc"
 	"github.com/iankencruz/threefive/internal/shared/validation"
@@ -20,12 +22,17 @@ type Handler struct {
 }
 
 // NewHandler creates a new pages handler with its own service
-func NewHandler(db *pgxpool.Pool, queries *sqlc.Queries) *Handler {
+func NewHandler(db *pgxpool.Pool, queries *sqlc.Queries, cfg *config.Config) *Handler {
 	// Create block service internally (only needs queries)
 	blockService := blocks.NewService(queries)
 
+	// Create service config
+	serviceCfg := ServiceConfig{
+		AutoPurgeRetentionDays: cfg.AutoPurgeRetentionDays,
+	}
+
 	// Create pages service
-	service := NewService(db, queries, blockService)
+	service := NewService(db, queries, blockService, serviceCfg)
 
 	return &Handler{
 		service: service,
@@ -198,6 +205,28 @@ func (h *Handler) DeletePage(w http.ResponseWriter, r *http.Request) {
 
 	response := map[string]string{
 		"message": "Page deleted successfully",
+	}
+
+	responses.WriteOK(w, response)
+}
+
+// PurgeDeletedPages manually triggers purge of old deleted pages
+// POST /api/v1/pages/purge
+func (h *Handler) PurgeDeletedPages(w http.ResponseWriter, r *http.Request) {
+	log.Printf("[Pages] Manual purge triggered by user")
+
+	// Call service to purge
+	err := h.service.PurgeOldDeletedPages(r.Context())
+	if err != nil {
+		log.Printf("[Pages] Purge failed: %v", err)
+		responses.WriteErr(w, err)
+		return
+	}
+
+	log.Printf("[Pages] Manual purge completed successfully")
+
+	response := map[string]string{
+		"message": "Old deleted pages purged successfully",
 	}
 
 	responses.WriteOK(w, response)

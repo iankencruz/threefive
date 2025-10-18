@@ -8,6 +8,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
@@ -98,6 +99,7 @@ type Querier interface {
 	ListProjectPages(ctx context.Context, arg ListProjectPagesParams) ([]ListProjectPagesRow, error)
 	ListPublishedPages(ctx context.Context, arg ListPublishedPagesParams) ([]Pages, error)
 	ListUsers(ctx context.Context) ([]Users, error)
+	PurgeOldDeletedPages(ctx context.Context, cutoffDate pgtype.Timestamptz) (int64, error)
 	SoftDeleteMedia(ctx context.Context, id uuid.UUID) error
 	SoftDeletePage(ctx context.Context, id uuid.UUID) error
 	UnlinkMediaFromEntity(ctx context.Context, arg UnlinkMediaFromEntityParams) error

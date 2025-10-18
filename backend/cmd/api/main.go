@@ -15,8 +15,11 @@ import (
 )
 
 func main() {
-	// Load configuration
-	cfg := config.Load()
+	// Load Config
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
 
 	// Create server
 	srv, err := server.New(cfg)

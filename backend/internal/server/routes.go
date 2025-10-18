@@ -37,10 +37,6 @@ func (s *Server) setupRouter() http.Handler {
 	// Mount auth routes
 	auth.RegisterRoutes(r, s.AuthHandler, s.SessionManager)
 
-	// Basic routes
-	r.Get("/", homeHandler)
-	r.Get("/health", healthHandler(s.DB))
-
 	// API v1 routes
 	r.Route("/api/v1", func(r chi.Router) {
 		// Auth middleware
@@ -51,9 +47,6 @@ func (s *Server) setupRouter() http.Handler {
 		pages.RegisterRoutes(r, s.PageHandler, s.SessionManager)
 		// user.RegisterRoutes(r, s.userHandler)
 		// project.RegisterRoutes(r, s.projectHandler)
-
-		r.Get("/status", statusHandler)
-		r.Get("/db-test", dbTestHandler)
 	})
 
 	return r

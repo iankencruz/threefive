@@ -26,6 +26,8 @@ func RegisterRoutes(r chi.Router, handler *Handler, sessionManager *session.Mana
 			r.Put("/{id}", handler.UpdatePage)                // PUT /api/v1/pages/{id}
 			r.Patch("/{id}/status", handler.UpdatePageStatus) // PATCH /api/v1/pages/{id}/status
 			r.Delete("/{id}", handler.DeletePage)             // DELETE /api/v1/pages/{id}
+
+			r.Post("/purge", handler.PurgeDeletedPages)
 		})
 	})
 }

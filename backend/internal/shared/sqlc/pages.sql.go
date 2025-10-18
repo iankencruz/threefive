@@ -7,6 +7,7 @@ package sqlc
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -299,10 +300,28 @@ func (q *Queries) ListPublishedPages(ctx context.Context, arg ListPublishedPages
 	return items, nil
 }
 
+const purgeOldDeletedPages = `-- name: PurgeOldDeletedPages :execrows
+DELETE FROM pages 
+WHERE deleted_at IS NOT NULL 
+  AND deleted_at < $1
+`
+
+func (q *Queries) PurgeOldDeletedPages(ctx context.Context, cutoffDate pgtype.Timestamptz) (int64, error) {
+	result, err := q.db.Exec(ctx, purgeOldDeletedPages, cutoffDate)
+	if err != nil {
+		return 0, err
+	}
+	fmt.Printf("Purge Deleted Page Result: %v\n", result)
+	return result.RowsAffected(), nil
+}
+
 const softDeletePage = `-- name: SoftDeletePage :exec
 UPDATE pages
-SET deleted_at = NOW(), updated_at = NOW()
-WHERE id = $1
+SET 
+    slug = CONCAT('deleted_', EXTRACT(EPOCH FROM NOW())::bigint, '_', id::text, '_', slug),
+    deleted_at = NOW(), 
+    updated_at = NOW()
+WHERE id = $1 AND deleted_at IS NULL
 `
 
 func (q *Queries) SoftDeletePage(ctx context.Context, id uuid.UUID) error {

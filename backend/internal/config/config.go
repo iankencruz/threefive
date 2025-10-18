@@ -1,3 +1,4 @@
+// backend/internal/config/config.go
 package config
 
 import (
@@ -5,15 +6,20 @@ import (
 	"log"
 	"os"
 	"strconv"
-
-	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	Server   ServerConfig
-	Database DatabaseConfig
-	Frontend FrontendConfig
-	Storage  StorageConfig
+	// Server
+	Server                 ServerConfig
+	Database               DatabaseConfig
+	Frontend               FrontendConfig
+	Storage                StorageConfig
+	SessionSecret          string
+	AllowedOrigins         []string
+	MediaUploadPath        string
+	MediaMaxSize           int64 // in bytes
+	AutoPurgeEnabled       bool
+	AutoPurgeRetentionDays int
 }
 
 type ServerConfig struct {
@@ -43,16 +49,7 @@ type StorageConfig struct {
 	S3UseSSL      bool
 }
 
-// Load reads configuration from environment variables
-func Load() *Config {
-	// Load .env file - ignore error if file doesn't exist
-	if err := godotenv.Load(); err != nil {
-		log.Printf("Warning: .env file not found: %v", err)
-	}
-
-	// Determine storage type from env
-	storageType := getEnv("STORAGE_TYPE", "local")
-
+func Load() (*Config, error) {
 	cfg := &Config{
 		Server: ServerConfig{
 			Host: getEnv("SERVER_HOST", "localhost"),
@@ -66,7 +63,7 @@ func Load() *Config {
 			URL: getEnvRequired("FRONTEND_URL"),
 		},
 		Storage: StorageConfig{
-			Type:          storageType,
+			Type:          getEnv("STORAGE_TYPE", "local"),
 			LocalBasePath: getEnv("LOCAL_STORAGE_PATH", "./uploads"),
 			LocalBaseURL:  getEnv("LOCAL_STORAGE_URL", "http://localhost:8000/uploads"),
 			S3Bucket:      getEnv("S3_BUCKET", ""),
@@ -77,6 +74,20 @@ func Load() *Config {
 			S3PublicURL:   getEnv("S3_PUBLIC_URL", ""),
 			S3UseSSL:      getEnvAsBool("S3_USE_SSL", true),
 		},
+		SessionSecret:          getEnv("SESSION_SECRET", ""),
+		MediaUploadPath:        getEnv("MEDIA_UPLOAD_PATH", "./uploads"),
+		MediaMaxSize:           getEnvAsInt64("MEDIA_MAX_SIZE", 10*1024*1024), // 10MB default
+		AutoPurgeEnabled:       getEnvAsBool("AUTO_PURGE_ENABLED", true),
+		AutoPurgeRetentionDays: getEnvAsInt("AUTO_PURGE_RETENTION_DAYS", 30),
+	}
+
+	// Parse allowed origins
+	originsStr := getEnv("ALLOWED_ORIGINS", "http://localhost:3000")
+	cfg.AllowedOrigins = parseOrigins(originsStr)
+
+	// Validate required fields
+	if cfg.SessionSecret == "" {
+		return nil, fmt.Errorf("SESSION_SECRET is required")
 	}
 
 	// Validate required configuration
@@ -99,7 +110,12 @@ func Load() *Config {
 		log.Printf("🔧 Database: Connected")
 	}
 
-	return cfg
+	// Validate auto-purge retention days
+	if cfg.AutoPurgeRetentionDays < 1 {
+		return nil, fmt.Errorf("AUTO_PURGE_RETENTION_DAYS must be at least 1")
+	}
+
+	return cfg, nil
 }
 
 // validateStorage validates storage configuration based on type
@@ -128,42 +144,6 @@ func (c *Config) validateStorage() error {
 	}
 }
 
-// Helper functions
-func getEnv(key, defaultVal string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultVal
-}
-
-func getEnvRequired(key string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		log.Fatalf("Required environment variable %s is not set", key)
-	}
-	return value
-}
-
-func getEnvAsInt(key string, defaultVal int) int {
-	if value := os.Getenv(key); value != "" {
-		if intVal, err := strconv.Atoi(value); err == nil {
-			return intVal
-		}
-		log.Printf("Warning: Invalid integer for %s, using default: %d", key, defaultVal)
-	}
-	return defaultVal
-}
-
-func getEnvAsBool(key string, defaultVal bool) bool {
-	if value := os.Getenv(key); value != "" {
-		if boolVal, err := strconv.ParseBool(value); err == nil {
-			return boolVal
-		}
-		log.Printf("Warning: Invalid boolean for %s, using default: %t", key, defaultVal)
-	}
-	return defaultVal
-}
-
 // ServerAddress returns the full server address
 func (c *Config) ServerAddress() string {
 	return c.Server.Host + ":" + strconv.Itoa(c.Server.Port)
@@ -177,4 +157,116 @@ func (c *Config) IsDevelopment() bool {
 // IsProduction returns true if running in production mode
 func (c *Config) IsProduction() bool {
 	return c.Server.Env == "production"
+}
+
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
+}
+
+func getEnvRequired(key string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		log.Fatalf("Required environment variable %s is not set", key)
+	}
+	return value
+}
+
+func getEnvAsInt(key string, defaultValue int) int {
+	valueStr := getEnv(key, "")
+	if valueStr == "" {
+		return defaultValue
+	}
+
+	value, err := strconv.Atoi(valueStr)
+	if err != nil {
+		return defaultValue
+	}
+
+	return value
+}
+
+func getEnvAsInt64(key string, defaultValue int64) int64 {
+	valueStr := getEnv(key, "")
+	if valueStr == "" {
+		return defaultValue
+	}
+
+	value, err := strconv.ParseInt(valueStr, 10, 64)
+	if err != nil {
+		return defaultValue
+	}
+
+	return value
+}
+
+func getEnvAsBool(key string, defaultValue bool) bool {
+	valueStr := getEnv(key, "")
+	if valueStr == "" {
+		return defaultValue
+	}
+
+	value, err := strconv.ParseBool(valueStr)
+	if err != nil {
+		return defaultValue
+	}
+
+	return value
+}
+
+func parseOrigins(originsStr string) []string {
+	// Split by comma and trim spaces
+	origins := []string{}
+	for _, origin := range splitAndTrim(originsStr, ",") {
+		if origin != "" {
+			origins = append(origins, origin)
+		}
+	}
+	return origins
+}
+
+func splitAndTrim(s, sep string) []string {
+	parts := []string{}
+	for _, part := range splitString(s, sep) {
+		trimmed := trimSpace(part)
+		if trimmed != "" {
+			parts = append(parts, trimmed)
+		}
+	}
+	return parts
+}
+
+func splitString(s, sep string) []string {
+	if s == "" {
+		return []string{}
+	}
+	result := []string{}
+	current := ""
+	for _, char := range s {
+		if string(char) == sep {
+			result = append(result, current)
+			current = ""
+		} else {
+			current += string(char)
+		}
+	}
+	result = append(result, current)
+	return result
+}
+
+func trimSpace(s string) string {
+	start := 0
+	end := len(s)
+
+	for start < end && (s[start] == ' ' || s[start] == '\t' || s[start] == '\n') {
+		start++
+	}
+
+	for end > start && (s[end-1] == ' ' || s[end-1] == '\t' || s[end-1] == '\n') {
+		end--
+	}
+
+	return s[start:end]
 }
