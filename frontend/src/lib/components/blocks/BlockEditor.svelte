@@ -157,16 +157,15 @@ $effect(() => {
 <div class="relative my-2">
 	<button
 		type="button"
-		class="separator-trigger w-full py-2 flex items-center group hover:bg-gray-50 rounded transition-colors"
+		class="separator-trigger w-full py-2 flex items-center group rounded transition-colors"
 		onclick={(e) => { e.stopPropagation(); toggleSeparator(0); }}
 	>
 		<div aria-hidden="true" class="w-full border-t border-gray-300 group-hover:border-gray-400 transition-colors"></div>
 		<div class="relative flex justify-center px-3">
-			<span class="bg-white flex items-center gap-1.5 text-gray-500 group-hover:text-gray-700 transition-colors">
+      <span class=" p-px rounded-full group-hover:bg-gray-900 flex items-center gap-1.5 text-gray-500 group-hover:text-white transition-colors">
 				<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" class="w-5 h-5">
 					<path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
 				</svg>
-				<span class="text-sm font-medium whitespace-nowrap">Add Block</span>
 			</span>
 		</div>
 		<div aria-hidden="true" class="w-full border-t border-gray-300 group-hover:border-gray-400 transition-colors"></div>
@@ -253,16 +252,15 @@ $effect(() => {
         <div class="relative my-2">
           <button
             type="button"
-            class="separator-trigger w-full py-2 flex items-center group hover:bg-gray-50 rounded transition-colors"
+            class="separator-trigger w-full py-2 flex items-center group  rounded transition-colors"
             onclick={(e) => { e.stopPropagation(); toggleSeparator(index + 1); }}
           >
             <div aria-hidden="true" class="w-full border-t border-gray-300 group-hover:border-gray-400 transition-colors"></div>
             <div class="relative flex justify-center px-3">
-              <span class="bg-white flex items-center gap-1.5 text-gray-500 group-hover:text-gray-700 transition-colors">
+              <span class=" p-px rounded-full group-hover:bg-gray-900 flex items-center gap-1.5 text-gray-500 group-hover:text-white transition-colors">
                 <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" class="w-5 h-5">
                   <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
                 </svg>
-                <span class="text-sm font-medium whitespace-nowrap">Add Block</span>
               </span>
             </div>
             <div aria-hidden="true" class="w-full border-t border-gray-300 group-hover:border-gray-400 transition-colors"></div>

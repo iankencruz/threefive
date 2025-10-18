@@ -5,7 +5,7 @@ import DynamicForm, { type FormConfig } from "$components/ui/DynamicForm.svelte"
 export interface HeroBlockData {
 	title: string;
 	subtitle?: string;
-	image_id?: string;
+	image_id?: string | null;
 	cta_text?: string;
 	cta_url?: string;
 }
@@ -19,7 +19,7 @@ let {
 	data = $bindable({
 		title: "",
 		subtitle: "",
-		image_id: "",
+		image_id: null, // Use null instead of empty string
 		cta_text: "",
 		cta_url: "",
 	}),

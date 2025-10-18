@@ -55,7 +55,8 @@ function getDefaultFormData(formConfig: FormConfig): Record<string, any> {
 
 	return formConfig.fields.reduce(
 		(acc, field) => {
-			acc[field.name] = field.value ?? (field.type === "media" ? "" : "");
+			// Media fields default to null, others to empty string
+			acc[field.name] = field.value ?? (field.type === "media" ? null : "");
 			return acc;
 		},
 		{} as Record<string, any>,
@@ -70,21 +71,6 @@ let formData = $state<Record<string, any>>(
 			: getDefaultFormData(config)
 		: {},
 );
-
-// Update formData when initialFormData changes (e.g., page reload with saved data)
-$effect(() => {
-	if (!config?.fields || !initialFormData || Object.keys(initialFormData).length === 0) return;
-
-	// Merge new initialFormData with defaults
-	const defaults = getDefaultFormData(config);
-	const merged = { ...defaults, ...initialFormData };
-
-	// Only update if different (to avoid unnecessary updates)
-	const hasChanges = Object.keys(merged).some((key) => formData[key] !== merged[key]);
-	if (hasChanges) {
-		formData = merged;
-	}
-});
 
 // Media picker state
 let showMediaPicker = $state(false);
@@ -116,17 +102,23 @@ function openMediaPicker(fieldName: string) {
 	showMediaPicker = true;
 }
 
+function closeMediaPicker() {
+	showMediaPicker = false;
+	currentMediaField = "";
+}
+
 function handleMediaSelect(mediaId: string, media: Media) {
 	if (currentMediaField) {
 		formData[currentMediaField] = mediaId;
 		selectedMediaCache.set(mediaId, media);
 		currentMediaField = "";
 	}
+	closeMediaPicker();
 }
 
 function clearMedia(fieldName: string) {
 	const mediaId = formData[fieldName];
-	formData[fieldName] = "";
+	formData[fieldName] = null; // Set to null instead of empty string
 	if (mediaId) {
 		selectedMediaCache.delete(mediaId);
 	}
@@ -143,6 +135,8 @@ async function loadMediaInfo(mediaId: string) {
 		if (response.ok) {
 			const media = await response.json();
 			selectedMediaCache.set(mediaId, media);
+			// Force re-render by updating the cache reference
+			selectedMediaCache = selectedMediaCache;
 		}
 	} catch (err) {
 		console.error("Failed to load media:", err);
@@ -182,27 +176,14 @@ $effect(() => {
 	if (!config?.fields) return;
 
 	config.fields.forEach((field) => {
+		const mediaId = formData[field.name];
 		if (
 			field.type === "media" &&
-			formData[field.name] &&
-			!selectedMediaCache.has(formData[field.name])
+			mediaId &&
+			typeof mediaId === "string" &&
+			!selectedMediaCache.has(mediaId)
 		) {
-			loadMediaInfo(formData[field.name]);
-		}
-	});
-});
-
-// Also load media info when initialFormData changes (page reload with existing data)
-$effect(() => {
-	if (!initialFormData || !config?.fields) return;
-
-	config.fields.forEach((field) => {
-		if (
-			field.type === "media" &&
-			initialFormData[field.name] &&
-			!selectedMediaCache.has(initialFormData[field.name])
-		) {
-			loadMediaInfo(initialFormData[field.name]);
+			loadMediaInfo(mediaId);
 		}
 	});
 });
@@ -357,7 +338,8 @@ function ensureFieldValue(fieldName: string): string | number {
 {/if}
 
 <!-- Media Picker Modal -->
-<MediaPicker
-  show={showMediaPicker}
+<MediaPicker 
+	bind:show={showMediaPicker}
 	onselect={handleMediaSelect}
+	onclose={closeMediaPicker}
 />
