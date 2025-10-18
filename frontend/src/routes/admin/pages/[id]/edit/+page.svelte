@@ -1,8 +1,7 @@
 <!-- frontend/src/routes/admin/pages/[id]/edit/+page.svelte -->
 <script lang="ts">
 import { goto } from "$app/navigation";
-import { page } from "$app/stores";
-import BlockEditor from "$lib/components/blocks/BlockEditor.svelte";
+import BlockEditor from "$components/blocks/BlockEditor.svelte";
 import { PUBLIC_API_URL } from "$env/static/public";
 import { toast } from "svelte-sonner";
 
@@ -57,8 +56,7 @@ let formData = $state({
 	},
 	project_data: {
 		client_name: data.page.project_data?.client_name || "",
-		project_year:
-			data.page.project_data?.project_year || new Date().getFullYear(),
+		project_year: data.page.project_data?.project_year || new Date().getFullYear(),
 		project_url: data.page.project_data?.project_url || "",
 		technologies: data.page.project_data?.technologies || [],
 		project_status: data.page.project_data?.project_status || "completed",
@@ -96,21 +94,14 @@ $effect(() => {
 });
 
 const addTechnology = () => {
-	if (
-		newTech.trim() &&
-		!formData.project_data.technologies.includes(newTech.trim())
-	) {
-		formData.project_data.technologies = [
-			...formData.project_data.technologies,
-			newTech.trim(),
-		];
+	if (newTech.trim() && !formData.project_data.technologies.includes(newTech.trim())) {
+		formData.project_data.technologies = [...formData.project_data.technologies, newTech.trim()];
 		newTech = "";
 	}
 };
 
 const removeTechnology = (tech: string) => {
-	formData.project_data.technologies =
-		formData.project_data.technologies.filter((t) => t !== tech);
+	formData.project_data.technologies = formData.project_data.technologies.filter((t) => t !== tech);
 };
 
 const handleSubmit = async () => {
@@ -124,26 +115,19 @@ const handleSubmit = async () => {
 			page_type: formData.page_type,
 			status: formData.status,
 			blocks: formData.blocks,
-			seo:
-				formData.seo.meta_title || formData.seo.meta_description
-					? formData.seo
-					: undefined,
-			project_data:
-				formData.page_type === "project" ? formData.project_data : undefined,
+			seo: formData.seo.meta_title || formData.seo.meta_description ? formData.seo : undefined,
+			project_data: formData.page_type === "project" ? formData.project_data : undefined,
 			blog_data: formData.page_type === "blog" ? formData.blog_data : undefined,
 		};
 
-		const response = await fetch(
-			`${PUBLIC_API_URL}/api/v1/pages/${data.page.id}`,
-			{
-				method: "PUT",
-				credentials: "include",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify(payload),
+		const response = await fetch(`${PUBLIC_API_URL}/api/v1/pages/${data.page.id}`, {
+			method: "PUT",
+			credentials: "include",
+			headers: {
+				"Content-Type": "application/json",
 			},
-		);
+			body: JSON.stringify(payload),
+		});
 
 		if (!response.ok) {
 			const error = await response.json();
@@ -165,13 +149,10 @@ const handleDelete = async () => {
 	if (!confirm("Are you sure you want to delete this page?")) return;
 
 	try {
-		const response = await fetch(
-			`${PUBLIC_API_URL}/api/v1/pages/${data.page.id}`,
-			{
-				method: "DELETE",
-				credentials: "include",
-			},
-		);
+		const response = await fetch(`${PUBLIC_API_URL}/api/v1/pages/${data.page.id}`, {
+			method: "DELETE",
+			credentials: "include",
+		});
 
 		if (!response.ok) {
 			throw new Error("Failed to delete page");
@@ -299,11 +280,12 @@ const handleDelete = async () => {
           <div class="space-y-6">
             <div class="grid grid-cols-2 gap-6">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2"
+                <label for={formData.title} class="block text-sm font-medium text-gray-700 mb-2"
                   >Title <span class="text-red-500">*</span></label
                 >
                 <input
                   type="text"
+                  name={formData.title}
                   bind:value={formData.title}
                   required
                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -312,11 +294,12 @@ const handleDelete = async () => {
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2"
+                <label for={formData.slug} class="block text-sm font-medium text-gray-700 mb-2"
                   >Slug <span class="text-red-500">*</span></label
                 >
                 <input
                   type="text"
+                  name={formData.slug}
                   bind:value={formData.slug}
                   oninput={() => (slugManuallyEdited = true)}
                   required
@@ -332,10 +315,11 @@ const handleDelete = async () => {
 
             <div class="grid grid-cols-2 gap-6">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2"
+                <label for={formData.page_type} class="block text-sm font-medium text-gray-700 mb-2"
                   >Page Type</label
                 >
                 <select
+                  name={formData.page_type}
                   bind:value={formData.page_type}
                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
@@ -346,10 +330,11 @@ const handleDelete = async () => {
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2"
+                <label for={formData.status} class="block text-sm font-medium text-gray-700 mb-2"
                   >Status</label
                 >
                 <select
+                  name={formData.status}
                   bind:value={formData.status}
                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
@@ -366,11 +351,12 @@ const handleDelete = async () => {
         {:else if currentTab === "seo"}
           <div class="space-y-6">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2"
+              <label for={formData.seo.meta_title} class="block text-sm font-medium text-gray-700 mb-2"
                 >Meta Title</label
               >
               <input
                 type="text"
+                name={formData.seo.meta_title}
                 bind:value={formData.seo.meta_title}
                 oninput={() => (seoTitleManuallyEdited = true)}
                 maxlength="60"
@@ -383,10 +369,11 @@ const handleDelete = async () => {
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2"
+              <label for={formData.seo.meta_description} class="block text-sm font-medium text-gray-700 mb-2"
                 >Meta Description</label
               >
               <textarea
+                name={formData.seo.meta_description}
                 bind:value={formData.seo.meta_description}
                 maxlength="160"
                 rows="3"
@@ -399,11 +386,12 @@ const handleDelete = async () => {
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2"
+              <label for={formData.seo.og_title} class="block text-sm font-medium text-gray-700 mb-2"
                 >OG Title</label
               >
               <input
                 type="text"
+                name={formData.seo.og_title}
                 bind:value={formData.seo.og_title}
                 maxlength="60"
                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -412,10 +400,11 @@ const handleDelete = async () => {
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2"
+              <label for={formData.seo.og_description} class="block text-sm font-medium text-gray-700 mb-2"
                 >OG Description</label
               >
               <textarea
+                name={formData.seo.og_description}
                 bind:value={formData.seo.og_description}
                 maxlength="160"
                 rows="3"
@@ -425,9 +414,10 @@ const handleDelete = async () => {
             </div>
 
             <div class="flex gap-6">
-              <label class="flex items-center gap-2">
+              <label for={formData.seo.robots_index} class="flex items-center gap-2">
                 <input
                   type="checkbox"
+                  name={formData.seo.robots_index}
                   bind:checked={formData.seo.robots_index}
                   class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                 />
@@ -436,9 +426,10 @@ const handleDelete = async () => {
                 >
               </label>
 
-              <label class="flex items-center gap-2">
+              <label for={formData.seo.robots_follow} class="flex items-center gap-2">
                 <input
                   type="checkbox"
+                  name={formData.seo.robots_follow}
                   bind:checked={formData.seo.robots_follow}
                   class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                 />
@@ -452,11 +443,12 @@ const handleDelete = async () => {
           {#if formData.page_type === "project"}
             <div class="space-y-6">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2"
+                <label for={formData.project_data.client_name} class="block text-sm font-medium text-gray-700 mb-2"
                   >Client Name</label
                 >
                 <input
                   type="text"
+                  name={formData.project_data.client_name}
                   bind:value={formData.project_data.client_name}
                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Client or company name"
@@ -465,11 +457,12 @@ const handleDelete = async () => {
 
               <div class="grid grid-cols-2 gap-6">
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2"
+                  <label for={formData.project_data.project_year} class="block text-sm font-medium text-gray-700 mb-2"
                     >Project Year</label
                   >
                   <input
                     type="number"
+                    name={formData.project_data.project_year}
                     bind:value={formData.project_data.project_year}
                     min="1900"
                     max="2100"
@@ -478,11 +471,12 @@ const handleDelete = async () => {
                 </div>
 
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2"
+                  <label for={formData.project_data.project_url} class="block text-sm font-medium text-gray-700 mb-2"
                     >Project URL</label
                   >
                   <input
                     type="url"
+                    name={formData.project_data.project_url}
                     bind:value={formData.project_data.project_url}
                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="https://project-url.com"
@@ -491,12 +485,13 @@ const handleDelete = async () => {
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2"
+                <label for="technologies" class="block text-sm font-medium text-gray-700 mb-2"
                   >Technologies</label
                 >
                 <div class="flex gap-2 mb-2">
                   <input
                     type="text"
+                    name="technologies"
                     bind:value={newTech}
                     onkeydown={(e) =>
                       e.key === "Enter" &&
@@ -543,10 +538,11 @@ const handleDelete = async () => {
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2"
+                <label for={formData.project_data.project_status} class="block text-sm font-medium text-gray-700 mb-2"
                   >Project Status</label
                 >
                 <select
+                  name={formData.project_data.project_status}
                   bind:value={formData.project_data.project_status}
                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
@@ -559,10 +555,11 @@ const handleDelete = async () => {
           {:else if formData.page_type === "blog"}
             <div class="space-y-6">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2"
+                <label for={formData.blog_data.excerpt} class="block text-sm font-medium text-gray-700 mb-2"
                   >Excerpt</label
                 >
                 <textarea
+                  name={formData.blog_data.excerpt}
                   bind:value={formData.blog_data.excerpt}
                   rows="4"
                   maxlength="300"
@@ -572,11 +569,12 @@ const handleDelete = async () => {
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2"
+                <label for={formData.blog_data.reading_time} class="block text-sm font-medium text-gray-700 mb-2"
                   >Reading Time (minutes)</label
                 >
                 <input
                   type="number"
+                  name={formData.blog_data.reading_time}
                   bind:value={formData.blog_data.reading_time}
                   min="0"
                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"

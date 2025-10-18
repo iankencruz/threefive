@@ -80,9 +80,26 @@ let selectedMediaCache = $state<Map<string, Media>>(new Map());
 // Notify parent of changes (with untrack to prevent infinite loops)
 $effect(() => {
 	if (onchange && Object.keys(formData).length > 0) {
-		// Use untrack to prevent parent updates from triggering this effect
 		untrack(() => onchange(formData));
 	}
+});
+
+// Load media info for fields with existing values
+$effect.pre(() => {
+	if (!config?.fields) {
+		console.log("   ❌ No config.fields");
+		return;
+	}
+
+	config.fields.forEach((field) => {
+		if (field.type !== "media") return;
+
+		const mediaId = formData[field.name];
+
+		if (mediaId && typeof mediaId === "string" && !selectedMediaCache.has(mediaId)) {
+			loadMediaInfo(mediaId);
+		}
+	});
 });
 
 function getColSpanClass(colSpan?: number): string {
@@ -110,7 +127,9 @@ function closeMediaPicker() {
 function handleMediaSelect(mediaId: string, media: Media) {
 	if (currentMediaField) {
 		formData[currentMediaField] = mediaId;
-		selectedMediaCache.set(mediaId, media);
+		const newCache = new Map(selectedMediaCache);
+		newCache.set(mediaId, media);
+		selectedMediaCache = newCache;
 		currentMediaField = "";
 	}
 	closeMediaPicker();
@@ -118,28 +137,39 @@ function handleMediaSelect(mediaId: string, media: Media) {
 
 function clearMedia(fieldName: string) {
 	const mediaId = formData[fieldName];
-	formData[fieldName] = null; // Set to null instead of empty string
+	formData[fieldName] = null;
 	if (mediaId) {
-		selectedMediaCache.delete(mediaId);
+		const newCache = new Map(selectedMediaCache);
+		newCache.delete(mediaId);
+		selectedMediaCache = newCache;
 	}
 }
 
 // Load selected media info when field has a value
 async function loadMediaInfo(mediaId: string) {
-	if (!mediaId || selectedMediaCache.has(mediaId)) return;
+	if (!mediaId) {
+		console.log("   ❌ No mediaId");
+		return;
+	}
+
+	if (selectedMediaCache.has(mediaId)) {
+		console.log("   i  Already in cache");
+		return;
+	}
 
 	try {
 		const response = await fetch(`${PUBLIC_API_URL}/api/v1/media/${mediaId}`, {
 			credentials: "include",
 		});
+
 		if (response.ok) {
 			const media = await response.json();
-			selectedMediaCache.set(mediaId, media);
-			// Force re-render by updating the cache reference
-			selectedMediaCache = selectedMediaCache;
+			const newCache = new Map(selectedMediaCache);
+			newCache.set(mediaId, media);
+			selectedMediaCache = newCache;
 		}
 	} catch (err) {
-		console.error("Failed to load media:", err);
+		console.error("   ❌ Failed to load media:", err);
 	}
 }
 
@@ -170,31 +200,13 @@ function formatFileSize(bytes: number): string {
 	if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
 	return (bytes / (1024 * 1024)).toFixed(1) + " MB";
 }
-
-// Load media info for fields with existing values
-$effect(() => {
-	if (!config?.fields) return;
-
-	config.fields.forEach((field) => {
-		const mediaId = formData[field.name];
-		if (
-			field.type === "media" &&
-			mediaId &&
-			typeof mediaId === "string" &&
-			!selectedMediaCache.has(mediaId)
-		) {
-			loadMediaInfo(mediaId);
-		}
-	});
-});
-
-// Ensure all fields have a value in formData (never undefined)
-function ensureFieldValue(fieldName: string): string | number {
-	return formData[fieldName] ?? "";
-}
 </script>
 
 {#snippet mediaFieldInput(field: FormField)}
+	{@const mediaId = formData[field.name]}
+	{@const hasMedia = mediaId && selectedMediaCache.has(mediaId)}
+	{@const media = hasMedia ? selectedMediaCache.get(mediaId) : null}
+	
 	<div class="space-y-2">
 		{#if field.label}
 			<label class="block text-sm font-medium text-gray-700">
@@ -204,53 +216,55 @@ function ensureFieldValue(fieldName: string): string | number {
 				{/if}
 			</label>
 		{/if}
+		
+		<!-- Debug info (remove after fixing) -->
+		<div class="text-xs text-gray-500 mb-2">
+			Debug: mediaId={mediaId}, hasMedia={hasMedia}, cacheSize={selectedMediaCache.size}
+		</div>
 
-		{#if formData[field.name] && selectedMediaCache.has(formData[field.name])}
-			{@const media = selectedMediaCache.get(formData[field.name])}
-			{#if media}
-				<div class="relative group border-2 border-gray-200 rounded-lg p-4 bg-gray-50">
-					<button
-						type="button"
-						onclick={() => clearMedia(field.name)}
-						class="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-						title="Remove"
-					>
-						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-						</svg>
-					</button>
+		{#if hasMedia && media}
+			<div class="relative group border-2 border-gray-200 rounded-lg p-4 bg-gray-50">
+				<button
+					type="button"
+					onclick={() => clearMedia(field.name)}
+					class="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+					title="Remove"
+				>
+					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+					</svg>
+				</button>
 
-					<div class="flex items-center gap-4">
-						<img
-							src={media.thumbnail_url || media.url}
-							alt={media.original_filename}
-							class="w-20 h-20 object-cover rounded"
-						/>
-						<div class="flex-1 min-w-0">
-							<p class="text-sm font-medium text-gray-900 truncate">{media.original_filename}</p>
-							<p class="text-xs text-gray-500">
-								{formatFileSize(media.size_bytes)}
-								{#if media.width && media.height}
-									• {media.width}×{media.height}
-								{/if}
-							</p>
-							{#if media.mime_type === 'image/webp'}
-								<span class="inline-flex items-center gap-1 mt-1 text-xs text-green-600 font-medium">
-									<CheckCircle class="w-3 h-3" />
-									WebP Optimized
-								</span>
+				<div class="flex items-center gap-4">
+					<img
+						src={media.thumbnail_url || media.url}
+						alt={media.original_filename}
+						class="w-20 h-20 object-cover rounded"
+					/>
+					<div class="flex-1 min-w-0">
+						<p class="text-sm font-medium text-gray-900 truncate">{media.original_filename}</p>
+						<p class="text-xs text-gray-500">
+							{formatFileSize(media.size_bytes)}
+							{#if media.width && media.height}
+								• {media.width}×{media.height}
 							{/if}
-						</div>
-						<button 
-							type="button" 
-							onclick={() => openMediaPicker(field.name)} 
-							class="px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-700"
-						>
-							Change
-						</button>
+						</p>
+						{#if media.mime_type === 'image/webp'}
+							<span class="inline-flex items-center gap-1 mt-1 text-xs text-green-600 font-medium">
+								<CheckCircle class="w-3 h-3" />
+								WebP Optimized
+							</span>
+						{/if}
 					</div>
+					<button 
+						type="button" 
+						onclick={() => openMediaPicker(field.name)} 
+						class="px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-700"
+					>
+						Change
+					</button>
 				</div>
-			{/if}
+			</div>
 		{:else}
 			<button
 				type="button"

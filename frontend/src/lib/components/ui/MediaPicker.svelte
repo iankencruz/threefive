@@ -31,10 +31,6 @@ let limit = $state(20);
 
 const ACCEPTED_FILE_TYPES = "image/*,video/*,video/mp4,video/quicktime,.mp4,.mov,.avi,.gif";
 
-$effect(() => {
-	console.log("mediapicker modal show: ", show);
-});
-
 // Load media when modal opens
 $effect(() => {
 	if (show && media.length === 0) {
