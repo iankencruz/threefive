@@ -36,7 +36,7 @@ const headingClasses = getHeadingClasses(data.level);
 </script>
 
 <section class="py-12 md:py-16">
-	<div class="container mx-auto px-4 max-w-4xl">
+	<div class="container mx-auto px-4 max-w-7xl">
 		<div class="text-center">
 			{#if data.level === 'h1'}
 				<h1 class="{headingClasses} text-gray-900 mb-4">

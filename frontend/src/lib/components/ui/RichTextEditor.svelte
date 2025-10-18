@@ -167,7 +167,7 @@ function applyBlock(val: string) {
 				{/each}
 			</select>
 
-			<div class="h-6 w-px bg-gray-300" />
+			<div class="h-6 w-px bg-gray-300"></div>
 
 			<div class="inline-flex overflow-hidden rounded border bg-white">
 				<button 

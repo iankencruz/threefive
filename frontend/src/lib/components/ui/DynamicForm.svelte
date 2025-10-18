@@ -353,7 +353,7 @@ function formatFileSize(bytes: number): string {
 
 <!-- Media Picker Modal -->
 <MediaPicker 
-	bind:show={showMediaPicker}
+	show={showMediaPicker}
 	onselect={handleMediaSelect}
 	onclose={closeMediaPicker}
 />
