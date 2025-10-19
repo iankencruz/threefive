@@ -27,35 +27,13 @@ tasks:
     cmds:
       - task --list
 
-  project:setup:
+  init:
     desc: "Initial project setup"
     cmds:
       - task: go:tidy
       - task: db:reset
       - task: db:up
       - task: sqlc
-
-  dev:setup:
-    desc: Ensures Podman machine is running, then runs the dev:next task.
-    cmds:
-      - echo "Attempting to start Podman machine. This may show an 'already running' error, but it's expected and will be ignored."
-      - task: podman:start
-      - task: podman:up
-
-  podman:start:
-    desc: "Start podman machine"
-    platforms: [darwin]
-    internal: true
-    silent: true
-    cmds:
-      - echo "Starting Podman machine"
-      - podman machine start || true
-
-  podman:stop:
-    desc: "Stop podman machine"
-    cmds:
-      - echo "Stopping Podman machine"
-      - podman machine stop
 
   podman:up:
     desc: "Run compose file"
@@ -90,56 +68,37 @@ tasks:
         goose up
         {{end}}
 
-  # db:up1:
-  #   desc: "Migrate the DB up by 1"
-  #   cmds:
-  #     - goose up-by-one
-  #
-  # db:up-to:
-  #   desc: "Migrate the DB to a specific VERSION (use: task db:down-to -- migration_name)"
-  #   cmds:
-  #     - goose up-to {{.CLI_ARGS}}
-
   db:down:
     desc: "Rollback the last migration"
     cmds:
       - goose down
 
-  db:down-to:
-    desc: "Migrate the DB to a specific VERSION (use: task db:down-to -- migration_name)"
-    cmds:
-      - goose down-to {{.CLI_ARGS}}
-
+  
   db:status:
     desc: "Show migration status"
     cmds:
       - goose status
 
   db:reset:
+    aliases: [db:res]
     desc: "Reset database (rollback all migrations)"
     prompt: "This will rollback all migrations. Are you sure?"
     cmds:
       - goose  reset
 
-  db:redo:
-    desc: "Rollback and re-apply the last migration"
-    cmds:
-      - goose  redo
 
   db:version:
+    aliases: [db-v]
     desc: "Show current migration version"
     cmds:
       - goose version
 
   db:fix:
+
     desc: "Fix sequential numbering of migration files"
     cmds:
       - goose fix
 
-  db:validate:
-    desc: "Check migration files without running them"
-    cmds:
-      - goose validate
 
   # =====================================
   # SQLC tasks
@@ -178,13 +137,17 @@ tasks:
   go:
     desc: "Run backend with hot reload (Air)"
     dir: "{{.BACKEND_DIR}}"
+    deps: [podman:up]
     cmds:
       - air
 
-  go:run:
-    desc: "Build and run backend"
+
+  bun:
+    desc: "Run frontend development server"
+    dir: "{{.FRONTEND_DIR}}"
     cmds:
-      - task: backend:build
+      - bun --bun run dev --clearScreen false
+
 
   bun:install:
     desc: "Install frontend dependencies (use -- <package> to install specific)"
@@ -196,12 +159,6 @@ tasks:
         else
           bun install
         fi
-
-  bun:
-    desc: "Run frontend development server"
-    dir: "{{.FRONTEND_DIR}}"
-    cmds:
-      - bun --bun run dev
 
   bun:build:
     desc: "Build frontend for production"
@@ -216,29 +173,6 @@ tasks:
     cmds:
       - bun --bun run preview
 
-  bun:lint:
-    desc: "Lint frontend code with Biome"
-    dir: "{{.FRONTEND_DIR}}"
-    cmds:
-      - bunx biome lint ./src
-
-  bun:lint:fix:
-    desc: "Lint and fix frontend code"
-    dir: "{{.FRONTEND_DIR}}"
-    cmds:
-      - bunx biome lint --write ./src
-
-  bun:format:
-    desc: "Format frontend code with Biome"
-    dir: "{{.FRONTEND_DIR}}"
-    cmds:
-      - bunx biome format --write ./src
-
-  bun:format:check:
-    desc: "Check frontend code formatting"
-    dir: "{{.FRONTEND_DIR}}"
-    cmds:
-      - bunx biome format ./src
 
   bun:check:
     desc: "Run Biome check (lint + format)"
@@ -252,15 +186,48 @@ tasks:
     cmds:
       - bunx biome check --write ./src
 
+
+  dev:
+    desc: "Starts the Go backend (Air) and waits for it to be ready before starting the Bun frontend, with all logs visible."
+    cmds:
+      - |
+        # 1. Enclose the logic in a subshell ( ). This creates a controlled Process Group (PGID).
+        (
+          # 2. Set the trap ONLY on EXIT. This is the most portable signal handler.
+          # It triggers when the foreground process (task bun) exits (e.g., via Ctrl+C).
+          trap '
+            echo "CATCHING EXIT: Cleaning up background processes..."
+            # 3. Kill the entire process group. This avoids shell variable issues.
+            # -$$ targets the Process Group ID (PGID) of the current subshell.
+            kill -TERM -- -$$ 2>/dev/null
+            
+            # 4. Explicitly exit 0 to ensure the cleanup step doesn''t return a status code (like 201 or 2).
+            exit 0
+          ' EXIT
+          
+          echo "Starting Go backend with Air..."
+          task go > backend_startup.log 2>&1 &
+          
+          echo "Streaming backend logs..."
+          tail -f backend_startup.log &
+          
+          # Wait for the backend to be ready
+          echo "Waiting for backend to be ready (Server starting)..."
+          while ! grep -q "🚀 Server starting on http://" backend_startup.log; do
+            sleep 1
+          done
+          
+          echo "Backend is ready. Starting Bun frontend..."
+          
+          # Start the Bun frontend in the foreground.
+          task bun
+          
+        )
+
   # =====================================
   # Build everything
   # =====================================
 
-  build:
-    desc: "Build both backend and frontend"
-    cmds:
-      - task: backend:build
-      - task: frontend:build
 
   # =====================================
   # Testing
