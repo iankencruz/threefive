@@ -6,12 +6,14 @@ dotenv: [".env", ".env.local"]
 vars:
   BACKEND_DIR: ./backend
   FRONTEND_DIR: ./frontend
-  BUILD_DIR: ./backend/bin
+  BUILD_DIR: ./bin
   BINARY_NAME: api
   GO_FILES: ./backend/cmd/api/main.go
 
   GO_GROUP: " GO"
   BUN_GROUP: "  BUN"
+
+  EXE: main{{exeExt}}
 
   # Database variables
   # GOOSE_MIGRATIONS_DIR: ./backend/sql/migrations/
@@ -21,11 +23,16 @@ vars:
 # Hide task execution statements | true = hide, false = show (default)
 # silent: true
 
+
+
+
+
 tasks:
   default:
     desc: "Show available tasks"
     cmds:
       - task --list
+      
 
   init:
     desc: "Initial project setup"
@@ -35,17 +42,9 @@ tasks:
       - task: db:up
       - task: sqlc
 
-  podman:up:
-    desc: "Run compose file"
-    cmds:
-      - echo "Starting compose containers"
-      - podman compose up -d
+ 
 
-  podman:down:
-    desc: "Stop compose containers"
-    cmds:
-      - echo "Stopping compose containers"
-      - podman compose down
+
 
   # =====================================
   # Database tasks (Goose)
@@ -126,27 +125,35 @@ tasks:
     desc: "Build Go binary"
     dir: "{{.BACKEND_DIR}}"
     cmds:
-      - go build -o ./tmp/main ./cmd/api/main.go
+      - go build -o {{.BUILD_DIR}}/{{.EXE}} ./cmd/api/main.go
+      - printf "\n✅ Go build - {{.BUILD_DIR}}/{{.EXE}} \n\n"
     sources:
       - "**/*.go"
       - go.mod
       - go.sum
     generates:
-      - "{{.BUILD_DIR}}/{{.BINARY_NAME}}"
+      - "{{.BUILD_DIR}}/{{.EXE}}"
+
+  
 
   go:
-    desc: "Run backend with hot reload (Air)"
+    desc: "Run binary"
     dir: "{{.BACKEND_DIR}}"
-    deps: [podman:up]
+    deps: [ go:build]
+    silent: true
     cmds:
-      - air
+      - defer: {task: clean}
+      - "{{.BUILD_DIR}}/{{.EXE}}"
 
 
   bun:
     desc: "Run frontend development server"
     dir: "{{.FRONTEND_DIR}}"
+    silent: true
     cmds:
       - bun --bun run dev --clearScreen false
+
+
 
 
   bun:install:
@@ -188,45 +195,15 @@ tasks:
 
 
   dev:
-    desc: "Starts the Go backend (Air) and waits for it to be ready before starting the Bun frontend, with all logs visible."
+    desc: "Starts the Go backend  and starts the Bun frontend, with all logs visible."
+    deps: 
+      - task: podman:up
     cmds:
-      - |
-        # 1. Enclose the logic in a subshell ( ). This creates a controlled Process Group (PGID).
-        (
-          # 2. Set the trap ONLY on EXIT. This is the most portable signal handler.
-          # It triggers when the foreground process (task bun) exits (e.g., via Ctrl+C).
-          trap '
-            echo "CATCHING EXIT: Cleaning up background processes..."
-            # 3. Kill the entire process group. This avoids shell variable issues.
-            # -$$ targets the Process Group ID (PGID) of the current subshell.
-            kill -TERM -- -$$ 2>/dev/null
-            
-            # 4. Explicitly exit 0 to ensure the cleanup step doesn''t return a status code (like 201 or 2).
-            exit 0
-          ' EXIT
-          
-          echo "Starting Go backend with Air..."
-          task go > backend_startup.log 2>&1 &
-          
-          echo "Streaming backend logs..."
-          tail -f backend_startup.log &
-          
-          # Wait for the backend to be ready
-          echo "Waiting for backend to be ready (Server starting)..."
-          while ! grep -q "🚀 Server starting on http://" backend_startup.log; do
-            sleep 1
-          done
-          
-          echo "Backend is ready. Starting Bun frontend..."
-          
-          # Start the Bun frontend in the foreground.
-          task bun
-          
-        )
+      - task --parallel go bun
 
-  # =====================================
-  # Build everything
-  # =====================================
+
+
+
 
 
   # =====================================
@@ -241,15 +218,32 @@ tasks:
   # Utilities
   # =====================================
 
+  podman:up:
+    desc: "Run compose file"
+    internal: true
+    cmds:
+      - podman compose up -d
+
+  podman:down:
+    desc: "Stop compose containers"
+    internal: true
+    silent: true
+    cmds:
+      - printf '\n*=== Stopping compose containers===**\n\n'
+      - podman compose down
+      - printf '\n*=== Containers Removed ===*\n\n'
+
+
+
   clean:
     desc: "Clean build artifacts"
+    dir: "{{.BACKEND_DIR}}"
+    silent: true
     cmds:
-      - rm -rf {{.BACKEND_DIR}}/{{.BUILD_DIR}}
-      - rm -rf {{.BACKEND_DIR}}/tmp
-      - rm -rf {{.FRONTEND_DIR}}/build
-      - rm -rf {{.FRONTEND_DIR}}/dist
-      - rm -rf {{.FRONTEND_DIR}}/.svelte-kit
+      - printf "\n*=== Running Cleanup Process ===*\n"
+      - rm -rf bin
       - task: go:tidy
+      - task: podman:down
 
   health:
     desc: "Check if backend is running"
