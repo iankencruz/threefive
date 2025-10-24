@@ -6,113 +6,139 @@
 
 /* Theme customization */
 @theme {
-  --color-primary: #3b82f6;
-  --color-primary-dark: #2563eb;
-  --color-secondary: #64748b;
-  --color-danger: #ef4444;
-  --color-success: #10b981;
-  --color-warning: #f59e0b;
+  /* === Brand === */
+  --color-primary: #FF4B1F;
+  --color-accent: #FF6A3D;
 
-  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell,
-    'Open Sans', 'Helvetica Neue', sans-serif;
+  /* === Neutrals === */
+  --color-background: #0C0C0C;
+  --color-surface: #1A1A1A;
+  --color-foreground: #FFF4E6;
+
+  /* === Brand Support === */
+  --color-highlight: #FF934F;
+  --color-danger: #D72638;
+
+  /* === Status Colours === */
+  --color-success: #22C55E;
+  /* vivid green */
+  --color-warning: #FACC15;
+  /* amber */
+  --color-info: #3B82F6;
+  /* bright blue */
+
+  /* === UI Defaults === */
+  --default-ring-width: 3px;
+  --default-ring-color: var(--color-accent);
+
+
+  /* Input background sits above surface but below foreground */
+  --color-input-bg: color-mix(in oklab, var(--color-surface) 88%, black);
+  /* Border slightly lighter than bg for separation */
+  --color-input-border: color-mix(in oklab, var(--color-surface) 65%, white);
+  /* Placeholders muted relative to foreground */
+  --color-input-placeholder: color-mix(in oklab, var(--color-foreground) 45%, transparent);
+  /* Disabled state: dim bg and text */
+  --color-input-disabled-bg: color-mix(in oklab, var(--color-input-bg) 75%, black);
+  --color-input-disabled-text: color-mix(in oklab, var(--color-foreground) 40%, transparent);
+  /* Focus ring and border derive from brand hues */
+  --color-input-focus-ring: color-mix(in oklab, var(--color-primary) 40%, transparent);
+  --color-input-focus-border: var(--color-primary);
+
+
 }
 
-/* Form component utilities */
+
+
+@layer base {
+  * {
+    color: var(--color-foreground);
+  }
+
+  h1 {
+    font-size: clamp(2rem, 5vw, 3rem);
+    /* 32–48px */
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  h2 {
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+    font-weight: 600;
+    letter-spacing: -0.015em;
+  }
+
+  h3 {
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    font-weight: 600;
+  }
+
+  h4 {
+    font-size: 1.25rem;
+    font-weight: 500;
+  }
+
+  h5 {
+    font-size: 1.125rem;
+    font-weight: 500;
+  }
+
+  h6 {
+    font-size: 1rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+
+  /* Links and focus states */
+  a {
+    color: var(--color-primary);
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  a:hover {
+    color: var(--color-accent);
+  }
+
+  :focus-visible {
+    outline: var(--default-ring-width) solid var(--default-ring-color);
+    outline-offset: 2px;
+  }
+
+
+}
+
+
 @layer components {
-  .form-input {
-    @apply w-full px-4 py-2.5 border border-gray-300 rounded-lg;
-    @apply focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary;
-    @apply transition-colors duration-200;
-    @apply disabled:bg-gray-100 disabled:cursor-not-allowed;
-  }
 
-  .form-input-error {
-    @apply border-danger focus:ring-danger/50 focus:border-danger;
-  }
-
-  .form-label {
-    @apply block text-sm font-medium text-gray-700 mb-1.5;
-  }
-
-  .form-error {
-    @apply text-sm text-danger mt-1;
-  }
-
-  .form-helper {
-    @apply text-sm text-gray-500 mt-1;
-  }
-
+  /* === Buttons (context) === */
   .btn {
-    @apply px-4 py-2.5 rounded-lg font-medium;
-    @apply transition-all duration-200;
+    @apply inline-flex items-center justify-center px-4 py-2.5 rounded-sm font-medium;
+    @apply transition-all duration-200 ease-in-out;
     @apply focus:outline-none focus:ring-2 focus:ring-offset-2;
     @apply disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-primary {
-    @apply bg-primary text-white;
-    @apply hover:bg-primary-dark;
-    @apply focus:ring-primary/50;
+    @apply bg-primary text-foreground hover:bg-accent focus:ring-primary/50;
   }
 
-  .btn-secondary {
-    @apply bg-secondary text-white;
-    @apply hover:bg-gray-600;
-    @apply focus:ring-secondary/50;
+  .btn-success {
+    @apply bg-success text-foreground hover:brightness-110 focus:ring-success/50;
   }
 
-  .btn-outline {
-    @apply border-2 border-primary text-primary bg-transparent;
-    @apply hover:bg-primary hover:text-white;
-    @apply focus:ring-primary/50;
+  .btn-warning {
+    @apply bg-warning text-foreground hover:brightness-110 focus:ring-warning/50;
+  }
+
+  .btn-info {
+    @apply bg-info text-foreground hover:brightness-110 focus:ring-info/50;
   }
 
   .btn-danger {
-    @apply bg-danger text-white;
-    @apply hover:bg-red-600;
-    @apply focus:ring-danger/50;
+    @apply bg-danger text-foreground hover:brightness-110 focus:ring-danger/50;
   }
 
-  .btn-sm {
-    @apply px-3 py-1.5 text-sm;
-  }
-
-  .btn-lg {
-    @apply px-6 py-3 text-lg;
-  }
-
-  .btn-full {
-    @apply w-full;
-  }
-}
-
-
-
-/* Additional styling for the rendered content */
-article :global(img) {
-  @apply rounded-lg shadow-md;
-}
-
-article :global(blockquote) {
-  @apply border-l-4 border-blue-500 pl-4 italic;
-}
-
-article :global(code) {
-  @apply bg-gray-100 rounded px-1 py-0.5 text-sm;
-}
-
-article :global(pre) {
-  @apply bg-gray-900 text-gray-100 rounded-lg p-4 overflow-x-auto;
-}
-
-article :global(pre code) {
-  @apply bg-transparent text-gray-100 p-0;
-}
-
-article :global(hr) {
-  @apply my-8 border-gray-300;
-}
-
-article :global(a) {
-  @apply text-blue-600 hover:text-blue-800 underline;
 }

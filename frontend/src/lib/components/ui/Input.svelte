@@ -1,14 +1,6 @@
 <script lang="ts">
 interface Props {
-	type?:
-		| "text"
-		| "email"
-		| "password"
-		| "number"
-		| "tel"
-		| "url"
-		| "date"
-		| "textarea";
+	type?: "text" | "email" | "password" | "number" | "tel" | "url" | "date" | "textarea";
 	name: string;
 	label?: string;
 	placeholder?: string;
@@ -46,7 +38,11 @@ let {
 }: Props = $props();
 
 const inputClasses = $derived(
-	["form-input", error && "form-input-error", inputClass]
+	[
+		"w-full px-4 py-2.5 rounded-sm border bg-input-bg border-input-border text-foreground placeholder:text-input-placeholder focus:outline-none focus:ring-2 focus:ring-input-focus-ring focus:border-input-focus-border transition-colors duration-200 appearance-none [background-clip:padding-box] disabled:bg-input-disabled-bg disabled:text-input-disabled-text disabled:cursor-not-allowed",
+		error && "form-input-error",
+		inputClass,
+	]
 		.filter(Boolean)
 		.join(" "),
 );
@@ -54,7 +50,7 @@ const inputClasses = $derived(
 
 <div class={className}>
 	{#if label}
-		<label for={name} class="form-label">
+		<label for={name} class="block text-sm font-medium text-foreground/80 mb-1.5">
 			{label}
 			{#if required}
 				<span class="text-danger">*</span>

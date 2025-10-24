@@ -1,7 +1,5 @@
 <script lang="ts">
-import DynamicForm, {
-	type FormConfig,
-} from "$components/ui/DynamicForm.svelte";
+import DynamicForm, { type FormConfig } from "$components/ui/DynamicForm.svelte";
 import type { ErrorResponse } from "$types/auth";
 import { authApi } from "$api/auth";
 import { authStore } from "$stores/auth.svelte";
@@ -78,19 +76,19 @@ async function handleSubmit(data: Record<string, any>) {
 }
 </script>
 
-<div class="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+<div class="min-h-screen bg-background flex items-center justify-center  px-4">
 	<div class="max-w-md w-full space-y-8">
 		<div class="text-center">
-			<h2 class="text-3xl font-bold text-gray-900">Sign in to your account</h2>
-			<p class="mt-2 text-sm text-gray-600">
+			<h2 class="text-foreground">Sign in to your account</h2>
+			<p class="mt-2 ">
 				Or
-				<a href="/auth/register" class="font-medium text-primary hover:text-primary-dark">
+				<a href="/auth/register" class="font-medium ">
 					create a new account
 				</a>
 			</p>
 		</div>
 
-		<div class="bg-white p-8 rounded-lg shadow-md">
+		<div class="bg-surface p-8 rounded-lg shadow-md">
 			{#if generalError}
 				<div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
 					{generalError}

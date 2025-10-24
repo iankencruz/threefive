@@ -217,10 +217,7 @@ function formatFileSize(bytes: number): string {
 			</label>
 		{/if}
 		
-		<!-- Debug info (remove after fixing) -->
-		<div class="text-xs text-gray-500 mb-2">
-			Debug: mediaId={mediaId}, hasMedia={hasMedia}, cacheSize={selectedMediaCache.size}
-		</div>
+		
 
 		{#if hasMedia && media}
 			<div class="relative group border-2 border-gray-200 rounded-lg p-4 bg-gray-50">
