@@ -100,3 +100,4 @@ config.yml
 coverage.out
 coverage.html
 .env.production
+backend
