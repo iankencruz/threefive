@@ -16,6 +16,9 @@ export const load: PageLoad = async ({ params, fetch }) => {
 		);
 
 		if (!response.ok) {
+      if (response.status === 404) {
+				throw error(404, "Page not found");
+			}
 			throw error(response.status, "Failed to load page");
 		}
 
@@ -24,7 +27,9 @@ export const load: PageLoad = async ({ params, fetch }) => {
 
 		return {
 			page,
+      isPreview: true,
 		};
+
 	} catch (err) {
 		console.error("Error loading page:", err);
 		throw error(500, "Failed to load page");

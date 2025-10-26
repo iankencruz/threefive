@@ -320,7 +320,7 @@
 		</div>
 	{/if}
 
-	<div class="bg-surface" bind:this={element}></div>
+	<div class="bg-surface " bind:this={element}></div>
 </div>
 
 <!-- Media Picker Modal - Modal Only Mode -->

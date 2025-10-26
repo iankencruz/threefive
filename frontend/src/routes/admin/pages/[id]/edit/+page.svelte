@@ -2,6 +2,7 @@
 <script lang="ts">
 	import { goto } from "$app/navigation";
 	import BlockEditor from "$components/blocks/BlockEditor.svelte";
+	import BlockRenderer from "$components/blocks/BlockRenderer.svelte";
 	import { PUBLIC_API_URL } from "$env/static/public";
 	import { ArrowLeftIcon, Eye, Trash2Icon } from "lucide-svelte";
 	import { toast } from "svelte-sonner";
@@ -39,7 +40,7 @@
 		};
 	}
 
-	let { data } = $props<{ data: PageData }>();
+	let { data }: { data: PageData } = $props();
 
 	let formData = $state({
 		title: data.page.title,
@@ -186,7 +187,7 @@
 	};
 </script>
 
-<div class="min-h-screen bg-background py-8 px-4">
+<div class="min-h-screen grid grid-cols-2 bg-background py-8 px-4">
   <form onsubmit={handleSubmit} class="max-w-5xl mx-auto">
     <div class="bg-surface rounded-lg shadow">
       <div class="border-b border-gray-200 px-8 py-6">
@@ -595,4 +596,8 @@
       </button>
     </div>
   </form>
+  
+  <div>
+	<BlockRenderer blocks={data.page.blocks || []} />
+  </div>
 </div>
