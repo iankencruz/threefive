@@ -8,9 +8,12 @@ import { PUBLIC_API_URL } from "$env/static/public";
 
 export const load: PageLoad = async ({ params, fetch }) => {
 	try {
-		const response = await fetch(`${PUBLIC_API_URL}/api/v1/pages/${params.id}`, {
-			credentials: "include",
-		});
+		const response = await fetch(
+			`${PUBLIC_API_URL}/api/v1/pages/${params.id}`,
+			{
+				credentials: "include",
+			},
+		);
 
 		if (!response.ok) {
 			throw error(response.status, "Failed to load page");

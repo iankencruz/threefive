@@ -1,57 +1,60 @@
-@import 'tailwindcss';
-@plugin '@tailwindcss/forms';
-@plugin '@tailwindcss/typography';
-
-
+@import "tailwindcss";
+@plugin "@tailwindcss/forms";
+@plugin "@tailwindcss/typography";
 
 /* Theme customization */
 @theme {
   /* === Brand === */
-  --color-primary: #FF4B1F;
-  --color-accent: #FF6A3D;
+  --color-primary: #ff4b1f;
+  --color-accent: #ff6a3d;
 
   /* === Neutrals === */
-  --color-background: #0C0C0C;
-  --color-surface: #1A1A1A;
-  --color-foreground: #FFF4E6;
+  --color-background: #0c0c0c;
+  --color-surface: #1a1a1a;
+  --color-foreground: #fff4e6;
 
   /* === Brand Support === */
-  --color-highlight: #FF934F;
-  --color-danger: #D72638;
+  --color-highlight: #ff934f;
+  --color-danger: #d72638;
 
   /* === Status Colours === */
-  --color-success: #22C55E;
+  --color-success: #22c55e;
   /* vivid green */
-  --color-warning: #FACC15;
+  --color-warning: #facc15;
   /* amber */
-  --color-info: #3B82F6;
+  --color-info: #3b82f6;
   /* bright blue */
 
   /* === UI Defaults === */
   --default-ring-width: 3px;
   --default-ring-color: var(--color-accent);
 
-
   /* Input background sits above surface but below foreground */
   --color-input-bg: color-mix(in oklab, var(--color-surface) 88%, black);
   /* Border slightly lighter than bg for separation */
   --color-input-border: color-mix(in oklab, var(--color-surface) 65%, white);
   /* Placeholders muted relative to foreground */
-  --color-input-placeholder: color-mix(in oklab, var(--color-foreground) 45%, transparent);
+  --color-input-placeholder: color-mix(in oklab,
+      var(--color-foreground) 45%,
+      transparent);
   /* Disabled state: dim bg and text */
-  --color-input-disabled-bg: color-mix(in oklab, var(--color-input-bg) 75%, black);
-  --color-input-disabled-text: color-mix(in oklab, var(--color-foreground) 40%, transparent);
+  --color-input-disabled-bg: color-mix(in oklab,
+      var(--color-input-bg) 75%,
+      black);
+  --color-input-disabled-text: color-mix(in oklab,
+      var(--color-foreground) 40%,
+      transparent);
   /* Focus ring and border derive from brand hues */
-  --color-input-focus-ring: color-mix(in oklab, var(--color-primary) 40%, transparent);
+  --color-input-focus-ring: color-mix(in oklab,
+      var(--color-primary) 40%,
+      transparent);
   --color-input-focus-border: var(--color-primary);
-
-
 }
 
-
-
 @layer base {
-  * {
+
+  p,
+  span {
     color: var(--color-foreground);
   }
 
@@ -60,27 +63,32 @@
     /* 32–48px */
     font-weight: 700;
     letter-spacing: -0.02em;
+    color: var(--color-foreground)
   }
 
   h2 {
     font-size: clamp(1.75rem, 4vw, 2.5rem);
     font-weight: 600;
     letter-spacing: -0.015em;
+    color: var(--color-foreground)
   }
 
   h3 {
     font-size: clamp(1.5rem, 3vw, 2rem);
     font-weight: 600;
+    color: var(--color-foreground)
   }
 
   h4 {
     font-size: 1.25rem;
     font-weight: 500;
+    color: var(--color-foreground)
   }
 
   h5 {
     font-size: 1.125rem;
     font-weight: 500;
+    color: var(--color-foreground)
   }
 
   h6 {
@@ -88,8 +96,8 @@
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.05em;
+    color: var(--color-foreground)
   }
-
 
   /* Links and focus states */
   a {
@@ -106,10 +114,7 @@
     outline: var(--default-ring-width) solid var(--default-ring-color);
     outline-offset: 2px;
   }
-
-
 }
-
 
 @layer components {
 
@@ -140,5 +145,4 @@
   .btn-danger {
     @apply bg-danger text-foreground hover:brightness-110 focus:ring-danger/50;
   }
-
 }

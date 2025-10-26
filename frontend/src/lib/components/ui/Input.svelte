@@ -1,51 +1,60 @@
 <script lang="ts">
-interface Props {
-	type?: "text" | "email" | "password" | "number" | "tel" | "url" | "date" | "textarea";
-	name: string;
-	label?: string;
-	placeholder?: string;
-	value?: string | number;
-	error?: string;
-	helperText?: string;
-	required?: boolean;
-	disabled?: boolean;
-	readonly?: boolean;
-	rows?: number; // For textarea
-	class?: string;
-	inputClass?: string;
-	oninput?: (e: Event) => void;
-	onblur?: (e: FocusEvent) => void;
-	onfocus?: (e: FocusEvent) => void;
-}
+	interface Props {
+		type?:
+			| "text"
+			| "email"
+			| "password"
+			| "number"
+			| "tel"
+			| "url"
+			| "date"
+			| "textarea";
+		name: string;
+		label?: string;
+		placeholder?: string;
+		value?: string | number;
+		error?: string;
+		helperText?: string;
+		required?: boolean;
+		disabled?: boolean;
+		readonly?: boolean;
+		rows?: number; // For textarea
+		class?: string;
+		inputClass?: string;
+		oninput?: (e: Event) => void;
+		onblur?: (e: FocusEvent) => void;
+		onfocus?: (e: FocusEvent) => void;
+	}
 
-let {
-	type = "text",
-	name,
-	label,
-	placeholder,
-	value = $bindable(""),
-	error,
-	helperText,
-	required = false,
-	disabled = false,
-	readonly = false,
-	rows = 4,
-	class: className = "",
-	inputClass = "",
-	oninput,
-	onblur,
-	onfocus,
-}: Props = $props();
+	let {
+		type = "text",
+		name,
+		label,
+		placeholder,
+		value = $bindable(""),
+		error,
+		helperText,
+		required = false,
+		disabled = false,
+		readonly = false,
+		rows = 4,
+		class: className = "",
+		inputClass = "",
+		oninput,
+		onblur,
+		onfocus,
+	}: Props = $props();
 
-const inputClasses = $derived(
-	[
-		"w-full px-4 py-2.5 rounded-sm border bg-input-bg border-input-border text-foreground placeholder:text-input-placeholder focus:outline-none focus:ring-2 focus:ring-input-focus-ring focus:border-input-focus-border transition-colors duration-200 appearance-none [background-clip:padding-box] disabled:bg-input-disabled-bg disabled:text-input-disabled-text disabled:cursor-not-allowed",
-		error && "form-input-error",
-		inputClass,
-	]
-		.filter(Boolean)
-		.join(" "),
-);
+	const inputClasses = $derived(
+		[
+			"w-full px-4 py-2.5 rounded-sm border bg-input-bg border-input-border text-foreground placeholder:text-input-placeholder focus:outline-none focus:ring-2 focus:ring-input-focus-ring focus:border-input-focus-border transition-colors duration-200 appearance-none [background-clip:padding-box] disabled:bg-input-disabled-bg disabled:text-input-disabled-text disabled:cursor-not-allowed",
+			error &&
+				"border-danger text-foreground focus:ring-danger/50 focus:border-danger",
+			inputClass,
+		]
+			.filter(Boolean)
+			.join(" "),
+	);
 </script>
 
 <div class={className}>
@@ -91,8 +100,8 @@ const inputClasses = $derived(
 	{/if}
 
 	{#if error}
-		<p class="form-error">{error}</p>
+		<p class="text-sm text-danger mt-1">{error}</p>
 	{:else if helperText}
-		<p class="form-helper">{helperText}</p>
+		<p class="text-sm text-foreground/60 mt-1">{helperText}</p>
 	{/if}
 </div>

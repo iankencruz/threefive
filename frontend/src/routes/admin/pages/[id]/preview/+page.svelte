@@ -1,18 +1,18 @@
 <!-- frontend/src/routes/admin/pages/[id]/preview/+page.svelte -->
 <script lang="ts">
-import BlockRenderer from "$lib/components/blocks/BlockRenderer.svelte";
-import { goto } from "$app/navigation";
-import type { PageData } from "./$types";
+	import BlockRenderer from "$lib/components/blocks/BlockRenderer.svelte";
+	import { goto } from "$app/navigation";
+	import type { PageData } from "./$types";
 
-let { data }: { data: PageData } = $props();
+	let { data }: { data: PageData } = $props();
 
-const formatDate = (dateString: string) => {
-	return new Date(dateString).toLocaleDateString("en-US", {
-		year: "numeric",
-		month: "long",
-		day: "numeric",
-	});
-};
+	const formatDate = (dateString: string) => {
+		return new Date(dateString).toLocaleDateString("en-US", {
+			year: "numeric",
+			month: "long",
+			day: "numeric",
+		});
+	};
 </script>
 
 <svelte:head>

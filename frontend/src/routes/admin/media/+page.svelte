@@ -1,231 +1,231 @@
 <script lang="ts">
-import { PUBLIC_API_URL } from "$env/static/public";
-import {
-	ImageUp,
-	Video,
-	Download,
-	Trash2,
-	X,
-	CheckCircle,
-	Loader2,
-} from "lucide-svelte";
-import { onMount } from "svelte";
+	import { PUBLIC_API_URL } from "$env/static/public";
+	import {
+		ImageUp,
+		Video,
+		Download,
+		Trash2,
+		X,
+		CheckCircle,
+		Loader2,
+	} from "lucide-svelte";
+	import { onMount } from "svelte";
 
-interface Media {
-	id: string;
-	filename: string;
-	original_filename: string;
-	mime_type: string;
-	url: string;
-	thumbnail_url?: string;
-	width?: number;
-	height?: number;
-	size_bytes: number;
-	created_at: string;
-}
-
-interface UploadState {
-	file: File;
-	progress: number;
-	status: "uploading" | "processing" | "success" | "error";
-	error?: string;
-	media?: Media;
-}
-
-let media = $state<Media[]>([]);
-let loading = $state(false);
-let uploads = $state<UploadState[]>([]);
-let selectedMedia = $state<Media | null>(null);
-let dragOver = $state(false);
-
-onMount(async () => {
-	await loadMedia();
-});
-
-async function loadMedia() {
-	loading = true;
-	try {
-		const response = await fetch(
-			`${PUBLIC_API_URL}/api/v1/media?page=1&limit=100`,
-			{
-				credentials: "include",
-			},
-		);
-
-		if (response.ok) {
-			const data = await response.json();
-			media = data.data || [];
-		}
-	} catch (error) {
-		console.error("Failed to load media:", error);
-	} finally {
-		loading = false;
+	interface Media {
+		id: string;
+		filename: string;
+		original_filename: string;
+		mime_type: string;
+		url: string;
+		thumbnail_url?: string;
+		width?: number;
+		height?: number;
+		size_bytes: number;
+		created_at: string;
 	}
-}
 
-function handleFileSelect(e: Event) {
-	const input = e.target as HTMLInputElement;
-	if (input.files) {
-		addFiles(Array.from(input.files));
+	interface UploadState {
+		file: File;
+		progress: number;
+		status: "uploading" | "processing" | "success" | "error";
+		error?: string;
+		media?: Media;
 	}
-}
 
-function handleDrop(e: DragEvent) {
-	e.preventDefault();
-	dragOver = false;
+	let media = $state<Media[]>([]);
+	let loading = $state(false);
+	let uploads = $state<UploadState[]>([]);
+	let selectedMedia = $state<Media | null>(null);
+	let dragOver = $state(false);
 
-	if (e.dataTransfer?.files) {
-		addFiles(Array.from(e.dataTransfer.files));
-	}
-}
-
-function addFiles(files: File[]) {
-	files.forEach((file) => {
-		const uploadState: UploadState = {
-			file,
-			progress: 0,
-			status: "uploading",
-		};
-		uploads = [...uploads, uploadState];
-		uploadFile(uploadState);
+	onMount(async () => {
+		await loadMedia();
 	});
-}
 
-// Replace the uploadFile function in your admin/media/+page.svelte
+	async function loadMedia() {
+		loading = true;
+		try {
+			const response = await fetch(
+				`${PUBLIC_API_URL}/api/v1/media?page=1&limit=100`,
+				{
+					credentials: "include",
+				},
+			);
 
-async function uploadFile(uploadState: UploadState) {
-	const formData = new FormData();
-	formData.append("file", uploadState.file);
+			if (response.ok) {
+				const data = await response.json();
+				media = data.data || [];
+			}
+		} catch (error) {
+			console.error("Failed to load media:", error);
+		} finally {
+			loading = false;
+		}
+	}
 
-	try {
-		const xhr = new XMLHttpRequest();
+	function handleFileSelect(e: Event) {
+		const input = e.target as HTMLInputElement;
+		if (input.files) {
+			addFiles(Array.from(input.files));
+		}
+	}
 
-		xhr.upload.addEventListener("progress", (e) => {
-			if (e.lengthComputable) {
-				const progress = Math.round((e.loaded / e.total) * 100);
+	function handleDrop(e: DragEvent) {
+		e.preventDefault();
+		dragOver = false;
 
-				// Find the index and update the specific upload state
-				const index = uploads.findIndex((u) => u.file === uploadState.file);
-				if (index !== -1) {
-					uploads[index].progress = progress;
+		if (e.dataTransfer?.files) {
+			addFiles(Array.from(e.dataTransfer.files));
+		}
+	}
 
-					if (progress === 100) {
-						uploads[index].status = "processing";
+	function addFiles(files: File[]) {
+		files.forEach((file) => {
+			const uploadState: UploadState = {
+				file,
+				progress: 0,
+				status: "uploading",
+			};
+			uploads = [...uploads, uploadState];
+			uploadFile(uploadState);
+		});
+	}
+
+	// Replace the uploadFile function in your admin/media/+page.svelte
+
+	async function uploadFile(uploadState: UploadState) {
+		const formData = new FormData();
+		formData.append("file", uploadState.file);
+
+		try {
+			const xhr = new XMLHttpRequest();
+
+			xhr.upload.addEventListener("progress", (e) => {
+				if (e.lengthComputable) {
+					const progress = Math.round((e.loaded / e.total) * 100);
+
+					// Find the index and update the specific upload state
+					const index = uploads.findIndex((u) => u.file === uploadState.file);
+					if (index !== -1) {
+						uploads[index].progress = progress;
+
+						if (progress === 100) {
+							uploads[index].status = "processing";
+						}
+
+						// Trigger reactivity
+						uploads = uploads;
 					}
-
-					// Trigger reactivity
-					uploads = uploads;
-				}
-			}
-		});
-
-		const uploadedMedia = await new Promise<Media>((resolve, reject) => {
-			xhr.addEventListener("load", () => {
-				if (xhr.status === 201) {
-					resolve(JSON.parse(xhr.responseText));
-				} else {
-					const error = JSON.parse(xhr.responseText);
-					reject(new Error(error.error || "Upload failed"));
 				}
 			});
 
-			xhr.addEventListener("error", () => {
-				reject(new Error("Network error during upload"));
+			const uploadedMedia = await new Promise<Media>((resolve, reject) => {
+				xhr.addEventListener("load", () => {
+					if (xhr.status === 201) {
+						resolve(JSON.parse(xhr.responseText));
+					} else {
+						const error = JSON.parse(xhr.responseText);
+						reject(new Error(error.error || "Upload failed"));
+					}
+				});
+
+				xhr.addEventListener("error", () => {
+					reject(new Error("Network error during upload"));
+				});
+
+				xhr.open("POST", `${PUBLIC_API_URL}/api/v1/media/upload`);
+				xhr.withCredentials = true;
+				xhr.send(formData);
 			});
 
-			xhr.open("POST", `${PUBLIC_API_URL}/api/v1/media/upload`);
-			xhr.withCredentials = true;
-			xhr.send(formData);
-		});
+			// Find and update the upload state to success
+			const index = uploads.findIndex((u) => u.file === uploadState.file);
+			if (index !== -1) {
+				uploads[index].status = "success";
+				uploads[index].media = uploadedMedia;
+				uploads = uploads;
+			}
 
-		// Find and update the upload state to success
-		const index = uploads.findIndex((u) => u.file === uploadState.file);
-		if (index !== -1) {
-			uploads[index].status = "success";
-			uploads[index].media = uploadedMedia;
-			uploads = uploads;
-		}
+			// Add to media list
+			media = [uploadedMedia, ...media];
 
-		// Add to media list
-		media = [uploadedMedia, ...media];
-
-		// Remove from uploads after 2 seconds
-		setTimeout(() => {
-			uploads = uploads.filter((u) => u.file !== uploadState.file);
-		}, 2000);
-	} catch (error) {
-		const index = uploads.findIndex((u) => u.file === uploadState.file);
-		if (index !== -1) {
-			uploads[index].status = "error";
-			uploads[index].error =
-				error instanceof Error ? error.message : "Upload failed";
-			uploads = uploads;
-		}
-	}
-}
-
-async function deleteMedia(m: Media) {
-	if (!confirm(`Delete ${m.original_filename}?`)) return;
-
-	try {
-		const response = await fetch(`${PUBLIC_API_URL}/api/v1/media/${m.id}`, {
-			method: "DELETE",
-			credentials: "include",
-		});
-
-		if (response.ok) {
-			media = media.filter((item) => item.id !== m.id);
-			if (selectedMedia?.id === m.id) {
-				selectedMedia = null;
+			// Remove from uploads after 2 seconds
+			setTimeout(() => {
+				uploads = uploads.filter((u) => u.file !== uploadState.file);
+			}, 2000);
+		} catch (error) {
+			const index = uploads.findIndex((u) => u.file === uploadState.file);
+			if (index !== -1) {
+				uploads[index].status = "error";
+				uploads[index].error =
+					error instanceof Error ? error.message : "Upload failed";
+				uploads = uploads;
 			}
 		}
-	} catch (error) {
-		console.error("Delete failed:", error);
-		alert("Failed to delete media");
 	}
-}
 
-function formatFileSize(bytes: number): string {
-	if (bytes < 1024) return bytes + " B";
-	if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
-	return (bytes / (1024 * 1024)).toFixed(1) + " MB";
-}
+	async function deleteMedia(m: Media) {
+		if (!confirm(`Delete ${m.original_filename}?`)) return;
 
-function isImage(m: Media): boolean {
-	return m.mime_type.startsWith("image/");
-}
+		try {
+			const response = await fetch(`${PUBLIC_API_URL}/api/v1/media/${m.id}`, {
+				method: "DELETE",
+				credentials: "include",
+			});
 
-function isVideo(m: Media): boolean {
-	return m.mime_type.startsWith("video/");
-}
-
-function getProcessingMessage(file: File): string {
-	if (file.type.startsWith("image/")) {
-		return "Converting to WebP and generating thumbnail...";
-	} else if (file.type.startsWith("video/")) {
-		return "Optimizing video and extracting thumbnail...";
+			if (response.ok) {
+				media = media.filter((item) => item.id !== m.id);
+				if (selectedMedia?.id === m.id) {
+					selectedMedia = null;
+				}
+			}
+		} catch (error) {
+			console.error("Delete failed:", error);
+			alert("Failed to delete media");
+		}
 	}
-	return "Processing file...";
-}
 
-function clearUploads() {
-	uploads = [];
-}
+	function formatFileSize(bytes: number): string {
+		if (bytes < 1024) return bytes + " B";
+		if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+		return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+	}
+
+	function isImage(m: Media): boolean {
+		return m.mime_type.startsWith("image/");
+	}
+
+	function isVideo(m: Media): boolean {
+		return m.mime_type.startsWith("video/");
+	}
+
+	function getProcessingMessage(file: File): string {
+		if (file.type.startsWith("image/")) {
+			return "Converting to WebP and generating thumbnail...";
+		} else if (file.type.startsWith("video/")) {
+			return "Optimizing video and extracting thumbnail...";
+		}
+		return "Processing file...";
+	}
+
+	function clearUploads() {
+		uploads = [];
+	}
 </script>
 
-<div class="min-h-screen bg-gray-50 py-8">
+<div class="min-h-screen bg-background py-8">
 	<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 		<!-- Header -->
 		<div class="mb-8">
-			<h1 class="text-3xl font-bold text-gray-900">Media Library</h1>
-			<p class="mt-2 text-gray-600">
+			<h1 class="">Media Library</h1>
+			<p class="mt-2 ">
 				Upload and manage images and videos with automatic processing
 			</p>
 		</div>
 
 		<!-- Upload Area -->
-		<div class="bg-white rounded-lg shadow-sm p-6 mb-8">
-			<h2 class="text-xl font-semibold text-gray-900 mb-4">Upload Media</h2>
+		<div class="bg-surface rounded-lg shadow-sm p-6 mb-8">
+			<h2 class="text-xl font-semibold   mb-4">Upload Media</h2>
 			
 			<div
 				class="relative border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer"
@@ -249,10 +249,10 @@ function clearUploads() {
 				<ImageUp class="mx-auto h-12 w-12 text-gray-400 mb-4" />
 				
 				<div class="space-y-2">
-					<p class="text-lg font-medium text-gray-900">
+					<p class="text-lg font-medium  ">
 						Drop files here or click to upload
 					</p>
-					<p class="text-sm text-gray-500">
+					<p class="text-sm  ">
 						Images will be converted to WebP • Videos will be optimized
 					</p>
 					<p class="text-xs text-gray-400">
@@ -270,14 +270,14 @@ function clearUploads() {
 						</h3>
 						<button
 							onclick={clearUploads}
-							class="text-sm text-gray-500 hover:text-gray-700"
+							class="text-sm   hover:text-gray-700"
 						>
 							Clear all
 						</button>
 					</div>
 
 					{#each uploads as upload (upload.file.name)}
-						<div class="border rounded-lg p-4 bg-white">
+						<div class="border rounded-lg p-4 bg-surface">
 							<div class="flex items-start gap-4">
 								<div class="flex-shrink-0">
 									{#if upload.status === 'success' && upload.media?.thumbnail_url}
@@ -300,10 +300,10 @@ function clearUploads() {
 								<div class="flex-1 min-w-0">
 									<div class="flex items-start justify-between gap-2 mb-2">
 										<div class="flex-1 min-w-0">
-											<p class="text-sm font-medium text-gray-900 truncate">
+											<p class="text-sm font-medium   truncate">
 												{upload.file.name}
 											</p>
-											<p class="text-xs text-gray-500">
+											<p class="text-xs  ">
 												{formatFileSize(upload.file.size)}
 												{#if upload.media && upload.media.width && upload.media.height}
 													• {upload.media.width}×{upload.media.height}
@@ -332,7 +332,7 @@ function clearUploads() {
 													style="width: {upload.progress}%"
 												></div>
 											</div>
-											<p class="text-xs text-gray-500">
+											<p class="text-xs  ">
 												{#if upload.status === 'uploading'}
 													Uploading... {upload.progress}%
 												{:else if upload.status === 'processing'}
@@ -373,25 +373,25 @@ function clearUploads() {
 		<!-- Stats -->
 		{#if media.length > 0}
 			<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-				<div class="bg-white rounded-lg shadow-sm p-4">
-					<div class="text-sm text-gray-500">Total Files</div>
-					<div class="text-2xl font-bold text-gray-900">{media.length}</div>
+				<div class="bg-surface rounded-lg shadow-sm p-4">
+					<div class="text-sm  ">Total Files</div>
+					<div class="text-2xl font-bold  ">{media.length}</div>
 				</div>
-				<div class="bg-white rounded-lg shadow-sm p-4">
-					<div class="text-sm text-gray-500">Images</div>
+				<div class="bg-surface rounded-lg shadow-sm p-4">
+					<div class="text-sm  ">Images</div>
 					<div class="text-2xl font-bold text-blue-600">
 						{media.filter(isImage).length}
 					</div>
 				</div>
-				<div class="bg-white rounded-lg shadow-sm p-4">
-					<div class="text-sm text-gray-500">Videos</div>
+				<div class="bg-surface rounded-lg shadow-sm p-4">
+					<div class="text-sm  ">Videos</div>
 					<div class="text-2xl font-bold text-purple-600">
 						{media.filter(isVideo).length}
 					</div>
 				</div>
-				<div class="bg-white rounded-lg shadow-sm p-4">
-					<div class="text-sm text-gray-500">Total Size</div>
-					<div class="text-2xl font-bold text-gray-900">
+				<div class="bg-surface rounded-lg shadow-sm p-4">
+					<div class="text-sm  ">Total Size</div>
+					<div class="text-2xl font-bold  ">
 						{formatFileSize(media.reduce((acc, m) => acc + m.size_bytes, 0))}
 					</div>
 				</div>
@@ -399,8 +399,8 @@ function clearUploads() {
 		{/if}
 
 		<!-- Media Grid -->
-		<div class="bg-white rounded-lg shadow-sm p-6">
-			<h2 class="text-xl font-semibold text-gray-900 mb-4">Media Library</h2>
+		<div class="bg-surface rounded-lg shadow-sm p-6">
+			<h2 class="text-xl font-semibold   mb-4">Media Library</h2>
 			
 			{#if loading}
 				<div class="flex items-center justify-center py-12">
@@ -409,7 +409,7 @@ function clearUploads() {
 			{:else if media.length === 0}
 				<div class="text-center py-12">
 					<ImageUp class="mx-auto h-16 w-16 text-gray-400 mb-4" />
-					<p class="text-gray-500">No media uploaded yet. Upload your first file!</p>
+					<p class=" ">No media uploaded yet. Upload your first file!</p>
 				</div>
 			{:else}
 				<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -479,7 +479,7 @@ function clearUploads() {
 			onclick={(e) => e.stopPropagation()}
 		>
 			<div class="flex items-center justify-between p-4 border-b">
-				<h3 class="text-lg font-semibold text-gray-900 truncate flex-1 mr-4">
+				<h3 class="text-lg font-semibold   truncate flex-1 mr-4">
 					{selectedMedia.original_filename}
 				</h3>
 				<button 
@@ -511,25 +511,25 @@ function clearUploads() {
 
 				<div class="grid grid-cols-2 gap-4 mb-6">
 					<div>
-						<div class="text-sm text-gray-500">Filename</div>
-						<div class="font-medium text-gray-900 break-all">{selectedMedia.filename}</div>
+						<div class="text-sm  ">Filename</div>
+						<div class="font-medium   break-all">{selectedMedia.filename}</div>
 					</div>
 					<div>
-						<div class="text-sm text-gray-500">Original Name</div>
-						<div class="font-medium text-gray-900 break-all">{selectedMedia.original_filename}</div>
+						<div class="text-sm  ">Original Name</div>
+						<div class="font-medium   break-all">{selectedMedia.original_filename}</div>
 					</div>
 					<div>
-						<div class="text-sm text-gray-500">Type</div>
-						<div class="font-medium text-gray-900">{selectedMedia.mime_type}</div>
+						<div class="text-sm  ">Type</div>
+						<div class="font-medium  ">{selectedMedia.mime_type}</div>
 					</div>
 					<div>
-						<div class="text-sm text-gray-500">Size</div>
-						<div class="font-medium text-gray-900">{formatFileSize(selectedMedia.size_bytes)}</div>
+						<div class="text-sm  ">Size</div>
+						<div class="font-medium  ">{formatFileSize(selectedMedia.size_bytes)}</div>
 					</div>
 					{#if selectedMedia.width && selectedMedia.height}
 						<div>
-							<div class="text-sm text-gray-500">Dimensions</div>
-							<div class="font-medium text-gray-900">
+							<div class="text-sm  ">Dimensions</div>
+							<div class="font-medium  ">
 								{selectedMedia.width} × {selectedMedia.height}
 							</div>
 						</div>
@@ -538,14 +538,14 @@ function clearUploads() {
 
 				<div class="space-y-3 mb-6">
 					<div>
-						<div class="text-sm text-gray-500 mb-1">Media URL</div>
+						<div class="text-sm   mb-1">Media URL</div>
 						<div class="bg-gray-50 p-2 rounded text-sm font-mono text-gray-700 break-all">
 							{selectedMedia.url}
 						</div>
 					</div>
 					{#if selectedMedia.thumbnail_url}
 						<div>
-							<div class="text-sm text-gray-500 mb-1">Thumbnail URL</div>
+							<div class="text-sm   mb-1">Thumbnail URL</div>
 							<div class="bg-gray-50 p-2 rounded text-sm font-mono text-gray-700 break-all">
 								{selectedMedia.thumbnail_url}
 							</div>
