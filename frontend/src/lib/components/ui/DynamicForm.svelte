@@ -1,189 +1,203 @@
 <!-- frontend/src/lib/components/ui/DynamicForm.svelte -->
 <script lang="ts">
-import Button from "./Button.svelte";
-import Input from "./Input.svelte";
-import { ImageUp, CheckCircle } from "lucide-svelte";
-import { PUBLIC_API_URL } from "$env/static/public";
-import type { Media } from "$api/media";
-import { untrack } from "svelte";
-import MediaPicker from "./MediaPicker.svelte";
+	import Button from "./Button.svelte";
+	import Input from "./Input.svelte";
+	import { ImageUp, CheckCircle } from "lucide-svelte";
+	import { PUBLIC_API_URL } from "$env/static/public";
+	import type { Media } from "$api/media";
+	import { untrack } from "svelte";
+	import MediaPicker from "./MediaPicker.svelte";
 
-interface FormField {
-	name: string;
-	label: string;
-	type?: "text" | "email" | "password" | "tel" | "url" | "date" | "number" | "textarea" | "media";
-	placeholder?: string;
-	required?: boolean;
-	value?: string | number;
-	colSpan?: number;
-	class?: string;
-	helperText?: string;
-	rows?: number;
-	inputClass?: string;
-}
+	interface FormField {
+		name: string;
+		label: string;
+		type?:
+			| "text"
+			| "email"
+			| "password"
+			| "tel"
+			| "url"
+			| "date"
+			| "number"
+			| "textarea"
+			| "media";
+		placeholder?: string;
+		required?: boolean;
+		value?: string | number;
+		colSpan?: number;
+		class?: string;
+		helperText?: string;
+		rows?: number;
+		inputClass?: string;
+	}
 
-export interface FormConfig {
-	fields: FormField[];
-	submitText?: string;
-	showSubmit?: boolean;
-	columns?: number;
-}
+	export interface FormConfig {
+		fields: FormField[];
+		submitText?: string;
+		showSubmit?: boolean;
+		columns?: number;
+	}
 
-interface Props {
-	config: FormConfig;
-	formData?: Record<string, any>;
-	onSubmit?: (data: Record<string, any>) => void | Promise<void>;
-	onchange?: (data: Record<string, any>) => void;
-	errors?: Record<string, string>;
-	children?: import("svelte").Snippet;
-	asForm?: boolean;
-}
+	interface Props {
+		config: FormConfig;
+		formData?: Record<string, any>;
+		onSubmit?: (data: Record<string, any>) => void | Promise<void>;
+		onchange?: (data: Record<string, any>) => void;
+		errors?: Record<string, string>;
+		children?: import("svelte").Snippet;
+		asForm?: boolean;
+	}
 
-let {
-	config,
-	formData: initialFormData = {},
-	onSubmit,
-	onchange,
-	errors = {},
-	children,
-	asForm = true,
-}: Props = $props();
+	let {
+		config,
+		formData: initialFormData = {},
+		onSubmit,
+		onchange,
+		errors = {},
+		children,
+		asForm = true,
+	}: Props = $props();
 
-// Helper function to get default values for all fields
-function getDefaultFormData(formConfig: FormConfig): Record<string, any> {
-	if (!formConfig?.fields) return {};
+	// Helper function to get default values for all fields
+	function getDefaultFormData(formConfig: FormConfig): Record<string, any> {
+		if (!formConfig?.fields) return {};
 
-	return formConfig.fields.reduce(
-		(acc, field) => {
-			// Media fields default to null, others to empty string
-			acc[field.name] = field.value ?? (field.type === "media" ? null : "");
-			return acc;
-		},
-		{} as Record<string, any>,
+		return formConfig.fields.reduce(
+			(acc, field) => {
+				// Media fields default to null, others to empty string
+				acc[field.name] = field.value ?? (field.type === "media" ? null : "");
+				return acc;
+			},
+			{} as Record<string, any>,
+		);
+	}
+
+	// Initialize formData immediately with defaults to prevent undefined binding
+	let formData = $state<Record<string, any>>(
+		config?.fields
+			? initialFormData && Object.keys(initialFormData).length > 0
+				? { ...getDefaultFormData(config), ...initialFormData }
+				: getDefaultFormData(config)
+			: {},
 	);
-}
 
-// Initialize formData immediately with defaults to prevent undefined binding
-let formData = $state<Record<string, any>>(
-	config?.fields
-		? initialFormData && Object.keys(initialFormData).length > 0
-			? { ...getDefaultFormData(config), ...initialFormData }
-			: getDefaultFormData(config)
-		: {},
-);
+	// Media picker state
+	let showMediaPicker = $state(false);
+	let currentMediaField = $state<string>("");
+	let selectedMediaCache = $state<Map<string, Media>>(new Map());
 
-// Media picker state
-let showMediaPicker = $state(false);
-let currentMediaField = $state<string>("");
-let selectedMediaCache = $state<Map<string, Media>>(new Map());
-
-// Notify parent of changes (with untrack to prevent infinite loops)
-$effect(() => {
-	if (onchange && Object.keys(formData).length > 0) {
-		untrack(() => onchange(formData));
-	}
-});
-
-// Load media info for fields with existing values
-$effect.pre(() => {
-	if (!config?.fields) {
-		console.log("   ❌ No config.fields");
-		return;
-	}
-
-	config.fields.forEach((field) => {
-		if (field.type !== "media") return;
-
-		const mediaId = formData[field.name];
-
-		if (mediaId && typeof mediaId === "string" && !selectedMediaCache.has(mediaId)) {
-			loadMediaInfo(mediaId);
+	// Notify parent of changes (with untrack to prevent infinite loops)
+	$effect(() => {
+		if (onchange && Object.keys(formData).length > 0) {
+			untrack(() => onchange(formData));
 		}
 	});
-});
 
-function getColSpanClass(colSpan?: number): string {
-	if (!colSpan) return "col-span-1";
-	return `col-span-${colSpan}`;
-}
+	// Load media info for fields with existing values
+	$effect.pre(() => {
+		if (!config?.fields) {
+			console.log("   ❌ No config.fields");
+			return;
+		}
 
-async function handleSubmit(e: SubmitEvent) {
-	e.preventDefault();
-	if (onSubmit) {
-		await onSubmit(formData);
+		config.fields.forEach((field) => {
+			if (field.type !== "media") return;
+
+			const mediaId = formData[field.name];
+
+			if (
+				mediaId &&
+				typeof mediaId === "string" &&
+				!selectedMediaCache.has(mediaId)
+			) {
+				loadMediaInfo(mediaId);
+			}
+		});
+	});
+
+	function getColSpanClass(colSpan?: number): string {
+		if (!colSpan) return "col-span-1";
+		return `col-span-${colSpan}`;
 	}
-}
 
-function openMediaPicker(fieldName: string) {
-	currentMediaField = fieldName;
-	showMediaPicker = true;
-}
+	async function handleSubmit(e: SubmitEvent) {
+		e.preventDefault();
+		if (onSubmit) {
+			await onSubmit(formData);
+		}
+	}
 
-function closeMediaPicker() {
-	showMediaPicker = false;
-	currentMediaField = "";
-}
+	function openMediaPicker(fieldName: string) {
+		currentMediaField = fieldName;
+		showMediaPicker = true;
+	}
 
-function handleMediaSelect(mediaId: string, media: Media) {
-	if (currentMediaField) {
-		formData[currentMediaField] = mediaId;
-		const newCache = new Map(selectedMediaCache);
-		newCache.set(mediaId, media);
-		selectedMediaCache = newCache;
+	function closeMediaPicker() {
+		showMediaPicker = false;
 		currentMediaField = "";
 	}
-	closeMediaPicker();
-}
 
-function clearMedia(fieldName: string) {
-	const mediaId = formData[fieldName];
-	formData[fieldName] = null;
-	if (mediaId) {
-		const newCache = new Map(selectedMediaCache);
-		newCache.delete(mediaId);
-		selectedMediaCache = newCache;
-	}
-}
-
-// Load selected media info when field has a value
-async function loadMediaInfo(mediaId: string) {
-	if (!mediaId) {
-		console.log("   ❌ No mediaId");
-		return;
-	}
-
-	if (selectedMediaCache.has(mediaId)) {
-		console.log("   i  Already in cache");
-		return;
-	}
-
-	try {
-		const response = await fetch(`${PUBLIC_API_URL}/api/v1/media/${mediaId}`, {
-			credentials: "include",
-		});
-
-		if (response.ok) {
-			const media = await response.json();
+	function handleMediaSelect(mediaId: string, media: Media) {
+		if (currentMediaField) {
+			formData[currentMediaField] = mediaId;
 			const newCache = new Map(selectedMediaCache);
 			newCache.set(mediaId, media);
 			selectedMediaCache = newCache;
+			currentMediaField = "";
 		}
-	} catch (err) {
-		console.error("   ❌ Failed to load media:", err);
+		closeMediaPicker();
 	}
-}
 
-// Helper to check if field type is media
-function isMediaField(type?: string): boolean {
-	return type === "media";
-}
+	function clearMedia(fieldName: string) {
+		const mediaId = formData[fieldName];
+		formData[fieldName] = null;
+		if (mediaId) {
+			const newCache = new Map(selectedMediaCache);
+			newCache.delete(mediaId);
+			selectedMediaCache = newCache;
+		}
+	}
 
-// Helper to get valid input type (excludes 'media')
-function getInputType(
-	type?: string,
-): "text" | "email" | "password" | "tel" | "url" | "date" | "number" | "textarea" | undefined {
-	if (type === "media") return undefined;
-	return type as
+	// Load selected media info when field has a value
+	async function loadMediaInfo(mediaId: string) {
+		if (!mediaId) {
+			console.log("   ❌ No mediaId");
+			return;
+		}
+
+		if (selectedMediaCache.has(mediaId)) {
+			console.log("   i  Already in cache");
+			return;
+		}
+
+		try {
+			const response = await fetch(
+				`${PUBLIC_API_URL}/api/v1/media/${mediaId}`,
+				{
+					credentials: "include",
+				},
+			);
+
+			if (response.ok) {
+				const media = await response.json();
+				const newCache = new Map(selectedMediaCache);
+				newCache.set(mediaId, media);
+				selectedMediaCache = newCache;
+			}
+		} catch (err) {
+			console.error("   ❌ Failed to load media:", err);
+		}
+	}
+
+	// Helper to check if field type is media
+	function isMediaField(type?: string): boolean {
+		return type === "media";
+	}
+
+	// Helper to get valid input type (excludes 'media')
+	function getInputType(
+		type?: string,
+	):
 		| "text"
 		| "email"
 		| "password"
@@ -192,14 +206,25 @@ function getInputType(
 		| "date"
 		| "number"
 		| "textarea"
-		| undefined;
-}
+		| undefined {
+		if (type === "media") return undefined;
+		return type as
+			| "text"
+			| "email"
+			| "password"
+			| "tel"
+			| "url"
+			| "date"
+			| "number"
+			| "textarea"
+			| undefined;
+	}
 
-function formatFileSize(bytes: number): string {
-	if (bytes < 1024) return bytes + " B";
-	if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
-	return (bytes / (1024 * 1024)).toFixed(1) + " MB";
-}
+	function formatFileSize(bytes: number): string {
+		if (bytes < 1024) return bytes + " B";
+		if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+		return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+	}
 </script>
 
 {#snippet mediaFieldInput(field: FormField)}
@@ -209,7 +234,7 @@ function formatFileSize(bytes: number): string {
 	
 	<div class="space-y-2">
 		{#if field.label}
-			<label class="block text-sm font-medium text-gray-700">
+			<label class="block text-sm font-medium ">
 				{field.label}
 				{#if field.required}
 					<span class="text-red-500">*</span>
@@ -220,7 +245,7 @@ function formatFileSize(bytes: number): string {
 		
 
 		{#if hasMedia && media}
-			<div class="relative group border-2 border-gray-200 rounded-lg p-4 bg-gray-50">
+			<div class="relative group border border-input-border rounded-lg p-4 bg-surface">
 				<button
 					type="button"
 					onclick={() => clearMedia(field.name)}
@@ -239,7 +264,7 @@ function formatFileSize(bytes: number): string {
 						class="w-20 h-20 object-cover rounded"
 					/>
 					<div class="flex-1 min-w-0">
-						<p class="text-sm font-medium text-gray-900 truncate">{media.original_filename}</p>
+						<p class="text-sm font-medium  truncate">{media.original_filename}</p>
 						<p class="text-xs text-gray-500">
 							{formatFileSize(media.size_bytes)}
 							{#if media.width && media.height}

@@ -47,7 +47,7 @@
 
 	const inputClasses = $derived(
 		[
-			"w-full px-4 py-2.5 rounded-sm border bg-input-bg border-input-border text-foreground placeholder:text-input-placeholder focus:outline-none focus:ring-2 focus:ring-input-focus-ring focus:border-input-focus-border transition-colors duration-200 appearance-none [background-clip:padding-box] disabled:bg-input-disabled-bg disabled:text-input-disabled-text disabled:cursor-not-allowed",
+			"form-input",
 			error &&
 				"border-danger text-foreground focus:ring-danger/50 focus:border-danger",
 			inputClass,

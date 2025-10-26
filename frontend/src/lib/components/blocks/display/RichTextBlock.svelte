@@ -1,17 +1,17 @@
 <!-- frontend/src/lib/components/blocks/display/RichTextBlock.svelte -->
 <script lang="ts">
-interface RichtextBlockData {
-	content: string;
-}
+	interface RichtextBlockData {
+		content: string;
+	}
 
-interface Props {
-	data: RichtextBlockData;
-}
+	interface Props {
+		data: RichtextBlockData;
+	}
 
-let { data }: Props = $props();
+	let { data }: Props = $props();
 </script>
 
-<section class="py-12 bg-white">
+<section class="py-12 bg-background">
 	<div class="container mx-auto px-4 max-w-7xl">
 		<article class="prose prose-lg max-w-none">
 			{@html data.content}
