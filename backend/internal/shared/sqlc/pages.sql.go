@@ -7,7 +7,6 @@ package sqlc
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -311,7 +310,6 @@ func (q *Queries) PurgeOldDeletedPages(ctx context.Context, cutoffDate pgtype.Ti
 	if err != nil {
 		return 0, err
 	}
-	fmt.Printf("Purge Deleted Page Result: %v\n", result)
 	return result.RowsAffected(), nil
 }
 

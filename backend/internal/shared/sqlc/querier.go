@@ -25,6 +25,8 @@ type Querier interface {
 	// Blog Data Queries
 	// ============================================
 	CreateBlogData(ctx context.Context, arg CreateBlogDataParams) (PageBlogData, error)
+	CreateGallery(ctx context.Context, title string) (Galleries, error)
+	CreateGalleryImage(ctx context.Context, arg CreateGalleryImageParams) (GalleryImages, error)
 	// ============================================
 	// Header Block Queries
 	// ============================================
@@ -55,9 +57,12 @@ type Querier interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) (Users, error)
 	DeactivateAllUserSessions(ctx context.Context, userID uuid.UUID) error
 	DeactivateSession(ctx context.Context, token string) error
+	DeleteAllGalleryImages(ctx context.Context, galleryID uuid.UUID) error
 	DeleteBlock(ctx context.Context, id uuid.UUID) error
 	DeleteBlocksByPageID(ctx context.Context, pageID uuid.UUID) error
 	DeleteBlogData(ctx context.Context, pageID uuid.UUID) error
+	DeleteGallery(ctx context.Context, id uuid.UUID) error
+	DeleteGalleryImage(ctx context.Context, id uuid.UUID) error
 	DeleteHeaderBlock(ctx context.Context, blockID uuid.UUID) error
 	DeleteHeroBlock(ctx context.Context, blockID uuid.UUID) error
 	DeletePageSEO(ctx context.Context, pageID uuid.UUID) error
@@ -69,6 +74,9 @@ type Querier interface {
 	GetBlocksByPageID(ctx context.Context, pageID uuid.UUID) ([]Blocks, error)
 	GetBlogData(ctx context.Context, pageID uuid.UUID) (PageBlogData, error)
 	GetEntitiesForMedia(ctx context.Context, mediaID uuid.UUID) ([]GetEntitiesForMediaRow, error)
+	GetGalleryByID(ctx context.Context, id uuid.UUID) (Galleries, error)
+	GetGalleryImageByID(ctx context.Context, id uuid.UUID) (GalleryImages, error)
+	GetGalleryImages(ctx context.Context, galleryID uuid.UUID) ([]GalleryImages, error)
 	GetHeaderBlockByBlockID(ctx context.Context, blockID uuid.UUID) (BlockHeader, error)
 	GetHeaderBlocksByPageID(ctx context.Context, pageID uuid.UUID) ([]BlockHeader, error)
 	GetHeroBlockByBlockID(ctx context.Context, blockID uuid.UUID) (BlockHero, error)
@@ -93,6 +101,7 @@ type Querier interface {
 	LinkMediaToEntity(ctx context.Context, arg LinkMediaToEntityParams) (MediaRelations, error)
 	ListBlogPages(ctx context.Context, arg ListBlogPagesParams) ([]ListBlogPagesRow, error)
 	ListFeaturedBlogPages(ctx context.Context, limitVal int32) ([]ListFeaturedBlogPagesRow, error)
+	ListGalleries(ctx context.Context, arg ListGalleriesParams) ([]Galleries, error)
 	ListMedia(ctx context.Context, arg ListMediaParams) ([]Media, error)
 	ListMediaByUser(ctx context.Context, uploadedBy uuid.UUID) ([]Media, error)
 	ListPages(ctx context.Context, arg ListPagesParams) ([]Pages, error)
@@ -105,8 +114,10 @@ type Querier interface {
 	UnlinkMediaFromEntity(ctx context.Context, arg UnlinkMediaFromEntityParams) error
 	UpdateBlockOrder(ctx context.Context, arg UpdateBlockOrderParams) error
 	UpdateBlogData(ctx context.Context, arg UpdateBlogDataParams) (PageBlogData, error)
+	UpdateGallery(ctx context.Context, arg UpdateGalleryParams) (Galleries, error)
 	UpdateHeaderBlock(ctx context.Context, arg UpdateHeaderBlockParams) (BlockHeader, error)
 	UpdateHeroBlock(ctx context.Context, arg UpdateHeroBlockParams) (BlockHero, error)
+	UpdateImagePosition(ctx context.Context, arg UpdateImagePositionParams) error
 	UpdatePage(ctx context.Context, arg UpdatePageParams) (Pages, error)
 	UpdatePageSEO(ctx context.Context, arg UpdatePageSEOParams) (PageSeo, error)
 	UpdatePageStatus(ctx context.Context, arg UpdatePageStatusParams) (Pages, error)

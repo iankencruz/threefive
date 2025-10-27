@@ -175,6 +175,21 @@ type Blocks struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+type Galleries struct {
+	ID        uuid.UUID `json:"id"`
+	Title     string    `json:"title"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type GalleryImages struct {
+	ID        uuid.UUID `json:"id"`
+	GalleryID uuid.UUID `json:"gallery_id"`
+	ImageUrl  string    `json:"image_url"`
+	Position  int32     `json:"position"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 type Media struct {
 	ID               uuid.UUID   `json:"id"`
 	Filename         string      `json:"filename"`
