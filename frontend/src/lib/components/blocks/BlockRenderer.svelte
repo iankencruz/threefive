@@ -1,26 +1,26 @@
 <!-- frontend/src/lib/components/blocks/BlockRenderer.svelte -->
 <script lang="ts">
-import HeroBlock from "./display/HeroBlock.svelte";
-import RichTextBlock from "./display/RichTextBlock.svelte";
-import HeaderBlock from "./display/HeaderBlock.svelte";
+	import HeroBlock from "./display/HeroBlock.svelte";
+	import RichTextBlock from "./display/RichTextBlock.svelte";
+	import HeaderBlock from "./display/HeaderBlock.svelte";
 
-interface Block {
-	id?: string;
-	type: string;
-	data: Record<string, any>;
-	sort_order?: number;
-}
+	interface Block {
+		id?: string;
+		type: string;
+		data: Record<string, any>;
+		sort_order?: number;
+	}
 
-interface Props {
-	blocks: Block[];
-}
+	interface Props {
+		blocks: Block[];
+	}
 
-let { blocks = [] }: Props = $props();
+	let { blocks = [] }: Props = $props();
 
-// Sort blocks by sort_order if available
-const sortedBlocks = $derived(
-	[...blocks].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)),
-);
+	// Sort blocks by sort_order if available
+	const sortedBlocks = $derived(
+		[...blocks].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)),
+	);
 </script>
 
 {#if sortedBlocks.length === 0}

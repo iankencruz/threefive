@@ -126,9 +126,6 @@
 </script>
 
 <div class="block-editor">
-	<div class="flex justify-between items-center mb-6">
-		<h2 class="text-2xl">Content Blocks</h2>
-	</div>
 
 	{#if blocks.length === 0}
 		<div class="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
