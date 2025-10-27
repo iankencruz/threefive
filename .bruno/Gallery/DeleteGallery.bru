@@ -1,0 +1,42 @@
+meta {
+  name: Delete Gallery
+  type: http
+  seq: 7
+}
+
+delete {
+  url: {{base-url}}/api/v1/galleries/{{gallery_id}}
+  body: none
+  auth: none
+}
+
+headers {
+  Cookie: session_token=ohHaxQZGCQO2EPaf4tVwF6tlZ_oON57k24JebvPQZkc=
+}
+
+assert {
+  res.status: eq 204
+}
+
+tests {
+  test("should return 204 status", function() {
+    expect(res.getStatus()).to.equal(204);
+  });
+  
+  test("should have empty response body", function() {
+    expect(res.getBody()).to.be.empty;
+  });
+  
+  test("should clean up environment variable", function() {
+    bru.setEnvVar('gallery_id', '');
+    console.log('✅ Cleaned up gallery_id');
+  });
+}
+
+docs {
+  # Delete Gallery
+  
+  Permanently deletes a gallery and all its image links.
+  This is a cascading delete - all linked images are also removed.
+  Requires authentication.
+}

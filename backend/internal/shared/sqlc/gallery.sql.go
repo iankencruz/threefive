@@ -9,59 +9,31 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createGallery = `-- name: CreateGallery :one
-INSERT INTO galleries (title, created_at, updated_at)
-VALUES ($1, NOW(), NOW())
-RETURNING id, title, created_at, updated_at
+INSERT INTO galleries (title, description, created_at, updated_at)
+VALUES ($1, $2, NOW(), NOW())
+RETURNING id, title, description, created_at, updated_at
 `
 
-func (q *Queries) CreateGallery(ctx context.Context, title string) (Galleries, error) {
-	row := q.db.QueryRow(ctx, createGallery, title)
+type CreateGalleryParams struct {
+	Title       string      `json:"title"`
+	Description pgtype.Text `json:"description"`
+}
+
+func (q *Queries) CreateGallery(ctx context.Context, arg CreateGalleryParams) (Galleries, error) {
+	row := q.db.QueryRow(ctx, createGallery, arg.Title, arg.Description)
 	var i Galleries
 	err := row.Scan(
 		&i.ID,
 		&i.Title,
+		&i.Description,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return i, err
-}
-
-const createGalleryImage = `-- name: CreateGalleryImage :one
-INSERT INTO gallery_images (gallery_id, image_url, position, created_at)
-VALUES ($1, $2, $3, NOW())
-RETURNING id, gallery_id, image_url, position, created_at
-`
-
-type CreateGalleryImageParams struct {
-	GalleryID uuid.UUID `json:"gallery_id"`
-	ImageUrl  string    `json:"image_url"`
-	Position  int32     `json:"position"`
-}
-
-func (q *Queries) CreateGalleryImage(ctx context.Context, arg CreateGalleryImageParams) (GalleryImages, error) {
-	row := q.db.QueryRow(ctx, createGalleryImage, arg.GalleryID, arg.ImageUrl, arg.Position)
-	var i GalleryImages
-	err := row.Scan(
-		&i.ID,
-		&i.GalleryID,
-		&i.ImageUrl,
-		&i.Position,
-		&i.CreatedAt,
-	)
-	return i, err
-}
-
-const deleteAllGalleryImages = `-- name: DeleteAllGalleryImages :exec
-DELETE FROM gallery_images
-WHERE gallery_id = $1
-`
-
-func (q *Queries) DeleteAllGalleryImages(ctx context.Context, galleryID uuid.UUID) error {
-	_, err := q.db.Exec(ctx, deleteAllGalleryImages, galleryID)
-	return err
 }
 
 const deleteGallery = `-- name: DeleteGallery :exec
@@ -74,18 +46,8 @@ func (q *Queries) DeleteGallery(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
-const deleteGalleryImage = `-- name: DeleteGalleryImage :exec
-DELETE FROM gallery_images
-WHERE id = $1
-`
-
-func (q *Queries) DeleteGalleryImage(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.Exec(ctx, deleteGalleryImage, id)
-	return err
-}
-
 const getGalleryByID = `-- name: GetGalleryByID :one
-SELECT id, title, created_at, updated_at FROM galleries
+SELECT id, title, description, created_at, updated_at FROM galleries
 WHERE id = $1
 `
 
@@ -95,75 +57,39 @@ func (q *Queries) GetGalleryByID(ctx context.Context, id uuid.UUID) (Galleries, 
 	err := row.Scan(
 		&i.ID,
 		&i.Title,
+		&i.Description,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return i, err
 }
 
-const getGalleryImageByID = `-- name: GetGalleryImageByID :one
-SELECT id, gallery_id, image_url, position, created_at FROM gallery_images
-WHERE id = $1
+const getGalleryMediaCount = `-- name: GetGalleryMediaCount :one
+SELECT COUNT(*) as count
+FROM media_relations
+WHERE entity_type = 'gallery' AND entity_id = $1
 `
 
-func (q *Queries) GetGalleryImageByID(ctx context.Context, id uuid.UUID) (GalleryImages, error) {
-	row := q.db.QueryRow(ctx, getGalleryImageByID, id)
-	var i GalleryImages
-	err := row.Scan(
-		&i.ID,
-		&i.GalleryID,
-		&i.ImageUrl,
-		&i.Position,
-		&i.CreatedAt,
-	)
-	return i, err
-}
-
-const getGalleryImages = `-- name: GetGalleryImages :many
-SELECT id, gallery_id, image_url, position, created_at FROM gallery_images
-WHERE gallery_id = $1
-ORDER BY position ASC
-`
-
-func (q *Queries) GetGalleryImages(ctx context.Context, galleryID uuid.UUID) ([]GalleryImages, error) {
-	rows, err := q.db.Query(ctx, getGalleryImages, galleryID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []GalleryImages
-	for rows.Next() {
-		var i GalleryImages
-		if err := rows.Scan(
-			&i.ID,
-			&i.GalleryID,
-			&i.ImageUrl,
-			&i.Position,
-			&i.CreatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+func (q *Queries) GetGalleryMediaCount(ctx context.Context, entityID uuid.UUID) (int64, error) {
+	row := q.db.QueryRow(ctx, getGalleryMediaCount, entityID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
 }
 
 const listGalleries = `-- name: ListGalleries :many
-SELECT id, title, created_at, updated_at FROM galleries
+SELECT id, title, description, created_at, updated_at FROM galleries
 ORDER BY created_at DESC
-LIMIT $1 OFFSET $2
+LIMIT $2 OFFSET $1
 `
 
 type ListGalleriesParams struct {
-	Limit  int32 `json:"limit"`
-	Offset int32 `json:"offset"`
+	OffsetVal int32 `json:"offset_val"`
+	LimitVal  int32 `json:"limit_val"`
 }
 
 func (q *Queries) ListGalleries(ctx context.Context, arg ListGalleriesParams) ([]Galleries, error) {
-	rows, err := q.db.Query(ctx, listGalleries, arg.Limit, arg.Offset)
+	rows, err := q.db.Query(ctx, listGalleries, arg.OffsetVal, arg.LimitVal)
 	if err != nil {
 		return nil, err
 	}
@@ -174,6 +100,7 @@ func (q *Queries) ListGalleries(ctx context.Context, arg ListGalleriesParams) ([
 		if err := rows.Scan(
 			&i.ID,
 			&i.Title,
+			&i.Description,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -189,40 +116,29 @@ func (q *Queries) ListGalleries(ctx context.Context, arg ListGalleriesParams) ([
 
 const updateGallery = `-- name: UpdateGallery :one
 UPDATE galleries
-SET title = $1, updated_at = NOW()
-WHERE id = $2
-RETURNING id, title, created_at, updated_at
+SET 
+    title = $1,
+    description = $2,
+    updated_at = NOW()
+WHERE id = $3
+RETURNING id, title, description, created_at, updated_at
 `
 
 type UpdateGalleryParams struct {
-	Title string    `json:"title"`
-	ID    uuid.UUID `json:"id"`
+	Title       string      `json:"title"`
+	Description pgtype.Text `json:"description"`
+	ID          uuid.UUID   `json:"id"`
 }
 
 func (q *Queries) UpdateGallery(ctx context.Context, arg UpdateGalleryParams) (Galleries, error) {
-	row := q.db.QueryRow(ctx, updateGallery, arg.Title, arg.ID)
+	row := q.db.QueryRow(ctx, updateGallery, arg.Title, arg.Description, arg.ID)
 	var i Galleries
 	err := row.Scan(
 		&i.ID,
 		&i.Title,
+		&i.Description,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return i, err
-}
-
-const updateImagePosition = `-- name: UpdateImagePosition :exec
-UPDATE gallery_images
-SET position = $1
-WHERE id = $2
-`
-
-type UpdateImagePositionParams struct {
-	Position int32     `json:"position"`
-	ID       uuid.UUID `json:"id"`
-}
-
-func (q *Queries) UpdateImagePosition(ctx context.Context, arg UpdateImagePositionParams) error {
-	_, err := q.db.Exec(ctx, updateImagePosition, arg.Position, arg.ID)
-	return err
 }

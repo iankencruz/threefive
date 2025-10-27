@@ -1,0 +1,54 @@
+meta {
+  name: Get Gallery
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base-url}}/api/v1/galleries/{{gallery_id}}
+  body: none
+  auth: none
+}
+
+headers {
+  Cookie: session_token=ohHaxQZGCQO2EPaf4tVwF6tlZ_oON57k24JebvPQZkc=
+}
+
+assert {
+  res.status: eq 200
+  res.body.id: isDefined
+  res.body.title: isDefined
+  res.body.images: isDefined
+}
+
+tests {
+  test("should return 200 status", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("should return gallery with all fields", function() {
+    const gallery = res.getBody();
+    expect(gallery.id).to.exist;
+    expect(gallery.title).to.exist;
+    expect(gallery.created_at).to.exist;
+    expect(gallery.updated_at).to.exist;
+  });
+  
+  test("should include images array", function() {
+    expect(res.getBody().images).to.be.an('array');
+  });
+  
+  test("images should be sorted by position", function() {
+    const images = res.getBody().images;
+    for (let i = 1; i < images.length; i++) {
+      expect(images[i].position).to.be.greaterThan(images[i-1].position);
+    }
+  });
+}
+
+docs {
+  # Get Gallery
+  
+  Retrieves a single gallery by ID with all its images.
+  Public endpoint - no authentication required.
+}

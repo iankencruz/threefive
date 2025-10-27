@@ -1,0 +1,70 @@
+meta {
+  name: List Galleries
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base-url}}/api/v1/galleries?limit=10&offset=0
+  body: none
+  auth: none
+}
+
+headers {
+  Cookie: session_token=ohHaxQZGCQO2EPaf4tVwF6tlZ_oON57k24JebvPQZkc=
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("should return 200 status", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("should return array of galleries", function() {
+    const galleries = res.getBody();
+    expect(galleries).to.be.an('array');
+  });
+  
+  test("each gallery should have required fields", function() {
+    const galleries = res.getBody();
+    if (galleries.length > 0) {
+      galleries.forEach(gallery => {
+        expect(gallery.id).to.exist;
+        expect(gallery.title).to.exist;
+        expect(gallery.images).to.be.an('array');
+        expect(gallery.created_at).to.exist;
+        expect(gallery.updated_at).to.exist;
+      });
+    }
+  });
+  
+  test("should respect limit parameter", function() {
+    const galleries = res.getBody();
+    expect(galleries.length).to.be.at.most(10);
+  });
+  
+  test("galleries should be sorted by created_at desc", function() {
+    const galleries = res.getBody();
+    if (galleries.length > 1) {
+      for (let i = 1; i < galleries.length; i++) {
+        const prev = new Date(galleries[i-1].created_at);
+        const current = new Date(galleries[i].created_at);
+        expect(prev.getTime()).to.be.at.least(current.getTime());
+      }
+    }
+  });
+}
+
+docs {
+  # List Galleries
+  
+  Returns a paginated list of galleries with their images.
+  Query parameters:
+  - limit: Number of galleries to return (default: 10)
+  - offset: Number of galleries to skip (default: 0)
+  
+  Public endpoint - no authentication required.
+}

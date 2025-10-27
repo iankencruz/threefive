@@ -1,0 +1,62 @@
+meta {
+  name: Link Image to Gallery
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{base-url}}/api/v1/galleries/{{gallery_id}}/images
+  body: json
+  auth: none
+}
+headers {
+  Cookie: session_token=ohHaxQZGCQO2EPaf4tVwF6tlZ_oON57k24JebvPQZkc=
+}
+
+body:json {
+  {
+    "image_url": "https://images.unsplash.com/photo-1501594907352-04cda38ebc29"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.id: isDefined
+  res.body.gallery_id: isDefined
+  res.body.image_url: isDefined
+  res.body.position: isDefined
+}
+
+tests {
+  test("should return 201 status", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+  
+  test("should return linked image with all fields", function() {
+    const image = res.getBody();
+    expect(image.id).to.exist;
+    expect(image.gallery_id).to.exist;
+    expect(image.image_url).to.exist;
+    expect(image.position).to.be.a('number');
+    expect(image.created_at).to.exist;
+  });
+  
+  test("should link to correct gallery", function() {
+    const galleryId = bru.getEnvVar('gallery_id');
+    expect(res.getBody().gallery_id).to.equal(galleryId);
+  });
+  
+  test("should save image ID for unlinking test", function() {
+    const imageId = res.getBody().id;
+    bru.setEnvVar('image_id', imageId);
+    console.log('✅ Saved image ID:', imageId);
+  });
+}
+
+docs {
+  # Link Image to Gallery
+  
+  Adds a new image to an existing gallery.
+  The image is added to the end of the gallery (highest position).
+  Requires authentication.
+}

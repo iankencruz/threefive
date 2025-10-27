@@ -24,14 +24,15 @@
 <div class="w-full mx-auto relative top-0">
 <div class="@container w-full absolute top-0 z-50 bg-stone-400 text-black px-4 py-1 shadow-lg">
 	<div class="max-w-7xl mx-auto flex items-center justify-between">
-		<div class="flex items-center gap-3">
-			<Eye class="text-white" size={16}/>
-			<div>
-				<span class="font-semibold">Preview Mode</span>
-				<span class="mx-2">•</span>
-				<span class="text-sm">
-					Status: <strong class={["capitalize ml-2", data.page.status === "published" ? "text-green-600" : "text-amber-800"]} >{data.page.status}</strong>
-				</span>
+		<div class="flex flex-row items-center gap-3">
+			<Eye class="hidden lg:block text-white" size={16}/>
+			<div class="flex flex-row gap-2">
+				<span class="hidden lg:block font-semibold">Preview Mode</span>
+				<span class="hidden lg:block mx-2">•</span>
+        <div class="inline-flex items-center">
+          
+          <strong class={["capitalize text-base font-normal", data.page.status === "published" ? "text-green-600" : "text-amber-800"]} >{data.page.status}</strong>
+        </div>
 			</div>
 		</div>
 		

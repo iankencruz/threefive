@@ -1,0 +1,38 @@
+meta {
+  name: Unlink Image from Gallery
+  type: http
+  seq: 6
+}
+
+delete {
+  url: {{base-url}}/api/v1/galleries/{{gallery_id}}/images/{{image_id}}
+  body: none
+  auth: none
+}
+
+
+headers {
+  Cookie: session_token=ohHaxQZGCQO2EPaf4tVwF6tlZ_oON57k24JebvPQZkc=
+}
+
+assert {
+  res.status: eq 204
+}
+
+tests {
+  test("should return 204 status", function() {
+    expect(res.getStatus()).to.equal(204);
+  });
+  
+  test("should have empty response body", function() {
+    expect(res.getBody()).to.be.empty;
+  });
+}
+
+docs {
+  # Unlink Image from Gallery
+  
+  Removes an image from a gallery.
+  This only removes the link - it doesn't delete the actual image file.
+  Requires authentication.
+}

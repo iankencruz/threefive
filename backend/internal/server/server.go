@@ -10,6 +10,7 @@ import (
 
 	"github.com/iankencruz/threefive/internal/auth"
 	"github.com/iankencruz/threefive/internal/config"
+	"github.com/iankencruz/threefive/internal/gallery"
 	"github.com/iankencruz/threefive/internal/jobs"
 	"github.com/iankencruz/threefive/internal/media"
 	"github.com/iankencruz/threefive/internal/pages"
@@ -31,6 +32,7 @@ type Server struct {
 	AuthHandler    *auth.Handler
 	MediaHandler   *media.Handler
 	PageHandler    *pages.Handler
+	GalleryHandler *gallery.Handler
 	CleanupWorker  *jobs.PageCleanupWorker // Add cleanup worker
 }
 
@@ -75,6 +77,7 @@ func New(cfg *config.Config) (*Server, error) {
 	authHandler := auth.NewHandler(db, queries, sessionManager)
 	mediaHandler := media.NewHandler(db, queries, storageInstance)
 	pageHandler := pages.NewHandler(db, queries, cfg)
+	galleryHandler := gallery.NewHandler(db, queries)
 
 	// 5. Initialize cleanup worker if enabled
 	var cleanupWorker *jobs.PageCleanupWorker
@@ -84,17 +87,16 @@ func New(cfg *config.Config) (*Server, error) {
 
 	// Create server instance
 	srv := &Server{
-		Config:  cfg,
-		DB:      db,
-		Queries: queries,
-		Storage: storageInstance,
-
+		Config:         cfg,
+		DB:             db,
+		Queries:        queries,
+		Storage:        storageInstance,
 		SessionManager: sessionManager,
-
-		AuthHandler:   authHandler,
-		MediaHandler:  mediaHandler,
-		PageHandler:   pageHandler,
-		CleanupWorker: cleanupWorker,
+		CleanupWorker:  cleanupWorker,
+		AuthHandler:    authHandler,
+		MediaHandler:   mediaHandler,
+		PageHandler:    pageHandler,
+		GalleryHandler: galleryHandler,
 	}
 
 	// 6. Create default admin user if it doesn't exist

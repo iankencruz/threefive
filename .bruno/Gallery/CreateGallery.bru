@@ -1,0 +1,73 @@
+meta {
+  name: Create Gallery
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base-url}}/api/v1/galleries
+  body: json
+  auth: none
+}
+
+headers {
+  Cookie: session_token=ohHaxQZGCQO2EPaf4tVwF6tlZ_oON57k24JebvPQZkc=
+}
+
+body:json {
+  {
+    "title": "My Summer Vacation 2024",
+    "image_urls": [
+      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4",
+      "https://images.unsplash.com/photo-1469474968028-56623f02e42e",
+      "https://images.unsplash.com/photo-1501594907352-04cda38ebc29"
+    ]
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.id: isDefined
+  res.body.title: eq My Summer Vacation 2024
+  res.body.images: isDefined
+}
+
+tests {
+  test("should return 201 status", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+  
+  test("should return created gallery with ID", function() {
+    expect(res.getBody().id).to.exist;
+    expect(res.getBody().title).to.equal('My Summer Vacation 2024');
+  });
+  
+  test("should have images array", function() {
+    expect(res.getBody().images).to.be.an('array');
+    expect(res.getBody().images).to.have.lengthOf(3);
+  });
+  
+  test("images should have correct structure", function() {
+    const images = res.getBody().images;
+    images.forEach((img, index) => {
+      expect(img.id).to.exist;
+      expect(img.gallery_id).to.exist;
+      expect(img.image_url).to.exist;
+      expect(img.position).to.equal(index);
+    });
+  });
+  
+  test("should save gallery ID for other tests", function() {
+    const galleryId = res.getBody().id;
+    bru.setEnvVar('gallery_id', galleryId);
+    console.log('✅ Saved gallery ID:', galleryId);
+  });
+}
+
+docs {
+  # Create Gallery
+  
+  Creates a new gallery with a title and optional images.
+  Images are ordered by their position in the array.
+  Requires authentication.
+}

@@ -176,18 +176,11 @@ type Blocks struct {
 }
 
 type Galleries struct {
-	ID        uuid.UUID `json:"id"`
-	Title     string    `json:"title"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-}
-
-type GalleryImages struct {
-	ID        uuid.UUID `json:"id"`
-	GalleryID uuid.UUID `json:"gallery_id"`
-	ImageUrl  string    `json:"image_url"`
-	Position  int32     `json:"position"`
-	CreatedAt time.Time `json:"created_at"`
+	ID          uuid.UUID   `json:"id"`
+	Title       string      `json:"title"`
+	Description pgtype.Text `json:"description"`
+	CreatedAt   time.Time   `json:"created_at"`
+	UpdatedAt   time.Time   `json:"updated_at"`
 }
 
 type Media struct {
