@@ -1,102 +1,105 @@
 <!-- frontend/src/lib/components/blocks/display/HeroBlock.svelte -->
 <script lang="ts">
-import { onMount } from "svelte";
-import { PUBLIC_API_URL } from "$env/static/public";
+	import { onMount } from "svelte";
+	import { PUBLIC_API_URL } from "$env/static/public";
 
-interface HeroBlockData {
-	title: string;
-	subtitle?: string | null;
-	image_id?: string | null;
-	cta_text?: string | null;
-	cta_url?: string | null;
-}
-
-interface Media {
-	id: string;
-	filename: string;
-	original_filename: string;
-	mime_type: string;
-	url: string;
-	original_url?: string;
-	large_url?: string;
-	medium_url?: string;
-	thumbnail_url?: string;
-	width?: number;
-	height?: number;
-	size_bytes: number;
-	created_at: string;
-}
-
-interface Props {
-	data: HeroBlockData;
-}
-
-let { data }: Props = $props();
-
-let media = $state<Media | null>(null);
-let loading = $state(false);
-let error = $state(false);
-
-onMount(async () => {
-	if (data.image_id) {
-		await loadMedia(data.image_id);
+	interface HeroBlockData {
+		title: string;
+		subtitle?: string | null;
+		image_id?: string | null;
+		cta_text?: string | null;
+		cta_url?: string | null;
 	}
-});
 
-// Watch for changes to image_id
-$effect(() => {
-	if (data.image_id && (!media || media.id !== data.image_id)) {
-		loadMedia(data.image_id);
-	} else if (!data.image_id) {
-		media = null;
+	interface Media {
+		id: string;
+		filename: string;
+		original_filename: string;
+		mime_type: string;
+		url: string;
+		original_url?: string;
+		large_url?: string;
+		medium_url?: string;
+		thumbnail_url?: string;
+		width?: number;
+		height?: number;
+		size_bytes: number;
+		created_at: string;
 	}
-});
 
-async function loadMedia(imageId: string) {
-	loading = true;
-	error = false;
+	interface Props {
+		data: HeroBlockData;
+	}
 
-	try {
-		const response = await fetch(`${PUBLIC_API_URL}/api/v1/media/${imageId}`, {
-			credentials: "include",
-		});
+	let { data }: Props = $props();
 
-		if (!response.ok) {
-			throw new Error("Failed to load media");
+	let media = $state<Media | null>(null);
+	let loading = $state(false);
+	let error = $state(false);
+
+	onMount(async () => {
+		if (data.image_id) {
+			await loadMedia(data.image_id);
 		}
+	});
 
-		media = await response.json();
-	} catch (err) {
-		console.error("Failed to load hero media:", err);
-		error = true;
-		media = null;
-	} finally {
-		loading = false;
+	// Watch for changes to image_id
+	$effect(() => {
+		if (data.image_id && (!media || media.id !== data.image_id)) {
+			loadMedia(data.image_id);
+		} else if (!data.image_id) {
+			media = null;
+		}
+	});
+
+	async function loadMedia(imageId: string) {
+		loading = true;
+		error = false;
+
+		try {
+			const response = await fetch(
+				`${PUBLIC_API_URL}/api/v1/media/${imageId}`,
+				{
+					credentials: "include",
+				},
+			);
+
+			if (!response.ok) {
+				throw new Error("Failed to load media");
+			}
+
+			media = await response.json();
+		} catch (err) {
+			console.error("Failed to load hero media:", err);
+			error = true;
+			media = null;
+		} finally {
+			loading = false;
+		}
 	}
-}
 
-function isVideo(mimeType: string): boolean {
-	return mimeType.startsWith("video/");
-}
+	function isVideo(mimeType: string): boolean {
+		return mimeType.startsWith("video/");
+	}
 
-function isImage(mimeType: string): boolean {
-	return mimeType.startsWith("image/");
-}
+	function isImage(mimeType: string): boolean {
+		return mimeType.startsWith("image/");
+	}
 
-// Get the appropriate image URL - prefer large_url for hero sections
-function getImageUrl(media: Media): string {
-	return media.large_url || media.url;
-}
+	// Get the appropriate image URL - prefer large_url for hero sections
+	function getImageUrl(media: Media): string {
+		return media.large_url || media.url;
+	}
 
-// Get the video URL - use url which contains the optimized video
-function getVideoUrl(media: Media): string {
-	return media.url;
-}
+	// Get the video URL - use url which contains the optimized video
+	function getVideoUrl(media: Media): string {
+		return media.url;
+	}
 
-// Get poster image for video
-function getVideoPoster(media: Media): string {
-	return media.thumbnail_url || "";
-}
+	// Get poster image for video
+	function getVideoPoster(media: Media): string {
+		return media.thumbnail_url || "";
+	}
 </script>
 
 
@@ -140,7 +143,7 @@ function getVideoPoster(media: Media): string {
 <section class="relative overflow-hidden">
 	{#if media && !loading && !error}
 		<!-- Hero with Background Media -->
-		<div class="relative min-h-[500px] md:min-h-[600px] flex items-center">
+		<div class="relative min-h-screen  flex items-center">
 			<!-- Background Media -->
 			<div class="absolute inset-0">
 				{#if isVideo(media.mime_type)}

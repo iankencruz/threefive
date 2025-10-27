@@ -3,6 +3,7 @@
 	import BlockRenderer from "$lib/components/blocks/BlockRenderer.svelte";
 	import { goto } from "$app/navigation";
 	import type { PageData } from "./$types";
+	import { Eye } from "lucide-svelte";
 
 	let { data }: { data: PageData } = $props();
 
@@ -20,18 +21,16 @@
 </svelte:head>
 
 <!-- Preview Banner - Sticky at top -->
-<div class="@container sticky top-0 z-50 bg-yellow-500 text-black px-4 py-3 shadow-lg">
+<div class="w-full mx-auto relative top-0">
+<div class="@container w-full absolute top-0 z-50 bg-stone-400 text-black px-4 py-1 shadow-lg">
 	<div class="max-w-7xl mx-auto flex items-center justify-between">
 		<div class="flex items-center gap-3">
-			<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-			</svg>
+			<Eye class="text-white" size={16}/>
 			<div>
 				<span class="font-semibold">Preview Mode</span>
 				<span class="mx-2">•</span>
 				<span class="text-sm">
-					Status: <strong class="capitalize">{data.page.status}</strong>
+					Status: <strong class={["capitalize ml-2", data.page.status === "published" ? "text-green-600" : "text-amber-800"]} >{data.page.status}</strong>
 				</span>
 			</div>
 		</div>
@@ -39,20 +38,20 @@
 		<div class="flex items-center gap-3">
 			<button
 				onclick={() => goto(`/admin/pages/${data.page.id}/edit`)}
-				class="px-4 py-1.5  text-yellow-500 rounded-lg font-medium hover:bg-gray-800 transition-colors text-sm"
+				class="px-4 py-1 cursor-pointer  text-black rounded-sm font-medium hover:bg-gray-100 transition-colors text-sm"
 			>
-				Edit Page
+				Edit
 			</button>
 			<button
 				onclick={() => goto('/admin/pages')}
-				class="px-4 py-1.5 bg-white text-black rounded-lg font-medium hover:bg-gray-100 transition-colors text-sm"
+				class="px-4 py-1 cursor-pointer  text-black rounded-sm font-medium hover:bg-gray-100 transition-colors text-sm"
 			>
-				Close Preview
+				Close
 			</button>
 		</div>
 	</div>
 </div>
-
+</div>
 <!-- Page Content - Same as public pages -->
 <div class="min-h-screen bg-white">
 	<!-- Render all blocks -->

@@ -138,7 +138,7 @@
                       <!-- Preview Button -->
                       <button
                           class="p-2   hover:bg-gray-400 rounded-lg transition-colors"
-                          onclick={() => window.open(`/admin/pages/${page.id}/preview`, '_blank')}
+                          onclick={() => window.open(`/preview/pages/${page.id}`, '_blank')}
                           aria-label="Preview page"
                           title="Preview in new tab"
                       >

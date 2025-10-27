@@ -164,11 +164,11 @@
 	}
 </script>
 
-<div class="border border-gray-700  rounded-lg overflow-hidden bg-surface {className}">
+<div class="border rounded-lg overflow-hidden bg-surface {className}">
 	{#if editor}
-		<div class="flex flex-wrap items-center gap-2 border-b border-gray-700 bg-surface p-2" data-ui={ui}>
+		<div class="flex flex-wrap items-center gap-2 border-b bg-surface p-2" data-ui={ui}>
 			<select
-				class="h-8 rounded border  border-input-border min-w-44 bg-surface px-2 text-sm hover:bg-black/75 focus:outline-none focus:ring-2 focus:ring-blue-500"
+				class="h-8 rounded border border-input-border min-w-44 bg-surface px-2 text-sm hover:bg-black/75 focus:outline-none focus:ring-2 focus:ring-blue-500"
 				onchange={(e) => applyBlock((e.target as HTMLSelectElement).value)}
 				value={currentBlockValue()}
 				title="Block format"
