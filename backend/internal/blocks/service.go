@@ -50,8 +50,110 @@ func (s *Service) CreateBlocks(ctx context.Context, qtx *sqlc.Queries, pageID uu
 			if err := s.createHeaderBlock(ctx, qtx, block.ID, blockReq.Data); err != nil {
 				return err
 			}
+		case TypeGallery:
+			if err := s.createGalleryBlock(ctx, qtx, block.ID, blockReq.Data); err != nil {
+				return err
+			}
 		default:
 			return errors.BadRequest("Invalid block type", "invalid_block_type")
+		}
+	}
+
+	return nil
+}
+
+// UpdateBlocks updates blocks for a page in a transaction
+func (s *Service) UpdateBlocks(ctx context.Context, qtx *sqlc.Queries, pageID uuid.UUID, blocks []BlockRequest) error {
+	// Get existing blocks to determine what to update/delete/create
+	existingBlocks, err := qtx.GetBlocksByPageID(ctx, pageID)
+	if err != nil {
+		return errors.Internal("Failed to get existing blocks", err)
+	}
+
+	// Create a map of existing block IDs
+	existingBlockMap := make(map[uuid.UUID]bool)
+	for _, eb := range existingBlocks {
+		existingBlockMap[eb.ID] = true
+	}
+
+	// Track which blocks are being kept/updated
+	updatedBlockIDs := make(map[uuid.UUID]bool)
+
+	// Process each block in the request
+	for i, block := range blocks {
+		if block.ID != nil {
+			// Update existing block
+			updatedBlockIDs[*block.ID] = true
+
+			if err := qtx.UpdateBlockOrder(ctx, sqlc.UpdateBlockOrderParams{
+				SortOrder: int32(i),
+				ID:        *block.ID,
+			}); err != nil {
+				return errors.Internal("Failed to update block order", err)
+			}
+
+			// Update type-specific data
+			switch block.Type {
+			case TypeHero:
+				if err := s.updateHeroBlock(ctx, qtx, *block.ID, block.Data); err != nil {
+					return err
+				}
+			case TypeRichtext:
+				if err := s.updateRichtextBlock(ctx, qtx, *block.ID, block.Data); err != nil {
+					return err
+				}
+			case TypeHeader:
+				if err := s.updateHeaderBlock(ctx, qtx, *block.ID, block.Data); err != nil {
+					return err
+				}
+			case TypeGallery:
+				if err := s.updateGalleryBlock(ctx, qtx, *block.ID, block.Data); err != nil {
+					return err
+				}
+			default:
+				return errors.BadRequest("Invalid block type", "invalid_block_type")
+			}
+		} else {
+			// Create new block
+			newBlock, err := qtx.CreateBlock(ctx, sqlc.CreateBlockParams{
+				PageID:    pageID,
+				Type:      block.Type,
+				SortOrder: int32(i),
+			})
+			if err != nil {
+				return errors.Internal("Failed to create block", err)
+			}
+
+			// Create type-specific block data
+			switch block.Type {
+			case TypeHero:
+				if err := s.createHeroBlock(ctx, qtx, newBlock.ID, block.Data); err != nil {
+					return err
+				}
+			case TypeRichtext:
+				if err := s.createRichtextBlock(ctx, qtx, newBlock.ID, block.Data); err != nil {
+					return err
+				}
+			case TypeHeader:
+				if err := s.createHeaderBlock(ctx, qtx, newBlock.ID, block.Data); err != nil {
+					return err
+				}
+			case TypeGallery:
+				if err := s.createGalleryBlock(ctx, qtx, newBlock.ID, block.Data); err != nil {
+					return err
+				}
+			default:
+				return errors.BadRequest("Invalid block type", "invalid_block_type")
+			}
+		}
+	}
+
+	// Delete blocks that are no longer in the request
+	for _, existingBlock := range existingBlocks {
+		if !updatedBlockIDs[existingBlock.ID] {
+			if err := qtx.DeleteBlock(ctx, existingBlock.ID); err != nil {
+				return errors.Internal("Failed to delete block", err)
+			}
 		}
 	}
 
@@ -86,6 +188,11 @@ func (s *Service) GetPageBlocks(ctx context.Context, pageID uuid.UUID) ([]BlockR
 		return nil, errors.Internal("Failed to get header blocks", err)
 	}
 
+	galleryBlocks, err := s.queries.GetGalleryBlocksByPageID(ctx, pageID)
+	if err != nil {
+		return nil, errors.Internal("Failed to get gallery blocks", err)
+	}
+
 	// Build lookup maps
 	heroMap := make(map[uuid.UUID]sqlc.BlockHero)
 	for _, h := range heroBlocks {
@@ -100,6 +207,11 @@ func (s *Service) GetPageBlocks(ctx context.Context, pageID uuid.UUID) ([]BlockR
 	headerMap := make(map[uuid.UUID]sqlc.BlockHeader)
 	for _, h := range headerBlocks {
 		headerMap[h.BlockID] = h
+	}
+
+	galleryMap := make(map[uuid.UUID]sqlc.BlockGallery)
+	for _, gallery := range galleryBlocks {
+		galleryMap[gallery.BlockID] = gallery
 	}
 
 	// Assemble response
@@ -138,6 +250,20 @@ func (s *Service) GetPageBlocks(ctx context.Context, pageID uuid.UUID) ([]BlockR
 					Level:      pgTextToString(header.Level),
 				}
 			}
+		case TypeGallery:
+			if gallery, ok := galleryMap[block.ID]; ok {
+				// Fetch media for this gallery
+				media, err := s.queries.GetMediaForEntity(ctx, sqlc.GetMediaForEntityParams{
+					EntityType: "block_gallery",
+					EntityID:   gallery.ID,
+				})
+				if err == nil {
+					blockResp.Data = map[string]interface{}{
+						"title": nullTextToPtr(gallery.Title),
+						"media": media,
+					}
+				}
+			}
 		}
 
 		blocks = append(blocks, blockResp)
@@ -147,7 +273,7 @@ func (s *Service) GetPageBlocks(ctx context.Context, pageID uuid.UUID) ([]BlockR
 }
 
 // ============================================
-// Private Helper Methods
+// Private Helper Methods - Create
 // ============================================
 
 func (s *Service) createHeroBlock(ctx context.Context, qtx *sqlc.Queries, blockID uuid.UUID, data map[string]interface{}) error {
@@ -209,6 +335,166 @@ func (s *Service) createHeaderBlock(ctx context.Context, qtx *sqlc.Queries, bloc
 	})
 	if err != nil {
 		return errors.Internal("Failed to create header block", err)
+	}
+
+	return nil
+}
+
+func (s *Service) createGalleryBlock(ctx context.Context, qtx *sqlc.Queries, blockID uuid.UUID, data map[string]interface{}) error {
+	galleryData, err := ParseBlockData(TypeGallery, data)
+	if err != nil {
+		return errors.BadRequest("Invalid gallery block data", "invalid_block_data")
+	}
+
+	gallery := galleryData.(*GalleryBlockData)
+
+	// Create gallery block
+	galleryBlock, err := qtx.CreateGalleryBlock(ctx, sqlc.CreateGalleryBlockParams{
+		BlockID: blockID,
+		Title:   strToNullText(gallery.Title),
+	})
+	if err != nil {
+		return errors.Internal("Failed to create gallery block", err)
+	}
+
+	// Link media to gallery block
+	for i, mediaID := range gallery.MediaIDs {
+		_, err := qtx.LinkMediaToEntity(ctx, sqlc.LinkMediaToEntityParams{
+			MediaID:    mediaID,
+			EntityType: "block_gallery",
+			EntityID:   galleryBlock.ID,
+			SortOrder:  pgtype.Int4{Int32: int32(i), Valid: true},
+		})
+		if err != nil {
+			return errors.Internal("Failed to link media to gallery block", err)
+		}
+	}
+
+	return nil
+}
+
+// ============================================
+// Private Helper Methods - Update
+// ============================================
+
+func (s *Service) updateHeroBlock(ctx context.Context, qtx *sqlc.Queries, blockID uuid.UUID, data map[string]interface{}) error {
+	heroData, err := ParseBlockData(TypeHero, data)
+	if err != nil {
+		return errors.BadRequest("Invalid hero block data", "invalid_block_data")
+	}
+
+	hero := heroData.(*HeroBlockData)
+
+	_, err = qtx.UpdateHeroBlock(ctx, sqlc.UpdateHeroBlockParams{
+		BlockID:  blockID,
+		Title:    hero.Title,
+		Subtitle: strToNullText(hero.Subtitle),
+		ImageID:  uuidToNullUUID(hero.ImageID),
+		CtaText:  strToNullText(hero.CtaText),
+		CtaUrl:   strToNullText(hero.CtaURL),
+	})
+	if err != nil {
+		return errors.Internal("Failed to update hero block", err)
+	}
+
+	return nil
+}
+
+func (s *Service) updateRichtextBlock(ctx context.Context, qtx *sqlc.Queries, blockID uuid.UUID, data map[string]interface{}) error {
+	richtextData, err := ParseBlockData(TypeRichtext, data)
+	if err != nil {
+		return errors.BadRequest("Invalid richtext block data", "invalid_block_data")
+	}
+
+	richtext := richtextData.(*RichtextBlockData)
+
+	_, err = qtx.UpdateRichtextBlock(ctx, sqlc.UpdateRichtextBlockParams{
+		BlockID: blockID,
+		Content: richtext.Content,
+	})
+	if err != nil {
+		return errors.Internal("Failed to update richtext block", err)
+	}
+
+	return nil
+}
+
+func (s *Service) updateHeaderBlock(ctx context.Context, qtx *sqlc.Queries, blockID uuid.UUID, data map[string]interface{}) error {
+	headerData, err := ParseBlockData(TypeHeader, data)
+	if err != nil {
+		return errors.BadRequest("Invalid header block data", "invalid_block_data")
+	}
+
+	header := headerData.(*HeaderBlockData)
+
+	_, err = qtx.UpdateHeaderBlock(ctx, sqlc.UpdateHeaderBlockParams{
+		BlockID:    blockID,
+		Heading:    header.Heading,
+		Subheading: strToNullText(header.Subheading),
+		Level:      stringToPgText(header.Level),
+	})
+	if err != nil {
+		return errors.Internal("Failed to update header block", err)
+	}
+
+	return nil
+}
+
+func (s *Service) updateGalleryBlock(ctx context.Context, qtx *sqlc.Queries, blockID uuid.UUID, data map[string]interface{}) error {
+	galleryData, err := ParseBlockData(TypeGallery, data)
+	if err != nil {
+		return errors.BadRequest("Invalid gallery block data", "invalid_block_data")
+	}
+
+	gallery := galleryData.(*GalleryBlockData)
+
+	// Get existing gallery block
+	existingGallery, err := qtx.GetGalleryBlockByBlockID(ctx, blockID)
+	if err != nil {
+		return errors.Internal("Failed to get gallery block", err)
+	}
+
+	// Update gallery block
+	_, err = qtx.UpdateGalleryBlock(ctx, sqlc.UpdateGalleryBlockParams{
+		BlockID: blockID,
+		Title:   strToNullText(gallery.Title),
+	})
+	if err != nil {
+		return errors.Internal("Failed to update gallery block", err)
+	}
+
+	// Update media links - remove old ones
+	existingMedia, err := qtx.GetMediaForEntity(ctx, sqlc.GetMediaForEntityParams{
+		EntityType: "block_gallery",
+		EntityID:   existingGallery.ID,
+	})
+	if err != nil {
+		return errors.Internal("Failed to get existing media", err)
+	}
+
+	// Unlink all existing media
+	for _, media := range existingMedia {
+		err := qtx.UnlinkMediaFromEntity(ctx, sqlc.UnlinkMediaFromEntityParams{
+			MediaID:    media.ID,
+			EntityType: "block_gallery",
+			EntityID:   existingGallery.ID,
+		})
+		if err != nil {
+			return errors.Internal("Failed to unlink media", err)
+		}
+	}
+
+	// Link new media
+	for i, mediaID := range gallery.MediaIDs {
+		_, err := qtx.LinkMediaToEntity(ctx, sqlc.LinkMediaToEntityParams{
+			MediaID:    mediaID,
+			EntityType: "block_gallery",
+			EntityID:   existingGallery.ID,
+			SortOrder:  pgtype.Int4{Int32: int32(i), Valid: true},
+		})
+		if err != nil {
+			return errors.Internal("Failed to link media to gallery block", err)
+		}
 	}
 
 	return nil

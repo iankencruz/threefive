@@ -142,6 +142,12 @@ func (ns NullStorageType) Value() (driver.Value, error) {
 	return string(ns.StorageType), nil
 }
 
+type BlockGallery struct {
+	ID      uuid.UUID   `json:"id"`
+	BlockID uuid.UUID   `json:"block_id"`
+	Title   pgtype.Text `json:"title"`
+}
+
 type BlockHeader struct {
 	ID         uuid.UUID   `json:"id"`
 	BlockID    uuid.UUID   `json:"block_id"`
@@ -173,14 +179,6 @@ type Blocks struct {
 	SortOrder int32     `json:"sort_order"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
-}
-
-type Galleries struct {
-	ID          uuid.UUID   `json:"id"`
-	Title       string      `json:"title"`
-	Description pgtype.Text `json:"description"`
-	CreatedAt   time.Time   `json:"created_at"`
-	UpdatedAt   time.Time   `json:"updated_at"`
 }
 
 type Media struct {

@@ -49,7 +49,7 @@
 		[
 			"form-input",
 			error &&
-				"border-danger text-foreground focus:ring-danger/50 focus:border-danger",
+				"border-danger text-foreground focus:ring-danger/50 focus:border-danger rounded-lg",
 			inputClass,
 		]
 			.filter(Boolean)

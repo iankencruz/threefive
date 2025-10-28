@@ -11,11 +11,12 @@ const (
 	TypeHero     = "hero"
 	TypeRichtext = "richtext"
 	TypeHeader   = "header"
+	TypeGallery  = "gallery"
 )
 
 // ValidBlockTypes returns all valid block types
 func ValidBlockTypes() []string {
-	return []string{TypeHero, TypeRichtext, TypeHeader}
+	return []string{TypeHero, TypeRichtext, TypeHeader, TypeGallery}
 }
 
 // ============================================
@@ -43,7 +44,13 @@ type HeaderBlockData struct {
 	Level      string  `json:"level"` // h1, h2, h3, h4, h5, h6
 }
 
-// ValidHeaderLevels returns all valid header levels
+// GalleryBlockData represents gallery block data
+type GalleryBlockData struct {
+	Title    *string     `json:"title", omitempty"`
+	MediaIDs []uuid.UUID `json:"media_ids"`
+}
+
+// ValidHeaderLevels returns all valid header levels...
 func ValidHeaderLevels() []string {
 	return []string{"h1", "h2", "h3", "h4", "h5", "h6"}
 }

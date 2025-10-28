@@ -9,7 +9,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 	"github.com/iankencruz/threefive/internal/auth"
-	"github.com/iankencruz/threefive/internal/gallery"
 	"github.com/iankencruz/threefive/internal/media"
 	"github.com/iankencruz/threefive/internal/pages"
 	"github.com/iankencruz/threefive/internal/shared/middleware"
@@ -46,7 +45,6 @@ func (s *Server) setupRouter() http.Handler {
 		// Mount feature routes
 		media.RegisterRoutes(r, s.MediaHandler)
 		pages.RegisterRoutes(r, s.PageHandler, s.SessionManager)
-		gallery.RegisterRoutes(r, s.GalleryHandler, s.SessionManager)
 		// user.RegisterRoutes(r, s.userHandler)
 		// project.RegisterRoutes(r, s.projectHandler)
 	})

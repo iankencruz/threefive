@@ -4,6 +4,7 @@ package blocks
 import (
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/iankencruz/threefive/internal/shared/validation"
 )
 
@@ -27,6 +28,8 @@ func ValidateBlockRequest(v *validation.Validator, block *BlockRequest, fieldPre
 		ValidateRichtextBlockData(v, block.Data, fieldPrefix)
 	case TypeHeader:
 		ValidateHeaderBlockData(v, block.Data, fieldPrefix)
+	case TypeGallery:
+		ValidateGalleryBlockData(v, block.Data, fieldPrefix)
 	}
 }
 
@@ -91,5 +94,30 @@ func ValidateBlocks(v *validation.Validator, blocks []BlockRequest) {
 	for i, block := range blocks {
 		fieldPrefix := fmt.Sprintf("blocks[%d]", i)
 		ValidateBlockRequest(v, &block, fieldPrefix)
+	}
+}
+
+// ValidateGalleryBlockData validates gallery block data
+func ValidateGalleryBlockData(v *validation.Validator, data map[string]any, fieldPrefix string) {
+	// Media ID Validation
+	mediaIDs, ok := data["media_ids"].([]any)
+	if !ok {
+		v.AddError(fieldPrefix+".data.media_ids", "Gallery block media_ids must be an array")
+		return
+	}
+
+	if len(mediaIDs) == 0 {
+		v.AddError(fieldPrefix+".data.media_ids", "Gallery block must have at least one media ID")
+	}
+
+	// Validate each media ID is a valid UUID
+	for i, id := range mediaIDs {
+		if idStr, ok := id.(string); ok {
+			if _, err := uuid.Parse(idStr); err != nil {
+				v.AddError(fmt.Sprintf("%s.data.media_ids[%d]", fieldPrefix, i), "Invalid media ID format")
+			}
+		} else {
+			v.AddError(fmt.Sprintf("%s.data.media_ids[%d]", fieldPrefix, i), "Media ID must be a string")
+		}
 	}
 }

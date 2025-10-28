@@ -1,6 +1,8 @@
 package blocks
 
-import "github.com/google/uuid"
+import (
+	"github.com/google/uuid"
+)
 
 // ============================================
 // Request Models
