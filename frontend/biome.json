@@ -6,7 +6,12 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["src/**/*.js", "src/**/*.svelte", "!**/*.min.js"]
+    "includes": [
+      "src/**/*.js",
+      "src/**/*.ts",
+      "src/**/*.svelte",
+      "!**/*.min.js"
+    ]
   },
   "formatter": {
     "enabled": true,

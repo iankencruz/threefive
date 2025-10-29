@@ -119,7 +119,7 @@ tasks:
       - go.mod
       - go.sum
     generates:
-      - "{{.BUILD_DIR}}/{{.EXE}}"
+      - "{{.BUILD_DIR}}/{{.BINARY_NAME}}"
 
   go:
     desc: "Run binary"
@@ -128,7 +128,7 @@ tasks:
     silent: true
     cmds:
       - defer: { task: clean }
-      - "{{.BUILD_DIR}}/{{.EXE}}"
+      - air
 
   bun:
     desc: "Run frontend development server"

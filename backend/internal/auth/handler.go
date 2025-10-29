@@ -20,7 +20,7 @@ type Handler struct {
 	sessionManager *session.Manager
 }
 
-// NewHandler creates a new auth handler with its own service
+// NewHandler creates a new auth handler with its own service.
 func NewHandler(db *pgxpool.Pool, queries *sqlc.Queries, sessionManager *session.Manager) *Handler {
 	service := NewService(db, queries, sessionManager)
 	return &Handler{

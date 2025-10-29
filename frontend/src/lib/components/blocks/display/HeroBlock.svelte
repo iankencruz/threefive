@@ -2,6 +2,7 @@
 <script lang="ts">
 	import { onMount } from "svelte";
 	import { PUBLIC_API_URL } from "$env/static/public";
+	import type { Media } from "$api/media";
 
 	interface HeroBlockData {
 		title: string;
@@ -11,21 +12,21 @@
 		cta_url?: string | null;
 	}
 
-	interface Media {
-		id: string;
-		filename: string;
-		original_filename: string;
-		mime_type: string;
-		url: string;
-		original_url?: string;
-		large_url?: string;
-		medium_url?: string;
-		thumbnail_url?: string;
-		width?: number;
-		height?: number;
-		size_bytes: number;
-		created_at: string;
-	}
+	// interface Media {
+	// 	id: string;
+	// 	filename: string;
+	// 	original_filename: string;
+	// 	mime_type: string;
+	// 	url: string;
+	// 	original_url?: string;
+	// 	large_url?: string;
+	// 	medium_url?: string;
+	// 	thumbnail_url?: string;
+	// 	width?: number;
+	// 	height?: number;
+	// 	size_bytes: number;
+	// 	created_at: string;
+	// }
 
 	interface Props {
 		data: HeroBlockData;

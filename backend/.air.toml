@@ -8,7 +8,7 @@ tmp_dir = "tmp"
   # cmd = "go build -o ./tmp/main ./cmd/api/main.go"
   cmd = "task go:build"
   # Binary location after build
-  bin = "./tmp/main"
+  bin = "./bin/main"
   # Additional arguments to pass to the binary
   args_bin = []
   # Delay after a file change before rebuilding

@@ -589,7 +589,7 @@
       <button
         type="submit"
         disabled={loading}
-        class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        class="px-6 py-2 bg-primary hover:bg-primary/70 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
         {loading ? "Saving..." : "Update Page"}
       </button>

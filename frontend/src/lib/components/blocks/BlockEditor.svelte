@@ -1,5 +1,8 @@
 <!-- frontend/src/lib/components/blocks/BlockEditor.svelte -->
 <script lang="ts">
+	import GalleryBlockForm, {
+		type GalleryBlockData,
+	} from "./forms/GalleryBlockForm.svelte";
 	import HeaderBlockForm, {
 		type HeaderBlockData,
 	} from "./forms/HeaderBlockForm.svelte";
@@ -14,7 +17,7 @@
 		hero: HeroBlockData;
 		richtext: RichtextBlockData;
 		header: HeaderBlockData;
-		// gallery: GalleryBlockData; // ✅ Just add new ones here
+		gallery: GalleryBlockData;
 	}
 
 	type BlockType = keyof BlockTypeMap;
@@ -131,11 +134,11 @@
 	</div>
 
 	{#if blocks.length === 0}
-		<div class="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+		<div class="text-center py-12 bg-surface rounded-lg border-2 border-dashed border-foreground-muted">
 			<svg class="w-12 h-12 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
 			</svg>
-			<p class="text-gray-600 mb-4">No blocks added yet. Click below to add your first block.</p>
+			<p class="text-foreground-muted mb-4">No blocks added yet. Click below to add your first block.</p>
 			
 			<!-- Initial Add Block Menu -->
 			<div class="flex justify-center gap-2">
@@ -159,6 +162,13 @@
 					class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium transition-colors"
 				>
 					+ Header
+				</button>
+        <button
+					onclick={() => addBlockAt('gallery', 0)}
+					type="button"
+					class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium transition-colors"
+				>
+					+ Gallery
 				</button>
 			</div>
 		</div>
@@ -252,11 +262,13 @@
 					</div>
 
 					{#if block.type === 'hero'}
-						<HeroBlockForm data={block.data} onchange={(data) => updateBlockData(index, data)} />
+						<HeroBlockForm data={block.data as HeroBlockData} onchange={(data) => updateBlockData(index, data)} />
 					{:else if block.type === 'richtext'}
-						<RichTextBlockForm data={block.data} onchange={(data) => updateBlockData(index, data)} />
+						<RichTextBlockForm data={block.data as RichtextBlockData} onchange={(data) => updateBlockData(index, data)} />
 					{:else if block.type === 'header'}
-						<HeaderBlockForm data={block.data} onchange={(data) => updateBlockData(index, data)} />
+						<HeaderBlockForm data={block.data as HeaderBlockData} onchange={(data) => updateBlockData(index, data)} />
+          {:else if block.type === 'gallery'}
+            <GalleryBlockForm data={block.data as GalleryBlockData} onchange={(data) => updateBlockData(index, data)} />
 					{/if}
 				</div>
 
@@ -300,6 +312,13 @@
               >
                 Header
               </button>
+<button
+	onclick={() => addBlockAt('gallery', 0)}
+	type="button"
+	class="px-4 py-2 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 text-sm font-medium transition-colors whitespace-nowrap"
+>
+	Gallery
+</button>
             </div>
           {/if}
         </div>

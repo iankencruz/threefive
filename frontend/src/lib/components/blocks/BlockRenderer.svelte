@@ -3,6 +3,7 @@
 	import HeroBlock from "./display/HeroBlock.svelte";
 	import RichTextBlock from "./display/RichTextBlock.svelte";
 	import HeaderBlock from "./display/HeaderBlock.svelte";
+	import GalleryBlock from "./display/GalleryBlock.svelte";
 
 	interface Block {
 		id?: string;
@@ -40,6 +41,8 @@
 			<RichTextBlock data={block.data} />
 		{:else if block.type === 'header'}
 			<HeaderBlock data={block.data} />
+		{:else if block.type === 'gallery'}
+			<GalleryBlock data={block.data} />
 		{:else}
 			<!-- Unknown block type -->
 			<div class="py-8 bg-yellow-50 border-l-4 border-yellow-400">

@@ -6,13 +6,14 @@ interface Media {
 	filename: string;
 	original_filename: string;
 	mime_type: string;
-	size_bytes: number;
+	url: string;
+	original_url?: string;
+	large_url?: string;
+	medium_url?: string;
+	thumbnail_url?: string;
 	width?: number;
 	height?: number;
-	storage_type: string;
-	storage_path: string; // Added this field
-	url?: string; // Made optional since it might be null
-	thumbnail_url?: string;
+	size_bytes: number;
 	created_at: string;
 }
 

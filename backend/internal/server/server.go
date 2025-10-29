@@ -174,8 +174,8 @@ func (s *Server) createDefaultAdminUser(ctx context.Context) error {
 	// If this is your first time, there won't be a CountUsers method
 	// You can implement it or just try to create the user and handle the error
 
-	defaultEmail := "admin@threefive.local"
-	defaultPassword := "admin123"
+	defaultEmail := "admin@example.com"
+	defaultPassword := "Password!123"
 
 	// Check if user exists
 	_, err := s.Queries.GetUserByEmail(ctx, defaultEmail)
