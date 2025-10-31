@@ -54,7 +54,7 @@
 	<div class="flex justify-between items-center mb-8">
 		<h1 class="">Pages</h1>
 		<button
-			class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+			class="flex items-center gap-2 bg-primary hover:bg-primary text-white px-4 py-2 rounded-lg font-medium transition-colors"
 			onclick={() => goto('/admin/pages/new')}
 		>
 			<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
