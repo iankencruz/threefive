@@ -1,175 +1,190 @@
 <script lang="ts">
-import { PUBLIC_API_URL } from "$env/static/public";
-import { mediaApi, type Media, getMediaUrl } from "$api/media";
-import { ImageUp, CheckCircle, AlertCircle, Loader2 } from "lucide-svelte";
+	import { PUBLIC_API_URL } from "$env/static/public";
+	import { mediaApi, type Media, getMediaUrl } from "$api/media";
+	import {
+		ImageUp,
+		CheckCircle,
+		AlertCircle,
+		Loader2,
+		Plus,
+	} from "lucide-svelte";
 
-interface Props {
-	show?: boolean;
-	onselect?: (mediaId: string, media: Media) => void;
-	onclose?: () => void;
-}
-
-let { show, onselect, onclose }: Props = $props();
-
-// Media
-let media = $state<Media[]>([]);
-let loading = $state(false);
-let searchQuery = $state("");
-
-// Uploading
-let uploadFile = $state<File | null>(null);
-let uploading = $state(false);
-let uploadProgress = $state(0);
-let uploadStatus = $state<"uploading" | "processing" | "success" | "error">("uploading");
-let uploadError = $state<string>("");
-
-// View Mode & Pagination
-let viewMode = $state<"grid" | "list">("grid");
-let currentPage = $state(1);
-let totalPages = $state(1);
-let limit = $state(20);
-
-const ACCEPTED_FILE_TYPES = "image/*,video/*,video/mp4,video/quicktime,.mp4,.mov,.avi,.gif";
-
-// Load media when modal opens
-$effect(() => {
-	if (show && media.length === 0) {
-		loadMedia();
+	interface Props {
+		show?: boolean;
+		onselect?: (mediaId: string, media: Media) => void;
+		onclose?: () => void;
 	}
-});
 
-async function loadMedia() {
-	loading = true;
-	try {
-		const response = await mediaApi.listMedia(currentPage, limit);
-		media = response.data || [];
-		if (response.pagination) {
-			totalPages = response.pagination.total_pages || 1;
+	let { show, onselect, onclose }: Props = $props();
+
+	// Media
+	let media = $state<Media[]>([]);
+	let loading = $state(false);
+	let searchQuery = $state("");
+
+	// Uploading
+	let uploadFile = $state<File | null>(null);
+	let uploading = $state(false);
+	let uploadProgress = $state(0);
+	let uploadStatus = $state<"uploading" | "processing" | "success" | "error">(
+		"uploading",
+	);
+	let uploadError = $state<string>("");
+
+	// View Mode & Pagination
+	let viewMode = $state<"grid" | "list">("grid");
+	let currentPage = $state(1);
+	let totalPages = $state(1);
+	let limit = $state(20);
+
+	const ACCEPTED_FILE_TYPES =
+		"image/*,video/*,video/mp4,video/quicktime,.mp4,.mov,.avi,.gif";
+
+	// Load media when modal opens
+	$effect(() => {
+		if (show && media.length === 0) {
+			loadMedia();
 		}
-	} catch (err) {
-		console.error("Failed to load media:", err);
-	} finally {
-		loading = false;
-	}
-}
+	});
 
-async function changePage(newPage: number) {
-	if (newPage < 1 || newPage > totalPages) return;
-	currentPage = newPage;
-	await loadMedia();
-}
-
-async function handleFileSelect(e: Event) {
-	const input = e.target as HTMLInputElement;
-	if (input.files && input.files[0]) {
-		uploadFile = input.files[0];
-		await handleUpload();
-	}
-}
-
-async function handleUpload() {
-	if (!uploadFile) return;
-	const maxSize = uploadFile.type.startsWith("video/") ? 200 : 50;
-	const fileSizeMB = uploadFile.size / (1024 * 1024);
-
-	if (fileSizeMB > maxSize) {
-		alert(`File size (${fileSizeMB.toFixed(1)}MB) exceeds ${maxSize}MB limit`);
-		return;
-	}
-
-	uploading = true;
-	uploadProgress = 0;
-	uploadStatus = "uploading";
-	uploadError = "";
-
-	try {
-		const formData = new FormData();
-		formData.append("file", uploadFile);
-		const xhr = new XMLHttpRequest();
-
-		xhr.upload.addEventListener("progress", (e) => {
-			if (e.lengthComputable) {
-				uploadProgress = Math.round((e.loaded / e.total) * 100);
-				if (uploadProgress === 100) uploadStatus = "processing";
+	async function loadMedia() {
+		loading = true;
+		try {
+			const response = await mediaApi.listMedia(currentPage, limit);
+			media = response.data || [];
+			if (response.pagination) {
+				totalPages = response.pagination.total_pages || 1;
 			}
-		});
+		} catch (err) {
+			console.error("Failed to load media:", err);
+		} finally {
+			loading = false;
+		}
+	}
 
-		const uploaded = await new Promise<Media>((resolve, reject) => {
-			xhr.addEventListener("load", () => {
-				if (xhr.status === 201) {
-					uploadStatus = "success";
-					resolve(JSON.parse(xhr.responseText));
-				} else {
-					uploadStatus = "error";
-					reject(new Error(JSON.parse(xhr.responseText).error || "Upload failed"));
+	async function changePage(newPage: number) {
+		if (newPage < 1 || newPage > totalPages) return;
+		currentPage = newPage;
+		await loadMedia();
+	}
+
+	async function handleFileSelect(e: Event) {
+		const input = e.target as HTMLInputElement;
+		if (input.files && input.files[0]) {
+			uploadFile = input.files[0];
+			await handleUpload();
+		}
+	}
+
+	async function handleUpload() {
+		if (!uploadFile) return;
+		const maxSize = uploadFile.type.startsWith("video/") ? 200 : 50;
+		const fileSizeMB = uploadFile.size / (1024 * 1024);
+
+		if (fileSizeMB > maxSize) {
+			alert(
+				`File size (${fileSizeMB.toFixed(1)}MB) exceeds ${maxSize}MB limit`,
+			);
+			return;
+		}
+
+		uploading = true;
+		uploadProgress = 0;
+		uploadStatus = "uploading";
+		uploadError = "";
+
+		try {
+			const formData = new FormData();
+			formData.append("file", uploadFile);
+			const xhr = new XMLHttpRequest();
+
+			xhr.upload.addEventListener("progress", (e) => {
+				if (e.lengthComputable) {
+					uploadProgress = Math.round((e.loaded / e.total) * 100);
+					if (uploadProgress === 100) uploadStatus = "processing";
 				}
 			});
-			xhr.addEventListener("error", () => {
-				uploadStatus = "error";
-				reject(new Error("Network error during upload"));
+
+			const uploaded = await new Promise<Media>((resolve, reject) => {
+				xhr.addEventListener("load", () => {
+					if (xhr.status === 201) {
+						uploadStatus = "success";
+						resolve(JSON.parse(xhr.responseText));
+					} else {
+						uploadStatus = "error";
+						reject(
+							new Error(JSON.parse(xhr.responseText).error || "Upload failed"),
+						);
+					}
+				});
+				xhr.addEventListener("error", () => {
+					uploadStatus = "error";
+					reject(new Error("Network error during upload"));
+				});
+				xhr.open("POST", `${PUBLIC_API_URL}/api/v1/media/upload`);
+				xhr.withCredentials = true;
+				xhr.send(formData);
 			});
-			xhr.open("POST", `${PUBLIC_API_URL}/api/v1/media/upload`);
-			xhr.withCredentials = true;
-			xhr.send(formData);
-		});
 
-		media = [uploaded, ...media];
-		uploadFile = null;
-		selectMedia(uploaded);
-	} catch (err) {
-		console.error("Upload failed:", err);
-		uploadError = err instanceof Error ? err.message : "Upload failed";
-		uploadStatus = "error";
-	} finally {
-		setTimeout(() => {
-			uploading = false;
-			uploadProgress = 0;
-			uploadStatus = "uploading";
-			uploadError = "";
-		}, 2000);
+			media = [uploaded, ...media];
+			uploadFile = null;
+			selectMedia(uploaded);
+		} catch (err) {
+			console.error("Upload failed:", err);
+			uploadError = err instanceof Error ? err.message : "Upload failed";
+			uploadStatus = "error";
+		} finally {
+			setTimeout(() => {
+				uploading = false;
+				uploadProgress = 0;
+				uploadStatus = "uploading";
+				uploadError = "";
+			}, 2000);
+		}
 	}
-}
 
-function selectMedia(m: Media) {
-	onselect?.(m.id, m);
-	closeModal();
-}
-
-function closeModal() {
-	show = false;
-	onclose?.();
-}
-
-function formatFileSize(bytes: number): string {
-	if (bytes < 1024) return bytes + " B";
-	if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
-	return (bytes / (1024 * 1024)).toFixed(1) + " MB";
-}
-
-function isImage(m: Media): boolean {
-	return m.mime_type.startsWith("image/");
-}
-
-function isVideo(m: Media): boolean {
-	return m.mime_type.startsWith("video/");
-}
-
-function getProcessingMessage(): string {
-	if (!uploadFile) return "Processing...";
-	if (isImage({ mime_type: uploadFile.type } as Media)) {
-		return "Converting to WebP and generating thumbnail...";
-	} else if (isVideo({ mime_type: uploadFile.type } as Media)) {
-		return "Optimizing video and extracting thumbnail...";
+	function selectMedia(m: Media) {
+		onselect?.(m.id, m);
+		closeModal();
 	}
-	return "Processing file...";
-}
 
-const filteredMedia = $derived(
-	media.filter((m) => {
-		if (!searchQuery.trim()) return true;
-		return m.original_filename.toLowerCase().includes(searchQuery.toLowerCase());
-	}),
-);
+	function closeModal() {
+		show = false;
+		onclose?.();
+	}
+
+	function formatFileSize(bytes: number): string {
+		if (bytes < 1024) return bytes + " B";
+		if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+		return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+	}
+
+	function isImage(m: Media): boolean {
+		return m.mime_type.startsWith("image/");
+	}
+
+	function isVideo(m: Media): boolean {
+		return m.mime_type.startsWith("video/");
+	}
+
+	function getProcessingMessage(): string {
+		if (!uploadFile) return "Processing...";
+		if (isImage({ mime_type: uploadFile.type } as Media)) {
+			return "Converting to WebP and generating thumbnail...";
+		} else if (isVideo({ mime_type: uploadFile.type } as Media)) {
+			return "Optimizing video and extracting thumbnail...";
+		}
+		return "Processing file...";
+	}
+
+	const filteredMedia = $derived(
+		media.filter((m) => {
+			if (!searchQuery.trim()) return true;
+			return m.original_filename
+				.toLowerCase()
+				.includes(searchQuery.toLowerCase());
+		}),
+	);
 </script>
 
 {#if show}
@@ -177,7 +192,7 @@ const filteredMedia = $derived(
 		<div class="flex min-h-screen items-center justify-center p-4">
 			<div class="fixed inset-0 bg-black/50 transition-opacity"></div>
 
-			<div class="relative bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden" onclick={(e) => e.stopPropagation()}>
+			<div class="relative bg-surface rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden" onclick={(e) => e.stopPropagation()}>
 				<div class="border-b border-gray-200 px-6 py-4">
 					<div class="flex items-center justify-between">
 						<div class="flex-1">
@@ -220,22 +235,22 @@ const filteredMedia = $derived(
 					</div>
 
 					<div class="flex gap-3 mt-4">
-						<input type="text" bind:value={searchQuery} placeholder="Search media..." class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+						<input type="text" bind:value={searchQuery} placeholder="Search media..." class="form-input grow-0" />
 						
-						<div class="flex border border-gray-300 rounded-lg overflow-hidden">
-							<button onclick={() => (viewMode = "grid")} class="px-3 py-2 {viewMode === 'grid' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}">
+						<div class="flex">
+							<button onclick={() => (viewMode = "grid")} class="px-3 py-2 rounded-l-md {viewMode === 'grid' ? 'bg-primary text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}">
 								<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
 								</svg>
 							</button>
-							<button onclick={() => (viewMode = "list")} class="px-3 py-2 {viewMode === 'list' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}">
+							<button onclick={() => (viewMode = "list")} class="px-3 py-2 rounded-r-md {viewMode === 'list' ? 'bg-primary text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}">
 								<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
 								</svg>
 							</button>
 						</div>
 
-						<label class="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 cursor-pointer flex items-center gap-2">
+						<label class="px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/80 cursor-pointer flex items-center gap-2">
 							{#if uploading}
 								<Loader2 class="w-5 h-5 animate-spin" />
 								Uploading...
@@ -267,6 +282,10 @@ const filteredMedia = $derived(
 										{#if m.mime_type === 'image/webp'}
 											<span class="px-2 py-1 bg-green-500 text-white text-xs rounded-full font-medium">WebP</span>
 										{/if}
+                    {console.log(m.mime_type)}
+                    {#if m.mime_type === 'image/gif'}
+											<span class="px-2 py-1 bg-blue-500 text-white text-xs rounded-full font-medium">GIF</span>
+										{/if}
 										{#if isVideo(m)}
 											<span class="px-2 py-1 bg-purple-500 text-white text-xs rounded-full font-medium">Video</span>
 										{/if}
@@ -281,38 +300,38 @@ const filteredMedia = $derived(
 							{/each}
 						</div>
 					{:else}
-						<div class="bg-white rounded-lg shadow overflow-hidden">
+						<div class="bg-surface rounded-lg shadow overflow-hidden">
 							<table class="min-w-full divide-y divide-gray-200">
-								<thead class="bg-gray-50">
+								<thead class="bg-gray-600">
 									<tr>
-										<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Preview</th>
-										<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Filename</th>
-										<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Size</th>
-										<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-										<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+										<th class="px-6 py-3 text-left text-xs font-medium text-foreground uppercase">Preview</th>
+										<th class="px-6 py-3 text-left text-xs font-medium text-foreground uppercase">Filename</th>
+										<th class="px-6 py-3 text-left text-xs font-medium text-foreground uppercase">Size</th>
+										<th class="px-6 py-3 text-left text-xs font-medium text-foreground uppercase">Type</th>
+										<th class="px-6 py-3 text-left text-xs font-medium text-foreground uppercase">Action</th>
 									</tr>
 								</thead>
 								<tbody class="divide-y divide-gray-200">
 									{#each filteredMedia as m (m.id)}
-										<tr class="hover:bg-gray-50">
+										<tr class="hover:bg-gray-700 bg-neutral-800">
 											<td class="px-6 py-4">
 												<img src={m.thumbnail_url || getMediaUrl(m)} alt={m.original_filename} class="h-12 w-12 object-cover rounded" />
 											</td>
 											<td class="px-6 py-4">
-												<div class="text-sm font-medium text-gray-900 truncate max-w-xs">{m.original_filename}</div>
+												<div class="text-sm font-medium text-foreground truncate max-w-xs">{m.original_filename}</div>
 											</td>
-											<td class="px-6 py-4 text-sm text-gray-500">{formatFileSize(m.size_bytes)}</td>
+											<td class="px-6 py-4 text-sm text-foreground">{formatFileSize(m.size_bytes)}</td>
 											<td class="px-6 py-4">
 												{#if m.mime_type === 'image/webp'}
 													<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">WebP</span>
 												{:else if isVideo(m)}
 													<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">Video</span>
-												{:else}
-													<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">{m.mime_type.split('/')[1].toUpperCase()}</span>
+                        {:else if m.mime_type === 'image/gif'}
+													<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500 text-white">{m.mime_type.split('/')[1].toUpperCase()}</span>
 												{/if}
 											</td>
 											<td class="px-6 py-4">
-												<button onclick={() => selectMedia(m)} class="text-blue-600 hover:text-blue-700 font-medium text-sm">Select</button>
+												<button onclick={() => selectMedia(m)} class="text-white font-medium text-sm btn btn-primary bg-transparent hover:bg-primary px-4 py-2"><Plus size={16} /></button>
 											</td>
 										</tr>
 									{/each}
