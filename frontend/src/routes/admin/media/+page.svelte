@@ -475,7 +475,7 @@
 		onclick={() => selectedMedia = null}
 	>
 		<div 
-			class="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden"
+			class="bg-surface rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden"
 			onclick={(e) => e.stopPropagation()}
 		>
 			<div class="flex items-center justify-between p-4 border-b">

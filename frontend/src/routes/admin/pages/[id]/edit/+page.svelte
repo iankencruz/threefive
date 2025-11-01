@@ -80,8 +80,9 @@
 
 	// Auto-generate slug from title (only if not manually edited)
 	$effect(() => {
-		if (formData.title && !slugManuallyEdited) {
-			formData.slug = formData.title
+		const title = formData.title; // Track only title
+		if (title && !slugManuallyEdited) {
+			formData.slug = title
 				.toLowerCase()
 				.replace(/[^a-z0-9]+/g, "-")
 				.replace(/^-|-$/g, "");
@@ -90,8 +91,9 @@
 
 	// Auto-fill SEO meta title from page title (only if not manually edited)
 	$effect(() => {
-		if (formData.title && !seoTitleManuallyEdited) {
-			formData.seo.meta_title = formData.title;
+		const title = formData.title; // Track only title
+		if (title && !seoTitleManuallyEdited) {
+			formData.seo.meta_title = title;
 		}
 	});
 

@@ -20,31 +20,34 @@
 	let selectedMedia = $state<Media[]>(data?.media || []);
 	let showMediaPicker = $state(false);
 
-	// Sync initial media
+	// Sync initial media only once
 	$effect(() => {
-		if (data?.media && data.media.length !== selectedMedia.length) {
+		if (data?.media && data.media.length > 0 && selectedMedia.length === 0) {
 			selectedMedia = [...data.media];
 		}
 	});
 
-	// Emit changes
-	$effect(() => {
+	// Only notify on actual data changes
+	function notifyChange() {
 		onchange({
 			title: title || undefined,
 			media_ids: selectedMedia.map((m) => m.id),
+			media: selectedMedia,
 		});
-	});
+	}
 
 	function handleMediaSelect(mediaId: string, media: Media) {
 		const exists = selectedMedia.some((m) => m.id === mediaId);
 		if (!exists) {
 			selectedMedia = [...selectedMedia, media];
+			notifyChange(); // Explicitly notify
 		}
 		showMediaPicker = false;
 	}
 
 	function removeMedia(mediaId: string) {
 		selectedMedia = selectedMedia.filter((m) => m.id !== mediaId);
+		notifyChange(); // Explicitly notify
 	}
 
 	function moveMediaUp(index: number) {
@@ -55,6 +58,7 @@
 				newMedia[index - 1],
 			];
 			selectedMedia = newMedia;
+			notifyChange(); // Explicitly notify
 		}
 	}
 
@@ -66,10 +70,10 @@
 				newMedia[index],
 			];
 			selectedMedia = newMedia;
+			notifyChange(); // Explicitly notify
 		}
 	}
 </script>
-
 <div class="space-y-4">
 	<!-- Title Input -->
 	<div>
@@ -80,6 +84,7 @@
 			id="gallery-title"
 			type="text"
 			bind:value={title}
+      onblur={notifyChange} 
 			placeholder="e.g., Summer Vacation Photos"
 			class="w-full px-4 py-2 border border-gray-600 bg-surface rounded-lg focus:ring-2 focus:ring--accent focus:border-transparent"
 		/>
@@ -110,7 +115,7 @@
 				<p class="text-sm text-gray-500">Click "Add Image" to select images</p>
 			</div>
 		{:else}
-			<div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+			<div class="grid grid-cols-2 md:grid-cols-5 gap-3">
 				{#each selectedMedia as media, index (media.id)}
 					<div class="group relative bg-gray-800 rounded-lg overflow-hidden border border-gray-700 hover:border-accent transition-all">
 						<div class="aspect-square bg-gray-700 relative">
@@ -121,26 +126,8 @@
 							/>
 							
 							<!-- Controls overlay -->
-							<div class="absolute inset-0  group-hover:bg-opacity-50 transition-all flex items-center justify-center gap-1">
-								<button
-									type="button"
-									onclick={() => moveMediaUp(index)}
-									disabled={index === 0}
-									class="w-7 h-7 bg-white text-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-100 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed text-sm font-bold"
-									title="Move up"
-								>
-									↑
-								</button>
-								<button
-									type="button"
-									onclick={() => moveMediaDown(index)}
-									disabled={index === selectedMedia.length - 1}
-									class="w-7 h-7 bg-white text-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-100 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed text-sm font-bold"
-									title="Move down"
-								>
-									↓
-								</button>
-								<button
+							<div class="absolute top-2 right-2  group-hover:bg-opacity-50 transition-all flex flex-col items-center justify-center gap-1">
+                <button
 									type="button"
 									onclick={() => removeMedia(media.id)}
 									class="w-7 h-7 bg-red-600 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700 flex items-center justify-center"
@@ -148,6 +135,25 @@
 								>
 									<X class="w-4 h-4" />
 								</button>
+								<button
+									type="button"
+									onclick={() => moveMediaUp(index)}
+									disabled={index === 0}
+									class="w-7 h-7 bg-white text-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-100 flex items-center justify-center disabled:hidden disabled:cursor-not-allowed text-sm font-bold"
+									title="Move up"
+								>
+									↑
+								</button>
+                <button
+									type="button"
+									onclick={() => moveMediaDown(index)}
+									disabled={index === selectedMedia.length - 1}
+									class="w-7 h-7 bg-white text-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-100 flex items-center justify-center disabled:hidden disabled:cursor-not-allowed text-sm font-bold"
+									title="Move down"
+								>
+									↓
+								</button>
+								
 							</div>
 
 							<!-- Position badge -->

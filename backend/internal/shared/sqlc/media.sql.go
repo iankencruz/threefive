@@ -13,6 +13,43 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countMedia = `-- name: CountMedia :one
+SELECT COUNT(*) FROM media
+WHERE deleted_at IS NULL
+`
+
+func (q *Queries) CountMedia(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countMedia)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countSearchMedia = `-- name: CountSearchMedia :one
+SELECT COUNT(*) FROM media
+WHERE deleted_at IS NULL
+  AND (
+    $1::text = '' OR
+    original_filename ILIKE '%' || $1 || '%'
+  )
+  AND (
+    $2::text = '' OR
+    mime_type LIKE $2 || '%'
+  )
+`
+
+type CountSearchMediaParams struct {
+	SearchQuery    string `json:"search_query"`
+	MimeTypeFilter string `json:"mime_type_filter"`
+}
+
+func (q *Queries) CountSearchMedia(ctx context.Context, arg CountSearchMediaParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countSearchMedia, arg.SearchQuery, arg.MimeTypeFilter)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createMedia = `-- name: CreateMedia :one
 
 INSERT INTO media (
@@ -415,6 +452,90 @@ ORDER BY created_at DESC
 
 func (q *Queries) ListMediaByUser(ctx context.Context, uploadedBy uuid.UUID) ([]Media, error) {
 	rows, err := q.db.Query(ctx, listMediaByUser, uploadedBy)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Media
+	for rows.Next() {
+		var i Media
+		if err := rows.Scan(
+			&i.ID,
+			&i.Filename,
+			&i.OriginalFilename,
+			&i.MimeType,
+			&i.SizeBytes,
+			&i.Width,
+			&i.Height,
+			&i.StorageType,
+			&i.StoragePath,
+			&i.S3Bucket,
+			&i.S3Key,
+			&i.S3Region,
+			&i.Url,
+			&i.OriginalUrl,
+			&i.LargeUrl,
+			&i.MediumUrl,
+			&i.ThumbnailUrl,
+			&i.OriginalPath,
+			&i.LargePath,
+			&i.MediumPath,
+			&i.ThumbnailPath,
+			&i.UploadedBy,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const searchMedia = `-- name: SearchMedia :many
+SELECT id, filename, original_filename, mime_type, size_bytes, width, height, storage_type, storage_path, s3_bucket, s3_key, s3_region, url, original_url, large_url, medium_url, thumbnail_url, original_path, large_path, medium_path, thumbnail_path, uploaded_by, created_at, updated_at, deleted_at FROM media
+WHERE deleted_at IS NULL
+  AND (
+    $1::text = '' OR
+    original_filename ILIKE '%' || $1 || '%'
+  )
+  AND (
+    $2::text = '' OR
+    mime_type LIKE $2 || '%'
+  )
+ORDER BY 
+  CASE WHEN $3::text = 'filename' AND $4::text = 'asc' THEN original_filename END ASC,
+  CASE WHEN $3::text = 'filename' AND $4::text = 'desc' THEN original_filename END DESC,
+  CASE WHEN $3::text = 'size' AND $4::text = 'asc' THEN size_bytes END ASC,
+  CASE WHEN $3::text = 'size' AND $4::text = 'desc' THEN size_bytes END DESC,
+  CASE WHEN $3::text = 'created_at' AND $4::text = 'asc' THEN created_at END ASC,
+  CASE WHEN $3::text = 'created_at' AND $4::text = 'desc' THEN created_at END DESC,
+  created_at DESC
+LIMIT $6 OFFSET $5
+`
+
+type SearchMediaParams struct {
+	SearchQuery    string `json:"search_query"`
+	MimeTypeFilter string `json:"mime_type_filter"`
+	SortBy         string `json:"sort_by"`
+	SortOrder      string `json:"sort_order"`
+	OffsetVal      int32  `json:"offset_val"`
+	LimitVal       int32  `json:"limit_val"`
+}
+
+func (q *Queries) SearchMedia(ctx context.Context, arg SearchMediaParams) ([]Media, error) {
+	rows, err := q.db.Query(ctx, searchMedia,
+		arg.SearchQuery,
+		arg.MimeTypeFilter,
+		arg.SortBy,
+		arg.SortOrder,
+		arg.OffsetVal,
+		arg.LimitVal,
+	)
 	if err != nil {
 		return nil, err
 	}

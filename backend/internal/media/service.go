@@ -46,23 +46,6 @@ func NewService(db *pgxpool.Pool, queries *sqlc.Queries, storage storage.Storage
 	}
 }
 
-// VariantUploadResult holds all uploaded variant URLs and paths
-type VariantUploadResult struct {
-	OriginalURL  string
-	LargeURL     string
-	MediumURL    string
-	ThumbnailURL string
-
-	OriginalPath  string
-	LargePath     string
-	MediumPath    string
-	ThumbnailPath string
-
-	Width  int
-	Height int
-	Size   int64
-}
-
 // UploadFile uploads a file to storage and creates a media record
 func (s *Service) UploadFile(ctx context.Context, file *multipart.FileHeader, userID uuid.UUID) (*sqlc.Media, error) {
 	if err := s.validateFile(file); err != nil {
@@ -539,13 +522,6 @@ func (s *Service) GetMediaStats(ctx context.Context) (*MediaStats, error) {
 	}, nil
 }
 
-// MediaStats contains media statistics
-type MediaStats struct {
-	TotalCount      int64 `json:"total_count"`
-	TotalSize       int64 `json:"total_size"`
-	UniqueUploaders int64 `json:"unique_uploaders"`
-}
-
 // validateFile validates uploaded file
 func (s *Service) validateFile(file *multipart.FileHeader) error {
 	maxSize := int64(100 << 20) // 100MB
@@ -563,6 +539,33 @@ func (s *Service) validateFile(file *multipart.FileHeader) error {
 	}
 
 	return nil
+}
+
+// Search Media
+func (s *Service) SearchMedia(ctx context.Context, params SearchMediaParams) ([]sqlc.Media, int64, error) {
+	// Get total count with SQLC's generated params
+	total, err := s.queries.CountSearchMedia(ctx, sqlc.CountSearchMediaParams{
+		SearchQuery:    params.SearchQuery,
+		MimeTypeFilter: params.MimeTypeFilter,
+	})
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to count media: %w", err)
+	}
+
+	// Get filtered media with SQLC's generated params
+	media, err := s.queries.SearchMedia(ctx, sqlc.SearchMediaParams{
+		SearchQuery:    params.SearchQuery,
+		MimeTypeFilter: params.MimeTypeFilter,
+		SortBy:         params.SortBy,
+		SortOrder:      params.SortOrder,
+		LimitVal:       params.Limit,
+		OffsetVal:      params.Offset,
+	})
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to search media: %w", err)
+	}
+
+	return media, total, nil
 }
 
 // Helper functions

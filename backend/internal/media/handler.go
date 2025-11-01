@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -77,6 +78,8 @@ func (h *Handler) GetMediaHandler(w http.ResponseWriter, r *http.Request) {
 
 // ListMediaHandler lists media with pagination
 // GET /api/v1/media?page=1&limit=20
+// ListMediaHandler lists media with enhanced pagination, sorting, and filtering
+// GET /api/v1/media?page=1&limit=20&search=photo&type=image&sort=created_at&order=desc
 func (h *Handler) ListMediaHandler(w http.ResponseWriter, r *http.Request) {
 	// Parse pagination params
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
@@ -89,19 +92,58 @@ func (h *Handler) ListMediaHandler(w http.ResponseWriter, r *http.Request) {
 		limit = 20
 	}
 
+	// Parse new query parameters
+	search := strings.TrimSpace(r.URL.Query().Get("search"))
+	mimeType := strings.TrimSpace(r.URL.Query().Get("type"))
+	sortBy := strings.TrimSpace(r.URL.Query().Get("sort"))
+	sortOrder := strings.TrimSpace(r.URL.Query().Get("order"))
+
+	// Validate sort_by
+	validSortFields := map[string]bool{
+		"created_at": true,
+		"filename":   true,
+		"size":       true,
+	}
+	if sortBy == "" || !validSortFields[sortBy] {
+		sortBy = "created_at"
+	}
+
+	// Validate sort_order
+	if sortOrder != "asc" && sortOrder != "desc" {
+		sortOrder = "desc"
+	}
+
 	offset := (page - 1) * limit
 
-	media, err := h.service.ListMedia(r.Context(), int32(limit), int32(offset))
+	// Use SearchMedia instead of ListMedia
+	media, total, err := h.service.SearchMedia(r.Context(), SearchMediaParams{
+		SearchQuery:    search,
+		MimeTypeFilter: mimeType,
+		SortBy:         sortBy,
+		SortOrder:      sortOrder,
+		Limit:          int32(limit),
+		Offset:         int32(offset),
+	})
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
+	totalPages := (int(total) + limit - 1) / limit
+
 	response := map[string]any{
 		"data": media,
-		"pagination": map[string]int{
-			"page":  page,
-			"limit": limit,
+		"pagination": map[string]any{
+			"page":        page,
+			"limit":       limit,
+			"total":       total,
+			"total_pages": totalPages,
+		},
+		"filters": map[string]string{
+			"search": search,
+			"type":   mimeType,
+			"sort":   sortBy,
+			"order":  sortOrder,
 		},
 	}
 

@@ -201,7 +201,7 @@
 			{/if}
 
 			<!-- Media container -->
-			<div class="relative max-w-7xl max-h-full w-full h-full flex items-center justify-center p-4">
+			<div class="relative max-w-7xl max-h-full w-full h-full flex items-center justify-center p-4 ">
 				{#if isVideo(data.media[lightboxIndex].mime_type)}
 					<!-- Video in lightbox -->
 					<video
@@ -209,7 +209,7 @@
 						poster={getVideoPoster(data.media[lightboxIndex])}
 						controls
 						autoplay
-						class="max-w-[80svw] max-h-full object-contain"
+						class=" max-h-full object-contain pointer-events-auto"
 					>
 						<track kind="captions" />
 					</video>
@@ -218,7 +218,7 @@
 					<img
 						src={getImageUrl(data.media[lightboxIndex], 'large')}
 						alt={data.media[lightboxIndex].original_filename}
-						class="max-w-[70vw] max-h-[85vh] object-contain"
+						class="max-w-[70vw] max-h-[85vh] object-contain pointer-events-auto"
 					/>
 				{/if}
 

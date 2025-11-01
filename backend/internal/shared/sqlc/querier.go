@@ -15,7 +15,9 @@ type Querier interface {
 	CheckSlugExists(ctx context.Context, arg CheckSlugExistsParams) (bool, error)
 	CleanupExpiredPasswordResetTokens(ctx context.Context) error
 	CleanupExpiredSessions(ctx context.Context) error
+	CountMedia(ctx context.Context) (int64, error)
 	CountPages(ctx context.Context, arg CountPagesParams) (int64, error)
+	CountSearchMedia(ctx context.Context, arg CountSearchMediaParams) (int64, error)
 	// backend/sql/queries/blocks.sql
 	// ============================================
 	// Base Blocks Queries
@@ -108,6 +110,7 @@ type Querier interface {
 	ListPublishedPages(ctx context.Context, arg ListPublishedPagesParams) ([]Pages, error)
 	ListUsers(ctx context.Context) ([]Users, error)
 	PurgeOldDeletedPages(ctx context.Context, cutoffDate pgtype.Timestamptz) (int64, error)
+	SearchMedia(ctx context.Context, arg SearchMediaParams) ([]Media, error)
 	SoftDeleteMedia(ctx context.Context, id uuid.UUID) error
 	SoftDeletePage(ctx context.Context, id uuid.UUID) error
 	UnlinkMediaFromEntity(ctx context.Context, arg UnlinkMediaFromEntityParams) error

@@ -59,6 +59,23 @@ WHERE deleted_at IS NULL
 ORDER BY created_at DESC
 LIMIT @limit_val OFFSET @offset_val;
 
+-- name: CountMedia :one
+SELECT COUNT(*) FROM media
+WHERE deleted_at IS NULL;
+
+-- name: CountSearchMedia :one
+SELECT COUNT(*) FROM media
+WHERE deleted_at IS NULL
+  AND (
+    @search_query::text = '' OR
+    original_filename ILIKE '%' || @search_query || '%'
+  )
+  AND (
+    @mime_type_filter::text = '' OR
+    mime_type LIKE @mime_type_filter || '%'
+  );
+
+
 -- name: ListMediaByUser :many
 SELECT * FROM media
 WHERE uploaded_by = @uploaded_by AND deleted_at IS NULL
@@ -109,3 +126,25 @@ SELECT entity_type, entity_id, sort_order, created_at
 FROM media_relations
 WHERE media_id = @media_id
 ORDER BY created_at DESC;
+
+
+-- name: SearchMedia :many
+SELECT * FROM media
+WHERE deleted_at IS NULL
+  AND (
+    @search_query::text = '' OR
+    original_filename ILIKE '%' || @search_query || '%'
+  )
+  AND (
+    @mime_type_filter::text = '' OR
+    mime_type LIKE @mime_type_filter || '%'
+  )
+ORDER BY 
+  CASE WHEN @sort_by::text = 'filename' AND @sort_order::text = 'asc' THEN original_filename END ASC,
+  CASE WHEN @sort_by::text = 'filename' AND @sort_order::text = 'desc' THEN original_filename END DESC,
+  CASE WHEN @sort_by::text = 'size' AND @sort_order::text = 'asc' THEN size_bytes END ASC,
+  CASE WHEN @sort_by::text = 'size' AND @sort_order::text = 'desc' THEN size_bytes END DESC,
+  CASE WHEN @sort_by::text = 'created_at' AND @sort_order::text = 'asc' THEN created_at END ASC,
+  CASE WHEN @sort_by::text = 'created_at' AND @sort_order::text = 'desc' THEN created_at END DESC,
+  created_at DESC
+LIMIT @limit_val OFFSET @offset_val;

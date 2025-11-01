@@ -11,7 +11,8 @@
 @theme {
   /* === Brand === */
   --color-primary: #ff4b1f;
-  --color-accent: #ff6a3d;
+  --color-accent: #FF8D70;
+  --color-accent-dark: #661400;
 
   /* === Neutrals === */
   --color-background: #0c0c0c;
@@ -160,7 +161,7 @@
   }
 
   .form-input {
-    @apply w-full px-4 py-2.5 rounded-sm border bg-input-bg border-input-border text-foreground placeholder:text-input-placeholder focus:outline-none focus:ring-2 focus:ring-input-focus-ring focus:border-input-focus-border transition-colors duration-200 appearance-none [background-clip:padding-box] disabled:bg-input-disabled-bg disabled:text-input-disabled-text disabled:cursor-not-allowed;
+    @apply w-full px-4 py-1.5 rounded-sm border bg-input-bg border-input-border text-foreground placeholder:text-input-placeholder focus:outline-none focus:ring-2 focus:ring-input-focus-ring focus:border-input-focus-border transition-colors duration-200 appearance-none [background-clip:padding-box] disabled:bg-input-disabled-bg disabled:text-input-disabled-text disabled:cursor-not-allowed;
   }
 
   .desktop-preview-wrapper {

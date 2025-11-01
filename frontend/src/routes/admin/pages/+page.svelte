@@ -65,7 +65,7 @@
 	</div>
 
 	{#if !data.pages || data.pages.length === 0}
-		<div class="flex flex-col items-center justify-center py-16 px-8 bg-surface rounded-lg border-2 border-dashed border-gray-300">
+		<div class="flex flex-col items-center justify-center py-16 px-8 bg-surface rounded-lg border-2 border-dashed border-foreground-muted">
 			<svg class="w-16 h-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path
 					stroke-linecap="round"
@@ -74,10 +74,10 @@
 					d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
 				/>
 			</svg>
-			<h3 class="text-xl font-semibold text-gray-900 mb-2">No pages yet</h3>
-			<p class="text-gray-600 mb-6">Get started by creating your first page</p>
+			<h3 class="text-xl font-semibold  mb-2">No pages yet</h3>
+			<p class=" mb-6">Get started by creating your first page</p>
 			<button
-				class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+				class="bg-primary hover:bg-primary text-white px-6 py-2 rounded-lg font-medium transition-colors cursor-pointer"
 				onclick={() => goto('/admin/pages/new')}
 			>
 				Create Page

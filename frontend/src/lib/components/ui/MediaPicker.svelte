@@ -7,7 +7,10 @@
 		AlertCircle,
 		Loader2,
 		Plus,
+		Loader,
+		Funnel,
 	} from "lucide-svelte";
+	import Pagination from "./Pagination.svelte";
 
 	interface Props {
 		show?: boolean;
@@ -37,6 +40,12 @@
 	let totalPages = $state(1);
 	let limit = $state(20);
 
+	let total = $state(0);
+	let typeFilter = $state<string>("");
+	let sortBy = $state<string>("created_at");
+	let sortOrder = $state<string>("desc");
+	let showFilters = $state(false);
+
 	const ACCEPTED_FILE_TYPES =
 		"image/*,video/*,video/mp4,video/quicktime,.mp4,.mov,.avi,.gif";
 
@@ -50,10 +59,37 @@
 	async function loadMedia() {
 		loading = true;
 		try {
-			const response = await mediaApi.listMedia(currentPage, limit);
-			media = response.data || [];
-			if (response.pagination) {
-				totalPages = response.pagination.total_pages || 1;
+			const params = new URLSearchParams({
+				page: currentPage.toString(),
+				limit: limit.toString(),
+				sort: sortBy,
+				order: sortOrder,
+			});
+
+			if (searchQuery.trim()) {
+				params.append("search", searchQuery.trim());
+			}
+
+			if (typeFilter) {
+				params.append("type", typeFilter);
+			}
+
+			const response = await fetch(
+				`${PUBLIC_API_URL}/api/v1/media?${params.toString()}`,
+				{
+					credentials: "include",
+				},
+			);
+
+			if (!response.ok) {
+				throw new Error("Failed to load media");
+			}
+
+			const data = await response.json();
+			media = data.data || [];
+			if (data.pagination) {
+				totalPages = data.pagination.total_pages || 1;
+				total = data.pagination.total || 0;
 			}
 		} catch (err) {
 			console.error("Failed to load media:", err);
@@ -61,10 +97,20 @@
 			loading = false;
 		}
 	}
-
 	async function changePage(newPage: number) {
 		if (newPage < 1 || newPage > totalPages) return;
 		currentPage = newPage;
+		await loadMedia();
+	}
+
+	async function applyFilters() {
+		currentPage = 1;
+		await loadMedia();
+	}
+
+	async function changeLimit(newLimit: number) {
+		limit = newLimit;
+		currentPage = 1;
 		await loadMedia();
 	}
 
@@ -199,6 +245,50 @@
 							<h2 class="text-xl font-semibold text-gray-900">Select Media</h2>
 							<p class="text-sm text-gray-500 mt-1">Upload new or select existing media</p>
 						</div>
+            <!-- Filters Panel -->
+            {#if showFilters}
+              <div class="px-6 py-4 absolute z-50 h-auto bg-surface border-b border-input-border inset-2">
+                <div class="grid grid-cols-1 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Type</label>
+                    <select
+                      bind:value={typeFilter}
+                      onchange={applyFilters}
+                      class="form-input"
+                    >
+                      <option value="">All Types</option>
+                      <option value="image">Images</option>
+                      <option value="video">Videos</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+                    <select
+                      bind:value={sortBy}
+                      onchange={applyFilters}
+                      class="form-input"
+                    >
+                      <option value="created_at">Date Uploaded</option>
+                      <option value="filename">Filename</option>
+                      <option value="size">File Size</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Order</label>
+                    <select
+                      bind:value={sortOrder}
+                      onchange={applyFilters}
+                      class="form-input"
+                    >
+                      <option value="desc">Descending</option>
+                      <option value="asc">Ascending</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            {/if}
 
 						{#if uploading}
 							<div class="flex items-center gap-3 px-4 py-2 bg-blue-50 rounded-lg mr-4">
@@ -235,7 +325,14 @@
 					</div>
 
 					<div class="flex gap-3 mt-4">
-						<input type="text" bind:value={searchQuery} placeholder="Search media..." class="form-input grow-0" />
+						<input type="text" bind:value={searchQuery} placeholder="Search media..." class="form-input grow-0 py-1" />
+            <button
+              onclick={() => (showFilters = !showFilters)}
+              class="px-3 py-2 rounded-lg hover:bg-gray-100 {showFilters ? 'bg-primary text-accent' : 'text-gray-700'}"
+              title="Toggle filters"
+            >
+              <Funnel class="w-5 h-5" />
+            </button>
 						
 						<div class="flex">
 							<button onclick={() => (viewMode = "grid")} class="px-3 py-2 rounded-l-md {viewMode === 'grid' ? 'bg-primary text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}">
@@ -252,7 +349,7 @@
 
 						<label class="px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/80 cursor-pointer flex items-center gap-2">
 							{#if uploading}
-								<Loader2 class="w-5 h-5 animate-spin" />
+								<Loader class="w-5 h-5 animate-spin" />
 								Uploading...
 							{:else}
 								<ImageUp class="w-5 h-5" />
@@ -340,18 +437,37 @@
 						</div>
 					{/if}
 
-					{#if totalPages > 1}
-						<div class="flex items-center justify-center gap-2 mt-6">
-							<button onclick={() => changePage(currentPage - 1)} disabled={currentPage === 1} class="px-3 py-1 border rounded disabled:opacity-50">
-								Previous
-							</button>
-							<span class="text-sm text-gray-600">Page {currentPage} of {totalPages}</span>
-							<button onclick={() => changePage(currentPage + 1)} disabled={currentPage === totalPages} class="px-3 py-1 border rounded disabled:opacity-50">
-								Next
-							</button>
-						</div>
-					{/if}
-				</div>
+          <!-- Enhanced Pagination Footer -->
+          {#if !loading && media.length > 0}
+            <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+              <div class="flex items-center gap-4 w-full">
+                <span class="text-sm text-gray-300">
+                  Showing {(currentPage - 1) * limit + 1} to {Math.min(currentPage * limit, total)} of {total} results
+                </span>
+                <select
+                  bind:value={limit}
+                  onchange={() => changeLimit(limit)}
+                  class="form-input max-w-40 py-1"
+                >
+                  <option value={10}>10 per page</option>
+                  <option value={20}>20 per page</option>
+                  <option value={50}>50 per page</option>
+                  <option value={100}>100 per page</option>
+                </select>
+              </div>
+
+              <!-- Pagination -->
+              <Pagination 
+                currentPage={currentPage}
+                totalPages={totalPages} 
+                onPageChange={changePage} 
+              />
+
+
+
+            </div>
+          {/if}			
+        </div>
 			</div>
 		</div>
 	</div>

@@ -23,8 +23,23 @@ interface MediaListResponse {
 		page: number;
 		limit: number;
 		total?: number;
-		total_pages?: number; // Added for pagination
+		total_pages?: number;
 	};
+	filters?: {
+		search: string;
+		type: string;
+		sort: string;
+		order: string;
+	};
+}
+
+interface MediaListParams {
+	page?: number;
+	limit?: number;
+	search?: string;
+	type?: string; // 'image' or 'video'
+	sort?: "created_at" | "filename" | "size";
+	order?: "asc" | "desc";
 }
 
 interface ErrorResponse {
@@ -61,9 +76,21 @@ export function getMediaUrl(media: Media): string {
 }
 
 export const mediaApi = {
-	async listMedia(page: number = 1, limit: number = 20) {
+	async listMedia(params: MediaListParams = {}) {
+		const queryParams = new URLSearchParams();
+
+		// Add page and limit (with defaults)
+		queryParams.append("page", (params.page || 1).toString());
+		queryParams.append("limit", (params.limit || 20).toString());
+
+		// Add optional filters
+		if (params.search) queryParams.append("search", params.search);
+		if (params.type) queryParams.append("type", params.type);
+		if (params.sort) queryParams.append("sort", params.sort);
+		if (params.order) queryParams.append("order", params.order);
+
 		return fetchAPI<MediaListResponse>(
-			`${PUBLIC_API_URL}/api/v1/media?page=${page}&limit=${limit}`,
+			`${PUBLIC_API_URL}/api/v1/media?${queryParams.toString()}`,
 		);
 	},
 
@@ -89,4 +116,4 @@ export const mediaApi = {
 	},
 };
 
-export type { Media, MediaListResponse, ErrorResponse };
+export type { Media, MediaListResponse, MediaListParams, ErrorResponse };

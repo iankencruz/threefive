@@ -56,9 +56,9 @@ CREATE TRIGGER update_sessions_updated_at
 -- +goose Down
 -- +goose StatementBegin
 
-DROP TRIGGER IF EXISTS update_sessions_updated_at ON sessions;
-DROP FUNCTION IF EXISTS update_updated_at_column();
 DROP TABLE IF EXISTS password_reset_tokens;
 DROP TABLE IF EXISTS sessions;
+
+DROP FUNCTION IF EXISTS update_updated_at_column();
 
 -- +goose StatementEnd
