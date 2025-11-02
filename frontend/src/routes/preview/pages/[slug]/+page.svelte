@@ -61,7 +61,7 @@
 {/if}
 
 <!-- Page Content -->
-<div class="min-h-screen bg-white">
+<div class="min-h-screen bg-white z-20">
 	<!-- ✨ Pass mediaMap to BlockRenderer -->
 	<BlockRenderer blocks={data.page.blocks || []} mediaMap={data.mediaMap || {}} />
 	

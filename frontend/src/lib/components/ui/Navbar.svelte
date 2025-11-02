@@ -2,7 +2,7 @@
 	let variant = $state();
 </script>
 
-<nav class="py-5  w-full absolute  transition-all z-50 duration-500">
+<nav class="py-5  w-full absolute  transition-all z-20 duration-500">
     <div class="mx-auto max-w-8xl px-4 sm:px-6 lg:px-8">
       <div class="w-full flex flex-col lg:flex-row">
         <div class="flex justify-between lg:flex-row ">
