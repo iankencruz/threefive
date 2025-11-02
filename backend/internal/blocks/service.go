@@ -4,6 +4,7 @@ package blocks
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/google/uuid"
 	"github.com/iankencruz/threefive/internal/shared/errors"
@@ -257,7 +258,20 @@ func (s *Service) GetPageBlocks(ctx context.Context, pageID uuid.UUID) ([]BlockR
 					EntityType: "block_gallery",
 					EntityID:   gallery.ID,
 				})
-				if err == nil {
+
+				// Always set data structure, even if media fetch fails or is empty
+				if err != nil {
+					// Log error but continue with empty media
+					log.Printf("Warning: Failed to fetch media for gallery block %s: %v", gallery.ID, err)
+					blockResp.Data = map[string]interface{}{
+						"title": nullTextToPtr(gallery.Title),
+						"media": []sqlc.Media{}, // Empty array instead of nil
+					}
+				} else {
+					// Ensure media is never nil
+					if media == nil {
+						media = []sqlc.Media{}
+					}
 					blockResp.Data = map[string]interface{}{
 						"title": nullTextToPtr(gallery.Title),
 						"media": media,

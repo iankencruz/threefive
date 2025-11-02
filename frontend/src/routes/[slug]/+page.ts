@@ -1,9 +1,14 @@
 // frontend/src/routes/[slug]/+page.ts
-import { error } from "@sveltejs/kit";
+import { error, redirect } from "@sveltejs/kit";
 import type { PageLoad } from "./$types";
 import { PUBLIC_API_URL } from "$env/static/public";
 
 export const load: PageLoad = async ({ params, fetch }) => {
+	// Block direct access to /home - redirect to /
+	if (params.slug === "home") {
+		throw redirect(308, "/");
+	}
+
 	try {
 		const response = await fetch(
 			`${PUBLIC_API_URL}/api/v1/pages/${params.slug}`,

@@ -5,9 +5,13 @@ meta {
 }
 
 get {
-  url: {{base-url}}/api/v1/pages
+  url: {{base-url}}/api/v1/pages/:slug
   body: formUrlEncoded
   auth: inherit
+}
+
+params:path {
+  slug: home
 }
 
 headers {
