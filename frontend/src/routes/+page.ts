@@ -1,38 +1,36 @@
-// frontend/src/routes/[slug]/+page.ts
-import { error, redirect } from "@sveltejs/kit";
+// frontend/src/routes/+page.ts
+import { error, type LoadEvent } from "@sveltejs/kit";
 import type { PageLoad } from "./$types";
 import { PUBLIC_API_URL } from "$env/static/public";
 
-export const load: PageLoad = async ({ params, fetch }) => {
-	// Block direct access to /home - redirect to /
-	if (params.slug === "home") {
-		throw redirect(308, "/");
-	}
+interface MediaItem {
+	media_id?: string;
+}
 
+export const load: PageLoad = async ({ fetch }: LoadEvent) => {
 	try {
-		const response = await fetch(
-			`${PUBLIC_API_URL}/api/v1/pages/${params.slug}`,
-		);
+		// Fetch the page with slug "home"
+		const response = await fetch(`${PUBLIC_API_URL}/api/v1/pages/home`);
 
 		if (!response.ok) {
 			if (response.status === 404) {
 				throw error(404, {
-					message: "Page not found",
+					message: "Homepage not found",
 				});
 			}
-			throw error(response.status, "Failed to load page");
+			throw error(response.status, "Failed to load homepage");
 		}
 
 		const page = await response.json();
 
-		// Only show published pages on the public site
+		// Only show published pages
 		if (page.status !== "published") {
 			throw error(404, {
-				message: "Page not found",
+				message: "Homepage not found",
 			});
 		}
 
-		// ✨ NEW: Pre-fetch all media for blocks
+		// ✨ Pre-fetch all media for blocks
 		const mediaMap = new Map();
 
 		if (page.blocks && Array.isArray(page.blocks)) {
@@ -43,9 +41,9 @@ export const load: PageLoad = async ({ params, fetch }) => {
 				if (block.data?.image_id) {
 					mediaIds.add(block.data.image_id);
 				}
-				// Add more media fields if needed (e.g., gallery images)
+				// Add gallery images if present
 				if (block.data?.images && Array.isArray(block.data.images)) {
-					block.data.images.forEach((img: any) => {
+					block.data.images.forEach((img: MediaItem) => {
 						if (img.media_id) mediaIds.add(img.media_id);
 					});
 				}
@@ -75,15 +73,15 @@ export const load: PageLoad = async ({ params, fetch }) => {
 
 		return {
 			page,
-			mediaMap: Object.fromEntries(mediaMap), // Convert to plain object for serialization
+			mediaMap: Object.fromEntries(mediaMap),
 		};
 	} catch (err) {
-		console.error("Error loading page:", err);
+		console.error("Error loading homepage:", err);
 
 		if (err && typeof err === "object" && "status" in err) {
-			throw err; // Re-throw SvelteKit errors
+			throw err;
 		}
 
-		throw error(500, "Failed to load page");
+		throw error(500, "Failed to load homepage");
 	}
 };

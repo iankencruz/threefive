@@ -14,9 +14,10 @@
 
 	interface Props {
 		blocks: Block[];
+		mediaMap?: Record<string, any>; // ✨ NEW: Pre-loaded media
 	}
 
-	let { blocks = [] }: Props = $props();
+	let { blocks = [], mediaMap = {} }: Props = $props();
 
 	// Sort blocks by sort_order if available
 	const sortedBlocks = $derived(
@@ -36,13 +37,14 @@
 {:else}
 	{#each sortedBlocks as block (block.id || block.type)}
 		{#if block.type === 'hero'}
-			<HeroBlock data={block.data} />
+			<!-- ✨ Pass pre-loaded media to HeroBlock -->
+			<HeroBlock data={block.data} media={mediaMap[block.data?.image_id]} />
 		{:else if block.type === 'richtext'}
 			<RichTextBlock data={block.data} />
 		{:else if block.type === 'header'}
 			<HeaderBlock data={block.data} />
 		{:else if block.type === 'gallery'}
-			<GalleryBlock data={block.data} />
+			<GalleryBlock data={block.data} mediaMap={mediaMap} />
 		{:else}
 			<!-- Unknown block type -->
 			<div class="py-8 bg-yellow-50 border-l-4 border-yellow-400">
