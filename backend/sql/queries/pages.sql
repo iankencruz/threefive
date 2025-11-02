@@ -70,7 +70,7 @@ SET
         ELSE published_at 
     END,
     updated_at = NOW()
-WHERE id = @id AND deleted_at IS NULL
+WHERE slug = @slug AND deleted_at IS NULL
 RETURNING *;
 
 -- name: UpdatePageStatus :one
@@ -83,7 +83,7 @@ SET
         ELSE published_at 
     END,
     updated_at = NOW()
-WHERE id = @id AND deleted_at IS NULL
+WHERE slug = @slug AND deleted_at IS NULL
 RETURNING *;
 
 -- name: SoftDeletePage :exec
@@ -92,7 +92,7 @@ SET
     slug = CONCAT('deleted_', EXTRACT(EPOCH FROM NOW())::bigint, '_', id::text, '_', slug),
     deleted_at = NOW(), 
     updated_at = NOW()
-WHERE id = @id AND deleted_at IS NULL;
+WHERE slug = @slug AND deleted_at IS NULL;
 
 -- name: HardDeletePage :exec
 DELETE FROM pages WHERE id = @id;

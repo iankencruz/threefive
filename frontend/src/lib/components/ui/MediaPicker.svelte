@@ -242,7 +242,7 @@
 				<div class="border-b border-gray-200 px-6 py-4">
 					<div class="flex items-center justify-between">
 						<div class="flex-1">
-							<h2 class="text-xl font-semibold text-gray-900">Select Media</h2>
+							<h2 class="text-xl font-semibold ">Select Media</h2>
 							<p class="text-sm text-gray-500 mt-1">Upload new or select existing media</p>
 						</div>
             <!-- Filters Panel -->

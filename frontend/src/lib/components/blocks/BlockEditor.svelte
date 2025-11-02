@@ -215,6 +215,13 @@
 			>
 				Header
 			</button>
+      <button
+        onclick={() => addBlockAt('gallery', 0)}
+        type="button"
+        class="px-4 py-2 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 text-sm font-medium transition-colors whitespace-nowrap"
+      >
+        Gallery
+      </button>
 		</div>
 	{/if}
 </div>
@@ -312,13 +319,13 @@
               >
                 Header
               </button>
-<button
-	onclick={() => addBlockAt('gallery', 0)}
-	type="button"
-	class="px-4 py-2 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 text-sm font-medium transition-colors whitespace-nowrap"
->
-	Gallery
-</button>
+              <button
+                onclick={() => addBlockAt('gallery', index + 1)}
+                type="button"
+                class="px-4 py-2 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 text-sm font-medium transition-colors whitespace-nowrap"
+              >
+                Gallery
+              </button>
             </div>
           {/if}
         </div>

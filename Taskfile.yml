@@ -74,6 +74,7 @@ tasks:
     prompt: "This will rollback all migrations. Are you sure?"
     cmds:
       - goose  reset
+      - goose  up
 
   db:version:
     aliases: [db-v]
@@ -124,7 +125,6 @@ tasks:
   go:
     desc: "Run binary"
     dir: "{{.BACKEND_DIR}}"
-    deps: [go:build]
     silent: true
     cmds:
       - defer: { task: clean }
