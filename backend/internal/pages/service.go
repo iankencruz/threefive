@@ -141,11 +141,20 @@ func (s *Service) GetPageBySlug(ctx context.Context, slug string) (*PageResponse
 }
 
 // ListPages retrieves pages with pagination
-func (s *Service) ListPages(ctx context.Context, limit, offset int32) (*PageListResponse, error) {
+func (s *Service) ListPages(ctx context.Context, pageType string, limit, offset int32) (*PageListResponse, error) {
+	var pageTypeParam sqlc.NullPageType
+	if pageType != "" {
+		// Only set the value and Valid flag if a pageType was provided (non-empty string)
+		pageTypeParam = sqlc.NullPageType{PageType: sqlc.PageType(pageType), Valid: true}
+	} else {
+		// If pageType is "", it remains {Valid: false}, which translates to NULL
+		// in SQL, activating the "OR ... IS NULL" logic to skip the filter.
+		pageTypeParam = sqlc.NullPageType{Valid: false}
+	}
 	// Get total count
 	totalCount, err := s.queries.CountPages(ctx, sqlc.CountPagesParams{
 		Status:   sqlc.NullPageStatus{Valid: false}, // NULL for all statuses
-		PageType: sqlc.NullPageType{Valid: false},   // NULL for all types
+		PageType: pageTypeParam,                     // NULL for all types
 		AuthorID: pgtype.UUID{Valid: false},
 	})
 	if err != nil {
@@ -155,7 +164,7 @@ func (s *Service) ListPages(ctx context.Context, limit, offset int32) (*PageList
 	// Get pages
 	pages, err := s.queries.ListPages(ctx, sqlc.ListPagesParams{
 		Status:    sqlc.NullPageStatus{Valid: false},
-		PageType:  sqlc.NullPageType{Valid: false},
+		PageType:  pageTypeParam,
 		AuthorID:  pgtype.UUID{Valid: false},
 		SortBy:    "created_at_desc",
 		OffsetVal: offset,

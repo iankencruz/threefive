@@ -100,6 +100,11 @@ func (h *Handler) ListPages(w http.ResponseWriter, r *http.Request) {
 		page = 1
 	}
 
+	pageType := r.URL.Query().Get("page_type")
+	if page < 1 {
+		page = 1
+	}
+
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 	if limit < 1 || limit > 100 {
 		limit = 20
@@ -108,7 +113,7 @@ func (h *Handler) ListPages(w http.ResponseWriter, r *http.Request) {
 	offset := int32((page - 1) * limit)
 
 	// List pages
-	result, err := h.service.ListPages(r.Context(), int32(limit), offset)
+	result, err := h.service.ListPages(r.Context(), pageType, int32(limit), offset)
 	if err != nil {
 		responses.WriteErr(w, err)
 		return
