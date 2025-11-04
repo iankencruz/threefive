@@ -5,7 +5,7 @@
 	import HeaderBlock from "./display/HeaderBlock.svelte";
 	import GalleryBlock from "./display/GalleryBlock.svelte";
 
-	interface Block {
+	export interface Block {
 		id?: string;
 		type: string;
 		data: Record<string, any>;

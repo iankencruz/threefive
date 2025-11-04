@@ -1,32 +1,19 @@
-// frontend/src/routes/preview/pages/[slug]/+page.ts
+// frontend/src/routes/preview/pages/[id]/+page.ts
 import { error } from "@sveltejs/kit";
+import type { PageLoad } from "./$types";
 import { PUBLIC_API_URL } from "$env/static/public";
 
 interface MediaItem {
 	media_id?: string;
 }
 
-interface Media {
-	id: string;
-	url: string;
-	mime_type: string;
-	thumbnail_url?: string;
-	large_url?: string;
-}
-
-export const load = async ({
-	params,
-	fetch,
-}: {
-	params: { slug: string };
-	fetch: typeof globalThis.fetch;
-}) => {
+export const load: PageLoad = async ({ params, fetch }) => {
 	try {
-		// Fetch page by slug - this gets ANY page regardless of status
+		// Fetch page by ID (not slug) - this gets ANY page regardless of status
 		const response = await fetch(
-			`${PUBLIC_API_URL}/api/v1/pages/${params.slug}`,
+			`${PUBLIC_API_URL}/api/v1/pages/${params.id}`,
 			{
-				credentials: "include",
+				credentials: "include", // Include auth cookies
 			},
 		);
 
@@ -39,16 +26,27 @@ export const load = async ({
 
 		const page = await response.json();
 
-		// ✨ Pre-fetch all media for blocks
-		const mediaMap = new Map<string, Media>();
+		// ✨ Pre-fetch all media for blocks (same as public pages)
+		const mediaMap = new Map();
 
 		if (page.blocks && Array.isArray(page.blocks)) {
+			// Collect all media IDs from blocks
 			const mediaIds = new Set<string>();
 
 			for (const block of page.blocks) {
+				// Hero block image
 				if (block.data?.image_id) {
 					mediaIds.add(block.data.image_id);
 				}
+
+				// Gallery block media - backend returns media array with full objects
+				if (block.data?.media && Array.isArray(block.data.media)) {
+					block.data.media.forEach((media: any) => {
+						if (media.id) mediaIds.add(media.id);
+					});
+				}
+
+				// Legacy: images array (if you have other blocks using this)
 				if (block.data?.images && Array.isArray(block.data.images)) {
 					block.data.images.forEach((img: MediaItem) => {
 						if (img.media_id) mediaIds.add(img.media_id);
@@ -56,6 +54,7 @@ export const load = async ({
 				}
 			}
 
+			// Fetch all media in parallel
 			const mediaPromises = Array.from(mediaIds).map(async (id) => {
 				try {
 					const res = await fetch(`${PUBLIC_API_URL}/api/v1/media/${id}`, {
@@ -63,12 +62,12 @@ export const load = async ({
 					});
 					if (res.ok) {
 						const media = await res.json();
-						return [id, media] as const;
+						return [id, media];
 					}
 				} catch (err) {
 					console.error(`Failed to load media ${id}:`, err);
 				}
-				return [id, null] as const;
+				return [id, null];
 			});
 
 			const mediaResults = await Promise.all(mediaPromises);
@@ -79,8 +78,8 @@ export const load = async ({
 
 		return {
 			page,
-			mediaMap: Object.fromEntries(mediaMap),
-			isPreview: true,
+			mediaMap: Object.fromEntries(mediaMap), // Convert to plain object for serialization
+			isPreview: true, // Flag to show preview banner
 		};
 	} catch (err) {
 		console.error("Error loading page preview:", err);

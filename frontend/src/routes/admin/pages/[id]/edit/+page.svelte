@@ -2,6 +2,7 @@
 <script lang="ts">
 	import { goto } from "$app/navigation";
 	import BlockEditor from "$components/blocks/BlockEditor.svelte";
+	import type { Block } from "$components/blocks/BlockRenderer.svelte";
 	import { PUBLIC_API_URL } from "$env/static/public";
 	import { ArrowLeftIcon, Eye, Trash2Icon } from "lucide-svelte";
 	import { toast } from "svelte-sonner";
@@ -120,12 +121,27 @@
 		errors = {};
 
 		try {
+			// Transform blocks to extract media_ids from media objects
+			const transformedBlocks = formData.blocks.map((block: Block) => {
+				if (block.type === "gallery" && block.data?.media) {
+					return {
+						...block,
+						data: {
+							title: block.data.title,
+							media_ids: block.data.media.map((m: any) => m.id),
+							// Don't send the full media objects to backend
+						},
+					};
+				}
+				return block;
+			});
+
 			const payload = {
 				title: formData.title,
 				slug: formData.slug,
 				page_type: formData.page_type,
 				status: formData.status,
-				blocks: formData.blocks,
+				blocks: transformedBlocks, // ✅ Use transformed blocks
 				seo:
 					formData.seo.meta_title || formData.seo.meta_description
 						? formData.seo
@@ -135,6 +151,23 @@
 				blog_data:
 					formData.page_type === "blog" ? formData.blog_data : undefined,
 			};
+
+			console.log("=== DEBUGGING GALLERY BLOCK SAVE ===");
+			console.log("Full payload:", JSON.stringify(payload, null, 2));
+
+			const galleryBlocks = payload.blocks?.filter(
+				(b: any) => b.type === "gallery",
+			);
+			console.log("Gallery blocks:", galleryBlocks);
+
+			if (galleryBlocks && galleryBlocks.length > 0) {
+				galleryBlocks.forEach((block: any, idx: number) => {
+					console.log(`\nGallery Block #${idx + 1}:`);
+					console.log("  - data.media_ids:", block.data?.media_ids);
+					console.log("  - media_ids length:", block.data?.media_ids?.length);
+				});
+			}
+			console.log("=== END DEBUG ===\n");
 
 			const response = await fetch(
 				`${PUBLIC_API_URL}/api/v1/pages/${data.page.id}`,
@@ -154,7 +187,6 @@
 			}
 
 			toast.success("Page Updated");
-			// goto("/admin/pages");
 		} catch (err) {
 			if (err instanceof Error) {
 				errors.submit = err.message;
@@ -163,7 +195,6 @@
 			loading = false;
 		}
 	};
-
 	const handleDelete = async () => {
 		if (!confirm("Are you sure you want to delete this page?")) return;
 
