@@ -5,8 +5,30 @@
 	import { PUBLIC_API_URL } from "$env/static/public";
 	import { browser } from "$app/environment";
 	import { EyeIcon, SquarePenIcon } from "lucide-svelte";
+	import { page } from "$app/state";
 
 	let { data }: { data: PageData } = $props();
+
+	// Get current page_type from URL
+	const currentPageType = $derived(
+		page.url.searchParams.get("page_type") || "all",
+	);
+
+	// Function to change page type filter
+	function changePageType(type: string) {
+		const params = new URLSearchParams(page.url.searchParams);
+
+		if (type === "all") {
+			params.delete("page_type");
+		} else {
+			params.set("page_type", type);
+		}
+
+		// Reset to page 1 when changing filters
+		params.delete("page");
+
+		goto(`/admin/pages?${params.toString()}`);
+	}
 
 	const formatDate = (dateString: string) => {
 		return new Date(dateString).toLocaleDateString("en-US", {
@@ -32,13 +54,13 @@
 	const getTypeColor = (type: string) => {
 		switch (type) {
 			case "project":
-				return "bg-blue-100 text-blue-800";
+				return "color-project";
 			case "blog":
-				return "bg-purple-100 text-purple-800";
+				return "color-blog";
 			case "generic":
-				return "bg-gray-100 text-gray-800";
+				return "color-generic";
 			default:
-				return "bg-gray-100 text-gray-800";
+				return "color-generic";
 		}
 	};
 
@@ -64,6 +86,69 @@
 		</button>
 	</div>
 
+
+  
+  <!-- Tabs -->
+  <div class="mb-3">
+    <div class="grid grid-cols-1 sm:hidden">
+      <!-- Mobile dropdown -->
+      <select 
+				aria-label="Select a tab" 
+				class="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white/5 py-2 pr-8 pl-3 text-base text-gray-100 outline-1 -outline-offset-1 outline-white/10 *:bg-gray-800 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500"
+				onchange={(e) => changePageType(e.currentTarget.value)}
+				value={currentPageType}
+			>
+        <option value="all">All</option>
+        <option value="generic">Generic</option>
+        <option value="project">Project</option>
+        <option value="blog">Blog</option>
+      </select>
+      <svg viewBox="0 0 16 16" fill="currentColor" data-slot="icon" aria-hidden="true" class="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-center justify-self-end fill-gray-400">
+        <path d="M4.22 6.22a.75.75 0 0 1 1.06 0L8 8.94l2.72-2.72a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 7.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" fill-rule="evenodd" />
+      </svg>
+    </div>
+    <div class="hidden sm:block">
+      <div class="border-b border-white/10">
+        <nav aria-label="Tabs" class="-mb-px flex max-w-md ">
+          <button
+						onclick={() => changePageType('all')}
+						class="flex-1 border-b-2 px-1 py-4 text-sm font-medium whitespace-nowrap {currentPageType === 'all' 
+							? 'border-primary text-primary' 
+							: 'border-transparent text-gray-400 hover:border-white/20 hover:text-gray-200'}"
+					>
+						All
+					</button>
+          <button
+						onclick={() => changePageType('generic')}
+						class="flex-1 border-b-2 px-1 py-4 text-sm font-medium whitespace-nowrap {currentPageType === 'generic' 
+							? 'border-primary text-primary' 
+							: 'border-transparent text-gray-400 hover:border-white/20 hover:text-gray-200'}"
+					>
+						Generic
+					</button>
+          <button
+						onclick={() => changePageType('project')}
+						class="flex-1 border-b-2 px-1 py-4 text-sm font-medium whitespace-nowrap {currentPageType === 'project' 
+							? 'border-primary text-primary' 
+							: 'border-transparent text-gray-400 hover:border-white/20 hover:text-gray-200'}"
+					>
+						Project
+					</button>
+          <button
+						onclick={() => changePageType('blog')}
+						class="flex-1 border-b-2 px-1 py-4 text-sm font-medium whitespace-nowrap {currentPageType === 'blog' 
+							? 'border-primary text-primary' 
+							: 'border-transparent text-gray-400 hover:border-white/20 hover:text-gray-200'}"
+					>
+						Blog
+					</button>
+        </nav>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Table -->
 	{#if !data.pages || data.pages.length === 0}
 		<div class="flex flex-col items-center justify-center py-16 px-8 bg-surface rounded-lg border-2 border-dashed border-foreground-muted">
 			<svg class="w-16 h-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -98,9 +183,6 @@
 							Status
 						</th>
 						<th class="px-6 py-3 text-left text-xs font-medium   uppercase tracking-wider">
-							Author
-						</th>
-						<th class="px-6 py-3 text-left text-xs font-medium   uppercase tracking-wider">
 							Updated
 						</th>
 						<th class="px-6 py-3 text-left text-xs font-medium   uppercase tracking-wider">
@@ -126,9 +208,6 @@
 								<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium capitalize {getStatusColor(page.status)}">
 									{page.status}
 								</span>
-							</td>
-							<td class="px-6 py-4 whitespace-nowrap text-sm ">
-								{page.author_id}
 							</td>
 							<td class="px-6 py-4 whitespace-nowrap text-sm ">
 								{formatDate(page.updated_at)}
@@ -161,7 +240,6 @@
                               onclick={() => navigateToExternal(`/${page.slug}`)}
                               aria-label="View page"
                           >
-                      {console.log("public page: ", `${PUBLIC_API_URL}/${page.slug}`)}
                               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path
                                       stroke-linecap="round"
@@ -186,7 +264,11 @@
 				<button
 					class="px-4 py-2 border border-gray-300 rounded-lg bg-surface text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
 					disabled={data.pagination.page === 1}
-					onclick={() => goto(`/admin/pages?page=${data.pagination.page - 1}`)}
+					onclick={() => {
+						const params = new URLSearchParams(page.url.searchParams);
+						params.set('page', (data.pagination.page - 1).toString());
+						goto(`/admin/pages?${params.toString()}`);
+					}}
 				>
 					Previous
 				</button>
@@ -196,7 +278,11 @@
 				<button
 					class="px-4 py-2 border border-gray-300 rounded-lg bg-surface text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
 					disabled={data.pagination.page === data.pagination.total_pages}
-					onclick={() => goto(`/admin/pages?page=${data.pagination.page + 1}`)}
+					onclick={() => {
+						const params = new URLSearchParams(page.url.searchParams);
+						params.set('page', (data.pagination.page + 1).toString());
+						goto(`/admin/pages?${params.toString()}`);
+					}}
 				>
 					Next
 				</button>

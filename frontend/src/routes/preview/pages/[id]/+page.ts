@@ -1,6 +1,6 @@
 // frontend/src/routes/preview/pages/[id]/+page.ts
 import { error } from "@sveltejs/kit";
-import type { PageLoad } from "./$types";
+import type { PageLoad } from "../[slug]/$types";
 import { PUBLIC_API_URL } from "$env/static/public";
 
 interface MediaItem {

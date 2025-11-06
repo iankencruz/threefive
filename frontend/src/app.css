@@ -170,6 +170,12 @@
   }
 
 
+  .badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium capitalize;
+  }
+
+
+
 }
 
 @layer utilities {
@@ -227,4 +233,25 @@
     cursor: col-resize !important;
   }
 
+
+  .color-project {
+    @apply bg-blue-100 text-blue-800;
+  }
+
+  .color-blog {
+    @apply bg-purple-100 text-purple-800;
+  }
+
+
+  .color-generic {
+    @apply bg-gray-100 text-gray-800;
+  }
+
+
+}
+
+
+@utility badge-* {
+  @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium capitalize;
+  background-color: --value(--color-*);
 }

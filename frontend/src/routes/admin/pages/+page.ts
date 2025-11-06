@@ -1,16 +1,28 @@
 // frontend/src/routes/admin/pages/+page.server.ts
 import { error } from "@sveltejs/kit";
-import type { PageServerLoad } from "./$types";
+import type { PageLoad } from "../../$types";
 
-export const load: PageServerLoad = async ({ fetch, url, parent }) => {
+export const load: PageLoad = async ({ fetch, url, parent }) => {
 	// Get user from parent layout
 	const { user } = await parent();
 
 	const page = parseInt(url.searchParams.get("page") || "1");
 	const limit = 20;
+	const pageType = url.searchParams.get("page_type");
 
 	try {
-		const response = await fetch(`/api/v1/pages?page=${page}&limit=${limit}`);
+		// Build query parameters
+		const params = new URLSearchParams({
+			page: page.toString(),
+			limit: limit.toString(),
+		});
+
+		// Add page_type filter if it exists
+		if (pageType && pageType !== "all") {
+			params.set("page_type", pageType);
+		}
+
+		const response = await fetch(`/api/v1/pages?${params.toString()}`);
 
 		if (!response.ok) {
 			throw error(response.status, "Failed to fetch pages");
