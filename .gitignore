@@ -103,3 +103,4 @@ coverage.html
 backend/bin/main
 backend/bin/
 backend/bin
+.task/checksum

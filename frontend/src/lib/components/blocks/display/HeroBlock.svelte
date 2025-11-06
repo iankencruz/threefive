@@ -48,7 +48,7 @@
 					<img
 						src={getImageUrl(media)}
 						alt={data.title}
-						class="w-full h-full object-cover"
+						class="w-full h-full object-cover mask-radial-at-right mask-radial-from-100% "
 					/>
 				{/if}
 
