@@ -39,11 +39,9 @@ func (s *Server) setupRouter() http.Handler {
 
 	// API v1 routes
 	r.Route("/api/v1", func(r chi.Router) {
-		// Auth middleware
-		r.Use(auth.NewMiddleware(s.SessionManager).RequireAuth)
+		media.RegisterRoutes(r, s.MediaHandler, s.SessionManager)
 
 		// Mount feature routes
-		media.RegisterRoutes(r, s.MediaHandler)
 		pages.RegisterRoutes(r, s.PageHandler, s.SessionManager)
 		// user.RegisterRoutes(r, s.userHandler)
 		// project.RegisterRoutes(r, s.projectHandler)

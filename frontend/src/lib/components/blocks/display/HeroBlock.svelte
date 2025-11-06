@@ -31,7 +31,7 @@
 		<Navbar />
 
 		<div class="relative min-h-screen flex items-center">
-			<div class="absolute inset-0">
+			<div class="absolute inset-0 bg-black">
 				{#if isVideo(media.mime_type)}
 					<video
 						src={getVideoUrl(media)}
@@ -40,7 +40,7 @@
 						muted
 						loop
 						playsinline
-						class="w-full h-full object-cover"
+						class="w-full h-full object-cover mask-radial-at-right mask-radial-from-100% "
 					>
 						<track kind="captions" />
 					</video>
@@ -52,7 +52,8 @@
 					/>
 				{/if}
 
-				<div class="absolute inset-0 bg-linear-to-r from-black/70 via-black/50 to-transparent"></div>
+				<div class="absolute inset-0 bg-linear-to-b from-black/85 via-transparent to-black/40"></div>
+				<div class="absolute inset-0 bg-linear-to-r from-black/70 via-black/5 to-transparent"></div>
 			</div>
 
 			<div class="@container absolute z-10 container mx-auto px-4 max-w-6xl left-12 bottom-8">

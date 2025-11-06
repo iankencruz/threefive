@@ -21,8 +21,8 @@
 </svelte:head>
 
 <!-- Preview Banner - Sticky at top -->
-<div class="w-full mx-auto relative top-0">
-<div class="@container w-full absolute top-0 z-50 bg-stone-400 text-black px-4 py-1 shadow-lg">
+<div class="w-full mx-auto relative top-0 ">
+<div class="@container w-full absolute top-0 z-50 bg-stone-400/50 pointer-events-none text-black px-4 py-1 shadow-lg">
 	<div class="max-w-7xl mx-auto flex items-center justify-between">
 		<div class="flex flex-row items-center gap-3">
 			<Eye class="hidden lg:block text-white" size={16}/>

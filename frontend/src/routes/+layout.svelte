@@ -1,9 +1,9 @@
 <script lang="ts">
-import "$src/app.css";
-import favicon from "$lib/assets/favicon.svg";
-import { Toaster } from "svelte-sonner";
+	import "$src/app.css";
+	import favicon from "$lib/assets/favicon.svg";
+	import { Toaster } from "svelte-sonner";
 
-const { children } = $props();
+	const { children } = $props();
 </script>
 
 <svelte:head>

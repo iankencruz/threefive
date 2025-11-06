@@ -1,5 +1,6 @@
 <!-- frontend/src/routes/+page.svelte -->
 <script lang="ts">
+	import Navbar from "$components/ui/Navbar.svelte";
 	import BlockRenderer from "$lib/components/blocks/BlockRenderer.svelte";
 	import type { PageData } from "./$types";
 
