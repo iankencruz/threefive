@@ -66,7 +66,7 @@
 		},
 		blog_data: {
 			excerpt: data.page.blog_data?.excerpt || "",
-			reading_time: data.page.blog_data?.reading_time || 0,
+			reading_time: data.page.blog_data?.reading_time || null,
 		},
 	});
 
@@ -149,7 +149,16 @@
 				project_data:
 					formData.page_type === "project" ? formData.project_data : undefined,
 				blog_data:
-					formData.page_type === "blog" ? formData.blog_data : undefined,
+					formData.page_type === "blog"
+						? {
+								excerpt: formData.blog_data.excerpt || undefined,
+								reading_time:
+									formData.blog_data.reading_time &&
+									formData.blog_data.reading_time > 0
+										? formData.blog_data.reading_time
+										: undefined,
+							}
+						: undefined,
 			};
 
 			console.log("=== DEBUGGING GALLERY BLOCK SAVE ===");

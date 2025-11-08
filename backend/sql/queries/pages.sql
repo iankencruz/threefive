@@ -62,6 +62,7 @@ UPDATE pages
 SET 
     title = COALESCE(@title, title),
     slug = COALESCE(@slug, slug),
+    page_type = COALESCE(@page_type, page_type),
     status = COALESCE(@status, status),
     featured_image_id = @featured_image_id,
     published_at = CASE 

@@ -112,7 +112,7 @@ type Querier interface {
 	PurgeOldDeletedPages(ctx context.Context, cutoffDate pgtype.Timestamptz) (int64, error)
 	SearchMedia(ctx context.Context, arg SearchMediaParams) ([]Media, error)
 	SoftDeleteMedia(ctx context.Context, id uuid.UUID) error
-	SoftDeletePage(ctx context.Context, id uuid.UUID) error
+	SoftDeletePage(ctx context.Context, slug string) error
 	UnlinkMediaFromEntity(ctx context.Context, arg UnlinkMediaFromEntityParams) error
 	UpdateBlockOrder(ctx context.Context, arg UpdateBlockOrderParams) error
 	UpdateBlogData(ctx context.Context, arg UpdateBlogDataParams) (PageBlogData, error)

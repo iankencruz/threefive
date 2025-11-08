@@ -4,6 +4,7 @@ package pages
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"time"
 
@@ -42,8 +43,23 @@ func NewService(db *pgxpool.Pool, queries *sqlc.Queries, blockService *blocks.Se
 func (s *Service) CreatePage(ctx context.Context, req CreatePageRequest, userID uuid.UUID) (*PageResponse, error) {
 	// Check slug uniqueness - pass nil UUID for new pages
 	var nilUUID uuid.UUID
+
+	pageSlug := req.Slug
+
+	switch req.PageType {
+	case "project":
+		pageSlug = fmt.Sprintf("projects/%s", req.Slug)
+	case "blog":
+		pageSlug = fmt.Sprintf("blog/%s", req.Slug)
+	default:
+		pageSlug = req.Slug
+	}
+
+	fmt.Printf("Checking project type: %s\n", req.PageType)
+	fmt.Printf("Computed slug: %s\n", pageSlug)
+
 	exists, err := s.queries.CheckSlugExists(ctx, sqlc.CheckSlugExistsParams{
-		Slug:      req.Slug,
+		Slug:      pageSlug,
 		ExcludeID: nilUUID,
 	})
 	if err != nil {
@@ -65,7 +81,7 @@ func (s *Service) CreatePage(ctx context.Context, req CreatePageRequest, userID 
 	// 1. Create page
 	page, err := qtx.CreatePage(ctx, sqlc.CreatePageParams{
 		Title:           req.Title,
-		Slug:            req.Slug,
+		Slug:            pageSlug,
 		PageType:        sqlc.PageType(req.PageType),
 		Status:          sqlc.NullPageStatus{PageStatus: sqlc.PageStatus(req.Status), Valid: true},
 		FeaturedImageID: uuidToPgUUID(req.FeaturedImageID),
@@ -204,10 +220,71 @@ func (s *Service) ListPages(ctx context.Context, pageType string, limit, offset 
 
 // UpdatePage updates a page and its related data in a transaction
 func (s *Service) UpdatePage(ctx context.Context, pageID uuid.UUID, req UpdatePageRequest) (*PageResponse, error) {
-	// Check slug uniqueness if slug is being updated
+	// Get existing page to know its current state
+	existingPage, err := s.queries.GetPageByID(ctx, pageID)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, errors.NotFound("Page not found", "page_not_found")
+		}
+		return nil, errors.Internal("Failed to get existing page", err)
+	}
+
+	// Determine the page_type to use for slug processing
+	pageType := string(existingPage.PageType) // Use existing by default
+	if req.PageType != nil {
+		pageType = *req.PageType // Use new page_type if provided
+	}
+
+	// Process slug - add prefix based on page_type
+	var finalSlug *string
 	if req.Slug != nil {
+		var computedSlug string
+		
+		switch pageType {
+		case "project":
+			computedSlug = fmt.Sprintf("projects/%s", *req.Slug)
+		case "blog":
+			computedSlug = fmt.Sprintf("blog/%s", *req.Slug)
+		default:
+			computedSlug = *req.Slug
+		}
+		
+		finalSlug = &computedSlug
+		
+		// Check slug uniqueness with the computed slug
 		exists, err := s.queries.CheckSlugExists(ctx, sqlc.CheckSlugExistsParams{
-			Slug:      *req.Slug,
+			Slug:      computedSlug,
+			ExcludeID: pageID,
+		})
+		if err != nil {
+			return nil, errors.Internal("Failed to check slug", err)
+		}
+		if exists {
+			return nil, errors.Conflict("Slug already exists", "slug_exists")
+		}
+	} else if req.PageType != nil && *req.PageType != string(existingPage.PageType) {
+		// If page_type is changing but slug is not provided, update slug with prefix
+		var computedSlug string
+		
+		// Strip existing prefix from slug if it exists
+		currentSlug := existingPage.Slug
+		currentSlug = strings.TrimPrefix(currentSlug, "projects/")
+		currentSlug = strings.TrimPrefix(currentSlug, "blog/")
+		
+		switch pageType {
+		case "project":
+			computedSlug = fmt.Sprintf("projects/%s", currentSlug)
+		case "blog":
+			computedSlug = fmt.Sprintf("blog/%s", currentSlug)
+		default:
+			computedSlug = currentSlug
+		}
+		
+		finalSlug = &computedSlug
+		
+		// Check slug uniqueness
+		exists, err := s.queries.CheckSlugExists(ctx, sqlc.CheckSlugExistsParams{
+			Slug:      computedSlug,
 			ExcludeID: pageID,
 		})
 		if err != nil {
@@ -227,13 +304,17 @@ func (s *Service) UpdatePage(ctx context.Context, pageID uuid.UUID, req UpdatePa
 
 	qtx := s.queries.WithTx(tx)
 
+
+		fmt.Printf("Page type changed, slug: %s\n", finalSlug)
+
 	// Update page
 	page, err := qtx.UpdatePage(ctx, sqlc.UpdatePageParams{
 		ID:              pageID,
 		Title:           pointerToString(req.Title),
-		Slug:            pointerToString(req.Slug),
+		Slug:            pointerToString(finalSlug),
+    PageType:        pageTypeToNullPageType(req.PageType),  
 		Status:          statusToNullPageStatus(req.Status),
-		FeaturedImageID: uuidToPgUUID(req.FeaturedImageID),
+		FeaturedImageID uuidToPgUUID(req.FeaturedImageID),
 	})
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -285,7 +366,6 @@ func (s *Service) UpdatePage(ctx context.Context, pageID uuid.UUID, req UpdatePa
 
 	return s.GetPageByID(ctx, page.ID)
 }
-
 // UpdatePageStatus updates only the status of a page
 func (s *Service) UpdatePageStatus(ctx context.Context, pageID uuid.UUID, status string) error {
 	_, err := s.queries.UpdatePageStatus(ctx, sqlc.UpdatePageStatusParams{
@@ -647,4 +727,14 @@ func pointerToString(s *string) string {
 		return ""
 	}
 	return *s
+}
+
+func pageTypeToNullPageType(pageType *string) sqlc.NullPageType {
+    if pageType == nil {
+        return sqlc.NullPageType{Valid: false}
+    }
+    return sqlc.NullPageType{
+        PageType: sqlc.PageType(*pageType),
+        Valid:    true,
+    }
 }

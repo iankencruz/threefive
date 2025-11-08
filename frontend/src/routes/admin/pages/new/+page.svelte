@@ -30,7 +30,7 @@
 		},
 		blog_data: {
 			excerpt: "",
-			reading_time: 0,
+			reading_time: undefined,
 		},
 	});
 

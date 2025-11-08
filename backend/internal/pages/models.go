@@ -29,6 +29,7 @@ type CreatePageRequest struct {
 type UpdatePageRequest struct {
 	Title           *string                `json:"title,omitempty"`
 	Slug            *string                `json:"slug,omitempty"`
+	PageType        *string                `json:"page_type,omitempty"`
 	Status          *string                `json:"status,omitempty"`
 	FeaturedImageID *uuid.UUID             `json:"featured_image_id,omitempty"`
 	Blocks          *[]blocks.BlockRequest `json:"blocks,omitempty"`

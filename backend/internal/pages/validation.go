@@ -64,7 +64,7 @@ func (r *CreatePageRequest) Validate(v *validation.Validator) {
 // Validate validates an UpdatePageRequest
 func (r *UpdatePageRequest) Validate(v *validation.Validator) {
 	// At least one field must be provided
-	if r.Title == nil && r.Slug == nil && r.FeaturedImageID == nil {
+	if r.Title == nil && r.Slug == nil && r.PageType == nil && r.FeaturedImageID == nil {
 		v.AddError("update", "At least one field must be provided for update")
 		return
 	}
@@ -80,6 +80,10 @@ func (r *UpdatePageRequest) Validate(v *validation.Validator) {
 		v.Slug("slug", *r.Slug)
 		v.MinLength("slug", *r.Slug, 1)
 		v.MaxLength("slug", *r.Slug, 200)
+	}
+
+	if r.PageType != nil {
+		v.In("page_type", *r.PageType, ValidPageTypes)
 	}
 
 	// Status validation (if provided)
@@ -150,7 +154,6 @@ func (r *ProjectDataRequest) Validate(v *validation.Validator) {
 	if r.ProjectStatus != nil {
 		v.In("project_data.project_status", *r.ProjectStatus, ValidProjectStatuses)
 	}
-
 }
 
 // Validate validates BlogDataRequest
