@@ -10,7 +10,7 @@
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
-{@render children?.()}
+<div class="bg-background min-h-screen">{@render children?.()}</div>
 
 
 
