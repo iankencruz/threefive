@@ -1,5 +1,5 @@
 <script lang="ts">
-	let { variant = "opaque" } = $props();
+	let variant = $state();
 
 	let NavLinks = [
 		{ id: 1, title: "Home", href: "/" },
