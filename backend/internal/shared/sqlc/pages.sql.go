@@ -319,11 +319,11 @@ SET
     slug = CONCAT('deleted_', EXTRACT(EPOCH FROM NOW())::bigint, '_', id::text, '_', slug),
     deleted_at = NOW(), 
     updated_at = NOW()
-WHERE id = $1 AND deleted_at IS NULL
+WHERE slug = $1 AND deleted_at IS NULL
 `
 
-func (q *Queries) SoftDeletePage(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.Exec(ctx, softDeletePage, id)
+func (q *Queries) SoftDeletePage(ctx context.Context, slug string) error {
+	_, err := q.db.Exec(ctx, softDeletePage, slug)
 	return err
 }
 
@@ -341,7 +341,7 @@ SET
         ELSE published_at 
     END,
     updated_at = NOW()
-WHERE id = $6 AND deleted_at IS NULL
+WHERE slug = $2 AND deleted_at IS NULL
 RETURNING id, title, slug, page_type, status, featured_image_id, author_id, created_at, updated_at, published_at, deleted_at
 `
 
@@ -351,7 +351,6 @@ type UpdatePageParams struct {
 	PageType        PageType       `json:"page_type"`
 	Status          NullPageStatus `json:"status"`
 	FeaturedImageID pgtype.UUID    `json:"featured_image_id"`
-	ID              uuid.UUID      `json:"id"`
 }
 
 func (q *Queries) UpdatePage(ctx context.Context, arg UpdatePageParams) (Pages, error) {
@@ -361,7 +360,6 @@ func (q *Queries) UpdatePage(ctx context.Context, arg UpdatePageParams) (Pages, 
 		arg.PageType,
 		arg.Status,
 		arg.FeaturedImageID,
-		arg.ID,
 	)
 	var i Pages
 	err := row.Scan(
@@ -390,17 +388,17 @@ SET
         ELSE published_at 
     END,
     updated_at = NOW()
-WHERE id = $2 AND deleted_at IS NULL
+WHERE slug = $2 AND deleted_at IS NULL
 RETURNING id, title, slug, page_type, status, featured_image_id, author_id, created_at, updated_at, published_at, deleted_at
 `
 
 type UpdatePageStatusParams struct {
 	Status NullPageStatus `json:"status"`
-	ID     uuid.UUID      `json:"id"`
+	Slug   string         `json:"slug"`
 }
 
 func (q *Queries) UpdatePageStatus(ctx context.Context, arg UpdatePageStatusParams) (Pages, error) {
-	row := q.db.QueryRow(ctx, updatePageStatus, arg.Status, arg.ID)
+	row := q.db.QueryRow(ctx, updatePageStatus, arg.Status, arg.Slug)
 	var i Pages
 	err := row.Scan(
 		&i.ID,
