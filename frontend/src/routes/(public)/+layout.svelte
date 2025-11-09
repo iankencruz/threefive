@@ -1,30 +1,19 @@
-<!-- routes/(public)/+layout.svelte -->
 <script lang="ts">
 	import "$src/app.css";
-	import { setContext } from "svelte";
-	import Navbar from "$lib/components/ui/Navbar.svelte";
+	import favicon from "$lib/assets/favicon.svg";
 	import { Toaster } from "svelte-sonner";
+	import Navbar from "$components/ui/Navbar.svelte";
 
 	const { children } = $props();
-
-	// Create reactive state for navbar variant
-	let navbarVariant = $state<"transparent" | "opaque">("opaque");
-
-	// Share navbar control via context
-	setContext("navbar", {
-		get variant() {
-			return navbarVariant;
-		},
-		setVariant: (v: "transparent" | "opaque") => {
-			navbarVariant = v;
-		},
-	});
 </script>
 
-<!-- Navbar with reactive variant -->
-<Navbar variant={navbarVariant} />
+<svelte:head>
+	<link rel="icon" href={favicon} />
+</svelte:head>
 
-<!-- Page content -->
-{@render children()}
+<Navbar/>
+{@render children?.()}
 
 
+
+<Toaster richColors  expand={false} position="top-right" closeButton />

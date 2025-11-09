@@ -1,34 +1,27 @@
-// frontend/src/routes/(public)/blog/[slug]/+page.ts
+// frontend/src/routes/+page.ts
 import { error } from "@sveltejs/kit";
 import type { PageLoad } from "./$types";
 import { PUBLIC_API_URL } from "$env/static/public";
 
-export const load: PageLoad = async ({ params, fetch }) => {
+export const load: PageLoad = async ({ fetch }) => {
 	try {
-		// Blog posts have prefixed slugs: "blog/slug-name"
-		const fullSlug = `blog/${params.slug}`;
-
-		const response = await fetch(`${PUBLIC_API_URL}/api/v1/pages/${fullSlug}`);
+		// Fetch the "home" page
+		const response = await fetch(`${PUBLIC_API_URL}/api/v1/pages/home`);
 
 		if (!response.ok) {
-			if (response.status === 404) {
-				throw error(404, {
-					message: "Blog post not found",
-				});
-			}
-			throw error(response.status, "Failed to load blog post");
+			throw error(response.status, "Failed to load homepage");
 		}
 
 		const page = await response.json();
 
-		// Only show published pages on the public site
+		// Only show published pages
 		if (page.status !== "published") {
 			throw error(404, {
-				message: "Blog post not found",
+				message: "Page not found",
 			});
 		}
 
-		// ✨ Pre-fetch all media for blocks
+		// ✨ Pre-fetch all media for blocks (same logic as [slug])
 		const mediaMap = new Map();
 
 		if (page.blocks && Array.isArray(page.blocks)) {
@@ -37,11 +30,6 @@ export const load: PageLoad = async ({ params, fetch }) => {
 			for (const block of page.blocks) {
 				if (block.data?.image_id) {
 					mediaIds.add(block.data.image_id);
-				}
-				if (block.data?.media && Array.isArray(block.data.media)) {
-					block.data.media.forEach((media: any) => {
-						if (media.id) mediaIds.add(media.id);
-					});
 				}
 				if (block.data?.images && Array.isArray(block.data.images)) {
 					block.data.images.forEach((img: any) => {
@@ -76,12 +64,12 @@ export const load: PageLoad = async ({ params, fetch }) => {
 			mediaMap: Object.fromEntries(mediaMap),
 		};
 	} catch (err) {
-		console.error("Error loading blog post:", err);
+		console.error("Error loading homepage:", err);
 
 		if (err && typeof err === "object" && "status" in err) {
 			throw err;
 		}
 
-		throw error(500, "Failed to load blog post");
+		throw error(500, "Failed to load homepage");
 	}
 };

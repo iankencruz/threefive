@@ -1,23 +1,9 @@
-<!-- routes/(public)/[slug]/+page.svelte -->
+<!-- frontend/src/routes/[slug]/+page.svelte -->
 <script lang="ts">
-	import { getContext, onMount } from "svelte";
 	import BlockRenderer from "$lib/components/blocks/BlockRenderer.svelte";
-	import { getNavbarVariant } from "$lib/utils/navbar";
 	import type { PageData } from "./$types";
 
 	let { data }: { data: PageData } = $props();
-
-	// Get navbar context
-	const navbar = getContext<{
-		variant: string;
-		setVariant: (v: "transparent" | "opaque") => void;
-	}>("navbar");
-
-	// Set navbar variant based on blocks
-	onMount(() => {
-		const variant = getNavbarVariant(data.page.blocks || []);
-		navbar.setVariant(variant);
-	});
 
 	// Format date helper
 	const formatDate = (dateString: string) => {
@@ -58,6 +44,7 @@
 
 <!-- Page Content -->
 <div class="min-h-screen bg-white">
+	<!-- ✨ Pass mediaMap to BlockRenderer -->
 	<BlockRenderer blocks={data.page.blocks || []} mediaMap={data.mediaMap || {}} />
 	
 	<!-- Optional: Project-specific footer section -->
@@ -83,30 +70,46 @@
 					
 					{#if data.page.project_data.project_url}
 						<div class="bg-white p-6 rounded-lg shadow-sm">
-							<h3 class="text-sm font-medium text-gray-500 mb-2">Project URL</h3>
-							<a 
-								href={data.page.project_data.project_url} 
-								target="_blank" 
-								rel="noopener noreferrer"
-								class="text-lg font-semibold text-blue-600 hover:text-blue-800"
-							>
-								Visit Project →
+							<h3 class="text-sm font-medium text-gray-500 mb-2">Live Site</h3>
+							<a href={data.page.project_data.project_url} target="_blank" rel="noopener noreferrer" class="text-lg font-semibold text-blue-600 hover:text-blue-700">
+								View Project →
 							</a>
 						</div>
 					{/if}
 					
-					{#if data.page.project_data.technologies && data.page.project_data.technologies.length > 0}
+					{#if data.page.project_data.project_status}
 						<div class="bg-white p-6 rounded-lg shadow-sm">
-							<h3 class="text-sm font-medium text-gray-500 mb-2">Technologies</h3>
-							<div class="flex flex-wrap gap-2 mt-2">
-								{#each data.page.project_data.technologies as tech}
-									<span class="px-3 py-1 bg-gray-100 text-gray-800 text-sm rounded-full">
-										{tech}
-									</span>
-								{/each}
-							</div>
+							<h3 class="text-sm font-medium text-gray-500 mb-2">Status</h3>
+							<p class="text-lg font-semibold text-gray-900 capitalize">{data.page.project_data.project_status}</p>
 						</div>
 					{/if}
+				</div>
+				
+				{#if data.page.project_data.technologies && data.page.project_data.technologies.length > 0}
+					<div class="mt-8 bg-white p-6 rounded-lg shadow-sm">
+						<h3 class="text-sm font-medium text-gray-500 mb-4">Technologies Used</h3>
+						<div class="flex flex-wrap gap-2">
+							{#each data.page.project_data.technologies as tech}
+								<span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+									{tech}
+								</span>
+							{/each}
+						</div>
+					</div>
+				{/if}
+			</div>
+		</section>
+	{/if}
+	
+	<!-- Blog metadata -->
+	{#if data.page.page_type === 'blog' && data.page.blog_data}
+		<section class="py-8 border-t border-gray-200">
+			<div class="container mx-auto px-4 max-w-4xl">
+				<div class="flex items-center justify-between text-sm text-gray-600">
+					{#if data.page.blog_data.reading_time}
+						<span>{data.page.blog_data.reading_time} min read</span>
+					{/if}
+					<span>Published {formatDate(data.page.created_at)}</span>
 				</div>
 			</div>
 		</section>

@@ -1,25 +1,11 @@
-<!-- routes/(public)/preview/pages/[id]/+page.svelte -->
+<!-- frontend/src/routes/preview/pages/[id]/+page.svelte -->
 <script lang="ts">
-	import { getContext, onMount } from "svelte";
 	import BlockRenderer from "$lib/components/blocks/BlockRenderer.svelte";
 	import { goto } from "$app/navigation";
-	import { getNavbarVariant } from "$lib/utils/navbar";
 	import type { PageData } from "./$types";
 	import { Eye } from "lucide-svelte";
 
 	let { data }: { data: PageData } = $props();
-
-	// Get navbar context
-	const navbar = getContext<{
-		variant: string;
-		setVariant: (v: "transparent" | "opaque") => void;
-	}>("navbar");
-
-	// Set navbar variant based on blocks (same as public pages!)
-	onMount(() => {
-		const variant = getNavbarVariant(data.page.blocks || []);
-		navbar.setVariant(variant);
-	});
 
 	const formatDate = (dateString: string) => {
 		return new Date(dateString).toLocaleDateString("en-US", {
@@ -35,40 +21,41 @@
 </svelte:head>
 
 <!-- Preview Banner - Sticky at top -->
-<div class="w-full mx-auto relative top-0">
-	<div class="@container w-full absolute top-0 z-50 bg-stone-400/50 pointer-events-none text-black px-4 py-1 shadow-lg">
-		<div class="max-w-7xl mx-auto flex items-center justify-between">
-			<div class="flex flex-row items-center gap-3">
-				<Eye class="hidden lg:block text-white" size={16}/>
-				<div class="flex flex-row gap-2">
-					<span class="hidden lg:block font-semibold">Preview Mode</span>
-					<span class="hidden lg:block mx-2">•</span>
-					<div class="inline-flex items-center">
-						<strong class={["capitalize text-base font-normal", data.page.status === "published" ? "text-green-600" : "text-amber-800"]} >{data.page.status}</strong>
-					</div>
-				</div>
-			</div>
-			
-			<div class="flex items-center gap-3">
-				<button
-					onclick={() => goto(`/admin/pages/${data.page.id}/edit`)}
-					class="px-4 py-1 cursor-pointer text-black rounded-sm font-medium hover:bg-gray-100 transition-colors text-sm"
-				>
-					Edit
-				</button>
-				<button
-					onclick={() => goto('/admin/pages')}
-					class="px-4 py-1 cursor-pointer text-black rounded-sm font-medium hover:bg-gray-100 transition-colors text-sm"
-				>
-					Close
-				</button>
+<div class="w-full mx-auto relative top-0 ">
+<div class="@container w-full absolute top-0 z-50 bg-stone-400/50 pointer-events-none text-black px-4 py-1 shadow-lg">
+	<div class="max-w-7xl mx-auto flex items-center justify-between">
+		<div class="flex flex-row items-center gap-3">
+			<Eye class="hidden lg:block text-white" size={16}/>
+			<div class="flex flex-row gap-2">
+				<span class="hidden lg:block font-semibold">Preview Mode</span>
+				<span class="hidden lg:block mx-2">•</span>
+        <div class="inline-flex items-center">
+          <strong class={["capitalize text-base font-normal", data.page.status === "published" ? "text-green-600" : "text-amber-800"]} >{data.page.status}</strong>
+        </div>
 			</div>
 		</div>
+		
+		<div class="flex items-center gap-3">
+			<button
+				onclick={() => goto(`/admin/pages/${data.page.id}/edit`)}
+				class="px-4 py-1 cursor-pointer text-black rounded-sm font-medium hover:bg-gray-100 transition-colors text-sm"
+			>
+				Edit
+			</button>
+			<button
+				onclick={() => goto('/admin/pages')}
+				class="px-4 py-1 cursor-pointer text-black rounded-sm font-medium hover:bg-gray-100 transition-colors text-sm"
+			>
+				Close
+			</button>
+		</div>
 	</div>
+</div>
 </div>
 
 <!-- Page Content - Same as public pages -->
 <div class="min-h-screen bg-white">
+	<!-- ✨ CRITICAL: Pass mediaMap to BlockRenderer (same as public pages) -->
 	<BlockRenderer blocks={data.page.blocks || []} mediaMap={data.mediaMap || {}} />
 	
 	<!-- Optional: Project-specific footer section -->

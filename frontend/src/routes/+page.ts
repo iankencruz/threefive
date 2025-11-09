@@ -1,14 +1,23 @@
-// frontend/src/routes/(public)/+page.server.ts
-import { error } from "@sveltejs/kit";
-import type { PageServerLoad } from "./$types";
+// frontend/src/routes/+page.ts
+import { error, type LoadEvent } from "@sveltejs/kit";
+import type { PageLoad } from "./$types";
 import { PUBLIC_API_URL } from "$env/static/public";
 
-export const load: PageServerLoad = async ({ fetch }) => {
+interface MediaItem {
+	media_id?: string;
+}
+
+export const load: PageLoad = async ({ fetch }: LoadEvent) => {
 	try {
-		// Fetch the "home" page
+		// Fetch the page with slug "home"
 		const response = await fetch(`${PUBLIC_API_URL}/api/v1/pages/home`);
 
 		if (!response.ok) {
+			if (response.status === 404) {
+				throw error(404, {
+					message: "Homepage not found",
+				});
+			}
 			throw error(response.status, "Failed to load homepage");
 		}
 
@@ -17,35 +26,30 @@ export const load: PageServerLoad = async ({ fetch }) => {
 		// Only show published pages
 		if (page.status !== "published") {
 			throw error(404, {
-				message: "Page not found",
+				message: "Homepage not found",
 			});
 		}
 
-		// ✨ Pre-fetch all media for blocks (same logic as [slug])
+		// ✨ Pre-fetch all media for blocks
 		const mediaMap = new Map();
 
 		if (page.blocks && Array.isArray(page.blocks)) {
+			// Collect all media IDs from blocks
 			const mediaIds = new Set<string>();
 
 			for (const block of page.blocks) {
-				// Hero block image
 				if (block.data?.image_id) {
 					mediaIds.add(block.data.image_id);
 				}
-				// Gallery block media
-				if (block.data?.media && Array.isArray(block.data.media)) {
-					block.data.media.forEach((media: any) => {
-						if (media.id) mediaIds.add(media.id);
-					});
-				}
-				// Legacy images array
+				// Add gallery images if present
 				if (block.data?.images && Array.isArray(block.data.images)) {
-					block.data.images.forEach((img: any) => {
+					block.data.images.forEach((img: MediaItem) => {
 						if (img.media_id) mediaIds.add(img.media_id);
 					});
 				}
 			}
 
+			// Fetch all media in parallel
 			const mediaPromises = Array.from(mediaIds).map(async (id) => {
 				try {
 					const res = await fetch(`${PUBLIC_API_URL}/api/v1/media/${id}`, {

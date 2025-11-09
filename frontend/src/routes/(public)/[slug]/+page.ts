@@ -1,4 +1,4 @@
-// frontend/src/routes/(public)/[slug]/+page.ts
+// frontend/src/routes/[slug]/+page.ts
 import { error, redirect } from "@sveltejs/kit";
 import type { PageLoad } from "./$types";
 import { PUBLIC_API_URL } from "$env/static/public";
@@ -32,7 +32,7 @@ export const load: PageLoad = async ({ params, fetch }) => {
 			});
 		}
 
-		// ✨ Pre-fetch all media for blocks
+		// ✨ NEW: Pre-fetch all media for blocks
 		const mediaMap = new Map();
 
 		if (page.blocks && Array.isArray(page.blocks)) {
@@ -40,17 +40,10 @@ export const load: PageLoad = async ({ params, fetch }) => {
 			const mediaIds = new Set<string>();
 
 			for (const block of page.blocks) {
-				// Hero block image
 				if (block.data?.image_id) {
 					mediaIds.add(block.data.image_id);
 				}
-				// Gallery block media
-				if (block.data?.media && Array.isArray(block.data.media)) {
-					block.data.media.forEach((media: any) => {
-						if (media.id) mediaIds.add(media.id);
-					});
-				}
-				// Legacy images array
+				// Add more media fields if needed (e.g., gallery images)
 				if (block.data?.images && Array.isArray(block.data.images)) {
 					block.data.images.forEach((img: any) => {
 						if (img.media_id) mediaIds.add(img.media_id);
