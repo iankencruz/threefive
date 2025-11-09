@@ -1,10 +1,23 @@
-<!-- frontend/src/routes/+page.svelte -->
+<!-- routes/(public)/+page.svelte -->
 <script lang="ts">
-	import Navbar from "$components/ui/Navbar.svelte";
+	import { getContext, onMount } from "svelte";
 	import BlockRenderer from "$lib/components/blocks/BlockRenderer.svelte";
+	import { getNavbarVariant } from "$lib/utils/navbar";
 	import type { PageData } from "./$types";
 
 	let { data }: { data: PageData } = $props();
+
+	// Get navbar context
+	const navbar = getContext<{
+		variant: string;
+		setVariant: (v: "transparent" | "opaque") => void;
+	}>("navbar");
+
+	// Set navbar variant based on blocks
+	onMount(() => {
+		const variant = getNavbarVariant(data.page.blocks || []);
+		navbar.setVariant(variant);
+	});
 </script>
 
 <svelte:head>
@@ -24,6 +37,5 @@
 </svelte:head>
 
 <div class="min-h-screen bg-white">
-	<!-- ✨ Pass mediaMap to BlockRenderer -->
 	<BlockRenderer blocks={data.page.blocks || []} mediaMap={data.mediaMap || {}} />
 </div>

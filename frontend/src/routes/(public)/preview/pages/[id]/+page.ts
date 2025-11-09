@@ -1,11 +1,7 @@
-// frontend/src/routes/preview/pages/[id]/+page.ts
+// frontend/src/routes/(public)/preview/pages/[id]/+page.ts
 import { error } from "@sveltejs/kit";
-import type { PageLoad } from "../[slug]/$types";
+import type { PageLoad } from "./$types";
 import { PUBLIC_API_URL } from "$env/static/public";
-
-interface MediaItem {
-	media_id?: string;
-}
 
 export const load: PageLoad = async ({ params, fetch }) => {
 	try {
@@ -48,7 +44,7 @@ export const load: PageLoad = async ({ params, fetch }) => {
 
 				// Legacy: images array (if you have other blocks using this)
 				if (block.data?.images && Array.isArray(block.data.images)) {
-					block.data.images.forEach((img: MediaItem) => {
+					block.data.images.forEach((img: any) => {
 						if (img.media_id) mediaIds.add(img.media_id);
 					});
 				}

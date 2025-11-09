@@ -1,6 +1,7 @@
+<!-- src/lib/components/blocks/display/HeroBlock.svelte -->
 <script lang="ts">
 	import type { Media } from "$api/media";
-	import Navbar from "$components/ui/Navbar.svelte";
+	// ❌ REMOVED: import Navbar from "$components/ui/Navbar.svelte";
 
 	interface HeroBlockData {
 		title: string;
@@ -12,7 +13,7 @@
 
 	interface Props {
 		data: HeroBlockData;
-		media?: Media | null; // ✨ NEW: Pre-loaded media from server
+		media?: Media | null;
 	}
 
 	let { data, media = null }: Props = $props();
@@ -25,11 +26,10 @@
 	const getVideoPoster = (m: Media) => m.thumbnail_url || "";
 </script>
 
-<!-- ✨ No more loading state! Media is pre-loaded -->
 {#if media}
 	<section class="relative overflow-hidden">
-		<Navbar />
-
+		<!-- ✨ Navbar removed - now in layout -->
+		
 		<div class="relative min-h-screen flex items-center">
 			<div class="absolute inset-0 bg-black">
 				{#if isVideo(media.mime_type)}
@@ -40,7 +40,7 @@
 						muted
 						loop
 						playsinline
-						class="w-full h-full object-cover mask-radial-at-right mask-radial-from-100% "
+						class="w-full h-full object-cover mask-radial-at-right mask-radial-from-100%"
 					>
 						<track kind="captions" />
 					</video>
@@ -48,7 +48,7 @@
 					<img
 						src={getImageUrl(media)}
 						alt={data.title}
-						class="w-full h-full object-cover mask-radial-at-right mask-radial-from-100% "
+						class="w-full h-full object-cover mask-radial-at-right mask-radial-from-100%"
 					/>
 				{/if}
 
@@ -69,8 +69,7 @@
 					{/if}
 
 					{#if data.cta_text && data.cta_url}
-						
-            <a
+						<a
 							href={data.cta_url}
 							class="inline-flex items-center gap-2 bg-white text-gray-900 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-100 transition-all shadow-lg hover:shadow-xl hover:scale-105"
 						>
