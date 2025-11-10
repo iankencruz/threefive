@@ -45,22 +45,8 @@ func (s *Service) CreatePage(ctx context.Context, req CreatePageRequest, userID 
 	// Check slug uniqueness - pass nil UUID for new pages
 	var nilUUID uuid.UUID
 
-	pageSlug := req.Slug
-
-	switch req.PageType {
-	case "project":
-		pageSlug = fmt.Sprintf("projects/%s", req.Slug)
-	case "blog":
-		pageSlug = fmt.Sprintf("blog/%s", req.Slug)
-	default:
-		pageSlug = req.Slug
-	}
-
-	fmt.Printf("Checking project type: %s\n", req.PageType)
-	fmt.Printf("Computed slug: %s\n", pageSlug)
-
 	exists, err := s.queries.CheckSlugExists(ctx, sqlc.CheckSlugExistsParams{
-		Slug:      pageSlug,
+		Slug:      req.Slug,
 		ExcludeID: nilUUID,
 	})
 	if err != nil {
@@ -82,19 +68,19 @@ func (s *Service) CreatePage(ctx context.Context, req CreatePageRequest, userID 
 	// 1. Create page
 	page, err := qtx.CreatePage(ctx, sqlc.CreatePageParams{
 		Title:           req.Title,
-		Slug:            pageSlug,
-		PageType:        sqlc.PageType(req.PageType),
+		Slug:            req.Slug,
 		Status:          sqlc.NullPageStatus{PageStatus: sqlc.PageStatus(req.Status), Valid: true},
 		FeaturedImageID: uuidToPgUUID(req.FeaturedImageID),
 		AuthorID:        userID,
 	})
+
 	if err != nil {
 		return nil, errors.Internal("Failed to create page", err)
 	}
 
 	// 2. Create blocks using blocks service
 	if len(req.Blocks) > 0 {
-		if err := s.blockService.CreateBlocks(ctx, qtx, page.ID, req.Blocks); err != nil {
+		if err := s.blockService.CreateBlocks(ctx, qtx, "page", page.ID, req.Blocks); err != nil {
 			return nil, err
 		}
 	}
@@ -102,20 +88,6 @@ func (s *Service) CreatePage(ctx context.Context, req CreatePageRequest, userID 
 	// 3. Create SEO if provided
 	if req.SEO != nil {
 		if err := s.createSEO(ctx, qtx, page.ID, req.SEO); err != nil {
-			return nil, err
-		}
-	}
-
-	// 4. Create project data if project page
-	if req.PageType == "project" && req.ProjectData != nil {
-		if err := s.createProjectData(ctx, qtx, page.ID, req.ProjectData); err != nil {
-			return nil, err
-		}
-	}
-
-	// 5. Create blog data if blog page
-	if req.PageType == "blog" && req.BlogData != nil {
-		if err := s.createBlogData(ctx, qtx, page.ID, req.BlogData); err != nil {
 			return nil, err
 		}
 	}
@@ -158,20 +130,10 @@ func (s *Service) GetPageBySlug(ctx context.Context, slug string) (*PageResponse
 }
 
 // ListPages retrieves pages with pagination
-func (s *Service) ListPages(ctx context.Context, pageType string, limit, offset int32) (*PageListResponse, error) {
-	var pageTypeParam sqlc.NullPageType
-	if pageType != "" {
-		// Only set the value and Valid flag if a pageType was provided (non-empty string)
-		pageTypeParam = sqlc.NullPageType{PageType: sqlc.PageType(pageType), Valid: true}
-	} else {
-		// If pageType is "", it remains {Valid: false}, which translates to NULL
-		// in SQL, activating the "OR ... IS NULL" logic to skip the filter.
-		pageTypeParam = sqlc.NullPageType{Valid: false}
-	}
+func (s *Service) ListPages(ctx context.Context, limit, offset int32) (*PageListResponse, error) {
 	// Get total count
 	totalCount, err := s.queries.CountPages(ctx, sqlc.CountPagesParams{
-		Status:   sqlc.NullPageStatus{Valid: false}, // NULL for all statuses
-		PageType: pageTypeParam,                     // NULL for all types
+		Status:   sqlc.NullPageStatus{Valid: false},
 		AuthorID: pgtype.UUID{Valid: false},
 	})
 	if err != nil {
@@ -181,7 +143,6 @@ func (s *Service) ListPages(ctx context.Context, pageType string, limit, offset 
 	// Get pages
 	pages, err := s.queries.ListPages(ctx, sqlc.ListPagesParams{
 		Status:    sqlc.NullPageStatus{Valid: false},
-		PageType:  pageTypeParam,
 		AuthorID:  pgtype.UUID{Valid: false},
 		SortBy:    "created_at_desc",
 		OffsetVal: offset,
@@ -206,12 +167,12 @@ func (s *Service) ListPages(ctx context.Context, pageType string, limit, offset 
 	if int(totalCount)%int(limit) > 0 {
 		totalPages++
 	}
-	page := int(offset)/int(limit) + 1
+	currentPage := int(offset)/int(limit) + 1
 
 	return &PageListResponse{
 		Pages: pageResponses,
 		Pagination: Pagination{
-			Page:       page,
+			Page:       currentPage,
 			Limit:      int(limit),
 			TotalPages: totalPages,
 			TotalCount: int(totalCount),
@@ -221,71 +182,11 @@ func (s *Service) ListPages(ctx context.Context, pageType string, limit, offset 
 
 // UpdatePage updates a page and its related data in a transaction
 func (s *Service) UpdatePage(ctx context.Context, pageID uuid.UUID, req UpdatePageRequest) (*PageResponse, error) {
-	// Get existing page to know its current state
-	existingPage, err := s.queries.GetPageByID(ctx, pageID)
-	if err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, errors.NotFound("Page not found", "page_not_found")
-		}
-		return nil, errors.Internal("Failed to get existing page", err)
-	}
 
-	// Determine the page_type to use for slug processing
-	pageType := string(existingPage.PageType) // Use existing by default
-	if req.PageType != nil {
-		pageType = *req.PageType // Use new page_type if provided
-	}
-
-	// Process slug - add prefix based on page_type
-	var finalSlug *string
+	// Check slug uniqueness if slug is being updated
 	if req.Slug != nil {
-		var computedSlug string
-
-		switch pageType {
-		case "project":
-			computedSlug = fmt.Sprintf("projects/%s", *req.Slug)
-		case "blog":
-			computedSlug = fmt.Sprintf("blog/%s", *req.Slug)
-		default:
-			computedSlug = *req.Slug
-		}
-
-		finalSlug = &computedSlug
-
-		// Check slug uniqueness with the computed slug
 		exists, err := s.queries.CheckSlugExists(ctx, sqlc.CheckSlugExistsParams{
-			Slug:      computedSlug,
-			ExcludeID: pageID,
-		})
-		if err != nil {
-			return nil, errors.Internal("Failed to check slug", err)
-		}
-		if exists {
-			return nil, errors.Conflict("Slug already exists", "slug_exists")
-		}
-	} else if req.PageType != nil && *req.PageType != string(existingPage.PageType) {
-		// If page_type is changing but slug is not provided, update slug with prefix
-		var computedSlug string
-
-		// Strip existing prefix from slug if it exists
-		currentSlug := existingPage.Slug
-		currentSlug = strings.TrimPrefix(currentSlug, "projects/")
-		currentSlug = strings.TrimPrefix(currentSlug, "blog/")
-
-		switch pageType {
-		case "project":
-			computedSlug = fmt.Sprintf("projects/%s", currentSlug)
-		case "blog":
-			computedSlug = fmt.Sprintf("blog/%s", currentSlug)
-		default:
-			computedSlug = currentSlug
-		}
-
-		finalSlug = &computedSlug
-
-		// Check slug uniqueness
-		exists, err := s.queries.CheckSlugExists(ctx, sqlc.CheckSlugExistsParams{
-			Slug:      computedSlug,
+			Slug:      *req.Slug,
 			ExcludeID: pageID,
 		})
 		if err != nil {
@@ -305,14 +206,11 @@ func (s *Service) UpdatePage(ctx context.Context, pageID uuid.UUID, req UpdatePa
 
 	qtx := s.queries.WithTx(tx)
 
-	fmt.Printf("Page type changed, slug: %s\n", pointerToString(finalSlug))
-
 	// Update page
 	page, err := qtx.UpdatePage(ctx, sqlc.UpdatePageParams{
 		ID:              pageID,
 		Title:           pointerToString(req.Title),
-		Slug:            pointerToString(finalSlug),
-		PageType:        pageTypeToPageType(req.PageType),
+		Slug:            pointerToString(req.Slug),
 		Status:          statusToNullPageStatus(req.Status),
 		FeaturedImageID: uuidToPgUUID(req.FeaturedImageID),
 	})
@@ -326,13 +224,16 @@ func (s *Service) UpdatePage(ctx context.Context, pageID uuid.UUID, req UpdatePa
 	// Update blocks if provided
 	if req.Blocks != nil {
 		// Delete existing blocks
-		if err := qtx.DeleteBlocksByPageID(ctx, pageID); err != nil {
+		if err := qtx.DeleteBlocksByEntity(ctx, sqlc.DeleteBlocksByEntityParams{
+			EntityType: "page",
+			EntityID:   pageID,
+		}); err != nil {
 			return nil, errors.Internal("Failed to delete existing blocks", err)
 		}
 
 		// Create new blocks
 		if len(*req.Blocks) > 0 {
-			if err := s.blockService.CreateBlocks(ctx, qtx, pageID, *req.Blocks); err != nil {
+			if err := s.blockService.CreateBlocks(ctx, qtx, "page", pageID, *req.Blocks); err != nil {
 				return nil, err
 			}
 		}
@@ -341,20 +242,6 @@ func (s *Service) UpdatePage(ctx context.Context, pageID uuid.UUID, req UpdatePa
 	// Update SEO if provided
 	if req.SEO != nil {
 		if err := s.upsertSEO(ctx, qtx, pageID, req.SEO); err != nil {
-			return nil, err
-		}
-	}
-
-	// Update project data if provided
-	if req.ProjectData != nil {
-		if err := s.upsertProjectData(ctx, qtx, pageID, req.ProjectData); err != nil {
-			return nil, err
-		}
-	}
-
-	// Update blog data if provided
-	if req.BlogData != nil {
-		if err := s.upsertBlogData(ctx, qtx, pageID, req.BlogData); err != nil {
 			return nil, err
 		}
 	}
@@ -448,7 +335,6 @@ func (s *Service) buildPageResponse(ctx context.Context, page sqlc.Pages) (*Page
 		ID:        page.ID,
 		Title:     page.Title,
 		Slug:      page.Slug,
-		PageType:  string(page.PageType),
 		Status:    string(page.Status.PageStatus),
 		AuthorID:  page.AuthorID,
 		CreatedAt: page.CreatedAt,
@@ -467,7 +353,7 @@ func (s *Service) buildPageResponse(ctx context.Context, page sqlc.Pages) (*Page
 	}
 
 	// Get blocks
-	blockResponses, err := s.blockService.GetPageBlocks(ctx, page.ID)
+	blockResponses, err := s.blockService.GetBlocksByEntity(ctx, "page", page.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -480,28 +366,6 @@ func (s *Service) buildPageResponse(ctx context.Context, page sqlc.Pages) (*Page
 	}
 	if err == nil {
 		resp.SEO = buildSEOResponse(seo)
-	}
-
-	// Get project data if project page
-	if page.PageType == "project" {
-		projectData, err := s.queries.GetProjectData(ctx, page.ID)
-		if err != nil && err != pgx.ErrNoRows {
-			return nil, errors.Internal("Failed to get project data", err)
-		}
-		if err == nil {
-			resp.ProjectData = buildProjectDataResponse(projectData)
-		}
-	}
-
-	// Get blog data if blog page
-	if page.PageType == "blog" {
-		blogData, err := s.queries.GetBlogData(ctx, page.ID)
-		if err != nil && err != pgx.ErrNoRows {
-			return nil, errors.Internal("Failed to get blog data", err)
-		}
-		if err == nil {
-			resp.BlogData = buildBlogDataResponse(blogData)
-		}
 	}
 
 	return resp, nil
@@ -545,70 +409,6 @@ func (s *Service) upsertSEO(ctx context.Context, qtx *sqlc.Queries, pageID uuid.
 	return nil
 }
 
-// createProjectData creates project data for a page
-func (s *Service) createProjectData(ctx context.Context, qtx *sqlc.Queries, pageID uuid.UUID, req *ProjectDataRequest) error {
-	technologies, _ := json.Marshal(req.Technologies)
-
-	_, err := qtx.CreateProjectData(ctx, sqlc.CreateProjectDataParams{
-		PageID:        pageID,
-		ClientName:    stringToPgText(req.ClientName),
-		ProjectYear:   intToPgInt4(req.ProjectYear),
-		ProjectUrl:    stringToPgText(req.ProjectURL),
-		Technologies:  technologies,
-		ProjectStatus: stringToPgText(req.ProjectStatus),
-	})
-	if err != nil {
-		return errors.Internal("Failed to create project data", err)
-	}
-	return nil
-}
-
-// upsertProjectData updates or creates project data using the upsert query
-func (s *Service) upsertProjectData(ctx context.Context, qtx *sqlc.Queries, pageID uuid.UUID, req *ProjectDataRequest) error {
-	technologies, _ := json.Marshal(req.Technologies)
-
-	_, err := qtx.UpsertProjectData(ctx, sqlc.UpsertProjectDataParams{
-		PageID:        pageID,
-		ClientName:    stringToPgText(req.ClientName),
-		ProjectYear:   intToPgInt4(req.ProjectYear),
-		ProjectUrl:    stringToPgText(req.ProjectURL),
-		Technologies:  technologies,
-		ProjectStatus: stringToPgText(req.ProjectStatus),
-	})
-	if err != nil {
-		return errors.Internal("Failed to upsert project data", err)
-	}
-	return nil
-}
-
-// createBlogData creates blog data for a page
-func (s *Service) createBlogData(ctx context.Context, qtx *sqlc.Queries, pageID uuid.UUID, req *BlogDataRequest) error {
-	_, err := qtx.CreateBlogData(ctx, sqlc.CreateBlogDataParams{
-		PageID:      pageID,
-		Excerpt:     stringToPgText(req.Excerpt),
-		ReadingTime: intToPgInt4(req.ReadingTime),
-		IsFeatured:  pgtype.Bool{Bool: false, Valid: true},
-	})
-	if err != nil {
-		return errors.Internal("Failed to create blog data", err)
-	}
-	return nil
-}
-
-// upsertBlogData updates or creates blog data using the upsert query
-func (s *Service) upsertBlogData(ctx context.Context, qtx *sqlc.Queries, pageID uuid.UUID, req *BlogDataRequest) error {
-	_, err := qtx.UpsertBlogData(ctx, sqlc.UpsertBlogDataParams{
-		PageID:      pageID,
-		Excerpt:     stringToPgText(req.Excerpt),
-		ReadingTime: intToPgInt4(req.ReadingTime),
-		IsFeatured:  pgtype.Bool{Bool: false, Valid: true},
-	})
-	if err != nil {
-		return errors.Internal("Failed to upsert blog data", err)
-	}
-	return nil
-}
-
 // buildSEOResponse builds an SEO response
 func buildSEOResponse(seo sqlc.PageSeo) *SEOResponse {
 	resp := &SEOResponse{
@@ -634,48 +434,6 @@ func buildSEOResponse(seo sqlc.PageSeo) *SEOResponse {
 	}
 	if seo.CanonicalUrl.Valid {
 		resp.CanonicalURL = &seo.CanonicalUrl.String
-	}
-
-	return resp
-}
-
-// buildProjectDataResponse builds a project data response
-func buildProjectDataResponse(data sqlc.PageProjectData) *ProjectDataResponse {
-	resp := &ProjectDataResponse{}
-
-	if data.ClientName.Valid {
-		resp.ClientName = &data.ClientName.String
-	}
-	if data.ProjectYear.Valid {
-		year := int(data.ProjectYear.Int32)
-		resp.ProjectYear = &year
-	}
-	if data.ProjectUrl.Valid {
-		resp.ProjectURL = &data.ProjectUrl.String
-	}
-	if data.ProjectStatus.Valid {
-		resp.ProjectStatus = &data.ProjectStatus.String
-	}
-
-	// Parse technologies JSON
-	var technologies []string
-	if err := json.Unmarshal(data.Technologies, &technologies); err == nil {
-		resp.Technologies = technologies
-	}
-
-	return resp
-}
-
-// buildBlogDataResponse builds a blog data response
-func buildBlogDataResponse(data sqlc.PageBlogData) *BlogDataResponse {
-	resp := &BlogDataResponse{}
-
-	if data.Excerpt.Valid {
-		resp.Excerpt = &data.Excerpt.String
-	}
-	if data.ReadingTime.Valid {
-		readingTime := int(data.ReadingTime.Int32)
-		resp.ReadingTime = &readingTime
 	}
 
 	return resp
@@ -728,11 +486,4 @@ func pointerToString(s *string) string {
 		return ""
 	}
 	return *s
-}
-
-func pageTypeToPageType(pageType *string) sqlc.PageType {
-	if pageType == nil {
-		return "" // Return empty string for null
-	}
-	return sqlc.PageType(*pageType)
 }

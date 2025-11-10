@@ -1,3 +1,5 @@
+-- backend/sql/queries/blocks_richtext.sql
+
 -- ============================================
 -- Richtext Block Queries
 -- ============================================
@@ -11,11 +13,11 @@ RETURNING *;
 SELECT * FROM block_richtext
 WHERE block_id = @block_id;
 
--- name: GetRichtextBlocksByPageID :many
+-- name: GetRichtextBlocksByEntity :many
 SELECT br.*
 FROM block_richtext br
 INNER JOIN blocks b ON b.id = br.block_id
-WHERE b.page_id = @page_id
+WHERE b.entity_type = @entity_type AND b.entity_id = @entity_id
 ORDER BY b.sort_order;
 
 -- name: UpdateRichtextBlock :one
@@ -26,5 +28,3 @@ RETURNING *;
 
 -- name: DeleteRichtextBlock :exec
 DELETE FROM block_richtext WHERE block_id = @block_id;
-
-

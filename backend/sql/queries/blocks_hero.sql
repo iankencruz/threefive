@@ -1,3 +1,5 @@
+-- backend/sql/queries/blocks_hero.sql
+
 -- ============================================
 -- Hero Block Queries
 -- ============================================
@@ -18,11 +20,11 @@ RETURNING *;
 SELECT * FROM block_hero
 WHERE block_id = @block_id;
 
--- name: GetHeroBlocksByPageID :many
+-- name: GetHeroBlocksByEntity :many
 SELECT bh.*
 FROM block_hero bh
 INNER JOIN blocks b ON b.id = bh.block_id
-WHERE b.page_id = @page_id
+WHERE b.entity_type = @entity_type AND b.entity_id = @entity_id
 ORDER BY b.sort_order;
 
 -- name: UpdateHeroBlock :one
@@ -38,5 +40,3 @@ RETURNING *;
 
 -- name: DeleteHeroBlock :exec
 DELETE FROM block_hero WHERE block_id = @block_id;
-
-

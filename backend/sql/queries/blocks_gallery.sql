@@ -16,11 +16,11 @@ RETURNING *;
 SELECT * FROM block_gallery
 WHERE block_id = @block_id;
 
--- name: GetGalleryBlocksByPageID :many
+-- name: GetGalleryBlocksByEntity :many
 SELECT bg.*
 FROM block_gallery bg
 INNER JOIN blocks b ON b.id = bg.block_id
-WHERE b.page_id = @page_id
+WHERE b.entity_type = @entity_type AND b.entity_id = @entity_id
 ORDER BY b.sort_order;
 
 -- name: UpdateGalleryBlock :one
@@ -31,4 +31,3 @@ RETURNING *;
 
 -- name: DeleteGalleryBlock :exec
 DELETE FROM block_gallery WHERE block_id = @block_id;
-

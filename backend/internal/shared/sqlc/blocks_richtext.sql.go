@@ -13,6 +13,7 @@ import (
 
 const createRichtextBlock = `-- name: CreateRichtextBlock :one
 
+
 INSERT INTO block_richtext (block_id, content)
 VALUES ($1, $2)
 RETURNING id, block_id, content
@@ -23,6 +24,7 @@ type CreateRichtextBlockParams struct {
 	Content string    `json:"content"`
 }
 
+// backend/sql/queries/blocks_richtext.sql
 // ============================================
 // Richtext Block Queries
 // ============================================
@@ -54,16 +56,21 @@ func (q *Queries) GetRichtextBlockByBlockID(ctx context.Context, blockID uuid.UU
 	return i, err
 }
 
-const getRichtextBlocksByPageID = `-- name: GetRichtextBlocksByPageID :many
+const getRichtextBlocksByEntity = `-- name: GetRichtextBlocksByEntity :many
 SELECT br.id, br.block_id, br.content
 FROM block_richtext br
 INNER JOIN blocks b ON b.id = br.block_id
-WHERE b.page_id = $1
+WHERE b.entity_type = $1 AND b.entity_id = $2
 ORDER BY b.sort_order
 `
 
-func (q *Queries) GetRichtextBlocksByPageID(ctx context.Context, pageID uuid.UUID) ([]BlockRichtext, error) {
-	rows, err := q.db.Query(ctx, getRichtextBlocksByPageID, pageID)
+type GetRichtextBlocksByEntityParams struct {
+	EntityType string    `json:"entity_type"`
+	EntityID   uuid.UUID `json:"entity_id"`
+}
+
+func (q *Queries) GetRichtextBlocksByEntity(ctx context.Context, arg GetRichtextBlocksByEntityParams) ([]BlockRichtext, error) {
+	rows, err := q.db.Query(ctx, getRichtextBlocksByEntity, arg.EntityType, arg.EntityID)
 	if err != nil {
 		return nil, err
 	}

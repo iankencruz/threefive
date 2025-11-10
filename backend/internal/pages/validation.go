@@ -28,10 +28,6 @@ func (r *CreatePageRequest) Validate(v *validation.Validator) {
 	v.MinLength("slug", r.Slug, 1)
 	v.MaxLength("slug", r.Slug, 200)
 
-	// Page type validation
-	v.Required("page_type", r.PageType)
-	v.In("page_type", r.PageType, ValidPageTypes)
-
 	// Status validation
 	v.Required("status", r.Status)
 	v.In("status", r.Status, ValidPageStatuses)
@@ -46,25 +42,12 @@ func (r *CreatePageRequest) Validate(v *validation.Validator) {
 		r.SEO.Validate(v)
 	}
 
-	// Project data validation - required if page_type is project
-	if r.PageType == "project" {
-		if r.ProjectData == nil {
-			v.AddError("project_data", "Project data is required for project pages")
-		} else {
-			r.ProjectData.Validate(v)
-		}
-	}
-
-	// Blog data validation - optional for blog pages
-	if r.PageType == "blog" && r.BlogData != nil {
-		r.BlogData.Validate(v)
-	}
 }
 
 // Validate validates an UpdatePageRequest
 func (r *UpdatePageRequest) Validate(v *validation.Validator) {
 	// At least one field must be provided
-	if r.Title == nil && r.Slug == nil && r.PageType == nil && r.FeaturedImageID == nil {
+	if r.Title == nil && r.Slug == nil && r.FeaturedImageID == nil {
 		v.AddError("update", "At least one field must be provided for update")
 		return
 	}
@@ -80,10 +63,6 @@ func (r *UpdatePageRequest) Validate(v *validation.Validator) {
 		v.Slug("slug", *r.Slug)
 		v.MinLength("slug", *r.Slug, 1)
 		v.MaxLength("slug", *r.Slug, 200)
-	}
-
-	if r.PageType != nil {
-		v.In("page_type", *r.PageType, ValidPageTypes)
 	}
 
 	// Status validation (if provided)
@@ -123,48 +102,5 @@ func (r *SEORequest) Validate(v *validation.Validator) {
 	// Canonical URL
 	if r.CanonicalURL != nil && *r.CanonicalURL != "" {
 		v.URL("seo.canonical_url", *r.CanonicalURL)
-	}
-}
-
-// Validate validates ProjectDataRequest
-func (r *ProjectDataRequest) Validate(v *validation.Validator) {
-	// Client name
-	if r.ClientName != nil {
-		v.MaxLength("project_data.client_name", *r.ClientName, 200)
-	}
-
-	// Project year
-	if r.ProjectYear != nil {
-		if *r.ProjectYear < 1900 || *r.ProjectYear > 2100 {
-			v.AddError("project_data.project_year", "Project year must be between 1900 and 2100")
-		}
-	}
-
-	// Project URL
-	if r.ProjectURL != nil && *r.ProjectURL != "" {
-		v.URL("project_data.project_url", *r.ProjectURL)
-	}
-
-	// Technologies (max 20 items)
-	if len(r.Technologies) > 20 {
-		v.AddError("project_data.technologies", "Maximum 20 technologies allowed")
-	}
-
-	// Project status
-	if r.ProjectStatus != nil {
-		v.In("project_data.project_status", *r.ProjectStatus, ValidProjectStatuses)
-	}
-}
-
-// Validate validates BlogDataRequest
-func (r *BlogDataRequest) Validate(v *validation.Validator) {
-	// Excerpt
-	if r.Excerpt != nil {
-		v.MaxLength("blog_data.excerpt", *r.Excerpt, 500)
-	}
-
-	// Reading time (must be positive)
-	if r.ReadingTime != nil && *r.ReadingTime < 0 {
-		v.AddError("blog_data.reading_time", "Reading time must be a positive number")
 	}
 }

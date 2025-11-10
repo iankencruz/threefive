@@ -25,13 +25,14 @@ func NewService(queries *sqlc.Queries) *Service {
 }
 
 // CreateBlocks creates all blocks for a page in a transaction
-func (s *Service) CreateBlocks(ctx context.Context, qtx *sqlc.Queries, pageID uuid.UUID, blocks []BlockRequest) error {
+func (s *Service) CreateBlocks(ctx context.Context, qtx *sqlc.Queries, entityType string, entityID uuid.UUID, blocks []BlockRequest) error {
 	for i, blockReq := range blocks {
 		// Create base block
 		block, err := qtx.CreateBlock(ctx, sqlc.CreateBlockParams{
-			PageID:    pageID,
-			Type:      blockReq.Type,
-			SortOrder: int32(i),
+			EntityType: entityType,
+			EntityID:   entityID,
+			Type:       blockReq.Type,
+			SortOrder:  int32(i),
 		})
 		if err != nil {
 			return errors.Internal("Failed to create block", err)
@@ -64,9 +65,14 @@ func (s *Service) CreateBlocks(ctx context.Context, qtx *sqlc.Queries, pageID uu
 }
 
 // UpdateBlocks updates blocks for a page in a transaction
-func (s *Service) UpdateBlocks(ctx context.Context, qtx *sqlc.Queries, pageID uuid.UUID, blocks []BlockRequest) error {
+func (s *Service) UpdateBlocks(ctx context.Context, qtx *sqlc.Queries, entityType string, entityID uuid.UUID, blocks []BlockRequest) error {
 	// Get existing blocks to determine what to update/delete/create
-	existingBlocks, err := qtx.GetBlocksByPageID(ctx, pageID)
+	// existingBlocks, err := qtx.GetBlocksByPageID(ctx, pageID)
+	existingBlocks, err := qtx.GetBlocksByEntity(ctx, sqlc.GetBlocksByEntityParams{
+		EntityType: entityType,
+		EntityID:   entityID,
+	})
+
 	if err != nil {
 		return errors.Internal("Failed to get existing blocks", err)
 	}
@@ -117,9 +123,10 @@ func (s *Service) UpdateBlocks(ctx context.Context, qtx *sqlc.Queries, pageID uu
 		} else {
 			// Create new block
 			newBlock, err := qtx.CreateBlock(ctx, sqlc.CreateBlockParams{
-				PageID:    pageID,
-				Type:      block.Type,
-				SortOrder: int32(i),
+				EntityType: entityType,
+				EntityID:   entityID,
+				Type:       block.Type,
+				SortOrder:  int32(i),
 			})
 			if err != nil {
 				return errors.Internal("Failed to create block", err)
@@ -162,9 +169,13 @@ func (s *Service) UpdateBlocks(ctx context.Context, qtx *sqlc.Queries, pageID uu
 }
 
 // GetPageBlocks retrieves all blocks for a page
-func (s *Service) GetPageBlocks(ctx context.Context, pageID uuid.UUID) ([]BlockResponse, error) {
+func (s *Service) GetBlocksByEntity(ctx context.Context, entityType string, entityID uuid.UUID) ([]BlockResponse, error) {
 	// Get base blocks
-	baseBlocks, err := s.queries.GetBlocksByPageID(ctx, pageID)
+	baseBlocks, err := s.queries.GetBlocksByEntity(ctx, sqlc.GetBlocksByEntityParams{
+		EntityType: entityType,
+		EntityID:   entityID,
+	})
+
 	if err != nil {
 		return nil, errors.Internal("Failed to get blocks", err)
 	}
@@ -173,23 +184,41 @@ func (s *Service) GetPageBlocks(ctx context.Context, pageID uuid.UUID) ([]BlockR
 		return []BlockResponse{}, nil
 	}
 
+	// ***********************
 	// Get all block type data
-	heroBlocks, err := s.queries.GetHeroBlocksByPageID(ctx, pageID)
+
+	// Hero Block
+	heroBlocks, err := s.queries.GetHeroBlocksByEntity(ctx, sqlc.GetHeroBlocksByEntityParams{
+		EntityType: entityType,
+		EntityID:   entityID,
+	})
 	if err != nil {
 		return nil, errors.Internal("Failed to get hero blocks", err)
 	}
 
-	richtextBlocks, err := s.queries.GetRichtextBlocksByPageID(ctx, pageID)
+	// RichText Block
+	richtextBlocks, err := s.queries.GetRichtextBlocksByEntity(ctx, sqlc.GetRichtextBlocksByEntityParams{
+		EntityType: entityType,
+		EntityID:   entityID,
+	})
 	if err != nil {
 		return nil, errors.Internal("Failed to get richtext blocks", err)
 	}
 
-	headerBlocks, err := s.queries.GetHeaderBlocksByPageID(ctx, pageID)
+	// Header Block
+	headerBlocks, err := s.queries.GetHeaderBlocksByEntity(ctx, sqlc.GetHeaderBlocksByEntityParams{
+		EntityType: entityType,
+		EntityID:   entityID,
+	})
 	if err != nil {
 		return nil, errors.Internal("Failed to get header blocks", err)
 	}
 
-	galleryBlocks, err := s.queries.GetGalleryBlocksByPageID(ctx, pageID)
+	// Gallery Block
+	galleryBlocks, err := s.queries.GetGalleryBlocksByEntity(ctx, sqlc.GetGalleryBlocksByEntityParams{
+		EntityType: entityType,
+		EntityID:   entityID,
+	})
 	if err != nil {
 		return nil, errors.Internal("Failed to get gallery blocks", err)
 	}

@@ -14,6 +14,7 @@ import (
 
 const createHeaderBlock = `-- name: CreateHeaderBlock :one
 
+
 INSERT INTO block_header (
     block_id, 
     heading, 
@@ -31,6 +32,7 @@ type CreateHeaderBlockParams struct {
 	Level      pgtype.Text `json:"level"`
 }
 
+// backend/sql/queries/blocks_header.sql
 // ============================================
 // Header Block Queries
 // ============================================
@@ -79,16 +81,21 @@ func (q *Queries) GetHeaderBlockByBlockID(ctx context.Context, blockID uuid.UUID
 	return i, err
 }
 
-const getHeaderBlocksByPageID = `-- name: GetHeaderBlocksByPageID :many
+const getHeaderBlocksByEntity = `-- name: GetHeaderBlocksByEntity :many
 SELECT bh.id, bh.block_id, bh.heading, bh.subheading, bh.level
 FROM block_header bh
 INNER JOIN blocks b ON b.id = bh.block_id
-WHERE b.page_id = $1
+WHERE b.entity_type = $1 AND b.entity_id = $2
 ORDER BY b.sort_order
 `
 
-func (q *Queries) GetHeaderBlocksByPageID(ctx context.Context, pageID uuid.UUID) ([]BlockHeader, error) {
-	rows, err := q.db.Query(ctx, getHeaderBlocksByPageID, pageID)
+type GetHeaderBlocksByEntityParams struct {
+	EntityType string    `json:"entity_type"`
+	EntityID   uuid.UUID `json:"entity_id"`
+}
+
+func (q *Queries) GetHeaderBlocksByEntity(ctx context.Context, arg GetHeaderBlocksByEntityParams) ([]BlockHeader, error) {
+	rows, err := q.db.Query(ctx, getHeaderBlocksByEntity, arg.EntityType, arg.EntityID)
 	if err != nil {
 		return nil, err
 	}

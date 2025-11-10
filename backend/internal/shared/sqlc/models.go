@@ -57,47 +57,47 @@ func (ns NullPageStatus) Value() (driver.Value, error) {
 	return string(ns.PageStatus), nil
 }
 
-type PageType string
+type ProjectStatus string
 
 const (
-	PageTypeGeneric PageType = "generic"
-	PageTypeProject PageType = "project"
-	PageTypeBlog    PageType = "blog"
+	ProjectStatusCompleted ProjectStatus = "completed"
+	ProjectStatusOngoing   ProjectStatus = "ongoing"
+	ProjectStatusArchived  ProjectStatus = "archived"
 )
 
-func (e *PageType) Scan(src interface{}) error {
+func (e *ProjectStatus) Scan(src interface{}) error {
 	switch s := src.(type) {
 	case []byte:
-		*e = PageType(s)
+		*e = ProjectStatus(s)
 	case string:
-		*e = PageType(s)
+		*e = ProjectStatus(s)
 	default:
-		return fmt.Errorf("unsupported scan type for PageType: %T", src)
+		return fmt.Errorf("unsupported scan type for ProjectStatus: %T", src)
 	}
 	return nil
 }
 
-type NullPageType struct {
-	PageType PageType `json:"page_type"`
-	Valid    bool     `json:"valid"` // Valid is true if PageType is not NULL
+type NullProjectStatus struct {
+	ProjectStatus ProjectStatus `json:"project_status"`
+	Valid         bool          `json:"valid"` // Valid is true if ProjectStatus is not NULL
 }
 
 // Scan implements the Scanner interface.
-func (ns *NullPageType) Scan(value interface{}) error {
+func (ns *NullProjectStatus) Scan(value interface{}) error {
 	if value == nil {
-		ns.PageType, ns.Valid = "", false
+		ns.ProjectStatus, ns.Valid = "", false
 		return nil
 	}
 	ns.Valid = true
-	return ns.PageType.Scan(value)
+	return ns.ProjectStatus.Scan(value)
 }
 
 // Value implements the driver Valuer interface.
-func (ns NullPageType) Value() (driver.Value, error) {
+func (ns NullProjectStatus) Value() (driver.Value, error) {
 	if !ns.Valid {
 		return nil, nil
 	}
-	return string(ns.PageType), nil
+	return string(ns.ProjectStatus), nil
 }
 
 type StorageType string
@@ -173,12 +173,29 @@ type BlockRichtext struct {
 }
 
 type Blocks struct {
-	ID        uuid.UUID `json:"id"`
-	PageID    uuid.UUID `json:"page_id"`
-	Type      string    `json:"type"`
-	SortOrder int32     `json:"sort_order"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID         uuid.UUID `json:"id"`
+	EntityType string    `json:"entity_type"`
+	EntityID   uuid.UUID `json:"entity_id"`
+	Type       string    `json:"type"`
+	SortOrder  int32     `json:"sort_order"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
+}
+
+type Blogs struct {
+	ID              uuid.UUID          `json:"id"`
+	Title           string             `json:"title"`
+	Slug            string             `json:"slug"`
+	Status          NullPageStatus     `json:"status"`
+	Excerpt         pgtype.Text        `json:"excerpt"`
+	ReadingTime     pgtype.Int4        `json:"reading_time"`
+	IsFeatured      pgtype.Bool        `json:"is_featured"`
+	FeaturedImageID pgtype.UUID        `json:"featured_image_id"`
+	AuthorID        uuid.UUID          `json:"author_id"`
+	CreatedAt       time.Time          `json:"created_at"`
+	UpdatedAt       time.Time          `json:"updated_at"`
+	PublishedAt     pgtype.Timestamptz `json:"published_at"`
+	DeletedAt       pgtype.Timestamptz `json:"deleted_at"`
 }
 
 type Media struct {
@@ -223,48 +240,10 @@ type MediaRelations struct {
 	CreatedAt  time.Time   `json:"created_at"`
 }
 
-type PageBlogData struct {
-	ID          uuid.UUID   `json:"id"`
-	PageID      uuid.UUID   `json:"page_id"`
-	Excerpt     pgtype.Text `json:"excerpt"`
-	ReadingTime pgtype.Int4 `json:"reading_time"`
-	IsFeatured  pgtype.Bool `json:"is_featured"`
-	CreatedAt   time.Time   `json:"created_at"`
-	UpdatedAt   time.Time   `json:"updated_at"`
-}
-
-type PageProjectData struct {
-	ID            uuid.UUID   `json:"id"`
-	PageID        uuid.UUID   `json:"page_id"`
-	ClientName    pgtype.Text `json:"client_name"`
-	ProjectYear   pgtype.Int4 `json:"project_year"`
-	ProjectUrl    pgtype.Text `json:"project_url"`
-	Technologies  []byte      `json:"technologies"`
-	ProjectStatus pgtype.Text `json:"project_status"`
-	CreatedAt     time.Time   `json:"created_at"`
-	UpdatedAt     time.Time   `json:"updated_at"`
-}
-
-type PageSeo struct {
-	ID              uuid.UUID   `json:"id"`
-	PageID          uuid.UUID   `json:"page_id"`
-	MetaTitle       pgtype.Text `json:"meta_title"`
-	MetaDescription pgtype.Text `json:"meta_description"`
-	OgTitle         pgtype.Text `json:"og_title"`
-	OgDescription   pgtype.Text `json:"og_description"`
-	OgImageID       pgtype.UUID `json:"og_image_id"`
-	CanonicalUrl    pgtype.Text `json:"canonical_url"`
-	RobotsIndex     pgtype.Bool `json:"robots_index"`
-	RobotsFollow    pgtype.Bool `json:"robots_follow"`
-	CreatedAt       time.Time   `json:"created_at"`
-	UpdatedAt       time.Time   `json:"updated_at"`
-}
-
 type Pages struct {
 	ID              uuid.UUID          `json:"id"`
 	Title           string             `json:"title"`
 	Slug            string             `json:"slug"`
-	PageType        PageType           `json:"page_type"`
 	Status          NullPageStatus     `json:"status"`
 	FeaturedImageID pgtype.UUID        `json:"featured_image_id"`
 	AuthorID        uuid.UUID          `json:"author_id"`
@@ -282,6 +261,42 @@ type PasswordResetTokens struct {
 	CreatedAt time.Time          `json:"created_at"`
 	UsedAt    pgtype.Timestamptz `json:"used_at"`
 	IsUsed    pgtype.Bool        `json:"is_used"`
+}
+
+type Projects struct {
+	ID              uuid.UUID          `json:"id"`
+	Title           string             `json:"title"`
+	Slug            string             `json:"slug"`
+	Description     pgtype.Text        `json:"description"`
+	ProjectDate     pgtype.Date        `json:"project_date"`
+	Status          NullPageStatus     `json:"status"`
+	ClientName      pgtype.Text        `json:"client_name"`
+	ProjectYear     pgtype.Int4        `json:"project_year"`
+	ProjectUrl      pgtype.Text        `json:"project_url"`
+	Technologies    []byte             `json:"technologies"`
+	ProjectStatus   NullProjectStatus  `json:"project_status"`
+	FeaturedImageID pgtype.UUID        `json:"featured_image_id"`
+	AuthorID        uuid.UUID          `json:"author_id"`
+	CreatedAt       time.Time          `json:"created_at"`
+	UpdatedAt       time.Time          `json:"updated_at"`
+	PublishedAt     pgtype.Timestamptz `json:"published_at"`
+	DeletedAt       pgtype.Timestamptz `json:"deleted_at"`
+}
+
+type Seo struct {
+	ID              uuid.UUID   `json:"id"`
+	EntityType      string      `json:"entity_type"`
+	EntityID        uuid.UUID   `json:"entity_id"`
+	MetaTitle       pgtype.Text `json:"meta_title"`
+	MetaDescription pgtype.Text `json:"meta_description"`
+	OgTitle         pgtype.Text `json:"og_title"`
+	OgDescription   pgtype.Text `json:"og_description"`
+	OgImageID       pgtype.UUID `json:"og_image_id"`
+	CanonicalUrl    pgtype.Text `json:"canonical_url"`
+	RobotsIndex     pgtype.Bool `json:"robots_index"`
+	RobotsFollow    pgtype.Bool `json:"robots_follow"`
+	CreatedAt       time.Time   `json:"created_at"`
+	UpdatedAt       time.Time   `json:"updated_at"`
 }
 
 type Sessions struct {

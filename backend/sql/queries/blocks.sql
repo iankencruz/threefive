@@ -1,17 +1,17 @@
 -- backend/sql/queries/blocks.sql
 
 -- ============================================
--- Base Blocks Queries
+-- Base Blocks Queries (Polymorphic)
 -- ============================================
 
 -- name: CreateBlock :one
-INSERT INTO blocks (page_id, type, sort_order)
-VALUES (@page_id, @type, @sort_order)
+INSERT INTO blocks (entity_type, entity_id, type, sort_order)
+VALUES (@entity_type, @entity_id, @type, @sort_order)
 RETURNING *;
 
--- name: GetBlocksByPageID :many
+-- name: GetBlocksByEntity :many
 SELECT * FROM blocks
-WHERE page_id = @page_id
+WHERE entity_type = @entity_type AND entity_id = @entity_id
 ORDER BY sort_order;
 
 -- name: GetBlockByID :one
@@ -26,7 +26,6 @@ WHERE id = @id;
 -- name: DeleteBlock :exec
 DELETE FROM blocks WHERE id = @id;
 
--- name: DeleteBlocksByPageID :exec
-DELETE FROM blocks WHERE page_id = @page_id;
-
-
+-- name: DeleteBlocksByEntity :exec
+DELETE FROM blocks 
+WHERE entity_type = @entity_type AND entity_id = @entity_id;

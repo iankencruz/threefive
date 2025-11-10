@@ -60,16 +60,21 @@ func (q *Queries) GetGalleryBlockByBlockID(ctx context.Context, blockID uuid.UUI
 	return i, err
 }
 
-const getGalleryBlocksByPageID = `-- name: GetGalleryBlocksByPageID :many
+const getGalleryBlocksByEntity = `-- name: GetGalleryBlocksByEntity :many
 SELECT bg.id, bg.block_id, bg.title
 FROM block_gallery bg
 INNER JOIN blocks b ON b.id = bg.block_id
-WHERE b.page_id = $1
+WHERE b.entity_type = $1 AND b.entity_id = $2
 ORDER BY b.sort_order
 `
 
-func (q *Queries) GetGalleryBlocksByPageID(ctx context.Context, pageID uuid.UUID) ([]BlockGallery, error) {
-	rows, err := q.db.Query(ctx, getGalleryBlocksByPageID, pageID)
+type GetGalleryBlocksByEntityParams struct {
+	EntityType string    `json:"entity_type"`
+	EntityID   uuid.UUID `json:"entity_id"`
+}
+
+func (q *Queries) GetGalleryBlocksByEntity(ctx context.Context, arg GetGalleryBlocksByEntityParams) ([]BlockGallery, error) {
+	rows, err := q.db.Query(ctx, getGalleryBlocksByEntity, arg.EntityType, arg.EntityID)
 	if err != nil {
 		return nil, err
 	}

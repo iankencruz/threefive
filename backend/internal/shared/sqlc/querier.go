@@ -8,34 +8,40 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
+	CheckBlogSlugExists(ctx context.Context, arg CheckBlogSlugExistsParams) (bool, error)
+	CheckProjectSlugExists(ctx context.Context, arg CheckProjectSlugExistsParams) (bool, error)
 	CheckSlugExists(ctx context.Context, arg CheckSlugExistsParams) (bool, error)
 	CleanupExpiredPasswordResetTokens(ctx context.Context) error
 	CleanupExpiredSessions(ctx context.Context) error
+	CountBlogs(ctx context.Context, arg CountBlogsParams) (int64, error)
 	CountMedia(ctx context.Context) (int64, error)
 	CountPages(ctx context.Context, arg CountPagesParams) (int64, error)
+	CountProjects(ctx context.Context, arg CountProjectsParams) (int64, error)
 	CountSearchMedia(ctx context.Context, arg CountSearchMediaParams) (int64, error)
 	// backend/sql/queries/blocks.sql
 	// ============================================
-	// Base Blocks Queries
+	// Base Blocks Queries (Polymorphic)
 	// ============================================
 	CreateBlock(ctx context.Context, arg CreateBlockParams) (Blocks, error)
+	// backend/sql/queries/blogs.sql
 	// ============================================
-	// Blog Data Queries
+	// Blogs Queries
 	// ============================================
-	CreateBlogData(ctx context.Context, arg CreateBlogDataParams) (PageBlogData, error)
+	CreateBlog(ctx context.Context, arg CreateBlogParams) (Blogs, error)
 	// backend/sql/queries/blocks_gallery.sql
 	// ============================================
 	// Gallery Block Queries
 	// ============================================
 	CreateGalleryBlock(ctx context.Context, arg CreateGalleryBlockParams) (BlockGallery, error)
+	// backend/sql/queries/blocks_header.sql
 	// ============================================
 	// Header Block Queries
 	// ============================================
 	CreateHeaderBlock(ctx context.Context, arg CreateHeaderBlockParams) (BlockHeader, error)
+	// backend/sql/queries/blocks_hero.sql
 	// ============================================
 	// Hero Block Queries
 	// ============================================
@@ -43,92 +49,94 @@ type Querier interface {
 	// backend/sql/queries/media.sql
 	CreateMedia(ctx context.Context, arg CreateMediaParams) (Media, error)
 	// backend/sql/queries/pages.sql
+	// ============================================
+	// Pages Queries (Generic pages only)
+	// ============================================
 	CreatePage(ctx context.Context, arg CreatePageParams) (Pages, error)
-	// backend/sql/queries/page_metadata.sql
-	// ============================================
-	// Page SEO Queries
-	// ============================================
-	CreatePageSEO(ctx context.Context, arg CreatePageSEOParams) (PageSeo, error)
 	CreatePasswordResetToken(ctx context.Context, arg CreatePasswordResetTokenParams) (PasswordResetTokens, error)
+	// backend/sql/queries/projects.sql
 	// ============================================
-	// Project Data Queries
+	// Projects Queries
 	// ============================================
-	CreateProjectData(ctx context.Context, arg CreateProjectDataParams) (PageProjectData, error)
+	CreateProject(ctx context.Context, arg CreateProjectParams) (Projects, error)
+	// backend/sql/queries/blocks_richtext.sql
 	// ============================================
 	// Richtext Block Queries
 	// ============================================
 	CreateRichtextBlock(ctx context.Context, arg CreateRichtextBlockParams) (BlockRichtext, error)
+	// backend/sql/queries/seo.sql
+	// ============================================
+	// SEO Queries (Polymorphic)
+	// ============================================
+	CreateSEO(ctx context.Context, arg CreateSEOParams) (Seo, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Sessions, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (Users, error)
 	DeactivateAllUserSessions(ctx context.Context, userID uuid.UUID) error
 	DeactivateSession(ctx context.Context, token string) error
 	DeleteBlock(ctx context.Context, id uuid.UUID) error
-	DeleteBlocksByPageID(ctx context.Context, pageID uuid.UUID) error
-	DeleteBlogData(ctx context.Context, pageID uuid.UUID) error
+	DeleteBlocksByEntity(ctx context.Context, arg DeleteBlocksByEntityParams) error
 	DeleteGalleryBlock(ctx context.Context, blockID uuid.UUID) error
 	DeleteHeaderBlock(ctx context.Context, blockID uuid.UUID) error
 	DeleteHeroBlock(ctx context.Context, blockID uuid.UUID) error
-	DeletePageSEO(ctx context.Context, pageID uuid.UUID) error
-	DeleteProjectData(ctx context.Context, pageID uuid.UUID) error
 	DeleteRichtextBlock(ctx context.Context, blockID uuid.UUID) error
+	DeleteSEO(ctx context.Context, arg DeleteSEOParams) error
 	DeleteUser(ctx context.Context, id uuid.UUID) error
 	GetActiveSessionsByUserID(ctx context.Context, userID uuid.UUID) ([]Sessions, error)
 	GetBlockByID(ctx context.Context, id uuid.UUID) (Blocks, error)
-	GetBlocksByPageID(ctx context.Context, pageID uuid.UUID) ([]Blocks, error)
-	GetBlogData(ctx context.Context, pageID uuid.UUID) (PageBlogData, error)
+	GetBlocksByEntity(ctx context.Context, arg GetBlocksByEntityParams) ([]Blocks, error)
+	GetBlogByID(ctx context.Context, id uuid.UUID) (Blogs, error)
+	GetBlogBySlug(ctx context.Context, slug string) (Blogs, error)
 	GetEntitiesForMedia(ctx context.Context, mediaID uuid.UUID) ([]GetEntitiesForMediaRow, error)
 	GetGalleryBlockByBlockID(ctx context.Context, blockID uuid.UUID) (BlockGallery, error)
-	GetGalleryBlocksByPageID(ctx context.Context, pageID uuid.UUID) ([]BlockGallery, error)
+	GetGalleryBlocksByEntity(ctx context.Context, arg GetGalleryBlocksByEntityParams) ([]BlockGallery, error)
 	GetHeaderBlockByBlockID(ctx context.Context, blockID uuid.UUID) (BlockHeader, error)
-	GetHeaderBlocksByPageID(ctx context.Context, pageID uuid.UUID) ([]BlockHeader, error)
+	GetHeaderBlocksByEntity(ctx context.Context, arg GetHeaderBlocksByEntityParams) ([]BlockHeader, error)
 	GetHeroBlockByBlockID(ctx context.Context, blockID uuid.UUID) (BlockHero, error)
-	GetHeroBlocksByPageID(ctx context.Context, pageID uuid.UUID) ([]BlockHero, error)
+	GetHeroBlocksByEntity(ctx context.Context, arg GetHeroBlocksByEntityParams) ([]BlockHero, error)
 	GetMediaByID(ctx context.Context, id uuid.UUID) (Media, error)
 	GetMediaForEntity(ctx context.Context, arg GetMediaForEntityParams) ([]Media, error)
 	GetMediaStats(ctx context.Context) (GetMediaStatsRow, error)
 	GetPageByID(ctx context.Context, id uuid.UUID) (Pages, error)
 	GetPageBySlug(ctx context.Context, slug string) (Pages, error)
-	GetPageBySlugAdmin(ctx context.Context, slug string) (Pages, error)
-	GetPageSEO(ctx context.Context, pageID uuid.UUID) (PageSeo, error)
 	GetPasswordResetToken(ctx context.Context, token string) (GetPasswordResetTokenRow, error)
-	GetProjectData(ctx context.Context, pageID uuid.UUID) (PageProjectData, error)
+	GetProjectByID(ctx context.Context, id uuid.UUID) (Projects, error)
+	GetProjectBySlug(ctx context.Context, slug string) (Projects, error)
 	GetRichtextBlockByBlockID(ctx context.Context, blockID uuid.UUID) (BlockRichtext, error)
-	GetRichtextBlocksByPageID(ctx context.Context, pageID uuid.UUID) ([]BlockRichtext, error)
+	GetRichtextBlocksByEntity(ctx context.Context, arg GetRichtextBlocksByEntityParams) ([]BlockRichtext, error)
+	GetSEO(ctx context.Context, arg GetSEOParams) (Seo, error)
 	GetSessionByToken(ctx context.Context, token string) (GetSessionByTokenRow, error)
 	GetUserByEmail(ctx context.Context, email string) (Users, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (Users, error)
 	HardDeleteMedia(ctx context.Context, id uuid.UUID) error
-	HardDeletePage(ctx context.Context, id uuid.UUID) error
 	// Media Relations Queries
 	LinkMediaToEntity(ctx context.Context, arg LinkMediaToEntityParams) (MediaRelations, error)
-	ListBlogPages(ctx context.Context, arg ListBlogPagesParams) ([]ListBlogPagesRow, error)
-	ListFeaturedBlogPages(ctx context.Context, limitVal int32) ([]ListFeaturedBlogPagesRow, error)
+	ListBlogs(ctx context.Context, arg ListBlogsParams) ([]Blogs, error)
 	ListMedia(ctx context.Context, arg ListMediaParams) ([]Media, error)
 	ListMediaByUser(ctx context.Context, uploadedBy uuid.UUID) ([]Media, error)
 	ListPages(ctx context.Context, arg ListPagesParams) ([]Pages, error)
-	ListProjectPages(ctx context.Context, arg ListProjectPagesParams) ([]ListProjectPagesRow, error)
-	ListPublishedPages(ctx context.Context, arg ListPublishedPagesParams) ([]Pages, error)
+	ListProjects(ctx context.Context, arg ListProjectsParams) ([]Projects, error)
 	ListUsers(ctx context.Context) ([]Users, error)
-	PurgeOldDeletedPages(ctx context.Context, cutoffDate pgtype.Timestamptz) (int64, error)
 	SearchMedia(ctx context.Context, arg SearchMediaParams) ([]Media, error)
+	SoftDeleteBlog(ctx context.Context, id uuid.UUID) error
 	SoftDeleteMedia(ctx context.Context, id uuid.UUID) error
 	SoftDeletePage(ctx context.Context, id uuid.UUID) error
+	SoftDeleteProject(ctx context.Context, id uuid.UUID) error
 	UnlinkMediaFromEntity(ctx context.Context, arg UnlinkMediaFromEntityParams) error
 	UpdateBlockOrder(ctx context.Context, arg UpdateBlockOrderParams) error
-	UpdateBlogData(ctx context.Context, arg UpdateBlogDataParams) (PageBlogData, error)
+	UpdateBlog(ctx context.Context, arg UpdateBlogParams) (Blogs, error)
+	UpdateBlogStatus(ctx context.Context, arg UpdateBlogStatusParams) (Blogs, error)
 	UpdateGalleryBlock(ctx context.Context, arg UpdateGalleryBlockParams) (BlockGallery, error)
 	UpdateHeaderBlock(ctx context.Context, arg UpdateHeaderBlockParams) (BlockHeader, error)
 	UpdateHeroBlock(ctx context.Context, arg UpdateHeroBlockParams) (BlockHero, error)
 	UpdatePage(ctx context.Context, arg UpdatePageParams) (Pages, error)
-	UpdatePageSEO(ctx context.Context, arg UpdatePageSEOParams) (PageSeo, error)
 	UpdatePageStatus(ctx context.Context, arg UpdatePageStatusParams) (Pages, error)
-	UpdateProjectData(ctx context.Context, arg UpdateProjectDataParams) (PageProjectData, error)
+	UpdateProject(ctx context.Context, arg UpdateProjectParams) (Projects, error)
+	UpdateProjectStatus(ctx context.Context, arg UpdateProjectStatusParams) (Projects, error)
 	UpdateRichtextBlock(ctx context.Context, arg UpdateRichtextBlockParams) (BlockRichtext, error)
+	UpdateSEO(ctx context.Context, arg UpdateSEOParams) (Seo, error)
 	UpdateSessionExpiry(ctx context.Context, arg UpdateSessionExpiryParams) (Sessions, error)
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
-	UpsertBlogData(ctx context.Context, arg UpsertBlogDataParams) (PageBlogData, error)
-	UpsertPageSEO(ctx context.Context, arg UpsertPageSEOParams) (PageSeo, error)
-	UpsertProjectData(ctx context.Context, arg UpsertProjectDataParams) (PageProjectData, error)
+	UpsertSEO(ctx context.Context, arg UpsertSEOParams) (Seo, error)
 	UsePasswordResetToken(ctx context.Context, token string) error
 }
 

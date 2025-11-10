@@ -16,26 +16,20 @@ import (
 type CreatePageRequest struct {
 	Title           string                `json:"title"`
 	Slug            string                `json:"slug"`
-	PageType        string                `json:"page_type"` // generic, project, blog
-	Status          string                `json:"status"`    // draft, published
+	Status          string                `json:"status"` // draft, published
 	FeaturedImageID *uuid.UUID            `json:"featured_image_id,omitempty"`
 	Blocks          []blocks.BlockRequest `json:"blocks"`
 	SEO             *SEORequest           `json:"seo,omitempty"`
-	ProjectData     *ProjectDataRequest   `json:"project_data,omitempty"`
-	BlogData        *BlogDataRequest      `json:"blog_data,omitempty"`
 }
 
 // UpdatePageRequest represents the request to update a page
 type UpdatePageRequest struct {
 	Title           *string                `json:"title,omitempty"`
 	Slug            *string                `json:"slug,omitempty"`
-	PageType        *string                `json:"page_type,omitempty"`
 	Status          *string                `json:"status,omitempty"`
 	FeaturedImageID *uuid.UUID             `json:"featured_image_id,omitempty"`
 	Blocks          *[]blocks.BlockRequest `json:"blocks,omitempty"`
 	SEO             *SEORequest            `json:"seo,omitempty"`
-	ProjectData     *ProjectDataRequest    `json:"project_data,omitempty"`
-	BlogData        *BlogDataRequest       `json:"blog_data,omitempty"`
 }
 
 // UpdatePageStatusRequest represents the request to change page status
@@ -55,21 +49,6 @@ type SEORequest struct {
 	RobotsFollow    *bool      `json:"robots_follow,omitempty"`
 }
 
-// ProjectDataRequest represents project-specific data in the request
-type ProjectDataRequest struct {
-	ClientName    *string  `json:"client_name,omitempty"`
-	ProjectYear   *int     `json:"project_year,omitempty"`
-	ProjectURL    *string  `json:"project_url,omitempty"`
-	Technologies  []string `json:"technologies,omitempty"`
-	ProjectStatus *string  `json:"project_status,omitempty"` // completed, ongoing, archived
-}
-
-// BlogDataRequest represents blog-specific data in the request
-type BlogDataRequest struct {
-	Excerpt     *string `json:"excerpt,omitempty"`
-	ReadingTime *int    `json:"reading_time,omitempty"`
-}
-
 // ============================================
 // Response Models
 // ============================================
@@ -79,14 +58,11 @@ type PageResponse struct {
 	ID              uuid.UUID              `json:"id"`
 	Title           string                 `json:"title"`
 	Slug            string                 `json:"slug"`
-	PageType        string                 `json:"page_type"`
 	Status          string                 `json:"status"`
 	FeaturedImageID *uuid.UUID             `json:"featured_image_id,omitempty"`
 	AuthorID        uuid.UUID              `json:"author_id"`
 	Blocks          []blocks.BlockResponse `json:"blocks,omitempty"`
 	SEO             *SEOResponse           `json:"seo,omitempty"`
-	ProjectData     *ProjectDataResponse   `json:"project_data,omitempty"`
-	BlogData        *BlogDataResponse      `json:"blog_data,omitempty"`
 	CreatedAt       time.Time              `json:"created_at"`
 	UpdatedAt       time.Time              `json:"updated_at"`
 	DeletedAt       *time.Time             `json:"deleted_at,omitempty"`
@@ -102,24 +78,6 @@ type SEOResponse struct {
 	CanonicalURL    *string    `json:"canonical_url,omitempty"`
 	RobotsIndex     bool       `json:"robots_index"`
 	RobotsFollow    bool       `json:"robots_follow"`
-}
-
-// ProjectDataResponse represents project data in API responses
-type ProjectDataResponse struct {
-	ClientName    *string  `json:"client_name,omitempty"`
-	ProjectYear   *int     `json:"project_year,omitempty"`
-	ProjectURL    *string  `json:"project_url,omitempty"`
-	Technologies  []string `json:"technologies,omitempty"`
-	ProjectStatus *string  `json:"project_status,omitempty"`
-}
-
-// BlogDataResponse represents blog data in API responses
-type BlogDataResponse struct {
-	Excerpt     *string    `json:"excerpt,omitempty"`
-	Category    *string    `json:"category,omitempty"`
-	Tags        []string   `json:"tags,omitempty"`
-	ReadingTime *int       `json:"reading_time,omitempty"`
-	PublishedAt *time.Time `json:"published_at,omitempty"`
 }
 
 // PageListResponse represents a list of pages

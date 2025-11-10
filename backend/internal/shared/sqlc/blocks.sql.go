@@ -14,27 +14,34 @@ import (
 const createBlock = `-- name: CreateBlock :one
 
 
-INSERT INTO blocks (page_id, type, sort_order)
-VALUES ($1, $2, $3)
-RETURNING id, page_id, type, sort_order, created_at, updated_at
+INSERT INTO blocks (entity_type, entity_id, type, sort_order)
+VALUES ($1, $2, $3, $4)
+RETURNING id, entity_type, entity_id, type, sort_order, created_at, updated_at
 `
 
 type CreateBlockParams struct {
-	PageID    uuid.UUID `json:"page_id"`
-	Type      string    `json:"type"`
-	SortOrder int32     `json:"sort_order"`
+	EntityType string    `json:"entity_type"`
+	EntityID   uuid.UUID `json:"entity_id"`
+	Type       string    `json:"type"`
+	SortOrder  int32     `json:"sort_order"`
 }
 
 // backend/sql/queries/blocks.sql
 // ============================================
-// Base Blocks Queries
+// Base Blocks Queries (Polymorphic)
 // ============================================
 func (q *Queries) CreateBlock(ctx context.Context, arg CreateBlockParams) (Blocks, error) {
-	row := q.db.QueryRow(ctx, createBlock, arg.PageID, arg.Type, arg.SortOrder)
+	row := q.db.QueryRow(ctx, createBlock,
+		arg.EntityType,
+		arg.EntityID,
+		arg.Type,
+		arg.SortOrder,
+	)
 	var i Blocks
 	err := row.Scan(
 		&i.ID,
-		&i.PageID,
+		&i.EntityType,
+		&i.EntityID,
 		&i.Type,
 		&i.SortOrder,
 		&i.CreatedAt,
@@ -52,17 +59,23 @@ func (q *Queries) DeleteBlock(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
-const deleteBlocksByPageID = `-- name: DeleteBlocksByPageID :exec
-DELETE FROM blocks WHERE page_id = $1
+const deleteBlocksByEntity = `-- name: DeleteBlocksByEntity :exec
+DELETE FROM blocks 
+WHERE entity_type = $1 AND entity_id = $2
 `
 
-func (q *Queries) DeleteBlocksByPageID(ctx context.Context, pageID uuid.UUID) error {
-	_, err := q.db.Exec(ctx, deleteBlocksByPageID, pageID)
+type DeleteBlocksByEntityParams struct {
+	EntityType string    `json:"entity_type"`
+	EntityID   uuid.UUID `json:"entity_id"`
+}
+
+func (q *Queries) DeleteBlocksByEntity(ctx context.Context, arg DeleteBlocksByEntityParams) error {
+	_, err := q.db.Exec(ctx, deleteBlocksByEntity, arg.EntityType, arg.EntityID)
 	return err
 }
 
 const getBlockByID = `-- name: GetBlockByID :one
-SELECT id, page_id, type, sort_order, created_at, updated_at FROM blocks
+SELECT id, entity_type, entity_id, type, sort_order, created_at, updated_at FROM blocks
 WHERE id = $1
 `
 
@@ -71,7 +84,8 @@ func (q *Queries) GetBlockByID(ctx context.Context, id uuid.UUID) (Blocks, error
 	var i Blocks
 	err := row.Scan(
 		&i.ID,
-		&i.PageID,
+		&i.EntityType,
+		&i.EntityID,
 		&i.Type,
 		&i.SortOrder,
 		&i.CreatedAt,
@@ -80,14 +94,19 @@ func (q *Queries) GetBlockByID(ctx context.Context, id uuid.UUID) (Blocks, error
 	return i, err
 }
 
-const getBlocksByPageID = `-- name: GetBlocksByPageID :many
-SELECT id, page_id, type, sort_order, created_at, updated_at FROM blocks
-WHERE page_id = $1
+const getBlocksByEntity = `-- name: GetBlocksByEntity :many
+SELECT id, entity_type, entity_id, type, sort_order, created_at, updated_at FROM blocks
+WHERE entity_type = $1 AND entity_id = $2
 ORDER BY sort_order
 `
 
-func (q *Queries) GetBlocksByPageID(ctx context.Context, pageID uuid.UUID) ([]Blocks, error) {
-	rows, err := q.db.Query(ctx, getBlocksByPageID, pageID)
+type GetBlocksByEntityParams struct {
+	EntityType string    `json:"entity_type"`
+	EntityID   uuid.UUID `json:"entity_id"`
+}
+
+func (q *Queries) GetBlocksByEntity(ctx context.Context, arg GetBlocksByEntityParams) ([]Blocks, error) {
+	rows, err := q.db.Query(ctx, getBlocksByEntity, arg.EntityType, arg.EntityID)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +116,8 @@ func (q *Queries) GetBlocksByPageID(ctx context.Context, pageID uuid.UUID) ([]Bl
 		var i Blocks
 		if err := rows.Scan(
 			&i.ID,
-			&i.PageID,
+			&i.EntityType,
+			&i.EntityID,
 			&i.Type,
 			&i.SortOrder,
 			&i.CreatedAt,

@@ -14,6 +14,7 @@ import (
 
 const createHeroBlock = `-- name: CreateHeroBlock :one
 
+
 INSERT INTO block_hero (
     block_id, 
     title, 
@@ -35,6 +36,7 @@ type CreateHeroBlockParams struct {
 	CtaUrl   pgtype.Text `json:"cta_url"`
 }
 
+// backend/sql/queries/blocks_hero.sql
 // ============================================
 // Hero Block Queries
 // ============================================
@@ -89,16 +91,21 @@ func (q *Queries) GetHeroBlockByBlockID(ctx context.Context, blockID uuid.UUID) 
 	return i, err
 }
 
-const getHeroBlocksByPageID = `-- name: GetHeroBlocksByPageID :many
+const getHeroBlocksByEntity = `-- name: GetHeroBlocksByEntity :many
 SELECT bh.id, bh.block_id, bh.title, bh.subtitle, bh.image_id, bh.cta_text, bh.cta_url
 FROM block_hero bh
 INNER JOIN blocks b ON b.id = bh.block_id
-WHERE b.page_id = $1
+WHERE b.entity_type = $1 AND b.entity_id = $2
 ORDER BY b.sort_order
 `
 
-func (q *Queries) GetHeroBlocksByPageID(ctx context.Context, pageID uuid.UUID) ([]BlockHero, error) {
-	rows, err := q.db.Query(ctx, getHeroBlocksByPageID, pageID)
+type GetHeroBlocksByEntityParams struct {
+	EntityType string    `json:"entity_type"`
+	EntityID   uuid.UUID `json:"entity_id"`
+}
+
+func (q *Queries) GetHeroBlocksByEntity(ctx context.Context, arg GetHeroBlocksByEntityParams) ([]BlockHero, error) {
+	rows, err := q.db.Query(ctx, getHeroBlocksByEntity, arg.EntityType, arg.EntityID)
 	if err != nil {
 		return nil, err
 	}
