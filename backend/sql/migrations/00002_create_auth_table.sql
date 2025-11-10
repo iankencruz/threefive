@@ -56,9 +56,14 @@ CREATE TRIGGER update_sessions_updated_at
 -- +goose Down
 -- +goose StatementBegin
 
+-- 1. Explicitly drop the trigger (though dropping the table should do this)
+DROP TRIGGER IF EXISTS update_sessions_updated_at ON sessions;
+
+-- 2. Drop the tables
 DROP TABLE IF EXISTS password_reset_tokens;
 DROP TABLE IF EXISTS sessions;
 
-DROP FUNCTION IF EXISTS update_updated_at_column();
+-- 3. Drop the function using CASCADE to handle all dependencies
+DROP FUNCTION IF EXISTS update_updated_at_column() CASCADE;
 
 -- +goose StatementEnd

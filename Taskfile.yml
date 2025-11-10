@@ -61,7 +61,12 @@ tasks:
   db:down:
     desc: "Rollback the last migration"
     cmds:
-      - goose down
+      - |
+        {{if .CLI_ARGS}}
+        goose down-to {{.CLI_ARGS}}
+        {{else}}
+        goose down
+        {{end}}
 
   db:status:
     desc: "Show migration status"

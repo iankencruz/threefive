@@ -85,9 +85,18 @@ CREATE TRIGGER update_media_updated_at
 -- +goose Down
 -- +goose StatementBegin
 
+-- 1. Drop the trigger attached to media
 DROP TRIGGER IF EXISTS update_media_updated_at ON media;
-DROP TABLE IF EXISTS media_relations;
-DROP TABLE IF EXISTS media;
-DROP TYPE IF EXISTS storage_type;
 
+-- 2. Drop all dependent tables (The tables that reference 'media')
+-- Drop the external table dependency first
+DROP TABLE IF EXISTS page_seo;
+-- Drop the internal table dependency
+DROP TABLE IF EXISTS media_relations;
+
+-- 3. Drop the primary table
+DROP TABLE IF EXISTS media;
+
+-- 4. Drop the custom type, using CASCADE for robustness
+DROP TYPE IF EXISTS storage_type CASCADE;
 -- +goose StatementEnd

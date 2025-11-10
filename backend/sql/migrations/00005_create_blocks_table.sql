@@ -1,31 +1,30 @@
 -- +goose Up
 -- +goose StatementBegin
 
--- Base blocks table (polymorphic)
+-- Base blocks table (polymorphic - works with pages, projects, blogs)
 CREATE TABLE blocks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    page_id UUID NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
+    
+    -- Polymorphic reference
+    entity_type VARCHAR(50) NOT NULL,
+    entity_id UUID NOT NULL,
+    
+    -- Block data
     type VARCHAR(50) NOT NULL,
     sort_order INTEGER NOT NULL DEFAULT 0,
+    
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     
-    -- Constraint for valid block types
-    CONSTRAINT valid_block_type CHECK (type IN ('hero', 'richtext', 'header', 'gallery'))
+    -- Constraints
+    CONSTRAINT valid_block_type CHECK (type IN ('hero', 'richtext', 'header', 'gallery')),
+    CONSTRAINT valid_entity_type CHECK (entity_type IN ('page', 'project', 'blog'))
 );
 
-
-
-
-
-
-
 -- Indexes for performance
-CREATE INDEX idx_blocks_page_id ON blocks(page_id);
-CREATE INDEX idx_blocks_sort ON blocks(page_id, sort_order);
+CREATE INDEX idx_blocks_entity ON blocks(entity_type, entity_id);
+CREATE INDEX idx_blocks_entity_sort ON blocks(entity_type, entity_id, sort_order);
 CREATE INDEX idx_blocks_type ON blocks(type);
-
-
 
 -- Trigger for updated_at
 CREATE TRIGGER update_blocks_updated_at
