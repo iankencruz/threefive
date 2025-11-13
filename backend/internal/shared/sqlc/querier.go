@@ -8,6 +8,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
@@ -116,6 +117,7 @@ type Querier interface {
 	ListPages(ctx context.Context, arg ListPagesParams) ([]Pages, error)
 	ListProjects(ctx context.Context, arg ListProjectsParams) ([]Projects, error)
 	ListUsers(ctx context.Context) ([]Users, error)
+	PurgeOldDeletedPages(ctx context.Context, cutoffDate pgtype.Timestamptz) (int64, error)
 	SearchMedia(ctx context.Context, arg SearchMediaParams) ([]Media, error)
 	SoftDeleteBlog(ctx context.Context, id uuid.UUID) error
 	SoftDeleteMedia(ctx context.Context, id uuid.UUID) error

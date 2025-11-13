@@ -217,6 +217,23 @@ func (q *Queries) ListPages(ctx context.Context, arg ListPagesParams) ([]Pages, 
 	return items, nil
 }
 
+const purgeOldDeletedPages = `-- name: PurgeOldDeletedPages :one
+WITH deleted AS (
+    DELETE FROM pages 
+    WHERE deleted_at IS NOT NULL           -- Has been soft-deleted
+      AND deleted_at < $1        -- @cutoff_date is a PARAMETER (not a column)
+    RETURNING id
+)
+SELECT COUNT(*) as count FROM deleted
+`
+
+func (q *Queries) PurgeOldDeletedPages(ctx context.Context, cutoffDate pgtype.Timestamptz) (int64, error) {
+	row := q.db.QueryRow(ctx, purgeOldDeletedPages, cutoffDate)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const softDeletePage = `-- name: SoftDeletePage :exec
 UPDATE pages
 SET deleted_at = NOW(), updated_at = NOW()

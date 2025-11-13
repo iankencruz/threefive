@@ -3,10 +3,7 @@ package pages
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"log"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -131,10 +128,13 @@ func (s *Service) GetPageBySlug(ctx context.Context, slug string) (*PageResponse
 
 // ListPages retrieves pages with pagination
 func (s *Service) ListPages(ctx context.Context, limit, offset int32) (*PageListResponse, error) {
+
+	var zeroUUID uuid.UUID
+
 	// Get total count
 	totalCount, err := s.queries.CountPages(ctx, sqlc.CountPagesParams{
-		Status:   sqlc.NullPageStatus{Valid: false},
-		AuthorID: pgtype.UUID{Valid: false},
+		Status:   sqlc.PageStatus(""),
+		AuthorID: zeroUUID,
 	})
 	if err != nil {
 		return nil, errors.Internal("Failed to count pages", err)
@@ -142,8 +142,8 @@ func (s *Service) ListPages(ctx context.Context, limit, offset int32) (*PageList
 
 	// Get pages
 	pages, err := s.queries.ListPages(ctx, sqlc.ListPagesParams{
-		Status:    sqlc.NullPageStatus{Valid: false},
-		AuthorID:  pgtype.UUID{Valid: false},
+		Status:    sqlc.PageStatus(""),
+		AuthorID:  zeroUUID,
 		SortBy:    "created_at_desc",
 		OffsetVal: offset,
 		LimitVal:  limit,
@@ -290,16 +290,6 @@ func (s *Service) DeletePage(ctx context.Context, pageID uuid.UUID) error {
 	return nil
 }
 
-// HardDeletePage permanently deletes a page
-func (s *Service) HardDeletePage(ctx context.Context, pageID uuid.UUID) error {
-	err := s.queries.HardDeletePage(ctx, pageID)
-	if err != nil {
-		return errors.Internal("Failed to permanently delete page", err)
-	}
-
-	return nil
-}
-
 // PurgeOldDeletedPages permanently deletes pages that have been soft-deleted
 // for longer than the configured retention period
 func (s *Service) PurgeOldDeletedPages(ctx context.Context) error {
@@ -360,7 +350,10 @@ func (s *Service) buildPageResponse(ctx context.Context, page sqlc.Pages) (*Page
 	resp.Blocks = blockResponses
 
 	// Get SEO
-	seo, err := s.queries.GetPageSEO(ctx, page.ID)
+	seo, err := s.queries.GetSEO(ctx, sqlc.GetSEOParams{
+		EntityType: "page",
+		EntityID:   page.ID,
+	})
 	if err != nil && err != pgx.ErrNoRows {
 		return nil, errors.Internal("Failed to get page SEO", err)
 	}
@@ -373,8 +366,9 @@ func (s *Service) buildPageResponse(ctx context.Context, page sqlc.Pages) (*Page
 
 // createSEO creates SEO data for a page
 func (s *Service) createSEO(ctx context.Context, qtx *sqlc.Queries, pageID uuid.UUID, req *SEORequest) error {
-	_, err := qtx.CreatePageSEO(ctx, sqlc.CreatePageSEOParams{
-		PageID:          pageID,
+	_, err := qtx.CreateSEO(ctx, sqlc.CreateSEOParams{
+		EntityType:      "page",
+		EntityID:        pageID,
 		MetaTitle:       stringToPgText(req.MetaTitle),
 		MetaDescription: stringToPgText(req.MetaDescription),
 		OgTitle:         stringToPgText(req.OGTitle),
@@ -392,8 +386,9 @@ func (s *Service) createSEO(ctx context.Context, qtx *sqlc.Queries, pageID uuid.
 
 // upsertSEO updates or creates SEO data using the upsert query
 func (s *Service) upsertSEO(ctx context.Context, qtx *sqlc.Queries, pageID uuid.UUID, req *SEORequest) error {
-	_, err := qtx.UpsertPageSEO(ctx, sqlc.UpsertPageSEOParams{
-		PageID:          pageID,
+	_, err := qtx.UpsertSEO(ctx, sqlc.UpsertSEOParams{
+		EntityType:      "page",
+		EntityID:        pageID,
 		MetaTitle:       stringToPgText(req.MetaTitle),
 		MetaDescription: stringToPgText(req.MetaDescription),
 		OgTitle:         stringToPgText(req.OGTitle),
@@ -410,7 +405,7 @@ func (s *Service) upsertSEO(ctx context.Context, qtx *sqlc.Queries, pageID uuid.
 }
 
 // buildSEOResponse builds an SEO response
-func buildSEOResponse(seo sqlc.PageSeo) *SEOResponse {
+func buildSEOResponse(seo sqlc.Seo) *SEOResponse {
 	resp := &SEOResponse{
 		RobotsIndex:  seo.RobotsIndex.Bool,
 		RobotsFollow: seo.RobotsFollow.Bool,

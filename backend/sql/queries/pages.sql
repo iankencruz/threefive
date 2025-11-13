@@ -80,3 +80,12 @@ SELECT EXISTS(
     AND deleted_at IS NULL
     AND (@exclude_id::uuid IS NULL OR id != @exclude_id)
 );
+
+-- name: PurgeOldDeletedPages :one
+WITH deleted AS (
+    DELETE FROM pages 
+    WHERE deleted_at IS NOT NULL           -- Has been soft-deleted
+      AND deleted_at < @cutoff_date        -- @cutoff_date is a PARAMETER (not a column)
+    RETURNING id
+)
+SELECT COUNT(*) as count FROM deleted;
