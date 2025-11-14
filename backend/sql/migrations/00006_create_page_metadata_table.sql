@@ -27,7 +27,7 @@ CREATE TABLE seo (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     
     -- Constraints
-    CONSTRAINT valid_seo_entity_type CHECK (entity_type IN ('page', 'project', 'blog'))
+    CONSTRAINT valid_seo_entity_type CHECK (entity_type IN ('page', 'blog'))
 );
 
 -- Unique constraint: one SEO record per entity

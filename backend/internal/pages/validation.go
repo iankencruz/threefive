@@ -7,7 +7,7 @@ import (
 )
 
 // Valid page types
-var ValidPageTypes = []string{"generic", "project", "blog"}
+var ValidEntityTypes = []string{"generic", "blog"}
 
 // Valid page statuses
 var ValidPageStatuses = []string{"draft", "published", "archived"}
