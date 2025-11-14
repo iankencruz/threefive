@@ -37,18 +37,16 @@ const countBlogs = `-- name: CountBlogs :one
 SELECT COUNT(*) FROM blogs
 WHERE deleted_at IS NULL
   AND ($1::page_status IS NULL OR status = $1)
-  AND ($2::uuid IS NULL OR author_id = $2)
-  AND ($3::boolean IS NULL OR is_featured = $3)
+  AND ($2::boolean IS NULL OR is_featured = $2)
 `
 
 type CountBlogsParams struct {
 	Status     PageStatus `json:"status"`
-	AuthorID   uuid.UUID  `json:"author_id"`
 	IsFeatured bool       `json:"is_featured"`
 }
 
 func (q *Queries) CountBlogs(ctx context.Context, arg CountBlogsParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countBlogs, arg.Status, arg.AuthorID, arg.IsFeatured)
+	row := q.db.QueryRow(ctx, countBlogs, arg.Status, arg.IsFeatured)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -65,7 +63,6 @@ INSERT INTO blogs (
     reading_time,
     is_featured,
     featured_image_id,
-    author_id,
     published_at
 )
 VALUES (
@@ -76,10 +73,9 @@ VALUES (
     $5,
     $6,
     $7,
-    $8,
-    $9
+    $8
 )
-RETURNING id, title, slug, status, excerpt, reading_time, is_featured, featured_image_id, author_id, created_at, updated_at, published_at, deleted_at
+RETURNING id, title, slug, status, excerpt, reading_time, is_featured, featured_image_id, created_at, updated_at, published_at, deleted_at
 `
 
 type CreateBlogParams struct {
@@ -90,7 +86,6 @@ type CreateBlogParams struct {
 	ReadingTime     pgtype.Int4        `json:"reading_time"`
 	IsFeatured      pgtype.Bool        `json:"is_featured"`
 	FeaturedImageID pgtype.UUID        `json:"featured_image_id"`
-	AuthorID        uuid.UUID          `json:"author_id"`
 	PublishedAt     pgtype.Timestamptz `json:"published_at"`
 }
 
@@ -107,7 +102,6 @@ func (q *Queries) CreateBlog(ctx context.Context, arg CreateBlogParams) (Blogs, 
 		arg.ReadingTime,
 		arg.IsFeatured,
 		arg.FeaturedImageID,
-		arg.AuthorID,
 		arg.PublishedAt,
 	)
 	var i Blogs
@@ -120,7 +114,6 @@ func (q *Queries) CreateBlog(ctx context.Context, arg CreateBlogParams) (Blogs, 
 		&i.ReadingTime,
 		&i.IsFeatured,
 		&i.FeaturedImageID,
-		&i.AuthorID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.PublishedAt,
@@ -130,7 +123,7 @@ func (q *Queries) CreateBlog(ctx context.Context, arg CreateBlogParams) (Blogs, 
 }
 
 const getBlogByID = `-- name: GetBlogByID :one
-SELECT id, title, slug, status, excerpt, reading_time, is_featured, featured_image_id, author_id, created_at, updated_at, published_at, deleted_at FROM blogs
+SELECT id, title, slug, status, excerpt, reading_time, is_featured, featured_image_id, created_at, updated_at, published_at, deleted_at FROM blogs
 WHERE id = $1 AND deleted_at IS NULL
 `
 
@@ -146,7 +139,6 @@ func (q *Queries) GetBlogByID(ctx context.Context, id uuid.UUID) (Blogs, error) 
 		&i.ReadingTime,
 		&i.IsFeatured,
 		&i.FeaturedImageID,
-		&i.AuthorID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.PublishedAt,
@@ -156,7 +148,7 @@ func (q *Queries) GetBlogByID(ctx context.Context, id uuid.UUID) (Blogs, error) 
 }
 
 const getBlogBySlug = `-- name: GetBlogBySlug :one
-SELECT id, title, slug, status, excerpt, reading_time, is_featured, featured_image_id, author_id, created_at, updated_at, published_at, deleted_at FROM blogs
+SELECT id, title, slug, status, excerpt, reading_time, is_featured, featured_image_id, created_at, updated_at, published_at, deleted_at FROM blogs
 WHERE slug = $1 AND deleted_at IS NULL
 `
 
@@ -172,7 +164,6 @@ func (q *Queries) GetBlogBySlug(ctx context.Context, slug string) (Blogs, error)
 		&i.ReadingTime,
 		&i.IsFeatured,
 		&i.FeaturedImageID,
-		&i.AuthorID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.PublishedAt,
@@ -182,23 +173,21 @@ func (q *Queries) GetBlogBySlug(ctx context.Context, slug string) (Blogs, error)
 }
 
 const listBlogs = `-- name: ListBlogs :many
-SELECT id, title, slug, status, excerpt, reading_time, is_featured, featured_image_id, author_id, created_at, updated_at, published_at, deleted_at FROM blogs
+SELECT id, title, slug, status, excerpt, reading_time, is_featured, featured_image_id, created_at, updated_at, published_at, deleted_at FROM blogs
 WHERE deleted_at IS NULL
   AND ($1::page_status IS NULL OR status = $1)
-  AND ($2::uuid IS NULL OR author_id = $2)
-  AND ($3::boolean IS NULL OR is_featured = $3)
+  AND ($2::boolean IS NULL OR is_featured = $2)
 ORDER BY 
-  CASE WHEN $4 = 'created_at_desc' THEN created_at END DESC,
-  CASE WHEN $4 = 'created_at_asc' THEN created_at END ASC,
-  CASE WHEN $4 = 'published_at_desc' THEN published_at END DESC,
-  CASE WHEN $4 = 'published_at_asc' THEN published_at END ASC,
+  CASE WHEN $3 = 'created_at_desc' THEN created_at END DESC,
+  CASE WHEN $3 = 'created_at_asc' THEN created_at END ASC,
+  CASE WHEN $3 = 'published_at_desc' THEN published_at END DESC,
+  CASE WHEN $3 = 'published_at_asc' THEN published_at END ASC,
   published_at DESC
-LIMIT $6 OFFSET $5
+LIMIT $5 OFFSET $4
 `
 
 type ListBlogsParams struct {
 	Status     PageStatus  `json:"status"`
-	AuthorID   uuid.UUID   `json:"author_id"`
 	IsFeatured bool        `json:"is_featured"`
 	SortBy     interface{} `json:"sort_by"`
 	OffsetVal  int32       `json:"offset_val"`
@@ -208,7 +197,6 @@ type ListBlogsParams struct {
 func (q *Queries) ListBlogs(ctx context.Context, arg ListBlogsParams) ([]Blogs, error) {
 	rows, err := q.db.Query(ctx, listBlogs,
 		arg.Status,
-		arg.AuthorID,
 		arg.IsFeatured,
 		arg.SortBy,
 		arg.OffsetVal,
@@ -230,7 +218,6 @@ func (q *Queries) ListBlogs(ctx context.Context, arg ListBlogsParams) ([]Blogs, 
 			&i.ReadingTime,
 			&i.IsFeatured,
 			&i.FeaturedImageID,
-			&i.AuthorID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.PublishedAt,
@@ -270,7 +257,7 @@ SET
     published_at = $8,
     updated_at = NOW()
 WHERE id = $9
-RETURNING id, title, slug, status, excerpt, reading_time, is_featured, featured_image_id, author_id, created_at, updated_at, published_at, deleted_at
+RETURNING id, title, slug, status, excerpt, reading_time, is_featured, featured_image_id, created_at, updated_at, published_at, deleted_at
 `
 
 type UpdateBlogParams struct {
@@ -307,7 +294,6 @@ func (q *Queries) UpdateBlog(ctx context.Context, arg UpdateBlogParams) (Blogs, 
 		&i.ReadingTime,
 		&i.IsFeatured,
 		&i.FeaturedImageID,
-		&i.AuthorID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.PublishedAt,
@@ -320,7 +306,7 @@ const updateBlogStatus = `-- name: UpdateBlogStatus :one
 UPDATE blogs
 SET status = $1, updated_at = NOW()
 WHERE id = $2
-RETURNING id, title, slug, status, excerpt, reading_time, is_featured, featured_image_id, author_id, created_at, updated_at, published_at, deleted_at
+RETURNING id, title, slug, status, excerpt, reading_time, is_featured, featured_image_id, created_at, updated_at, published_at, deleted_at
 `
 
 type UpdateBlogStatusParams struct {
@@ -340,7 +326,6 @@ func (q *Queries) UpdateBlogStatus(ctx context.Context, arg UpdateBlogStatusPara
 		&i.ReadingTime,
 		&i.IsFeatured,
 		&i.FeaturedImageID,
-		&i.AuthorID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.PublishedAt,

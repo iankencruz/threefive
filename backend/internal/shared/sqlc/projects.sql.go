@@ -37,16 +37,10 @@ const countProjects = `-- name: CountProjects :one
 SELECT COUNT(*) FROM projects
 WHERE deleted_at IS NULL
   AND ($1::page_status IS NULL OR status = $1)
-  AND ($2::uuid IS NULL OR author_id = $2)
 `
 
-type CountProjectsParams struct {
-	Status   PageStatus `json:"status"`
-	AuthorID uuid.UUID  `json:"author_id"`
-}
-
-func (q *Queries) CountProjects(ctx context.Context, arg CountProjectsParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countProjects, arg.Status, arg.AuthorID)
+func (q *Queries) CountProjects(ctx context.Context, status PageStatus) (int64, error) {
+	row := q.db.QueryRow(ctx, countProjects, status)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -67,7 +61,6 @@ INSERT INTO projects (
     technologies,
     project_status,
     featured_image_id,
-    author_id,
     published_at
 )
 VALUES (
@@ -82,10 +75,9 @@ VALUES (
     $9,
     $10,
     $11,
-    $12,
-    $13
+    $12
 )
-RETURNING id, title, slug, description, project_date, status, client_name, project_year, project_url, technologies, project_status, featured_image_id, author_id, created_at, updated_at, published_at, deleted_at
+RETURNING id, title, slug, description, project_date, status, client_name, project_year, project_url, technologies, project_status, featured_image_id, created_at, updated_at, published_at, deleted_at
 `
 
 type CreateProjectParams struct {
@@ -100,7 +92,6 @@ type CreateProjectParams struct {
 	Technologies    []byte             `json:"technologies"`
 	ProjectStatus   NullProjectStatus  `json:"project_status"`
 	FeaturedImageID pgtype.UUID        `json:"featured_image_id"`
-	AuthorID        uuid.UUID          `json:"author_id"`
 	PublishedAt     pgtype.Timestamptz `json:"published_at"`
 }
 
@@ -121,7 +112,6 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (P
 		arg.Technologies,
 		arg.ProjectStatus,
 		arg.FeaturedImageID,
-		arg.AuthorID,
 		arg.PublishedAt,
 	)
 	var i Projects
@@ -138,7 +128,6 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (P
 		&i.Technologies,
 		&i.ProjectStatus,
 		&i.FeaturedImageID,
-		&i.AuthorID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.PublishedAt,
@@ -148,7 +137,7 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (P
 }
 
 const getProjectByID = `-- name: GetProjectByID :one
-SELECT id, title, slug, description, project_date, status, client_name, project_year, project_url, technologies, project_status, featured_image_id, author_id, created_at, updated_at, published_at, deleted_at FROM projects
+SELECT id, title, slug, description, project_date, status, client_name, project_year, project_url, technologies, project_status, featured_image_id, created_at, updated_at, published_at, deleted_at FROM projects
 WHERE id = $1 AND deleted_at IS NULL
 `
 
@@ -168,7 +157,6 @@ func (q *Queries) GetProjectByID(ctx context.Context, id uuid.UUID) (Projects, e
 		&i.Technologies,
 		&i.ProjectStatus,
 		&i.FeaturedImageID,
-		&i.AuthorID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.PublishedAt,
@@ -178,7 +166,7 @@ func (q *Queries) GetProjectByID(ctx context.Context, id uuid.UUID) (Projects, e
 }
 
 const getProjectBySlug = `-- name: GetProjectBySlug :one
-SELECT id, title, slug, description, project_date, status, client_name, project_year, project_url, technologies, project_status, featured_image_id, author_id, created_at, updated_at, published_at, deleted_at FROM projects
+SELECT id, title, slug, description, project_date, status, client_name, project_year, project_url, technologies, project_status, featured_image_id, created_at, updated_at, published_at, deleted_at FROM projects
 WHERE slug = $1 AND deleted_at IS NULL
 `
 
@@ -198,7 +186,6 @@ func (q *Queries) GetProjectBySlug(ctx context.Context, slug string) (Projects, 
 		&i.Technologies,
 		&i.ProjectStatus,
 		&i.FeaturedImageID,
-		&i.AuthorID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.PublishedAt,
@@ -208,24 +195,22 @@ func (q *Queries) GetProjectBySlug(ctx context.Context, slug string) (Projects, 
 }
 
 const listProjects = `-- name: ListProjects :many
-SELECT id, title, slug, description, project_date, status, client_name, project_year, project_url, technologies, project_status, featured_image_id, author_id, created_at, updated_at, published_at, deleted_at FROM projects
+SELECT id, title, slug, description, project_date, status, client_name, project_year, project_url, technologies, project_status, featured_image_id, created_at, updated_at, published_at, deleted_at FROM projects
 WHERE deleted_at IS NULL
   AND ($1::page_status IS NULL OR status = $1)
-  AND ($2::uuid IS NULL OR author_id = $2)
 ORDER BY 
-  CASE WHEN $3 = 'created_at_desc' THEN created_at END DESC,
-  CASE WHEN $3 = 'created_at_asc' THEN created_at END ASC,
-  CASE WHEN $3 = 'project_year_desc' THEN project_year END DESC,
-  CASE WHEN $3 = 'project_year_asc' THEN project_year END ASC,
-  CASE WHEN $3 = 'project_date_desc' THEN project_date END DESC,
-  CASE WHEN $3 = 'project_date_asc' THEN project_date END ASC,
+  CASE WHEN $2 = 'created_at_desc' THEN created_at END DESC,
+  CASE WHEN $2 = 'created_at_asc' THEN created_at END ASC,
+  CASE WHEN $2 = 'project_year_desc' THEN project_year END DESC,
+  CASE WHEN $2 = 'project_year_asc' THEN project_year END ASC,
+  CASE WHEN $2 = 'project_date_desc' THEN project_date END DESC,
+  CASE WHEN $2 = 'project_date_asc' THEN project_date END ASC,
   created_at DESC
-LIMIT $5 OFFSET $4
+LIMIT $4 OFFSET $3
 `
 
 type ListProjectsParams struct {
 	Status    PageStatus  `json:"status"`
-	AuthorID  uuid.UUID   `json:"author_id"`
 	SortBy    interface{} `json:"sort_by"`
 	OffsetVal int32       `json:"offset_val"`
 	LimitVal  int32       `json:"limit_val"`
@@ -234,7 +219,6 @@ type ListProjectsParams struct {
 func (q *Queries) ListProjects(ctx context.Context, arg ListProjectsParams) ([]Projects, error) {
 	rows, err := q.db.Query(ctx, listProjects,
 		arg.Status,
-		arg.AuthorID,
 		arg.SortBy,
 		arg.OffsetVal,
 		arg.LimitVal,
@@ -259,7 +243,6 @@ func (q *Queries) ListProjects(ctx context.Context, arg ListProjectsParams) ([]P
 			&i.Technologies,
 			&i.ProjectStatus,
 			&i.FeaturedImageID,
-			&i.AuthorID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.PublishedAt,
@@ -303,7 +286,7 @@ SET
     published_at = $12,
     updated_at = NOW()
 WHERE id = $13
-RETURNING id, title, slug, description, project_date, status, client_name, project_year, project_url, technologies, project_status, featured_image_id, author_id, created_at, updated_at, published_at, deleted_at
+RETURNING id, title, slug, description, project_date, status, client_name, project_year, project_url, technologies, project_status, featured_image_id, created_at, updated_at, published_at, deleted_at
 `
 
 type UpdateProjectParams struct {
@@ -352,7 +335,6 @@ func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) (P
 		&i.Technologies,
 		&i.ProjectStatus,
 		&i.FeaturedImageID,
-		&i.AuthorID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.PublishedAt,
@@ -365,7 +347,7 @@ const updateProjectStatus = `-- name: UpdateProjectStatus :one
 UPDATE projects
 SET status = $1, updated_at = NOW()
 WHERE id = $2
-RETURNING id, title, slug, description, project_date, status, client_name, project_year, project_url, technologies, project_status, featured_image_id, author_id, created_at, updated_at, published_at, deleted_at
+RETURNING id, title, slug, description, project_date, status, client_name, project_year, project_url, technologies, project_status, featured_image_id, created_at, updated_at, published_at, deleted_at
 `
 
 type UpdateProjectStatusParams struct {
@@ -389,7 +371,6 @@ func (q *Queries) UpdateProjectStatus(ctx context.Context, arg UpdateProjectStat
 		&i.Technologies,
 		&i.ProjectStatus,
 		&i.FeaturedImageID,
-		&i.AuthorID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.PublishedAt,

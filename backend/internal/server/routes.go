@@ -11,6 +11,7 @@ import (
 	"github.com/iankencruz/threefive/internal/auth"
 	"github.com/iankencruz/threefive/internal/media"
 	"github.com/iankencruz/threefive/internal/pages"
+	"github.com/iankencruz/threefive/internal/projects"
 	"github.com/iankencruz/threefive/internal/shared/middleware"
 )
 
@@ -43,6 +44,7 @@ func (s *Server) setupRouter() http.Handler {
 
 		// Mount feature routes
 		pages.RegisterRoutes(r, s.PageHandler, s.SessionManager)
+		projects.RegisterRoutes(r, s.ProjectHandler, s.SessionManager)
 		// user.RegisterRoutes(r, s.userHandler)
 		// project.RegisterRoutes(r, s.projectHandler)
 	})

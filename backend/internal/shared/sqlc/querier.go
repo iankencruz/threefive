@@ -19,8 +19,8 @@ type Querier interface {
 	CleanupExpiredSessions(ctx context.Context) error
 	CountBlogs(ctx context.Context, arg CountBlogsParams) (int64, error)
 	CountMedia(ctx context.Context) (int64, error)
-	CountPages(ctx context.Context, arg CountPagesParams) (int64, error)
-	CountProjects(ctx context.Context, arg CountProjectsParams) (int64, error)
+	CountPages(ctx context.Context, status interface{}) (int64, error)
+	CountProjects(ctx context.Context, status PageStatus) (int64, error)
 	CountSearchMedia(ctx context.Context, arg CountSearchMediaParams) (int64, error)
 	// backend/sql/queries/blocks.sql
 	// ============================================

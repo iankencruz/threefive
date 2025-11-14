@@ -17,7 +17,6 @@ INSERT INTO projects (
     technologies,
     project_status,
     featured_image_id,
-    author_id,
     published_at
 )
 VALUES (
@@ -32,7 +31,6 @@ VALUES (
     @technologies,
     @project_status,
     @featured_image_id,
-    @author_id,
     @published_at
 )
 RETURNING *;
@@ -49,7 +47,6 @@ WHERE slug = @slug AND deleted_at IS NULL;
 SELECT * FROM projects
 WHERE deleted_at IS NULL
   AND (@status::page_status IS NULL OR status = @status)
-  AND (@author_id::uuid IS NULL OR author_id = @author_id)
 ORDER BY 
   CASE WHEN @sort_by = 'created_at_desc' THEN created_at END DESC,
   CASE WHEN @sort_by = 'created_at_asc' THEN created_at END ASC,
@@ -63,8 +60,7 @@ LIMIT @limit_val OFFSET @offset_val;
 -- name: CountProjects :one
 SELECT COUNT(*) FROM projects
 WHERE deleted_at IS NULL
-  AND (@status::page_status IS NULL OR status = @status)
-  AND (@author_id::uuid IS NULL OR author_id = @author_id);
+  AND (@status::page_status IS NULL OR status = @status);
 
 -- name: UpdateProject :one
 UPDATE projects

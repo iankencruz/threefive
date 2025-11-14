@@ -13,7 +13,6 @@ INSERT INTO blogs (
     reading_time,
     is_featured,
     featured_image_id,
-    author_id,
     published_at
 )
 VALUES (
@@ -24,7 +23,6 @@ VALUES (
     @reading_time,
     @is_featured,
     @featured_image_id,
-    @author_id,
     @published_at
 )
 RETURNING *;
@@ -41,7 +39,6 @@ WHERE slug = @slug AND deleted_at IS NULL;
 SELECT * FROM blogs
 WHERE deleted_at IS NULL
   AND (@status::page_status IS NULL OR status = @status)
-  AND (@author_id::uuid IS NULL OR author_id = @author_id)
   AND (@is_featured::boolean IS NULL OR is_featured = @is_featured)
 ORDER BY 
   CASE WHEN @sort_by = 'created_at_desc' THEN created_at END DESC,
@@ -55,7 +52,6 @@ LIMIT @limit_val OFFSET @offset_val;
 SELECT COUNT(*) FROM blogs
 WHERE deleted_at IS NULL
   AND (@status::page_status IS NULL OR status = @status)
-  AND (@author_id::uuid IS NULL OR author_id = @author_id)
   AND (@is_featured::boolean IS NULL OR is_featured = @is_featured);
 
 -- name: UpdateBlog :one

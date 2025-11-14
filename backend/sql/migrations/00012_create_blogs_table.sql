@@ -21,7 +21,6 @@ CREATE TABLE blogs (
     featured_image_id UUID REFERENCES media(id) ON DELETE SET NULL,
     
     -- Metadata
-    author_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     published_at TIMESTAMPTZ,
@@ -43,7 +42,6 @@ WHERE deleted_at IS NULL;
 -- Other indexes for performance
 CREATE INDEX idx_blogs_slug ON blogs(slug);
 CREATE INDEX idx_blogs_status ON blogs(status) WHERE deleted_at IS NULL;
-CREATE INDEX idx_blogs_author ON blogs(author_id) WHERE deleted_at IS NULL;
 CREATE INDEX idx_blogs_published ON blogs(published_at) WHERE published_at IS NOT NULL AND deleted_at IS NULL;
 CREATE INDEX idx_blogs_deleted ON blogs(deleted_at) WHERE deleted_at IS NOT NULL;
 CREATE INDEX idx_blogs_featured ON blogs(is_featured) WHERE is_featured = true;

@@ -10,7 +10,6 @@ INSERT INTO pages (
     slug,
     status,
     featured_image_id,
-    author_id,
     published_at
 )
 VALUES (
@@ -18,7 +17,6 @@ VALUES (
     @slug,
     @status,
     @featured_image_id,
-    @author_id,
     @published_at
 )
 RETURNING *;
@@ -34,8 +32,7 @@ WHERE slug = @slug AND deleted_at IS NULL;
 -- name: ListPages :many
 SELECT * FROM pages
 WHERE deleted_at IS NULL
-  AND (@status::page_status IS NULL OR status = @status)
-  AND (@author_id::uuid IS NULL OR author_id = @author_id)
+  AND (@status = '' OR status = @status::page_status)
 ORDER BY 
   CASE WHEN @sort_by = 'created_at_desc' THEN created_at END DESC,
   CASE WHEN @sort_by = 'created_at_asc' THEN created_at END ASC,
@@ -47,8 +44,9 @@ LIMIT @limit_val OFFSET @offset_val;
 -- name: CountPages :one
 SELECT COUNT(*) FROM pages
 WHERE deleted_at IS NULL
-  AND (@status::page_status IS NULL OR status = @status)
-  AND (@author_id::uuid IS NULL OR author_id = @author_id);
+  AND (@status = '' OR status = @status::page_status);
+
+
 
 -- name: UpdatePage :one
 UPDATE pages

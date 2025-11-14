@@ -36,17 +36,11 @@ func (q *Queries) CheckSlugExists(ctx context.Context, arg CheckSlugExistsParams
 const countPages = `-- name: CountPages :one
 SELECT COUNT(*) FROM pages
 WHERE deleted_at IS NULL
-  AND ($1::page_status IS NULL OR status = $1)
-  AND ($2::uuid IS NULL OR author_id = $2)
+  AND ($1 = '' OR status = $1::page_status)
 `
 
-type CountPagesParams struct {
-	Status   PageStatus `json:"status"`
-	AuthorID uuid.UUID  `json:"author_id"`
-}
-
-func (q *Queries) CountPages(ctx context.Context, arg CountPagesParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countPages, arg.Status, arg.AuthorID)
+func (q *Queries) CountPages(ctx context.Context, status interface{}) (int64, error) {
+	row := q.db.QueryRow(ctx, countPages, status)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -60,7 +54,6 @@ INSERT INTO pages (
     slug,
     status,
     featured_image_id,
-    author_id,
     published_at
 )
 VALUES (
@@ -68,10 +61,9 @@ VALUES (
     $2,
     $3,
     $4,
-    $5,
-    $6
+    $5
 )
-RETURNING id, title, slug, status, featured_image_id, author_id, created_at, updated_at, published_at, deleted_at
+RETURNING id, title, slug, status, featured_image_id, created_at, updated_at, published_at, deleted_at
 `
 
 type CreatePageParams struct {
@@ -79,7 +71,6 @@ type CreatePageParams struct {
 	Slug            string             `json:"slug"`
 	Status          NullPageStatus     `json:"status"`
 	FeaturedImageID pgtype.UUID        `json:"featured_image_id"`
-	AuthorID        uuid.UUID          `json:"author_id"`
 	PublishedAt     pgtype.Timestamptz `json:"published_at"`
 }
 
@@ -93,7 +84,6 @@ func (q *Queries) CreatePage(ctx context.Context, arg CreatePageParams) (Pages, 
 		arg.Slug,
 		arg.Status,
 		arg.FeaturedImageID,
-		arg.AuthorID,
 		arg.PublishedAt,
 	)
 	var i Pages
@@ -103,7 +93,6 @@ func (q *Queries) CreatePage(ctx context.Context, arg CreatePageParams) (Pages, 
 		&i.Slug,
 		&i.Status,
 		&i.FeaturedImageID,
-		&i.AuthorID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.PublishedAt,
@@ -113,7 +102,7 @@ func (q *Queries) CreatePage(ctx context.Context, arg CreatePageParams) (Pages, 
 }
 
 const getPageByID = `-- name: GetPageByID :one
-SELECT id, title, slug, status, featured_image_id, author_id, created_at, updated_at, published_at, deleted_at FROM pages
+SELECT id, title, slug, status, featured_image_id, created_at, updated_at, published_at, deleted_at FROM pages
 WHERE id = $1 AND deleted_at IS NULL
 `
 
@@ -126,7 +115,6 @@ func (q *Queries) GetPageByID(ctx context.Context, id uuid.UUID) (Pages, error) 
 		&i.Slug,
 		&i.Status,
 		&i.FeaturedImageID,
-		&i.AuthorID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.PublishedAt,
@@ -136,7 +124,7 @@ func (q *Queries) GetPageByID(ctx context.Context, id uuid.UUID) (Pages, error) 
 }
 
 const getPageBySlug = `-- name: GetPageBySlug :one
-SELECT id, title, slug, status, featured_image_id, author_id, created_at, updated_at, published_at, deleted_at FROM pages
+SELECT id, title, slug, status, featured_image_id, created_at, updated_at, published_at, deleted_at FROM pages
 WHERE slug = $1 AND deleted_at IS NULL
 `
 
@@ -149,7 +137,6 @@ func (q *Queries) GetPageBySlug(ctx context.Context, slug string) (Pages, error)
 		&i.Slug,
 		&i.Status,
 		&i.FeaturedImageID,
-		&i.AuthorID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.PublishedAt,
@@ -159,22 +146,20 @@ func (q *Queries) GetPageBySlug(ctx context.Context, slug string) (Pages, error)
 }
 
 const listPages = `-- name: ListPages :many
-SELECT id, title, slug, status, featured_image_id, author_id, created_at, updated_at, published_at, deleted_at FROM pages
+SELECT id, title, slug, status, featured_image_id, created_at, updated_at, published_at, deleted_at FROM pages
 WHERE deleted_at IS NULL
-  AND ($1::page_status IS NULL OR status = $1)
-  AND ($2::uuid IS NULL OR author_id = $2)
+  AND ($1 = '' OR status = $1::page_status)
 ORDER BY 
-  CASE WHEN $3 = 'created_at_desc' THEN created_at END DESC,
-  CASE WHEN $3 = 'created_at_asc' THEN created_at END ASC,
-  CASE WHEN $3 = 'published_at_desc' THEN published_at END DESC,
-  CASE WHEN $3 = 'published_at_asc' THEN published_at END ASC,
+  CASE WHEN $2 = 'created_at_desc' THEN created_at END DESC,
+  CASE WHEN $2 = 'created_at_asc' THEN created_at END ASC,
+  CASE WHEN $2 = 'published_at_desc' THEN published_at END DESC,
+  CASE WHEN $2 = 'published_at_asc' THEN published_at END ASC,
   created_at DESC
-LIMIT $5 OFFSET $4
+LIMIT $4 OFFSET $3
 `
 
 type ListPagesParams struct {
-	Status    PageStatus  `json:"status"`
-	AuthorID  uuid.UUID   `json:"author_id"`
+	Status    interface{} `json:"status"`
 	SortBy    interface{} `json:"sort_by"`
 	OffsetVal int32       `json:"offset_val"`
 	LimitVal  int32       `json:"limit_val"`
@@ -183,7 +168,6 @@ type ListPagesParams struct {
 func (q *Queries) ListPages(ctx context.Context, arg ListPagesParams) ([]Pages, error) {
 	rows, err := q.db.Query(ctx, listPages,
 		arg.Status,
-		arg.AuthorID,
 		arg.SortBy,
 		arg.OffsetVal,
 		arg.LimitVal,
@@ -201,7 +185,6 @@ func (q *Queries) ListPages(ctx context.Context, arg ListPagesParams) ([]Pages, 
 			&i.Slug,
 			&i.Status,
 			&i.FeaturedImageID,
-			&i.AuthorID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.PublishedAt,
@@ -255,7 +238,7 @@ SET
     published_at = $5,
     updated_at = NOW()
 WHERE id = $6
-RETURNING id, title, slug, status, featured_image_id, author_id, created_at, updated_at, published_at, deleted_at
+RETURNING id, title, slug, status, featured_image_id, created_at, updated_at, published_at, deleted_at
 `
 
 type UpdatePageParams struct {
@@ -283,7 +266,6 @@ func (q *Queries) UpdatePage(ctx context.Context, arg UpdatePageParams) (Pages, 
 		&i.Slug,
 		&i.Status,
 		&i.FeaturedImageID,
-		&i.AuthorID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.PublishedAt,
@@ -296,7 +278,7 @@ const updatePageStatus = `-- name: UpdatePageStatus :one
 UPDATE pages
 SET status = $1, updated_at = NOW()
 WHERE id = $2
-RETURNING id, title, slug, status, featured_image_id, author_id, created_at, updated_at, published_at, deleted_at
+RETURNING id, title, slug, status, featured_image_id, created_at, updated_at, published_at, deleted_at
 `
 
 type UpdatePageStatusParams struct {
@@ -313,7 +295,6 @@ func (q *Queries) UpdatePageStatus(ctx context.Context, arg UpdatePageStatusPara
 		&i.Slug,
 		&i.Status,
 		&i.FeaturedImageID,
-		&i.AuthorID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.PublishedAt,

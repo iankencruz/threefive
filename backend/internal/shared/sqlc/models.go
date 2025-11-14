@@ -191,7 +191,6 @@ type Blogs struct {
 	ReadingTime     pgtype.Int4        `json:"reading_time"`
 	IsFeatured      pgtype.Bool        `json:"is_featured"`
 	FeaturedImageID pgtype.UUID        `json:"featured_image_id"`
-	AuthorID        uuid.UUID          `json:"author_id"`
 	CreatedAt       time.Time          `json:"created_at"`
 	UpdatedAt       time.Time          `json:"updated_at"`
 	PublishedAt     pgtype.Timestamptz `json:"published_at"`
@@ -246,7 +245,6 @@ type Pages struct {
 	Slug            string             `json:"slug"`
 	Status          NullPageStatus     `json:"status"`
 	FeaturedImageID pgtype.UUID        `json:"featured_image_id"`
-	AuthorID        uuid.UUID          `json:"author_id"`
 	CreatedAt       time.Time          `json:"created_at"`
 	UpdatedAt       time.Time          `json:"updated_at"`
 	PublishedAt     pgtype.Timestamptz `json:"published_at"`
@@ -276,7 +274,6 @@ type Projects struct {
 	Technologies    []byte             `json:"technologies"`
 	ProjectStatus   NullProjectStatus  `json:"project_status"`
 	FeaturedImageID pgtype.UUID        `json:"featured_image_id"`
-	AuthorID        uuid.UUID          `json:"author_id"`
 	CreatedAt       time.Time          `json:"created_at"`
 	UpdatedAt       time.Time          `json:"updated_at"`
 	PublishedAt     pgtype.Timestamptz `json:"published_at"`

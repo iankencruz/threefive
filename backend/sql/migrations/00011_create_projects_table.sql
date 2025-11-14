@@ -28,7 +28,6 @@ CREATE TABLE projects (
     featured_image_id UUID REFERENCES media(id) ON DELETE SET NULL,
     
     -- Metadata
-    author_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     published_at TIMESTAMPTZ,
@@ -51,7 +50,6 @@ WHERE deleted_at IS NULL;
 -- Other indexes for performance
 CREATE INDEX idx_projects_slug ON projects(slug);
 CREATE INDEX idx_projects_status ON projects(status) WHERE deleted_at IS NULL;
-CREATE INDEX idx_projects_author ON projects(author_id) WHERE deleted_at IS NULL;
 CREATE INDEX idx_projects_published ON projects(published_at) WHERE published_at IS NOT NULL AND deleted_at IS NULL;
 CREATE INDEX idx_projects_deleted ON projects(deleted_at) WHERE deleted_at IS NOT NULL;
 CREATE INDEX idx_projects_date ON projects(project_date) WHERE project_date IS NOT NULL;

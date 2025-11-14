@@ -68,7 +68,6 @@ func (s *Service) CreatePage(ctx context.Context, req CreatePageRequest, userID 
 		Slug:            req.Slug,
 		Status:          sqlc.NullPageStatus{PageStatus: sqlc.PageStatus(req.Status), Valid: true},
 		FeaturedImageID: uuidToPgUUID(req.FeaturedImageID),
-		AuthorID:        userID,
 	})
 
 	if err != nil {
@@ -128,14 +127,9 @@ func (s *Service) GetPageBySlug(ctx context.Context, slug string) (*PageResponse
 
 // ListPages retrieves pages with pagination
 func (s *Service) ListPages(ctx context.Context, limit, offset int32) (*PageListResponse, error) {
-
-	var zeroUUID uuid.UUID
-
 	// Get total count
-	totalCount, err := s.queries.CountPages(ctx, sqlc.CountPagesParams{
-		Status:   sqlc.PageStatus(""),
-		AuthorID: zeroUUID,
-	})
+	totalCount, err := s.queries.CountPages(ctx, sqlc.PageStatus(""))
+
 	if err != nil {
 		return nil, errors.Internal("Failed to count pages", err)
 	}
@@ -143,7 +137,6 @@ func (s *Service) ListPages(ctx context.Context, limit, offset int32) (*PageList
 	// Get pages
 	pages, err := s.queries.ListPages(ctx, sqlc.ListPagesParams{
 		Status:    sqlc.PageStatus(""),
-		AuthorID:  zeroUUID,
 		SortBy:    "created_at_desc",
 		OffsetVal: offset,
 		LimitVal:  limit,
@@ -326,7 +319,6 @@ func (s *Service) buildPageResponse(ctx context.Context, page sqlc.Pages) (*Page
 		Title:     page.Title,
 		Slug:      page.Slug,
 		Status:    string(page.Status.PageStatus),
-		AuthorID:  page.AuthorID,
 		CreatedAt: page.CreatedAt,
 		UpdatedAt: page.UpdatedAt,
 	}
@@ -450,13 +442,6 @@ func stringToPgText(s *string) pgtype.Text {
 		return pgtype.Text{Valid: false}
 	}
 	return pgtype.Text{String: *s, Valid: true}
-}
-
-func intToPgInt4(i *int) pgtype.Int4 {
-	if i == nil {
-		return pgtype.Int4{Valid: false}
-	}
-	return pgtype.Int4{Int32: int32(*i), Valid: true}
 }
 
 func boolToPgBool(b *bool) pgtype.Bool {

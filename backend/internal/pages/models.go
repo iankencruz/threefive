@@ -60,7 +60,6 @@ type PageResponse struct {
 	Slug            string                 `json:"slug"`
 	Status          string                 `json:"status"`
 	FeaturedImageID *uuid.UUID             `json:"featured_image_id,omitempty"`
-	AuthorID        uuid.UUID              `json:"author_id"`
 	Blocks          []blocks.BlockResponse `json:"blocks,omitempty"`
 	SEO             *SEOResponse           `json:"seo,omitempty"`
 	CreatedAt       time.Time              `json:"created_at"`

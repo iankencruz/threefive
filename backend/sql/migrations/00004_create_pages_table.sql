@@ -19,7 +19,6 @@ CREATE TABLE pages (
     featured_image_id UUID REFERENCES media(id) ON DELETE SET NULL,
     
     -- Metadata
-    author_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     published_at TIMESTAMPTZ,
@@ -38,7 +37,6 @@ WHERE deleted_at IS NULL;
 -- Other indexes for performance
 CREATE INDEX idx_pages_slug ON pages(slug);
 CREATE INDEX idx_pages_status ON pages(status) WHERE deleted_at IS NULL;
-CREATE INDEX idx_pages_author ON pages(author_id) WHERE deleted_at IS NULL;
 CREATE INDEX idx_pages_published ON pages(published_at) WHERE published_at IS NOT NULL AND deleted_at IS NULL;
 CREATE INDEX idx_pages_deleted ON pages(deleted_at) WHERE deleted_at IS NOT NULL;
 
