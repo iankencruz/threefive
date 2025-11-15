@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/iankencruz/threefive/internal/blocks"
 	"github.com/iankencruz/threefive/internal/shared/errors"
+	"github.com/iankencruz/threefive/internal/shared/seo"
 	"github.com/iankencruz/threefive/internal/shared/sqlc"
 	"github.com/iankencruz/threefive/internal/shared/utils"
 	"github.com/jackc/pgx/v5"
@@ -70,7 +71,6 @@ func (s *Service) CreatePage(ctx context.Context, req CreatePageRequest, userID 
 		Status:          sqlc.NullPageStatus{PageStatus: sqlc.PageStatus(req.Status), Valid: true},
 		FeaturedImageID: utils.UUIDToPg(req.FeaturedImageID),
 	})
-
 	if err != nil {
 		return nil, errors.Internal("Failed to create page", err)
 	}
@@ -84,7 +84,7 @@ func (s *Service) CreatePage(ctx context.Context, req CreatePageRequest, userID 
 
 	// 3. Create SEO if provided
 	if req.SEO != nil {
-		if err := s.createSEO(ctx, qtx, page.ID, req.SEO); err != nil {
+		if err := seo.Create(ctx, qtx, "page", page.ID, req.SEO); err != nil {
 			return nil, err
 		}
 	}
@@ -130,7 +130,6 @@ func (s *Service) GetPageBySlug(ctx context.Context, slug string) (*PageResponse
 func (s *Service) ListPages(ctx context.Context, limit, offset int32) (*PageListResponse, error) {
 	// Get total count
 	totalCount, err := s.queries.CountPages(ctx, sqlc.PageStatus(""))
-
 	if err != nil {
 		return nil, errors.Internal("Failed to count pages", err)
 	}
@@ -176,7 +175,6 @@ func (s *Service) ListPages(ctx context.Context, limit, offset int32) (*PageList
 
 // UpdatePage updates a page and its related data in a transaction
 func (s *Service) UpdatePage(ctx context.Context, pageID uuid.UUID, req UpdatePageRequest) (*PageResponse, error) {
-
 	// Check slug uniqueness if slug is being updated
 	if req.Slug != nil {
 		exists, err := s.queries.CheckSlugExists(ctx, sqlc.CheckSlugExistsParams{
@@ -235,7 +233,7 @@ func (s *Service) UpdatePage(ctx context.Context, pageID uuid.UUID, req UpdatePa
 
 	// Update SEO if provided
 	if req.SEO != nil {
-		if err := s.upsertSEO(ctx, qtx, pageID, req.SEO); err != nil {
+		if err := seo.Upsert(ctx, qtx, "page", page.ID, req.SEO); err != nil {
 			return nil, err
 		}
 	}
@@ -343,86 +341,10 @@ func (s *Service) buildPageResponse(ctx context.Context, page sqlc.Pages) (*Page
 	resp.Blocks = blockResponses
 
 	// Get SEO
-	seo, err := s.queries.GetSEO(ctx, sqlc.GetSEOParams{
-		EntityType: "page",
-		EntityID:   page.ID,
-	})
-	if err != nil && err != pgx.ErrNoRows {
-		return nil, errors.Internal("Failed to get page SEO", err)
-	}
-	if err == nil {
-		resp.SEO = buildSEOResponse(seo)
+	resp.SEO, err = seo.Get(ctx, s.queries, "page", page.ID)
+	if err != nil {
+		return nil, err
 	}
 
 	return resp, nil
-}
-
-// createSEO creates SEO data for a page
-func (s *Service) createSEO(ctx context.Context, qtx *sqlc.Queries, pageID uuid.UUID, req *SEORequest) error {
-	_, err := qtx.CreateSEO(ctx, sqlc.CreateSEOParams{
-		EntityType:      "page",
-		EntityID:        pageID,
-		MetaTitle:       utils.StrToPg(req.MetaTitle),
-		MetaDescription: utils.StrToPg(req.MetaDescription),
-		OgTitle:         utils.StrToPg(req.OGTitle),
-		OgDescription:   utils.StrToPg(req.OGDescription),
-		OgImageID:       utils.UUIDToPg(req.OGImageID),
-		CanonicalUrl:    utils.StrToPg(req.CanonicalURL),
-		RobotsIndex:     utils.BoolToPg(req.RobotsIndex, false),
-		RobotsFollow:    utils.BoolToPg(req.RobotsFollow, false),
-	})
-	if err != nil {
-		return errors.Internal("Failed to create SEO", err)
-	}
-	return nil
-}
-
-// upsertSEO updates or creates SEO data using the upsert query
-func (s *Service) upsertSEO(ctx context.Context, qtx *sqlc.Queries, pageID uuid.UUID, req *SEORequest) error {
-	_, err := qtx.UpsertSEO(ctx, sqlc.UpsertSEOParams{
-		EntityType:      "page",
-		EntityID:        pageID,
-		MetaTitle:       utils.StrToPg(req.MetaTitle),
-		MetaDescription: utils.StrToPg(req.MetaDescription),
-		OgTitle:         utils.StrToPg(req.OGTitle),
-		OgDescription:   utils.StrToPg(req.OGDescription),
-		OgImageID:       utils.UUIDToPg(req.OGImageID),
-		CanonicalUrl:    utils.StrToPg(req.CanonicalURL),
-		RobotsIndex:     utils.BoolToPg(req.RobotsIndex, false),
-		RobotsFollow:    utils.BoolToPg(req.RobotsFollow, false),
-	})
-	if err != nil {
-		return errors.Internal("Failed to upsert SEO", err)
-	}
-	return nil
-}
-
-// buildSEOResponse builds an SEO response
-func buildSEOResponse(seo sqlc.Seo) *SEOResponse {
-	resp := &SEOResponse{
-		RobotsIndex:  seo.RobotsIndex.Bool,
-		RobotsFollow: seo.RobotsFollow.Bool,
-	}
-
-	if seo.MetaTitle.Valid {
-		resp.MetaTitle = &seo.MetaTitle.String
-	}
-	if seo.MetaDescription.Valid {
-		resp.MetaDescription = &seo.MetaDescription.String
-	}
-	if seo.OgTitle.Valid {
-		resp.OGTitle = &seo.OgTitle.String
-	}
-	if seo.OgDescription.Valid {
-		resp.OGDescription = &seo.OgDescription.String
-	}
-	if seo.OgImageID.Valid {
-		ogImageID := uuid.UUID(seo.OgImageID.Bytes)
-		resp.OGImageID = &ogImageID
-	}
-	if seo.CanonicalUrl.Valid {
-		resp.CanonicalURL = &seo.CanonicalUrl.String
-	}
-
-	return resp
 }

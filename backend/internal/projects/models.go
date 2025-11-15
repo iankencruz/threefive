@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/iankencruz/threefive/internal/blocks"
+	"github.com/iankencruz/threefive/internal/shared/seo"
 )
 
 // ============================================
@@ -26,7 +27,7 @@ type CreateProjectRequest struct {
 	ProjectStatus   string                `json:"project_status"`
 	FeaturedImageID *uuid.UUID            `json:"featured_image_id"`
 	Blocks          []blocks.BlockRequest `json:"blocks"`
-	SEO             *SEORequest           `json:"seo"`
+	SEO             *seo.Request          `json:"seo"`
 }
 
 // UpdateProjectRequest represents the request body for updating a project
@@ -43,24 +44,12 @@ type UpdateProjectRequest struct {
 	ProjectStatus   *string                `json:"project_status"`
 	FeaturedImageID *uuid.UUID             `json:"featured_image_id"`
 	Blocks          *[]blocks.BlockRequest `json:"blocks"`
-	SEO             *SEORequest            `json:"seo"`
+	SEO             *seo.Request           `json:"seo"`
 }
 
 // UpdateProjectStatusRequest represents the request body for updating project status
 type UpdateProjectStatusRequest struct {
 	Status string `json:"status"`
-}
-
-// SEORequest represents SEO metadata
-type SEORequest struct {
-	MetaTitle       *string    `json:"meta_title"`
-	MetaDescription *string    `json:"meta_description"`
-	OGTitle         *string    `json:"og_title"`
-	OGDescription   *string    `json:"og_description"`
-	OGImageID       *uuid.UUID `json:"og_image_id"`
-	CanonicalURL    *string    `json:"canonical_url"`
-	RobotsIndex     *bool      `json:"robots_index"`
-	RobotsFollow    *bool      `json:"robots_follow"`
 }
 
 // ============================================
@@ -86,22 +75,7 @@ type ProjectResponse struct {
 	PublishedAt     *time.Time             `json:"published_at,omitempty"`
 	DeletedAt       *time.Time             `json:"deleted_at,omitempty"`
 	Blocks          []blocks.BlockResponse `json:"blocks"`
-	SEO             *SEOResponse           `json:"seo,omitempty"`
-}
-
-// SEOResponse represents SEO metadata in responses
-type SEOResponse struct {
-	ID              uuid.UUID  `json:"id"`
-	MetaTitle       *string    `json:"meta_title"`
-	MetaDescription *string    `json:"meta_description"`
-	OGTitle         *string    `json:"og_title"`
-	OGDescription   *string    `json:"og_description"`
-	OGImageID       *uuid.UUID `json:"og_image_id"`
-	CanonicalURL    *string    `json:"canonical_url"`
-	RobotsIndex     bool       `json:"robots_index"`
-	RobotsFollow    bool       `json:"robots_follow"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UpdatedAt       time.Time  `json:"updated_at"`
+	SEO             *seo.Response          `json:"seo,omitempty"`
 }
 
 // ProjectListResponse represents a paginated list of projects

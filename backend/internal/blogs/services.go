@@ -9,7 +9,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/iankencruz/threefive/internal/blocks"
 	"github.com/iankencruz/threefive/internal/shared/errors"
+	"github.com/iankencruz/threefive/internal/shared/seo"
 	"github.com/iankencruz/threefive/internal/shared/sqlc"
+	"github.com/iankencruz/threefive/internal/shared/utils"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -67,13 +69,12 @@ func (s *Service) CreateBlog(ctx context.Context, req CreateBlogRequest) (*BlogR
 		Title:           req.Title,
 		Slug:            req.Slug,
 		Status:          sqlc.NullPageStatus{PageStatus: sqlc.PageStatus(req.Status), Valid: true},
-		Excerpt:         stringToPgText(req.Excerpt),
-		ReadingTime:     intToPgInt4(req.ReadingTime),
+		Excerpt:         utils.StrToPg(req.Excerpt),
+		ReadingTime:     utils.IntToPg(req.ReadingTime),
 		IsFeatured:      pgtype.Bool{Bool: req.IsFeatured, Valid: true},
-		FeaturedImageID: uuidToPgUUID(req.FeaturedImageID),
+		FeaturedImageID: utils.UUIDToPg(req.FeaturedImageID),
 		PublishedAt:     pgtype.Timestamptz{Valid: false}, // Will be set when status changes to published
 	})
-
 	if err != nil {
 		return nil, errors.Internal("Failed to create blog", err)
 	}
@@ -87,7 +88,7 @@ func (s *Service) CreateBlog(ctx context.Context, req CreateBlogRequest) (*BlogR
 
 	// 3. Create SEO if provided
 	if req.SEO != nil {
-		if err := s.createSEO(ctx, qtx, blog.ID, req.SEO); err != nil {
+		if err := seo.Create(ctx, qtx, "blog", blog.ID, req.SEO); err != nil {
 			return nil, err
 		}
 	}
@@ -136,7 +137,6 @@ func (s *Service) ListBlogs(ctx context.Context, limit, offset int32) (*BlogList
 		Status:     sqlc.PageStatus(""),
 		IsFeatured: false, // plain bool for CountBlogs
 	})
-
 	if err != nil {
 		return nil, errors.Internal("Failed to count blogs", err)
 	}
@@ -183,7 +183,6 @@ func (s *Service) ListBlogs(ctx context.Context, limit, offset int32) (*BlogList
 
 // UpdateBlog updates a blog and its related data in a transaction
 func (s *Service) UpdateBlog(ctx context.Context, blogID uuid.UUID, req UpdateBlogRequest) (*BlogResponse, error) {
-
 	// Check slug uniqueness if slug is being updated
 	if req.Slug != nil {
 		exists, err := s.queries.CheckBlogSlugExists(ctx, sqlc.CheckBlogSlugExistsParams{
@@ -210,13 +209,13 @@ func (s *Service) UpdateBlog(ctx context.Context, blogID uuid.UUID, req UpdateBl
 	// Update blog
 	_, err = qtx.UpdateBlog(ctx, sqlc.UpdateBlogParams{
 		ID:              blogID,
-		Title:           pointerToString(req.Title),
-		Slug:            pointerToString(req.Slug),
-		Status:          statusToNullPageStatus(req.Status),
-		Excerpt:         stringToPgText(req.Excerpt),
-		ReadingTime:     intToPgInt4(req.ReadingTime),
-		IsFeatured:      boolToPgBool(req.IsFeatured),
-		FeaturedImageID: uuidToPgUUID(req.FeaturedImageID),
+		Title:           utils.PtrStr(req.Title),
+		Slug:            utils.PtrStr(req.Slug),
+		Status:          utils.StatusToPg(req.Status),
+		Excerpt:         utils.StrToPg(req.Excerpt),
+		ReadingTime:     utils.IntToPg(req.ReadingTime),
+		IsFeatured:      utils.BoolToPg(req.IsFeatured, true),
+		FeaturedImageID: utils.UUIDToPg(req.FeaturedImageID),
 		PublishedAt:     pgtype.Timestamptz{Valid: false}, // Handled by status change
 	})
 	if err != nil {
@@ -246,7 +245,7 @@ func (s *Service) UpdateBlog(ctx context.Context, blogID uuid.UUID, req UpdateBl
 
 	// Update SEO if provided
 	if req.SEO != nil {
-		if err := s.upsertSEO(ctx, qtx, blogID, req.SEO); err != nil {
+		if err := seo.Upsert(ctx, qtx, "blog", blogID, req.SEO); err != nil {
 			return nil, err
 		}
 	}
@@ -350,138 +349,10 @@ func (s *Service) buildBlogResponse(ctx context.Context, blog sqlc.Blogs) (*Blog
 	resp.Blocks = blockResponses
 
 	// Get SEO
-	seo, err := s.queries.GetSEO(ctx, sqlc.GetSEOParams{
-		EntityType: "blog",
-		EntityID:   blog.ID,
-	})
-	if err != nil && err != pgx.ErrNoRows {
-		return nil, errors.Internal("Failed to get blog SEO", err)
-	}
-	if err == nil {
-		resp.SEO = buildSEOResponse(seo)
+	resp.SEO, err = seo.Get(ctx, s.queries, "blog", blog.ID)
+	if err != nil {
+		return nil, err
 	}
 
 	return resp, nil
-}
-
-// createSEO creates SEO data for a blog
-func (s *Service) createSEO(ctx context.Context, qtx *sqlc.Queries, blogID uuid.UUID, req *SEORequest) error {
-	_, err := qtx.CreateSEO(ctx, sqlc.CreateSEOParams{
-		EntityType:      "blog",
-		EntityID:        blogID,
-		MetaTitle:       stringToPgText(req.MetaTitle),
-		MetaDescription: stringToPgText(req.MetaDescription),
-		OgTitle:         stringToPgText(req.OGTitle),
-		OgDescription:   stringToPgText(req.OGDescription),
-		OgImageID:       uuidToPgUUID(req.OGImageID),
-		CanonicalUrl:    stringToPgText(req.CanonicalURL),
-		RobotsIndex:     boolToPgBool(req.RobotsIndex),
-		RobotsFollow:    boolToPgBool(req.RobotsFollow),
-	})
-	if err != nil {
-		return errors.Internal("Failed to create SEO", err)
-	}
-	return nil
-}
-
-// upsertSEO updates or creates SEO data using the upsert query
-func (s *Service) upsertSEO(ctx context.Context, qtx *sqlc.Queries, blogID uuid.UUID, req *SEORequest) error {
-	_, err := qtx.UpsertSEO(ctx, sqlc.UpsertSEOParams{
-		EntityType:      "blog",
-		EntityID:        blogID,
-		MetaTitle:       stringToPgText(req.MetaTitle),
-		MetaDescription: stringToPgText(req.MetaDescription),
-		OgTitle:         stringToPgText(req.OGTitle),
-		OgDescription:   stringToPgText(req.OGDescription),
-		OgImageID:       uuidToPgUUID(req.OGImageID),
-		CanonicalUrl:    stringToPgText(req.CanonicalURL),
-		RobotsIndex:     boolToPgBool(req.RobotsIndex),
-		RobotsFollow:    boolToPgBool(req.RobotsFollow),
-	})
-	if err != nil {
-		return errors.Internal("Failed to upsert SEO", err)
-	}
-	return nil
-}
-
-// buildSEOResponse builds an SEO response
-func buildSEOResponse(seo sqlc.Seo) *SEOResponse {
-	resp := &SEOResponse{
-		ID:           seo.ID,
-		RobotsIndex:  seo.RobotsIndex.Bool,
-		RobotsFollow: seo.RobotsFollow.Bool,
-		CreatedAt:    seo.CreatedAt,
-		UpdatedAt:    seo.UpdatedAt,
-	}
-
-	if seo.MetaTitle.Valid {
-		resp.MetaTitle = &seo.MetaTitle.String
-	}
-	if seo.MetaDescription.Valid {
-		resp.MetaDescription = &seo.MetaDescription.String
-	}
-	if seo.OgTitle.Valid {
-		resp.OGTitle = &seo.OgTitle.String
-	}
-	if seo.OgDescription.Valid {
-		resp.OGDescription = &seo.OgDescription.String
-	}
-	if seo.OgImageID.Valid {
-		ogImageID := uuid.UUID(seo.OgImageID.Bytes)
-		resp.OGImageID = &ogImageID
-	}
-	if seo.CanonicalUrl.Valid {
-		resp.CanonicalURL = &seo.CanonicalUrl.String
-	}
-
-	return resp
-}
-
-// ============================================
-// Type conversion helpers
-// ============================================
-
-func uuidToPgUUID(id *uuid.UUID) pgtype.UUID {
-	if id == nil {
-		return pgtype.UUID{Valid: false}
-	}
-	return pgtype.UUID{Bytes: *id, Valid: true}
-}
-
-func stringToPgText(s *string) pgtype.Text {
-	if s == nil {
-		return pgtype.Text{Valid: false}
-	}
-	return pgtype.Text{String: *s, Valid: true}
-}
-
-func intToPgInt4(i *int) pgtype.Int4 {
-	if i == nil {
-		return pgtype.Int4{Valid: false}
-	}
-	return pgtype.Int4{Int32: int32(*i), Valid: true}
-}
-
-func boolToPgBool(b *bool) pgtype.Bool {
-	if b == nil {
-		return pgtype.Bool{Bool: false, Valid: true} // Default to false for is_featured in updates
-	}
-	return pgtype.Bool{Bool: *b, Valid: true}
-}
-
-func statusToNullPageStatus(status *string) sqlc.NullPageStatus {
-	if status == nil {
-		return sqlc.NullPageStatus{Valid: false}
-	}
-	return sqlc.NullPageStatus{
-		PageStatus: sqlc.PageStatus(*status),
-		Valid:      true,
-	}
-}
-
-func pointerToString(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
 }

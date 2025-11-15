@@ -3,6 +3,7 @@ package projects
 
 import (
 	"github.com/iankencruz/threefive/internal/blocks"
+	"github.com/iankencruz/threefive/internal/shared/seo"
 	"github.com/iankencruz/threefive/internal/shared/validation"
 )
 
@@ -58,7 +59,7 @@ func (r *CreateProjectRequest) Validate(v *validation.Validator) {
 
 	// Validate SEO if provided
 	if r.SEO != nil {
-		r.SEO.Validate(v)
+		seo.Validate(v, r.SEO)
 	}
 }
 
@@ -114,7 +115,7 @@ func (r *UpdateProjectRequest) Validate(v *validation.Validator) {
 
 	// Validate SEO if provided
 	if r.SEO != nil {
-		r.SEO.Validate(v)
+		seo.Validate(v, r.SEO)
 	}
 }
 
@@ -122,32 +123,4 @@ func (r *UpdateProjectRequest) Validate(v *validation.Validator) {
 func (r *UpdateProjectStatusRequest) Validate(v *validation.Validator) {
 	v.Required("status", r.Status)
 	v.In("status", r.Status, ValidPageStatuses)
-}
-
-// Validate validates SEORequest
-func (r *SEORequest) Validate(v *validation.Validator) {
-	// Meta title
-	if r.MetaTitle != nil && *r.MetaTitle != "" {
-		v.MaxLength("seo.meta_title", *r.MetaTitle, 60)
-	}
-
-	// Meta description
-	if r.MetaDescription != nil && *r.MetaDescription != "" {
-		v.MaxLength("seo.meta_description", *r.MetaDescription, 160)
-	}
-
-	// OG title
-	if r.OGTitle != nil && *r.OGTitle != "" {
-		v.MaxLength("seo.og_title", *r.OGTitle, 95)
-	}
-
-	// OG description
-	if r.OGDescription != nil && *r.OGDescription != "" {
-		v.MaxLength("seo.og_description", *r.OGDescription, 200)
-	}
-
-	// Canonical URL
-	if r.CanonicalURL != nil && *r.CanonicalURL != "" {
-		v.URL("seo.canonical_url", *r.CanonicalURL)
-	}
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/iankencruz/threefive/internal/blocks"
+	"github.com/iankencruz/threefive/internal/shared/seo"
 )
 
 // ============================================
@@ -22,7 +23,7 @@ type CreateBlogRequest struct {
 	IsFeatured      bool                  `json:"is_featured"`
 	FeaturedImageID *uuid.UUID            `json:"featured_image_id"`
 	Blocks          []blocks.BlockRequest `json:"blocks"`
-	SEO             *SEORequest           `json:"seo"`
+	SEO             *seo.Request          `json:"seo"`
 }
 
 // UpdateBlogRequest represents the request body for updating a blog
@@ -35,24 +36,12 @@ type UpdateBlogRequest struct {
 	IsFeatured      *bool                  `json:"is_featured"`
 	FeaturedImageID *uuid.UUID             `json:"featured_image_id"`
 	Blocks          *[]blocks.BlockRequest `json:"blocks"`
-	SEO             *SEORequest            `json:"seo"`
+	SEO             *seo.Request           `json:"seo"`
 }
 
 // UpdateBlogStatusRequest represents the request body for updating blog status
 type UpdateBlogStatusRequest struct {
 	Status string `json:"status"` // draft, published, archived
-}
-
-// SEORequest represents SEO metadata in requests
-type SEORequest struct {
-	MetaTitle       *string    `json:"meta_title"`
-	MetaDescription *string    `json:"meta_description"`
-	OGTitle         *string    `json:"og_title"`
-	OGDescription   *string    `json:"og_description"`
-	OGImageID       *uuid.UUID `json:"og_image_id"`
-	CanonicalURL    *string    `json:"canonical_url"`
-	RobotsIndex     *bool      `json:"robots_index"`
-	RobotsFollow    *bool      `json:"robots_follow"`
 }
 
 // ============================================
@@ -74,22 +63,7 @@ type BlogResponse struct {
 	PublishedAt     *time.Time             `json:"published_at,omitempty"`
 	DeletedAt       *time.Time             `json:"deleted_at,omitempty"`
 	Blocks          []blocks.BlockResponse `json:"blocks"`
-	SEO             *SEOResponse           `json:"seo,omitempty"`
-}
-
-// SEOResponse represents SEO metadata in responses
-type SEOResponse struct {
-	ID              uuid.UUID  `json:"id"`
-	MetaTitle       *string    `json:"meta_title"`
-	MetaDescription *string    `json:"meta_description"`
-	OGTitle         *string    `json:"og_title"`
-	OGDescription   *string    `json:"og_description"`
-	OGImageID       *uuid.UUID `json:"og_image_id"`
-	CanonicalURL    *string    `json:"canonical_url"`
-	RobotsIndex     bool       `json:"robots_index"`
-	RobotsFollow    bool       `json:"robots_follow"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UpdatedAt       time.Time  `json:"updated_at"`
+	SEO             *seo.Response          `json:"seo,omitempty"`
 }
 
 // BlogListResponse represents a paginated list of blogs

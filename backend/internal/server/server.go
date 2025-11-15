@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/iankencruz/threefive/internal/auth"
+	"github.com/iankencruz/threefive/internal/blogs"
 	"github.com/iankencruz/threefive/internal/config"
 	"github.com/iankencruz/threefive/internal/jobs"
 	"github.com/iankencruz/threefive/internal/media"
@@ -33,6 +34,7 @@ type Server struct {
 	MediaHandler   *media.Handler
 	PageHandler    *pages.Handler
 	ProjectHandler *projects.Handler
+	BlogHandler    *blogs.Handler
 	CleanupWorker  *jobs.PageCleanupWorker // Add cleanup worker
 }
 
@@ -78,6 +80,7 @@ func New(cfg *config.Config) (*Server, error) {
 	mediaHandler := media.NewHandler(db, queries, storageInstance)
 	pageHandler := pages.NewHandler(db, queries, cfg)
 	projectHandler := projects.NewHandler(db, queries)
+	blogHandler := blogs.NewHandler(db, queries, cfg)
 
 	// 5. Initialize cleanup worker if enabled
 	var cleanupWorker *jobs.PageCleanupWorker
@@ -97,6 +100,7 @@ func New(cfg *config.Config) (*Server, error) {
 		MediaHandler:   mediaHandler,
 		PageHandler:    pageHandler,
 		ProjectHandler: projectHandler,
+		BlogHandler:    blogHandler,
 	}
 
 	// 6. Create default admin user if it doesn't exist

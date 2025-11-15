@@ -9,7 +9,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/iankencruz/threefive/internal/blocks"
 	"github.com/iankencruz/threefive/internal/shared/errors"
+	"github.com/iankencruz/threefive/internal/shared/seo"
 	"github.com/iankencruz/threefive/internal/shared/sqlc"
+	"github.com/iankencruz/threefive/internal/shared/utils"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -33,7 +35,6 @@ func NewService(db *pgxpool.Pool, queries *sqlc.Queries, blockService *blocks.Se
 
 // CreateProject creates a new project with blocks and SEO in a transaction
 func (s *Service) CreateProject(ctx context.Context, req CreateProjectRequest, userID uuid.UUID) (*ProjectResponse, error) {
-
 	exists, err := s.queries.CheckProjectSlugExists(ctx, sqlc.CheckProjectSlugExistsParams{
 		Slug:      req.Slug,
 		ExcludeID: uuid.Nil,
@@ -77,18 +78,17 @@ func (s *Service) CreateProject(ctx context.Context, req CreateProjectRequest, u
 	project, err := qtx.CreateProject(ctx, sqlc.CreateProjectParams{
 		Title:           req.Title,
 		Slug:            req.Slug,
-		Description:     stringToPgText(req.Description),
+		Description:     utils.StrToPg(req.Description),
 		ProjectDate:     projectDate,
 		Status:          sqlc.NullPageStatus{PageStatus: sqlc.PageStatus(req.Status), Valid: true},
-		ClientName:      stringToPgText(req.ClientName),
-		ProjectYear:     intToPgInt4(req.ProjectYear),
-		ProjectUrl:      stringToPgText(req.ProjectURL),
+		ClientName:      utils.StrToPg(req.ClientName),
+		ProjectYear:     utils.IntToPg(req.ProjectYear),
+		ProjectUrl:      utils.StrToPg(req.ProjectURL),
 		Technologies:    technologiesJSON,
 		ProjectStatus:   sqlc.NullProjectStatus{ProjectStatus: sqlc.ProjectStatus(req.ProjectStatus), Valid: true},
-		FeaturedImageID: uuidToPgUUID(req.FeaturedImageID),
+		FeaturedImageID: utils.UUIDToPg(req.FeaturedImageID),
 		PublishedAt:     pgtype.Timestamptz{Valid: false},
 	})
-
 	if err != nil {
 		return nil, errors.Internal("Failed to create project", err)
 	}
@@ -102,7 +102,7 @@ func (s *Service) CreateProject(ctx context.Context, req CreateProjectRequest, u
 
 	// 3. Create SEO if provided
 	if req.SEO != nil {
-		if err := s.createSEO(ctx, qtx, project.ID, req.SEO); err != nil {
+		if err := seo.Create(ctx, qtx, "project", project.ID, req.SEO); err != nil {
 			return nil, err
 		}
 	}
@@ -249,17 +249,17 @@ func (s *Service) UpdateProject(ctx context.Context, projectID uuid.UUID, req Up
 	// Update project
 	_, err = qtx.UpdateProject(ctx, sqlc.UpdateProjectParams{
 		ID:              projectID,
-		Title:           pointerToString(req.Title),
-		Slug:            pointerToString(req.Slug),
-		Description:     stringToPgText(req.Description),
+		Title:           utils.PtrStr(req.Title),
+		Slug:            utils.PtrStr(req.Slug),
+		Description:     utils.StrToPg(req.Description),
 		ProjectDate:     projectDate,
-		Status:          statusToNullPageStatus(req.Status),
-		ClientName:      stringToPgText(req.ClientName),
-		ProjectYear:     intToPgInt4(req.ProjectYear),
-		ProjectUrl:      stringToPgText(req.ProjectURL),
+		Status:          utils.StatusToPg(req.Status),
+		ClientName:      utils.StrToPg(req.ClientName),
+		ProjectYear:     utils.IntToPg(req.ProjectYear),
+		ProjectUrl:      utils.StrToPg(req.ProjectURL),
 		Technologies:    technologiesJSON,
-		ProjectStatus:   projectStatusToNullProjectStatus(req.ProjectStatus),
-		FeaturedImageID: uuidToPgUUID(req.FeaturedImageID),
+		ProjectStatus:   utils.ProjectStatusToPg(req.ProjectStatus),
+		FeaturedImageID: utils.UUIDToPg(req.FeaturedImageID),
 		PublishedAt:     pgtype.Timestamptz{Valid: false},
 	})
 	if err != nil {
@@ -289,7 +289,7 @@ func (s *Service) UpdateProject(ctx context.Context, projectID uuid.UUID, req Up
 
 	// Update SEO if provided
 	if req.SEO != nil {
-		if err := s.upsertSEO(ctx, qtx, projectID, req.SEO); err != nil {
+		if err := seo.Upsert(ctx, qtx, "project", projectID, req.SEO); err != nil {
 			return nil, err
 		}
 	}
@@ -407,150 +407,10 @@ func (s *Service) buildProjectResponse(ctx context.Context, project sqlc.Project
 	resp.Blocks = blockResponses
 
 	// Get SEO
-	seo, err := s.queries.GetSEO(ctx, sqlc.GetSEOParams{
-		EntityType: "project",
-		EntityID:   project.ID,
-	})
-	if err != nil && err != pgx.ErrNoRows {
-		return nil, errors.Internal("Failed to get project SEO", err)
-	}
-	if err == nil {
-		resp.SEO = buildSEOResponse(seo)
+	resp.SEO, err = seo.Get(ctx, s.queries, "project", project.ID)
+	if err != nil {
+		return nil, err
 	}
 
 	return resp, nil
-}
-
-// createSEO creates SEO data for a project
-func (s *Service) createSEO(ctx context.Context, qtx *sqlc.Queries, projectID uuid.UUID, req *SEORequest) error {
-	_, err := qtx.CreateSEO(ctx, sqlc.CreateSEOParams{
-		EntityType:      "project",
-		EntityID:        projectID,
-		MetaTitle:       stringToPgText(req.MetaTitle),
-		MetaDescription: stringToPgText(req.MetaDescription),
-		OgTitle:         stringToPgText(req.OGTitle),
-		OgDescription:   stringToPgText(req.OGDescription),
-		OgImageID:       uuidToPgUUID(req.OGImageID),
-		CanonicalUrl:    stringToPgText(req.CanonicalURL),
-		RobotsIndex:     boolToPgBool(req.RobotsIndex),
-		RobotsFollow:    boolToPgBool(req.RobotsFollow),
-	})
-	if err != nil {
-		return errors.Internal("Failed to create SEO", err)
-	}
-	return nil
-}
-
-// upsertSEO updates or creates SEO data using the upsert query
-func (s *Service) upsertSEO(ctx context.Context, qtx *sqlc.Queries, projectID uuid.UUID, req *SEORequest) error {
-	_, err := qtx.UpsertSEO(ctx, sqlc.UpsertSEOParams{
-		EntityType:      "project",
-		EntityID:        projectID,
-		MetaTitle:       stringToPgText(req.MetaTitle),
-		MetaDescription: stringToPgText(req.MetaDescription),
-		OgTitle:         stringToPgText(req.OGTitle),
-		OgDescription:   stringToPgText(req.OGDescription),
-		OgImageID:       uuidToPgUUID(req.OGImageID),
-		CanonicalUrl:    stringToPgText(req.CanonicalURL),
-		RobotsIndex:     boolToPgBool(req.RobotsIndex),
-		RobotsFollow:    boolToPgBool(req.RobotsFollow),
-	})
-	if err != nil {
-		return errors.Internal("Failed to upsert SEO", err)
-	}
-	return nil
-}
-
-// buildSEOResponse builds an SEO response from database model
-func buildSEOResponse(seo sqlc.Seo) *SEOResponse {
-	resp := &SEOResponse{
-		ID:           seo.ID,
-		RobotsIndex:  seo.RobotsIndex.Bool,
-		RobotsFollow: seo.RobotsFollow.Bool,
-		CreatedAt:    seo.CreatedAt,
-		UpdatedAt:    seo.UpdatedAt,
-	}
-
-	if seo.MetaTitle.Valid {
-		title := seo.MetaTitle.String
-		resp.MetaTitle = &title
-	}
-
-	if seo.MetaDescription.Valid {
-		desc := seo.MetaDescription.String
-		resp.MetaDescription = &desc
-	}
-
-	if seo.OgTitle.Valid {
-		ogTitle := seo.OgTitle.String
-		resp.OGTitle = &ogTitle
-	}
-
-	if seo.OgDescription.Valid {
-		ogDesc := seo.OgDescription.String
-		resp.OGDescription = &ogDesc
-	}
-
-	if seo.OgImageID.Valid {
-		imageID := uuid.UUID(seo.OgImageID.Bytes)
-		resp.OGImageID = &imageID
-	}
-
-	if seo.CanonicalUrl.Valid {
-		url := seo.CanonicalUrl.String
-		resp.CanonicalURL = &url
-	}
-
-	return resp
-}
-
-// Helper functions for converting between types
-
-func stringToPgText(s *string) pgtype.Text {
-	if s == nil {
-		return pgtype.Text{Valid: false}
-	}
-	return pgtype.Text{String: *s, Valid: true}
-}
-
-func intToPgInt4(i *int) pgtype.Int4 {
-	if i == nil {
-		return pgtype.Int4{Valid: false}
-	}
-	return pgtype.Int4{Int32: int32(*i), Valid: true}
-}
-
-func uuidToPgUUID(id *uuid.UUID) pgtype.UUID {
-	if id == nil {
-		return pgtype.UUID{Valid: false}
-	}
-	return pgtype.UUID{Bytes: *id, Valid: true}
-}
-
-func boolToPgBool(b *bool) pgtype.Bool {
-	if b == nil {
-		return pgtype.Bool{Bool: true, Valid: true} // Default to true
-	}
-	return pgtype.Bool{Bool: *b, Valid: true}
-}
-
-func pointerToString(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
-}
-
-func statusToNullPageStatus(s *string) sqlc.NullPageStatus {
-	if s == nil {
-		return sqlc.NullPageStatus{Valid: false}
-	}
-	return sqlc.NullPageStatus{PageStatus: sqlc.PageStatus(*s), Valid: true}
-}
-
-func projectStatusToNullProjectStatus(s *string) sqlc.NullProjectStatus {
-	if s == nil {
-		return sqlc.NullProjectStatus{Valid: false}
-	}
-	return sqlc.NullProjectStatus{ProjectStatus: sqlc.ProjectStatus(*s), Valid: true}
 }

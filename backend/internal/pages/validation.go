@@ -3,6 +3,7 @@ package pages
 
 import (
 	"github.com/iankencruz/threefive/internal/blocks"
+	"github.com/iankencruz/threefive/internal/shared/seo"
 	"github.com/iankencruz/threefive/internal/shared/validation"
 )
 
@@ -39,9 +40,8 @@ func (r *CreatePageRequest) Validate(v *validation.Validator) {
 
 	// SEO validation
 	if r.SEO != nil {
-		r.SEO.Validate(v)
+		seo.Validate(v, r.SEO)
 	}
-
 }
 
 // Validate validates an UpdatePageRequest
@@ -75,32 +75,4 @@ func (r *UpdatePageRequest) Validate(v *validation.Validator) {
 func (r *UpdatePageStatusRequest) Validate(v *validation.Validator) {
 	v.Required("status", r.Status)
 	v.In("status", r.Status, ValidPageStatuses)
-}
-
-// Validate validates SEORequest
-func (r *SEORequest) Validate(v *validation.Validator) {
-	// Meta title
-	if r.MetaTitle != nil {
-		v.MaxLength("seo.meta_title", *r.MetaTitle, 60)
-	}
-
-	// Meta description
-	if r.MetaDescription != nil {
-		v.MaxLength("seo.meta_description", *r.MetaDescription, 160)
-	}
-
-	// OG title
-	if r.OGTitle != nil {
-		v.MaxLength("seo.og_title", *r.OGTitle, 60)
-	}
-
-	// OG description
-	if r.OGDescription != nil {
-		v.MaxLength("seo.og_description", *r.OGDescription, 160)
-	}
-
-	// Canonical URL
-	if r.CanonicalURL != nil && *r.CanonicalURL != "" {
-		v.URL("seo.canonical_url", *r.CanonicalURL)
-	}
 }
