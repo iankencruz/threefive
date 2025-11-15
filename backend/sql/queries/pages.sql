@@ -32,19 +32,19 @@ WHERE slug = @slug AND deleted_at IS NULL;
 -- name: ListPages :many
 SELECT * FROM pages
 WHERE deleted_at IS NULL
-  AND (@status = '' OR status = @status::page_status)
+  AND (@status::text = '' OR status = @status::page_status)
 ORDER BY 
-  CASE WHEN @sort_by = 'created_at_desc' THEN created_at END DESC,
-  CASE WHEN @sort_by = 'created_at_asc' THEN created_at END ASC,
-  CASE WHEN @sort_by = 'published_at_desc' THEN published_at END DESC,
-  CASE WHEN @sort_by = 'published_at_asc' THEN published_at END ASC,
+  CASE WHEN @sort_by = 'created_at_desc' AND @sort_order = 'desc' THEN created_at END DESC,
+  CASE WHEN @sort_by = 'created_at_asc' AND @sort_order = 'asc' THEN created_at END ASC,
+  CASE WHEN @sort_by = 'published_at_desc' AND  @sort_order = 'desc' THEN published_at END DESC,
+  CASE WHEN @sort_by = 'published_at_asc' AND @sort_order = 'asc' THEN published_at END ASC,
   created_at DESC
 LIMIT @limit_val OFFSET @offset_val;
 
 -- name: CountPages :one
 SELECT COUNT(*) FROM pages
 WHERE deleted_at IS NULL
-  AND (@status = '' OR status = @status::page_status);
+  AND (@status::text = '' OR status = @status::page_status);
 
 
 

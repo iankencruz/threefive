@@ -79,3 +79,13 @@ type Pagination struct {
 	TotalPages int `json:"total_pages"`
 	TotalCount int `json:"total_count"`
 }
+
+// ListBlogsParams represents query parameters for listing/filtering blogs
+type ListBlogsParams struct {
+	StatusFilter   *string
+	FeaturedFilter *bool
+	SortBy         string
+	SortOrder      string
+	Limit          int32
+	Offset         int32
+}

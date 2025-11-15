@@ -36,10 +36,10 @@ func (q *Queries) CheckSlugExists(ctx context.Context, arg CheckSlugExistsParams
 const countPages = `-- name: CountPages :one
 SELECT COUNT(*) FROM pages
 WHERE deleted_at IS NULL
-  AND ($1 = '' OR status = $1::page_status)
+  AND ($1::text = '' OR status = $1::page_status)
 `
 
-func (q *Queries) CountPages(ctx context.Context, status interface{}) (int64, error) {
+func (q *Queries) CountPages(ctx context.Context, status string) (int64, error) {
 	row := q.db.QueryRow(ctx, countPages, status)
 	var count int64
 	err := row.Scan(&count)
@@ -148,19 +148,20 @@ func (q *Queries) GetPageBySlug(ctx context.Context, slug string) (Pages, error)
 const listPages = `-- name: ListPages :many
 SELECT id, title, slug, status, featured_image_id, created_at, updated_at, published_at, deleted_at FROM pages
 WHERE deleted_at IS NULL
-  AND ($1 = '' OR status = $1::page_status)
+  AND ($1::text = '' OR status = $1::page_status)
 ORDER BY 
-  CASE WHEN $2 = 'created_at_desc' THEN created_at END DESC,
-  CASE WHEN $2 = 'created_at_asc' THEN created_at END ASC,
-  CASE WHEN $2 = 'published_at_desc' THEN published_at END DESC,
-  CASE WHEN $2 = 'published_at_asc' THEN published_at END ASC,
+  CASE WHEN $2 = 'created_at_desc' AND $3 = 'desc' THEN created_at END DESC,
+  CASE WHEN $2 = 'created_at_asc' AND $3 = 'asc' THEN created_at END ASC,
+  CASE WHEN $2 = 'published_at_desc' AND  $3 = 'desc' THEN published_at END DESC,
+  CASE WHEN $2 = 'published_at_asc' AND $3 = 'asc' THEN published_at END ASC,
   created_at DESC
-LIMIT $4 OFFSET $3
+LIMIT $5 OFFSET $4
 `
 
 type ListPagesParams struct {
-	Status    interface{} `json:"status"`
+	Status    string      `json:"status"`
 	SortBy    interface{} `json:"sort_by"`
+	SortOrder interface{} `json:"sort_order"`
 	OffsetVal int32       `json:"offset_val"`
 	LimitVal  int32       `json:"limit_val"`
 }
@@ -169,6 +170,7 @@ func (q *Queries) ListPages(ctx context.Context, arg ListPagesParams) ([]Pages, 
 	rows, err := q.db.Query(ctx, listPages,
 		arg.Status,
 		arg.SortBy,
+		arg.SortOrder,
 		arg.OffsetVal,
 		arg.LimitVal,
 	)

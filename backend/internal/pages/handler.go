@@ -67,22 +67,12 @@ func (h *Handler) CreatePage(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetPage handles retrieving a single page by ID or slug
-// GET /api/v1/pages/{idOrSlug}
-func (h *Handler) GetPage(w http.ResponseWriter, r *http.Request) {
-	idOrSlug := chi.URLParam(r, "idOrSlug")
+// GET /api/v1/pages/{slug}
+func (h *Handler) GetPageBySlug(w http.ResponseWriter, r *http.Request) {
+	slug := chi.URLParam(r, "slug")
 
 	// Try to parse as UUID first
-	id, err := uuid.Parse(idOrSlug)
-	var page *PageResponse
-
-	if err == nil {
-		// It's a valid UUID, get by ID
-		page, err = h.service.GetPageByID(r.Context(), id)
-	} else {
-		// It's a slug, get by slug
-		page, err = h.service.GetPageBySlug(r.Context(), idOrSlug)
-	}
-
+	page, err := h.service.GetPageBySlug(r.Context(), slug)
 	if err != nil {
 		responses.WriteErr(w, err)
 		return
@@ -105,16 +95,58 @@ func (h *Handler) ListPages(w http.ResponseWriter, r *http.Request) {
 		limit = 20
 	}
 
+	// Parse filter parameters
+	var statusFilter *string
+	if status := r.URL.Query().Get("status"); status != "" {
+		// Validate status is a valid enum value
+		if status == "draft" || status == "published" || status == "archived" {
+			statusFilter = &status
+		}
+	}
+
+	// Parse sort parameters
+	sortBy := r.URL.Query().Get("sort")
+	validSortFields := map[string]bool{
+		"created_at":   true,
+		"published_at": true,
+		"title":        true,
+	}
+	if sortBy == "" || !validSortFields[sortBy] {
+		sortBy = "created_at"
+	}
+
+	sortOrder := r.URL.Query().Get("order")
+	if sortOrder != "asc" && sortOrder != "desc" {
+		sortOrder = "desc"
+	}
+
 	offset := int32((page - 1) * limit)
 
-	// List pages
-	result, err := h.service.ListPages(r.Context(), int32(limit), offset)
+	// List pages with filters
+	result, err := h.service.ListPages(r.Context(), ListPagesParams{
+		StatusFilter: statusFilter,
+		SortBy:       sortBy,
+		SortOrder:    sortOrder,
+		Limit:        int32(limit),
+		Offset:       offset,
+	})
 	if err != nil {
 		responses.WriteErr(w, err)
 		return
 	}
 
-	responses.WriteOK(w, result)
+	// Build response with pagination and filters
+	response := map[string]any{
+		"data":       result.Pages,
+		"pagination": result.Pagination,
+		"filters": map[string]any{
+			"status": statusFilter,
+			"sort":   sortBy,
+			"order":  sortOrder,
+		},
+	}
+
+	responses.WriteJSON(w, http.StatusOK, response)
 }
 
 // UpdatePage handles updating a page

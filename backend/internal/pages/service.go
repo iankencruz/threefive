@@ -127,25 +127,27 @@ func (s *Service) GetPageBySlug(ctx context.Context, slug string) (*PageResponse
 }
 
 // ListPages retrieves pages with pagination
-func (s *Service) ListPages(ctx context.Context, limit, offset int32) (*PageListResponse, error) {
-	// Get total count
-	totalCount, err := s.queries.CountPages(ctx, sqlc.PageStatus(""))
+func (s *Service) ListPages(ctx context.Context, params ListPagesParams) (*PageListResponse, error) {
+	// Convert filters to strings
+	statusStr := ""
+	if params.StatusFilter != nil {
+		statusStr = *params.StatusFilter
+	}
+
+	// Get Total count with filters
+	totalCount, err := s.queries.CountPages(ctx, statusStr)
 	if err != nil {
 		return nil, errors.Internal("Failed to count pages", err)
 	}
 
-	// Get pages
 	pages, err := s.queries.ListPages(ctx, sqlc.ListPagesParams{
-		Status:    sqlc.PageStatus(""),
-		SortBy:    "created_at_desc",
-		OffsetVal: offset,
-		LimitVal:  limit,
+		Status:    statusStr,
+		SortBy:    params.SortBy,
+		SortOrder: params.SortOrder,
+		OffsetVal: params.Offset,
+		LimitVal:  params.Limit,
 	})
-	if err != nil {
-		return nil, errors.Internal("Failed to list pages", err)
-	}
 
-	// Build responses
 	pageResponses := make([]PageResponse, 0, len(pages))
 	for _, page := range pages {
 		resp, err := s.buildPageResponse(ctx, page)
@@ -156,17 +158,18 @@ func (s *Service) ListPages(ctx context.Context, limit, offset int32) (*PageList
 	}
 
 	// Calculate pagination
-	totalPages := int(totalCount) / int(limit)
-	if int(totalCount)%int(limit) > 0 {
+	totalPages := int(totalCount) / int(params.Limit)
+	if int(totalCount)%int(params.Limit) != 0 {
 		totalPages++
 	}
-	currentPage := int(offset)/int(limit) + 1
+
+	currentPage := int(params.Offset)/int(params.Limit) + 1
 
 	return &PageListResponse{
 		Pages: pageResponses,
 		Pagination: Pagination{
 			Page:       currentPage,
-			Limit:      int(limit),
+			Limit:      int(params.Limit),
 			TotalPages: totalPages,
 			TotalCount: int(totalCount),
 		},

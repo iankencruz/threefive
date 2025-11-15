@@ -60,22 +60,12 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetProject handles retrieving a single project by ID or slug
-// GET /api/v1/projects/{idOrSlug}
-func (h *Handler) GetProject(w http.ResponseWriter, r *http.Request) {
-	idOrSlug := chi.URLParam(r, "idOrSlug")
+// GET /api/v1/projects/{slug}
+func (h *Handler) GetProjectBySlug(w http.ResponseWriter, r *http.Request) {
+	slug := chi.URLParam(r, "slug")
 
 	// Try to parse as UUID first
-	id, err := uuid.Parse(idOrSlug)
-	var project *ProjectResponse
-
-	if err == nil {
-		// It's a valid UUID, get by ID
-		project, err = h.service.GetProjectByID(r.Context(), id)
-	} else {
-		// It's a slug, get by slug
-		project, err = h.service.GetProjectBySlug(r.Context(), idOrSlug)
-	}
-
+	project, err := h.service.GetProjectBySlug(r.Context(), slug)
 	if err != nil {
 		responses.WriteErr(w, err)
 		return
@@ -84,8 +74,8 @@ func (h *Handler) GetProject(w http.ResponseWriter, r *http.Request) {
 	responses.WriteOK(w, project)
 }
 
-// ListProjects handles listing projects with pagination
-// GET /api/v1/projects?page=1&limit=20&status=published
+// ListProjects handles listing projects with pagination and optional filters
+// GET /api/v1/projects?status=published&page=1&limit=20&sort=created_at&order=desc
 func (h *Handler) ListProjects(w http.ResponseWriter, r *http.Request) {
 	// Parse pagination params
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
@@ -98,23 +88,60 @@ func (h *Handler) ListProjects(w http.ResponseWriter, r *http.Request) {
 		limit = 20
 	}
 
-	// Parse status filter (optional)
-	status := r.URL.Query().Get("status")
-	var statusPtr *string
-	if status != "" {
-		statusPtr = &status
+	// Parse filter parameters
+	var statusFilter *string
+	if status := r.URL.Query().Get("status"); status != "" {
+		// Validate status is a valid enum value
+		if status == "draft" || status == "published" || status == "archived" {
+			statusFilter = &status
+		}
+	}
+
+	// Parse sort parameters
+	sortBy := r.URL.Query().Get("sort")
+	validSortFields := map[string]bool{
+		"created_at":   true,
+		"published_at": true,
+		"title":        true,
+		"project_date": true,
+		"project_year": true,
+	}
+	if sortBy == "" || !validSortFields[sortBy] {
+		sortBy = "created_at"
+	}
+
+	sortOrder := r.URL.Query().Get("order")
+	if sortOrder != "asc" && sortOrder != "desc" {
+		sortOrder = "desc"
 	}
 
 	offset := int32((page - 1) * limit)
 
-	// List projects
-	result, err := h.service.ListProjects(r.Context(), statusPtr, int32(limit), offset)
+	// List projects with filters
+	result, err := h.service.ListProjects(r.Context(), ListProjectsParams{
+		StatusFilter: statusFilter,
+		SortBy:       sortBy,
+		SortOrder:    sortOrder,
+		Limit:        int32(limit),
+		Offset:       offset,
+	})
 	if err != nil {
 		responses.WriteErr(w, err)
 		return
 	}
 
-	responses.WriteOK(w, result)
+	// Build response with pagination and filters
+	response := map[string]any{
+		"data":       result.Projects,
+		"pagination": result.Pagination,
+		"filters": map[string]any{
+			"status": statusFilter,
+			"sort":   sortBy,
+			"order":  sortOrder,
+		},
+	}
+
+	responses.WriteJSON(w, http.StatusOK, response)
 }
 
 // UpdateProject handles updating a project

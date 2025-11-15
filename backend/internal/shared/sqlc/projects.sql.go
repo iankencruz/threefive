@@ -36,10 +36,10 @@ func (q *Queries) CheckProjectSlugExists(ctx context.Context, arg CheckProjectSl
 const countProjects = `-- name: CountProjects :one
 SELECT COUNT(*) FROM projects
 WHERE deleted_at IS NULL
-  AND ($1::page_status IS NULL OR status = $1)
+  AND ($1 = '' OR status = $1::page_status)
 `
 
-func (q *Queries) CountProjects(ctx context.Context, status PageStatus) (int64, error) {
+func (q *Queries) CountProjects(ctx context.Context, status interface{}) (int64, error) {
 	row := q.db.QueryRow(ctx, countProjects, status)
 	var count int64
 	err := row.Scan(&count)
@@ -197,21 +197,26 @@ func (q *Queries) GetProjectBySlug(ctx context.Context, slug string) (Projects, 
 const listProjects = `-- name: ListProjects :many
 SELECT id, title, slug, description, project_date, status, client_name, project_year, project_url, technologies, project_status, featured_image_id, created_at, updated_at, published_at, deleted_at FROM projects
 WHERE deleted_at IS NULL
-  AND ($1::page_status IS NULL OR status = $1)
+  AND ($1 = '' OR status = $1::page_status)
 ORDER BY 
-  CASE WHEN $2 = 'created_at_desc' THEN created_at END DESC,
-  CASE WHEN $2 = 'created_at_asc' THEN created_at END ASC,
-  CASE WHEN $2 = 'project_year_desc' THEN project_year END DESC,
-  CASE WHEN $2 = 'project_year_asc' THEN project_year END ASC,
-  CASE WHEN $2 = 'project_date_desc' THEN project_date END DESC,
-  CASE WHEN $2 = 'project_date_asc' THEN project_date END ASC,
+  CASE WHEN $2 = 'created_at' AND $3 = 'desc' THEN created_at END DESC,
+  CASE WHEN $2 = 'created_at' AND $3 = 'asc' THEN created_at END ASC,
+  CASE WHEN $2 = 'published_at' AND $3 = 'desc' THEN published_at END DESC,
+  CASE WHEN $2 = 'published_at' AND $3 = 'asc' THEN published_at END ASC,
+  CASE WHEN $2 = 'title' AND $3 = 'desc' THEN title END DESC,
+  CASE WHEN $2 = 'title' AND $3 = 'asc' THEN title END ASC,
+  CASE WHEN $2 = 'project_date' AND $3 = 'desc' THEN project_date END DESC,
+  CASE WHEN $2 = 'project_date' AND $3 = 'asc' THEN project_date END ASC,
+  CASE WHEN $2 = 'project_year' AND $3 = 'desc' THEN project_year END DESC,
+  CASE WHEN $2 = 'project_year' AND $3 = 'asc' THEN project_year END ASC,
   created_at DESC
-LIMIT $4 OFFSET $3
+LIMIT $5 OFFSET $4
 `
 
 type ListProjectsParams struct {
-	Status    PageStatus  `json:"status"`
+	Status    interface{} `json:"status"`
 	SortBy    interface{} `json:"sort_by"`
+	SortOrder interface{} `json:"sort_order"`
 	OffsetVal int32       `json:"offset_val"`
 	LimitVal  int32       `json:"limit_val"`
 }
@@ -220,6 +225,7 @@ func (q *Queries) ListProjects(ctx context.Context, arg ListProjectsParams) ([]P
 	rows, err := q.db.Query(ctx, listProjects,
 		arg.Status,
 		arg.SortBy,
+		arg.SortOrder,
 		arg.OffsetVal,
 		arg.LimitVal,
 	)

@@ -144,26 +144,27 @@ func (s *Service) GetProjectBySlug(ctx context.Context, slug string) (*ProjectRe
 	return s.buildProjectResponse(ctx, project)
 }
 
-// ListProjects retrieves projects with pagination
-func (s *Service) ListProjects(ctx context.Context, status *string, limit, offset int32) (*ProjectListResponse, error) {
-	// Build status parameter
-	var statusParam sqlc.PageStatus
-	if status != nil && *status != "" {
-		statusParam = sqlc.PageStatus(*status)
+// ListProjects retrieves projects with optional filtering and pagination
+func (s *Service) ListProjects(ctx context.Context, params ListProjectsParams) (*ProjectListResponse, error) {
+	// Convert filters to strings (empty string = no filter)
+	statusStr := ""
+	if params.StatusFilter != nil {
+		statusStr = *params.StatusFilter
 	}
 
-	// Get total count
-	totalCount, err := s.queries.CountProjects(ctx, statusParam)
+	// Get total count with filters
+	totalCount, err := s.queries.CountProjects(ctx, statusStr)
 	if err != nil {
 		return nil, errors.Internal("Failed to count projects", err)
 	}
 
-	// Get projects
+	// Get projects with filters
 	projects, err := s.queries.ListProjects(ctx, sqlc.ListProjectsParams{
-		Status:    statusParam,
-		SortBy:    "created_at_desc",
-		OffsetVal: offset,
-		LimitVal:  limit,
+		Status:    statusStr,
+		SortBy:    params.SortBy,
+		SortOrder: params.SortOrder,
+		OffsetVal: params.Offset,
+		LimitVal:  params.Limit,
 	})
 	if err != nil {
 		return nil, errors.Internal("Failed to list projects", err)
@@ -180,17 +181,17 @@ func (s *Service) ListProjects(ctx context.Context, status *string, limit, offse
 	}
 
 	// Calculate pagination
-	totalPages := int(totalCount) / int(limit)
-	if int(totalCount)%int(limit) > 0 {
+	totalPages := int(totalCount) / int(params.Limit)
+	if int(totalCount)%int(params.Limit) > 0 {
 		totalPages++
 	}
-	currentPage := int(offset)/int(limit) + 1
+	currentPage := int(params.Offset)/int(params.Limit) + 1
 
 	return &ProjectListResponse{
 		Projects: projectResponses,
 		Pagination: Pagination{
 			Page:       currentPage,
-			Limit:      int(limit),
+			Limit:      int(params.Limit),
 			TotalPages: totalPages,
 			TotalCount: int(totalCount),
 		},

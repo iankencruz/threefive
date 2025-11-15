@@ -14,8 +14,8 @@ func RegisterRoutes(r chi.Router, handler *Handler, sessionManager *session.Mana
 	r.Route("/projects", func(r chi.Router) {
 		// Public routes - anyone can view projects
 		r.Group(func(r chi.Router) {
-			r.Get("/", handler.ListProjects)         // GET /api/v1/projects
-			r.Get("/{idOrSlug}", handler.GetProject) // GET /api/v1/projects/{idOrSlug}
+			r.Get("/", handler.ListProjects)           // GET /api/v1/projects
+			r.Get("/{slug}", handler.GetProjectBySlug) // GET /api/v1/projects/{slug}
 		})
 
 		// Protected routes - require authentication

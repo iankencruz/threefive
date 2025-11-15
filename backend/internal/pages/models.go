@@ -69,3 +69,12 @@ type Pagination struct {
 	TotalPages int `json:"total_pages"`
 	TotalCount int `json:"total_count"`
 }
+
+// ListPagesParams represents query parameters for listing/filtering pages
+type ListPagesParams struct {
+	StatusFilter *string
+	SortBy       string
+	SortOrder    string
+	Limit        int32
+	Offset       int32
+}

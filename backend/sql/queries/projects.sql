@@ -46,21 +46,25 @@ WHERE slug = @slug AND deleted_at IS NULL;
 -- name: ListProjects :many
 SELECT * FROM projects
 WHERE deleted_at IS NULL
-  AND (@status::page_status IS NULL OR status = @status)
+  AND (@status = '' OR status = @status::page_status)
 ORDER BY 
-  CASE WHEN @sort_by = 'created_at_desc' THEN created_at END DESC,
-  CASE WHEN @sort_by = 'created_at_asc' THEN created_at END ASC,
-  CASE WHEN @sort_by = 'project_year_desc' THEN project_year END DESC,
-  CASE WHEN @sort_by = 'project_year_asc' THEN project_year END ASC,
-  CASE WHEN @sort_by = 'project_date_desc' THEN project_date END DESC,
-  CASE WHEN @sort_by = 'project_date_asc' THEN project_date END ASC,
+  CASE WHEN @sort_by = 'created_at' AND @sort_order = 'desc' THEN created_at END DESC,
+  CASE WHEN @sort_by = 'created_at' AND @sort_order = 'asc' THEN created_at END ASC,
+  CASE WHEN @sort_by = 'published_at' AND @sort_order = 'desc' THEN published_at END DESC,
+  CASE WHEN @sort_by = 'published_at' AND @sort_order = 'asc' THEN published_at END ASC,
+  CASE WHEN @sort_by = 'title' AND @sort_order = 'desc' THEN title END DESC,
+  CASE WHEN @sort_by = 'title' AND @sort_order = 'asc' THEN title END ASC,
+  CASE WHEN @sort_by = 'project_date' AND @sort_order = 'desc' THEN project_date END DESC,
+  CASE WHEN @sort_by = 'project_date' AND @sort_order = 'asc' THEN project_date END ASC,
+  CASE WHEN @sort_by = 'project_year' AND @sort_order = 'desc' THEN project_year END DESC,
+  CASE WHEN @sort_by = 'project_year' AND @sort_order = 'asc' THEN project_year END ASC,
   created_at DESC
 LIMIT @limit_val OFFSET @offset_val;
 
 -- name: CountProjects :one
 SELECT COUNT(*) FROM projects
 WHERE deleted_at IS NULL
-  AND (@status::page_status IS NULL OR status = @status);
+  AND (@status = '' OR status = @status::page_status);
 
 -- name: UpdateProject :one
 UPDATE projects

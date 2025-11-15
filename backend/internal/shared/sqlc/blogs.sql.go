@@ -36,13 +36,15 @@ func (q *Queries) CheckBlogSlugExists(ctx context.Context, arg CheckBlogSlugExis
 const countBlogs = `-- name: CountBlogs :one
 SELECT COUNT(*) FROM blogs
 WHERE deleted_at IS NULL
-  AND ($1::page_status IS NULL OR status = $1)
-  AND ($2::boolean IS NULL OR is_featured = $2)
+  AND ($1::text = '' OR status = $1::page_status)
+  AND ($2::text = '' OR 
+       ($2 = 'true' AND is_featured = true) OR 
+       ($2 = 'false' AND is_featured = false))
 `
 
 type CountBlogsParams struct {
-	Status     PageStatus `json:"status"`
-	IsFeatured bool       `json:"is_featured"`
+	Status     string `json:"status"`
+	IsFeatured string `json:"is_featured"`
 }
 
 func (q *Queries) CountBlogs(ctx context.Context, arg CountBlogsParams) (int64, error) {
@@ -175,21 +177,26 @@ func (q *Queries) GetBlogBySlug(ctx context.Context, slug string) (Blogs, error)
 const listBlogs = `-- name: ListBlogs :many
 SELECT id, title, slug, status, excerpt, reading_time, is_featured, featured_image_id, created_at, updated_at, published_at, deleted_at FROM blogs
 WHERE deleted_at IS NULL
-  AND ($1::page_status IS NULL OR status = $1)
-  AND ($2::boolean IS NULL OR is_featured = $2)
+  AND ($1::text = '' OR status = $1::page_status)
+  AND ($2::text = '' OR 
+       ($2 = 'true' AND is_featured = true) OR 
+       ($2 = 'false' AND is_featured = false))
 ORDER BY 
-  CASE WHEN $3 = 'created_at_desc' THEN created_at END DESC,
-  CASE WHEN $3 = 'created_at_asc' THEN created_at END ASC,
-  CASE WHEN $3 = 'published_at_desc' THEN published_at END DESC,
-  CASE WHEN $3 = 'published_at_asc' THEN published_at END ASC,
-  published_at DESC
-LIMIT $5 OFFSET $4
+  CASE WHEN $3 = 'created_at' AND $4 = 'desc' THEN created_at END DESC,
+  CASE WHEN $3 = 'created_at' AND $4 = 'asc' THEN created_at END ASC,
+  CASE WHEN $3 = 'published_at' AND $4 = 'desc' THEN published_at END DESC,
+  CASE WHEN $3 = 'published_at' AND $4 = 'asc' THEN published_at END ASC,
+  CASE WHEN $3 = 'title' AND $4 = 'desc' THEN title END DESC,
+  CASE WHEN $3 = 'title' AND $4 = 'asc' THEN title END ASC,
+  created_at DESC
+LIMIT $6 OFFSET $5
 `
 
 type ListBlogsParams struct {
-	Status     PageStatus  `json:"status"`
-	IsFeatured bool        `json:"is_featured"`
+	Status     string      `json:"status"`
+	IsFeatured string      `json:"is_featured"`
 	SortBy     interface{} `json:"sort_by"`
+	SortOrder  interface{} `json:"sort_order"`
 	OffsetVal  int32       `json:"offset_val"`
 	LimitVal   int32       `json:"limit_val"`
 }
@@ -199,6 +206,7 @@ func (q *Queries) ListBlogs(ctx context.Context, arg ListBlogsParams) ([]Blogs, 
 		arg.Status,
 		arg.IsFeatured,
 		arg.SortBy,
+		arg.SortOrder,
 		arg.OffsetVal,
 		arg.LimitVal,
 	)

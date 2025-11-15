@@ -130,24 +130,40 @@ func (s *Service) GetBlogBySlug(ctx context.Context, slug string) (*BlogResponse
 	return s.buildBlogResponse(ctx, blog)
 }
 
-// ListBlogs retrieves blogs with pagination
-func (s *Service) ListBlogs(ctx context.Context, limit, offset int32) (*BlogListResponse, error) {
-	// Get total count
+// ListBlogs retrieves blogs with optional filtering and pagination
+func (s *Service) ListBlogs(ctx context.Context, params ListBlogsParams) (*BlogListResponse, error) {
+	// Convert filters to strings (empty string = no filter)
+	statusStr := ""
+	if params.StatusFilter != nil {
+		statusStr = *params.StatusFilter
+	}
+
+	featuredStr := ""
+	if params.FeaturedFilter != nil {
+		if *params.FeaturedFilter {
+			featuredStr = "true"
+		} else {
+			featuredStr = "false"
+		}
+	}
+
+	// Get total count with filters
 	totalCount, err := s.queries.CountBlogs(ctx, sqlc.CountBlogsParams{
-		Status:     sqlc.PageStatus(""),
-		IsFeatured: false, // plain bool for CountBlogs
+		Status:     statusStr,
+		IsFeatured: featuredStr,
 	})
 	if err != nil {
 		return nil, errors.Internal("Failed to count blogs", err)
 	}
 
-	// Get blogs
+	// Get blogs with filters
 	blogs, err := s.queries.ListBlogs(ctx, sqlc.ListBlogsParams{
-		Status:     sqlc.PageStatus(""),
-		IsFeatured: false, // plain bool for ListBlogs
-		SortBy:     "created_at_desc",
-		OffsetVal:  offset,
-		LimitVal:   limit,
+		Status:     statusStr,
+		IsFeatured: featuredStr,
+		SortBy:     params.SortBy,
+		SortOrder:  params.SortOrder,
+		OffsetVal:  params.Offset,
+		LimitVal:   params.Limit,
 	})
 	if err != nil {
 		return nil, errors.Internal("Failed to list blogs", err)
@@ -164,17 +180,17 @@ func (s *Service) ListBlogs(ctx context.Context, limit, offset int32) (*BlogList
 	}
 
 	// Calculate pagination
-	totalPages := int(totalCount) / int(limit)
-	if int(totalCount)%int(limit) > 0 {
+	totalPages := int(totalCount) / int(params.Limit)
+	if int(totalCount)%int(params.Limit) > 0 {
 		totalPages++
 	}
-	currentPage := int(offset)/int(limit) + 1
+	currentPage := int(params.Offset)/int(params.Limit) + 1
 
 	return &BlogListResponse{
 		Blogs: blogResponses,
 		Pagination: Pagination{
 			Page:       currentPage,
-			Limit:      int(limit),
+			Limit:      int(params.Limit),
 			TotalPages: totalPages,
 			TotalCount: int(totalCount),
 		},

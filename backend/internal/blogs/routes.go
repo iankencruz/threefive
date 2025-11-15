@@ -14,8 +14,8 @@ func RegisterRoutes(r chi.Router, handler *Handler, sessionManager *session.Mana
 	r.Route("/blogs", func(r chi.Router) {
 		// Public routes (no authentication required)
 		r.Group(func(r chi.Router) {
-			r.Get("/", handler.ListBlogs)         // GET /api/v1/blogs
-			r.Get("/{idOrSlug}", handler.GetBlog) // GET /api/v1/blogs/{idOrSlug}
+			r.Get("/", handler.ListBlogs)           // GET /api/v1/blogs
+			r.Get("/{slug}", handler.GetBlogBySlug) // GET /api/v1/blogs/{slug}
 		})
 
 		// Protected routes (authentication required)

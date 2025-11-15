@@ -61,63 +61,99 @@ func (h *Handler) CreateBlog(w http.ResponseWriter, r *http.Request) {
 	responses.WriteCreated(w, blog)
 }
 
-// GetBlog handles retrieving a single blog by ID or slug
-// GET /api/v1/blogs/{idOrSlug}
-func (h *Handler) GetBlog(w http.ResponseWriter, r *http.Request) {
-	idOrSlug := chi.URLParam(r, "idOrSlug")
+// GetBlogBySlug handles retrieving a single blog by slug
+// GET /api/v1/blogs/{slug}
+func (h *Handler) GetBlogBySlug(w http.ResponseWriter, r *http.Request) {
+	slug := chi.URLParam(r, "slug")
 
-	// Try parsing as UUID first
-	if id, err := uuid.Parse(idOrSlug); err == nil {
-		blog, err := h.service.GetBlogByID(r.Context(), id)
-		if err != nil {
-			responses.WriteErr(w, err)
-			return
-		}
-		responses.WriteJSON(w, http.StatusOK, blog)
-		return
-	}
-
-	// Otherwise, treat as slug
-	blog, err := h.service.GetBlogBySlug(r.Context(), idOrSlug)
+	blog, err := h.service.GetBlogBySlug(r.Context(), slug)
 	if err != nil {
 		responses.WriteErr(w, err)
 		return
 	}
 
-	responses.WriteJSON(w, http.StatusOK, blog)
+	responses.WriteOK(w, blog)
 }
 
-// ListBlogs handles retrieving a paginated list of blogs
-// GET /api/v1/blogs
+// ListBlogs handles retrieving a paginated list of blogs with optional filters
+// GET /api/v1/blogs?status=published&featured=true&page=1&limit=20&sort=created_at&order=desc
 func (h *Handler) ListBlogs(w http.ResponseWriter, r *http.Request) {
-	// Parse pagination parameters
-	limit := int32(10)
-	offset := int32(0)
+	// Parse pagination params
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	if page < 1 {
+		page = 1
+	}
 
-	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
-		if l, err := strconv.ParseInt(limitStr, 10, 32); err == nil && l > 0 {
-			limit = int32(l)
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	if limit < 1 || limit > 100 {
+		limit = 20
+	}
+
+	// Parse filter parameters
+	var statusFilter *string
+	if status := r.URL.Query().Get("status"); status != "" {
+		// Validate status is a valid enum value
+		if status == "draft" || status == "published" || status == "archived" {
+			statusFilter = &status
 		}
 	}
 
-	if offsetStr := r.URL.Query().Get("offset"); offsetStr != "" {
-		if o, err := strconv.ParseInt(offsetStr, 10, 32); err == nil && o >= 0 {
-			offset = int32(o)
+	var featuredFilter *bool
+	if featured := r.URL.Query().Get("featured"); featured != "" {
+		if featured == "true" {
+			t := true
+			featuredFilter = &t
+		} else if featured == "false" {
+			f := false
+			featuredFilter = &f
 		}
 	}
 
-	// Limit max to 100
-	if limit > 100 {
-		limit = 100
+	// Parse sort parameters
+	sortBy := r.URL.Query().Get("sort")
+	validSortFields := map[string]bool{
+		"created_at":   true,
+		"published_at": true,
+		"title":        true,
+	}
+	if sortBy == "" || !validSortFields[sortBy] {
+		sortBy = "created_at"
 	}
 
-	blogs, err := h.service.ListBlogs(r.Context(), limit, offset)
+	sortOrder := r.URL.Query().Get("order")
+	if sortOrder != "asc" && sortOrder != "desc" {
+		sortOrder = "desc"
+	}
+
+	offset := (page - 1) * limit
+
+	// List blogs with filters
+	result, err := h.service.ListBlogs(r.Context(), ListBlogsParams{
+		StatusFilter:   statusFilter,
+		FeaturedFilter: featuredFilter,
+		SortBy:         sortBy,
+		SortOrder:      sortOrder,
+		Limit:          int32(limit),
+		Offset:         int32(offset),
+	})
 	if err != nil {
 		responses.WriteErr(w, err)
 		return
 	}
 
-	responses.WriteJSON(w, http.StatusOK, blogs)
+	// Build response with pagination and filters
+	response := map[string]any{
+		"data":       result.Blogs,
+		"pagination": result.Pagination,
+		"filters": map[string]any{
+			"status":   statusFilter,
+			"featured": featuredFilter,
+			"sort":     sortBy,
+			"order":    sortOrder,
+		},
+	}
+
+	responses.WriteJSON(w, http.StatusOK, response)
 }
 
 // UpdateBlog handles updating a blog
