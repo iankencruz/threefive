@@ -10,6 +10,7 @@ import (
 	"github.com/iankencruz/threefive/internal/blocks"
 	"github.com/iankencruz/threefive/internal/shared/errors"
 	"github.com/iankencruz/threefive/internal/shared/sqlc"
+	"github.com/iankencruz/threefive/internal/shared/utils"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -67,7 +68,7 @@ func (s *Service) CreatePage(ctx context.Context, req CreatePageRequest, userID 
 		Title:           req.Title,
 		Slug:            req.Slug,
 		Status:          sqlc.NullPageStatus{PageStatus: sqlc.PageStatus(req.Status), Valid: true},
-		FeaturedImageID: uuidToPgUUID(req.FeaturedImageID),
+		FeaturedImageID: utils.UUIDToPg(req.FeaturedImageID),
 	})
 
 	if err != nil {
@@ -202,10 +203,10 @@ func (s *Service) UpdatePage(ctx context.Context, pageID uuid.UUID, req UpdatePa
 	// Update page
 	page, err := qtx.UpdatePage(ctx, sqlc.UpdatePageParams{
 		ID:              pageID,
-		Title:           pointerToString(req.Title),
-		Slug:            pointerToString(req.Slug),
-		Status:          statusToNullPageStatus(req.Status),
-		FeaturedImageID: uuidToPgUUID(req.FeaturedImageID),
+		Title:           utils.PtrStr(req.Title),
+		Slug:            utils.PtrStr(req.Slug),
+		Status:          utils.StatusToPg(req.Status),
+		FeaturedImageID: utils.UUIDToPg(req.FeaturedImageID),
 	})
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -361,14 +362,14 @@ func (s *Service) createSEO(ctx context.Context, qtx *sqlc.Queries, pageID uuid.
 	_, err := qtx.CreateSEO(ctx, sqlc.CreateSEOParams{
 		EntityType:      "page",
 		EntityID:        pageID,
-		MetaTitle:       stringToPgText(req.MetaTitle),
-		MetaDescription: stringToPgText(req.MetaDescription),
-		OgTitle:         stringToPgText(req.OGTitle),
-		OgDescription:   stringToPgText(req.OGDescription),
-		OgImageID:       uuidToPgUUID(req.OGImageID),
-		CanonicalUrl:    stringToPgText(req.CanonicalURL),
-		RobotsIndex:     boolToPgBool(req.RobotsIndex),
-		RobotsFollow:    boolToPgBool(req.RobotsFollow),
+		MetaTitle:       utils.StrToPg(req.MetaTitle),
+		MetaDescription: utils.StrToPg(req.MetaDescription),
+		OgTitle:         utils.StrToPg(req.OGTitle),
+		OgDescription:   utils.StrToPg(req.OGDescription),
+		OgImageID:       utils.UUIDToPg(req.OGImageID),
+		CanonicalUrl:    utils.StrToPg(req.CanonicalURL),
+		RobotsIndex:     utils.BoolToPg(req.RobotsIndex, false),
+		RobotsFollow:    utils.BoolToPg(req.RobotsFollow, false),
 	})
 	if err != nil {
 		return errors.Internal("Failed to create SEO", err)
@@ -381,14 +382,14 @@ func (s *Service) upsertSEO(ctx context.Context, qtx *sqlc.Queries, pageID uuid.
 	_, err := qtx.UpsertSEO(ctx, sqlc.UpsertSEOParams{
 		EntityType:      "page",
 		EntityID:        pageID,
-		MetaTitle:       stringToPgText(req.MetaTitle),
-		MetaDescription: stringToPgText(req.MetaDescription),
-		OgTitle:         stringToPgText(req.OGTitle),
-		OgDescription:   stringToPgText(req.OGDescription),
-		OgImageID:       uuidToPgUUID(req.OGImageID),
-		CanonicalUrl:    stringToPgText(req.CanonicalURL),
-		RobotsIndex:     boolToPgBool(req.RobotsIndex),
-		RobotsFollow:    boolToPgBool(req.RobotsFollow),
+		MetaTitle:       utils.StrToPg(req.MetaTitle),
+		MetaDescription: utils.StrToPg(req.MetaDescription),
+		OgTitle:         utils.StrToPg(req.OGTitle),
+		OgDescription:   utils.StrToPg(req.OGDescription),
+		OgImageID:       utils.UUIDToPg(req.OGImageID),
+		CanonicalUrl:    utils.StrToPg(req.CanonicalURL),
+		RobotsIndex:     utils.BoolToPg(req.RobotsIndex, false),
+		RobotsFollow:    utils.BoolToPg(req.RobotsFollow, false),
 	})
 	if err != nil {
 		return errors.Internal("Failed to upsert SEO", err)
@@ -424,46 +425,4 @@ func buildSEOResponse(seo sqlc.Seo) *SEOResponse {
 	}
 
 	return resp
-}
-
-// ============================================
-// Type conversion helpers
-// ============================================
-
-func uuidToPgUUID(id *uuid.UUID) pgtype.UUID {
-	if id == nil {
-		return pgtype.UUID{Valid: false}
-	}
-	return pgtype.UUID{Bytes: *id, Valid: true}
-}
-
-func stringToPgText(s *string) pgtype.Text {
-	if s == nil {
-		return pgtype.Text{Valid: false}
-	}
-	return pgtype.Text{String: *s, Valid: true}
-}
-
-func boolToPgBool(b *bool) pgtype.Bool {
-	if b == nil {
-		return pgtype.Bool{Bool: true, Valid: true} // Default to true
-	}
-	return pgtype.Bool{Bool: *b, Valid: true}
-}
-
-func statusToNullPageStatus(status *string) sqlc.NullPageStatus {
-	if status == nil {
-		return sqlc.NullPageStatus{Valid: false}
-	}
-	return sqlc.NullPageStatus{
-		PageStatus: sqlc.PageStatus(*status),
-		Valid:      true,
-	}
-}
-
-func pointerToString(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
 }
