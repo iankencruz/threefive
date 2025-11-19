@@ -1,38 +1,36 @@
-// frontend/src/routes/admin/pages/+page.server.ts
+// frontend/src/routes/admin/blogs/+page.ts
 import { error } from "@sveltejs/kit";
 import type { PageLoad } from "./$types";
+import { PUBLIC_API_URL } from "$env/static/public";
 
 export const load: PageLoad = async ({ fetch, url, parent }) => {
-	// Get user from parent layout
 	const { user } = await parent();
 
 	const page = parseInt(url.searchParams.get("page") || "1");
 	const limit = 20;
-	const pageType = url.searchParams.get("page_type");
 
 	try {
-		// Build query parameters
 		const params = new URLSearchParams({
 			page: page.toString(),
 			limit: limit.toString(),
 		});
 
-		// Add page_type filter if it exists
-		if (pageType && pageType !== "all") {
-			params.set("page_type", pageType);
-		}
-
-		const response = await fetch(`/api/v1/pages?${params.toString()}`);
+		const response = await fetch(
+			`${PUBLIC_API_URL}/api/v1/blogs?${params.toString()}`,
+			{
+				credentials: "include",
+			},
+		);
 
 		if (!response.ok) {
-			throw error(response.status, "Failed to fetch pages");
+			throw error(response.status, "Failed to fetch blogs");
 		}
 
 		const data = await response.json();
 
 		return {
 			user,
-			pages: data.pages || [],
+			blogs: data.data || [], // Note: blogs API returns "data" not "blogs"
 			pagination: data.pagination || {
 				page: 1,
 				limit: 20,
@@ -41,7 +39,7 @@ export const load: PageLoad = async ({ fetch, url, parent }) => {
 			},
 		};
 	} catch (err) {
-		console.error("Error fetching pages:", err);
-		throw error(500, "Failed to load pages");
+		console.error("Error fetching blogs:", err);
+		throw error(500, "Failed to load blogs");
 	}
 };

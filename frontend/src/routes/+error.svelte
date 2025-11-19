@@ -1,16 +1,16 @@
 <!-- frontend/src/routes/+error.svelte -->
 <script lang="ts">
-import { page } from "$app/stores";
+	import { page } from "$app/state";
 </script>
 
 <svelte:head>
-	<title>{$page.status} - {$page.error?.message || 'Error'}</title>
+	<title>{page.status} - {page.error?.message || 'Error'}</title>
 </svelte:head>
 
 <div class="min-h-screen bg-gray-50 flex items-center justify-center px-4">
 	<div class="max-w-md w-full text-center">
 		<div class="mb-8">
-			{#if $page.status === 404}
+			{#if page.status === 404}
 				<svg class="w-24 h-24 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
 				</svg>
@@ -22,13 +22,13 @@ import { page } from "$app/stores";
 		</div>
 
 		<h1 class="text-6xl font-bold text-gray-900 mb-4">
-			{$page.status}
+			{page.status}
 		</h1>
 		
 		<h2 class="text-2xl font-semibold text-gray-700 mb-4">
-			{#if $page.status === 404}
+			{#if page.status === 404}
 				Page Not Found
-			{:else if $page.status === 500}
+			{:else if page.status === 500}
 				Internal Server Error
 			{:else}
 				Something Went Wrong
@@ -36,13 +36,13 @@ import { page } from "$app/stores";
 		</h2>
 		
 		<p class="text-gray-600 mb-8">
-			{$page.error?.message || 'An unexpected error occurred'}
+			{page.error?.message || 'An unexpected error occurred'}
 		</p>
 		
 		<div class="flex flex-col sm:flex-row gap-4 justify-center">
 			<a 
 				href="/" 
-				class="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+				class="px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary transition-colors"
 			>
 				Go Home
 			</a>

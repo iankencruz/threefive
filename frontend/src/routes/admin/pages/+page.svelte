@@ -14,22 +14,6 @@
 		page.url.searchParams.get("page_type") || "all",
 	);
 
-	// Function to change page type filter
-	function changePageType(type: string) {
-		const params = new URLSearchParams(page.url.searchParams);
-
-		if (type === "all") {
-			params.delete("page_type");
-		} else {
-			params.set("page_type", type);
-		}
-
-		// Reset to page 1 when changing filters
-		params.delete("page");
-
-		goto(`/admin/pages?${params.toString()}`);
-	}
-
 	const formatDate = (dateString: string) => {
 		return new Date(dateString).toLocaleDateString("en-US", {
 			year: "numeric",
@@ -88,64 +72,6 @@
 
 
   
-  <!-- Tabs -->
-  <div class="mb-3">
-    <div class="grid grid-cols-1 sm:hidden">
-      <!-- Mobile dropdown -->
-      <select 
-				aria-label="Select a tab" 
-				class="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white/5 py-2 pr-8 pl-3 text-base text-gray-100 outline-1 -outline-offset-1 outline-white/10 *:bg-gray-800 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500"
-				onchange={(e) => changePageType(e.currentTarget.value)}
-				value={currentPageType}
-			>
-        <option value="all">All</option>
-        <option value="generic">Generic</option>
-        <option value="project">Project</option>
-        <option value="blog">Blog</option>
-      </select>
-      <svg viewBox="0 0 16 16" fill="currentColor" data-slot="icon" aria-hidden="true" class="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-center justify-self-end fill-gray-400">
-        <path d="M4.22 6.22a.75.75 0 0 1 1.06 0L8 8.94l2.72-2.72a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 7.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" fill-rule="evenodd" />
-      </svg>
-    </div>
-    <div class="hidden sm:block">
-      <div class="border-b border-white/10">
-        <nav aria-label="Tabs" class="-mb-px flex max-w-md ">
-          <button
-						onclick={() => changePageType('all')}
-						class="flex-1 border-b-2 px-1 py-4 text-sm font-medium whitespace-nowrap {currentPageType === 'all' 
-							? 'border-primary text-primary' 
-							: 'border-transparent text-gray-400 hover:border-white/20 hover:text-gray-200'}"
-					>
-						All
-					</button>
-          <button
-						onclick={() => changePageType('generic')}
-						class="flex-1 border-b-2 px-1 py-4 text-sm font-medium whitespace-nowrap {currentPageType === 'generic' 
-							? 'border-primary text-primary' 
-							: 'border-transparent text-gray-400 hover:border-white/20 hover:text-gray-200'}"
-					>
-						Generic
-					</button>
-          <button
-						onclick={() => changePageType('project')}
-						class="flex-1 border-b-2 px-1 py-4 text-sm font-medium whitespace-nowrap {currentPageType === 'project' 
-							? 'border-primary text-primary' 
-							: 'border-transparent text-gray-400 hover:border-white/20 hover:text-gray-200'}"
-					>
-						Project
-					</button>
-          <button
-						onclick={() => changePageType('blog')}
-						class="flex-1 border-b-2 px-1 py-4 text-sm font-medium whitespace-nowrap {currentPageType === 'blog' 
-							? 'border-primary text-primary' 
-							: 'border-transparent text-gray-400 hover:border-white/20 hover:text-gray-200'}"
-					>
-						Blog
-					</button>
-        </nav>
-      </div>
-    </div>
-  </div>
 
 
   <!-- Table -->
