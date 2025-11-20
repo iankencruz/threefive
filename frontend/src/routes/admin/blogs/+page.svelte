@@ -2,7 +2,7 @@
 <script lang="ts">
 	import { goto } from "$app/navigation";
 	import type { PageData } from "./$types";
-	import { EyeIcon, SquarePenIcon } from "lucide-svelte";
+	import { EyeIcon, SquarePenIcon, Layers } from "lucide-svelte";
 	import { page } from "$app/state";
 
 	let { data }: { data: PageData } = $props();
@@ -29,6 +29,41 @@
 	};
 </script>
 
+
+{#snippet pagination(data: PageData)}
+		{#if data.pagination && data.pagination.total_pages > 1}
+			<div class="flex items-center justify-center gap-4 mt-8">
+				<button
+					class="px-4 py-2 border border-gray-300 rounded-lg bg-surface text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
+					disabled={data.pagination.page === 1}
+					onclick={() => {
+						const params = new URLSearchParams(page.url.searchParams);
+						params.set('page', (data.pagination.page - 1).toString());
+						goto(`/admin/pages?${params.toString()}`);
+					}}
+				>
+					Previous
+				</button>
+				<span class="text-sm text-gray-600">
+					Page {data.pagination.page} of {data.pagination.total_pages}
+				</span>
+				<button
+					class="px-4 py-2 border border-gray-300 rounded-lg bg-surface text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
+					disabled={data.pagination.page === data.pagination.total_pages}
+					onclick={() => {
+						const params = new URLSearchParams(page.url.searchParams);
+						params.set('page', (data.pagination.page + 1).toString());
+						goto(`/admin/pages?${params.toString()}`);
+					}}
+				>
+					Next
+				</button>
+			</div>
+		{/if}
+{/snippet}
+
+
+
 <div class="max-w-7xl mx-auto">
 	<div class="flex justify-between items-center mb-8">
 		<h1 class="">Blogs</h1>
@@ -53,19 +88,8 @@
 		<div
 			class="text-center py-20 bg-surface rounded-lg border-2 border-dashed border-gray-700"
 		>
-			<svg
-				class="mx-auto h-12 w-12 text-gray-400 mb-4"
-				fill="none"
-				stroke="currentColor"
-				viewBox="0 0 24 24"
-			>
-				<path
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					stroke-width="2"
-					d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-				/>
-			</svg>
+
+      <Layers class="mx-auto h-12 w-12 text-gray-400 mb-4"/>
 			<h3 class="text-lg font-medium text-gray-200 mb-2">No blog posts yet</h3>
 			<p class="text-gray-400 mb-6">Get started by creating your first blog post.</p>
 			<button
@@ -192,34 +216,7 @@
 			</table>
 		</div>
 
-		{#if data.pagination && data.pagination.total_pages > 1}
-			<div class="flex items-center justify-center gap-4 mt-8">
-				<button
-					class="px-4 py-2 border border-gray-600 rounded-lg bg-surface text-gray-300 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
-					disabled={data.pagination.page === 1}
-					onclick={() => {
-						const params = new URLSearchParams(page.url.searchParams);
-						params.set("page", (data.pagination.page - 1).toString());
-						goto(`/admin/blogs?${params.toString()}`);
-					}}
-				>
-					Previous
-				</button>
-				<span class="text-sm text-gray-400">
-					Page {data.pagination.page} of {data.pagination.total_pages}
-				</span>
-				<button
-					class="px-4 py-2 border border-gray-600 rounded-lg bg-surface text-gray-300 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
-					disabled={data.pagination.page === data.pagination.total_pages}
-					onclick={() => {
-						const params = new URLSearchParams(page.url.searchParams);
-						params.set("page", (data.pagination.page + 1).toString());
-						goto(`/admin/blogs?${params.toString()}`);
-					}}
-				>
-					Next
-				</button>
-			</div>
-		{/if}
+
+      {@render pagination(data)}
 	{/if}
 </div>

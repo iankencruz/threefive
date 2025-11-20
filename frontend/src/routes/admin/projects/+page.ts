@@ -1,7 +1,8 @@
+// frontend/src/routes/admin/projects/+page.ts
 import { error } from "@sveltejs/kit";
 import type { PageLoad } from "./$types";
 
-export const load: PageLoad = async ({ fetch, parent, url }) => {
+export const load: PageLoad = async ({ fetch, url, parent }) => {
 	const { user } = await parent();
 
 	const page = parseInt(url.searchParams.get("page") || "1");
@@ -17,6 +18,10 @@ export const load: PageLoad = async ({ fetch, parent, url }) => {
 			credentials: "include",
 		});
 
+		if (!response.ok) {
+			throw error(response.status, "Failed to fetch projects");
+		}
+
 		const data = await response.json();
 
 		return {
@@ -30,7 +35,7 @@ export const load: PageLoad = async ({ fetch, parent, url }) => {
 			},
 		};
 	} catch (err) {
-		console.error("Error constructing URLSearchParams:", err);
-		throw error(500, "Internal Server Error");
+		console.error("Error fetching projects:", err);
+		throw error(500, "Failed to load projects");
 	}
 };

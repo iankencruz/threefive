@@ -2,7 +2,7 @@
 <script lang="ts">
 	import { goto } from "$app/navigation";
 	import type { PageData } from "./$types";
-	import { EyeIcon, SquarePenIcon } from "lucide-svelte";
+	import { EyeIcon, Layers, SquarePenIcon } from "lucide-svelte";
 	import { page } from "$app/state";
 
 	let { data }: { data: PageData } = $props();
@@ -29,6 +29,42 @@
 	};
 </script>
 
+
+{#snippet pagination(data: PageData)}
+
+		{#if data.pagination && data.pagination.total_pages > 1}
+			<div class="flex items-center justify-center gap-4 mt-8">
+				<button
+					class="px-4 py-2 border border-gray-300 rounded-lg bg-surface text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
+					disabled={data.pagination.page === 1}
+					onclick={() => {
+						const params = new URLSearchParams(page.url.searchParams);
+						params.set('page', (data.pagination.page - 1).toString());
+						goto(`/admin/pages?${params.toString()}`);
+					}}
+				>
+					Previous
+				</button>
+				<span class="text-sm text-gray-600">
+					Page {data.pagination.page} of {data.pagination.total_pages}
+				</span>
+				<button
+					class="px-4 py-2 border border-gray-300 rounded-lg bg-surface text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
+					disabled={data.pagination.page === data.pagination.total_pages}
+					onclick={() => {
+						const params = new URLSearchParams(page.url.searchParams);
+						params.set('page', (data.pagination.page + 1).toString());
+						goto(`/admin/pages?${params.toString()}`);
+					}}
+				>
+					Next
+				</button>
+			</div>
+		{/if}
+{/snippet}
+
+
+
 <div class="max-w-7xl mx-auto">
 	<div class="flex justify-between items-center mb-8">
 		<h1 class="">Projects</h1>
@@ -53,20 +89,8 @@
 		<div
 			class="text-center py-20 bg-surface rounded-lg border-2 border-dashed border-gray-700"
 		>
-			<svg
-				class="mx-auto h-12 w-12 text-gray-400 mb-4"
-				fill="none"
-				stroke="currentColor"
-				viewBox="0 0 24 24"
-			>
-				<path
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					stroke-width="2"
-					d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-				/>
-			</svg>
-			<h3 class="text-lg font-medium text-gray-200 mb-2">No projects yet</h3>
+      <Layers class="mx-auto h-12 w-12 text-gray-400 mb-4"/>
+      <h3 class="text-lg font-medium text-gray-200 mb-2">No projects yet</h3>
 			<p class="text-gray-400 mb-6">Get started by creating your first project.</p>
 			<button
 				onclick={() => goto('/admin/projects/new')}
@@ -122,7 +146,7 @@
 					</tr>
 				</thead>
 				<tbody class="bg-surface divide-y divide-gray-700">
-					{#each data.projects as project}
+					{#each data.projects.data as project}
 						<tr class="hover:bg-white/5">
 							<td class="px-6 py-4">
 								<div class="flex flex-col">
@@ -190,34 +214,6 @@
 			</table>
 		</div>
 
-		{#if data.pagination && data.pagination.total_pages > 1}
-			<div class="flex items-center justify-center gap-4 mt-8">
-				<button
-					class="px-4 py-2 border border-gray-600 rounded-lg bg-surface text-gray-300 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
-					disabled={data.pagination.page === 1}
-					onclick={() => {
-						const params = new URLSearchParams(page.url.searchParams);
-						params.set("page", (data.pagination.page - 1).toString());
-						goto(`/admin/projects?${params.toString()}`);
-					}}
-				>
-					Previous
-				</button>
-				<span class="text-sm text-gray-400">
-					Page {data.pagination.page} of {data.pagination.total_pages}
-				</span>
-				<button
-					class="px-4 py-2 border border-gray-600 rounded-lg bg-surface text-gray-300 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
-					disabled={data.pagination.page === data.pagination.total_pages}
-					onclick={() => {
-						const params = new URLSearchParams(page.url.searchParams);
-						params.set("page", (data.pagination.page + 1).toString());
-						goto(`/admin/projects?${params.toString()}`);
-					}}
-				>
-					Next
-				</button>
-			</div>
-		{/if}
+    {@render pagination(data)}
 	{/if}
 </div>

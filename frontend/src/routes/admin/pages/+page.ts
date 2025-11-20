@@ -29,10 +29,11 @@ export const load: PageLoad = async ({ fetch, url, parent }) => {
 		}
 
 		const data = await response.json();
+		console.log("ts - data: ", data);
 
 		return {
 			user,
-			pages: data.pages || [],
+			pages: data || [],
 			pagination: data.pagination || {
 				page: 1,
 				limit: 20,
