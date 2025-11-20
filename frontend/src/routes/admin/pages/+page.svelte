@@ -1,219 +1,212 @@
 <!-- frontend/src/routes/admin/pages/+page.svelte -->
 <script lang="ts">
-import { goto } from "$app/navigation";
-import type { PageData } from "./$types";
-import { browser } from "$app/environment";
-import { EyeIcon, SquarePenIcon, Layers } from "lucide-svelte";
-import { page } from "$app/state";
+	import { goto } from '$app/navigation';
+	import type { PageData } from './$types';
+	import { browser } from '$app/environment';
+	import { EyeIcon, SquarePenIcon, Layers } from 'lucide-svelte';
+	import { page } from '$app/state';
 
-let { data }: { data: PageData } = $props();
+	let { data }: { data: PageData } = $props();
 
-// Get current page_type from URL
-const currentPageType = $derived(
-	page.url.searchParams.get("page_type") || "all",
-);
+	// Get current page_type from URL
+	const currentPageType = $derived(page.url.searchParams.get('page_type') || 'all');
 
-const formatDate = (dateString: string) => {
-	return new Date(dateString).toLocaleDateString("en-US", {
-		year: "numeric",
-		month: "short",
-		day: "numeric",
-	});
-};
+	const formatDate = (dateString: string) => {
+		return new Date(dateString).toLocaleDateString('en-US', {
+			year: 'numeric',
+			month: 'short',
+			day: 'numeric'
+		});
+	};
 
-const getStatusColor = (status: string) => {
-	switch (status) {
-		case "published":
-			return "bg-green-100 text-green-800";
-		case "draft":
-			return "bg-yellow-100 text-yellow-800";
-		case "archived":
-			return "bg-gray-100 text-gray-800";
-		default:
-			return "bg-gray-100 text-gray-800";
+	const getStatusColor = (status: string) => {
+		switch (status) {
+			case 'published':
+				return 'bg-green-100 text-green-800';
+			case 'draft':
+				return 'bg-yellow-100 text-yellow-800';
+			case 'archived':
+				return 'bg-gray-100 text-gray-800';
+			default:
+				return 'bg-gray-100 text-gray-800';
+		}
+	};
+
+	const getTypeColor = (type: string) => {
+		switch (type) {
+			case 'project':
+				return 'color-project';
+			case 'blog':
+				return 'color-blog';
+			case 'generic':
+				return 'color-generic';
+			default:
+				return 'color-generic';
+		}
+	};
+
+	function navigateToExternal(url: string) {
+		if (browser) {
+			// Ensure this runs only in the browser environment
+			window.location.href = url;
+		}
 	}
-};
 
-const getTypeColor = (type: string) => {
-	switch (type) {
-		case "project":
-			return "color-project";
-		case "blog":
-			return "color-blog";
-		case "generic":
-			return "color-generic";
-		default:
-			return "color-generic";
+	const headerItems = ['title', 'status', 'updated', 'actions'];
+
+	{
+		console.log('svelte data: ', data);
 	}
-};
-
-function navigateToExternal(url: string) {
-	if (browser) {
-		// Ensure this runs only in the browser environment
-		window.location.href = url;
-	}
-}
-
-const headerItems = ["title", "status", "updated", "actions"];
-
-{
-	console.log("svelte data: ", data);
-}
 </script>
 
-
-
-
 {#snippet pagination(data: PageData)}
-		{#if data.pagination && data.pagination.total_pages > 1}
-			<div class="flex items-center justify-center gap-4 mt-8">
-				<button
-					class="px-4 py-2 border border-gray-300 rounded-lg bg-surface text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
-					disabled={data.pagination.page === 1}
-					onclick={() => {
-						const params = new URLSearchParams(page.url.searchParams);
-						params.set('page', (data.pagination.page - 1).toString());
-						goto(`/admin/pages?${params.toString()}`);
-					}}
-				>
-					Previous
-				</button>
-				<span class="text-sm text-gray-600">
-					Page {data.pagination.page} of {data.pagination.total_pages}
-				</span>
-				<button
-					class="px-4 py-2 border border-gray-300 rounded-lg bg-surface text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
-					disabled={data.pagination.page === data.pagination.total_pages}
-					onclick={() => {
-						const params = new URLSearchParams(page.url.searchParams);
-						params.set('page', (data.pagination.page + 1).toString());
-						goto(`/admin/pages?${params.toString()}`);
-					}}
-				>
-					Next
-				</button>
-			</div>
-		{/if}
+	{#if data.pagination && data.pagination.total_pages > 1}
+		<div class="mt-8 flex items-center justify-center gap-4">
+			<button
+				class="rounded-lg border border-gray-300 bg-surface px-4 py-2 font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+				disabled={data.pagination.page === 1}
+				onclick={() => {
+					const params = new URLSearchParams(page.url.searchParams);
+					params.set('page', (data.pagination.page - 1).toString());
+					goto(`/admin/pages?${params.toString()}`);
+				}}
+			>
+				Previous
+			</button>
+			<span class="text-sm text-gray-600">
+				Page {data.pagination.page} of {data.pagination.total_pages}
+			</span>
+			<button
+				class="rounded-lg border border-gray-300 bg-surface px-4 py-2 font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+				disabled={data.pagination.page === data.pagination.total_pages}
+				onclick={() => {
+					const params = new URLSearchParams(page.url.searchParams);
+					params.set('page', (data.pagination.page + 1).toString());
+					goto(`/admin/pages?${params.toString()}`);
+				}}
+			>
+				Next
+			</button>
+		</div>
+	{/if}
 {/snippet}
 
-{#snippet thead(header :string[])}
-  <thead class="bg-surface">
-    <tr>
-      {#each header as h}
-          <th class="px-6 py-3 text-left text-xs font-medium  uppercase tracking-wider">
-          {h}
-        </th>
-      {/each}
-    </tr>
-  </thead>
+{#snippet thead(header: string[])}
+	<thead class="bg-surface">
+		<tr>
+			{#each header as h}
+				<th class="bg-black px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">
+					{h}
+				</th>
+			{/each}
+		</tr>
+	</thead>
 {/snippet}
 
-{#snippet tbody(header :string[])}
+{#snippet tbody(header: string[])}{/snippet}
 
-
-{/snippet}
-
-<div class="max-w-7xl mx-auto">
-	<div class="flex justify-between items-center mb-8">
+<div class="mx-auto max-w-7xl">
+	<div class="mb-8 flex items-center justify-between">
 		<h1 class="">Pages</h1>
 		<button
-			class="flex items-center gap-2 bg-primary hover:bg-primary text-white px-4 py-2 rounded-lg font-medium transition-colors"
+			class="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 font-medium text-white transition-colors hover:bg-primary"
 			onclick={() => goto('/admin/pages/new')}
 		>
-			<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+			<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
 			</svg>
 			New Page
 		</button>
 	</div>
 
+	{console.log('datapages: ', data.pages.data)}
 
-  
-
-  {console.log('datapages: ', data.pages.data)}
-
-  <!-- Table -->
-	{#if !data.pages || data.pages.length === 0}
-		<div class="flex flex-col items-center justify-center py-16 px-8 bg-surface rounded-lg border-2 border-dashed border-foreground-muted">
-      <Layers class="mx-auto h-12 w-12 text-gray-400 mb-4"/>
-			<h3 class="text-xl font-semibold  mb-2">No pages yet</h3>
+	<!-- Table -->
+	{#if !data.pages || data.pages.data.length === 0}
+		<div
+			class="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-foreground-muted bg-surface px-8 py-16"
+		>
+			<Layers class="mx-auto mb-4 h-12 w-12 text-gray-400" />
+			<h3 class="mb-2 text-xl font-semibold">No pages yet</h3>
 			<p class=" mb-6">Get started by creating your first page</p>
 			<button
-				class="bg-primary hover:bg-primary text-white px-6 py-2 rounded-lg font-medium transition-colors cursor-pointer"
+				class="cursor-pointer rounded-lg bg-primary px-6 py-2 font-medium text-white transition-colors hover:bg-primary"
 				onclick={() => goto('/admin/pages/new')}
 			>
 				Create Page
 			</button>
 		</div>
 	{:else}
-		<div class="bg-surface rounded-lg shadow overflow-hidden">
+		<div class="overflow-hidden rounded-lg bg-surface shadow">
 			<table class="min-w-full divide-y divide-gray-700">
-        {@render thead(headerItems)}
-				<tbody class="bg-surface divide-y divide-gray-200">
+				{@render thead(headerItems)}
+				<tbody class="divide-y divide-gray-200 bg-surface">
 					{#each data.pages.data as page}
 						<tr class="">
 							<td class="px-6 py-4 whitespace-nowrap">
-
 								<div class="flex flex-col">
-									<span class="font-medium ">{page.title}</span>
-									<span class="text-sm  ">/{page.slug}</span>
+									<span class="font-medium">{page.title}</span>
+									<span class="text-sm">/{page.slug}</span>
 								</div>
 							</td>
 							<td class="px-6 py-4 whitespace-nowrap">
-								<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium capitalize {getStatusColor(page.status)}">
+								<span
+									class="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium capitalize {getStatusColor(
+										page.status
+									)}"
+								>
 									{page.status}
 								</span>
 							</td>
-							<td class="px-6 py-4 whitespace-nowrap text-sm ">
+							<td class="px-6 py-4 text-sm whitespace-nowrap">
 								{formatDate(page.updated_at)}
 							</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <div class="flex items-center gap-2">
-                      <!-- Preview Button -->
-                      <button
-                          class="p-2   hover:bg-gray-400 rounded-lg transition-colors"
-                          onclick={() => window.open(`/preview/pages/${page.id}`, '_blank')}
-                          aria-label="Preview page"
-                          title="Preview in new tab"
-                      >
-                          <EyeIcon size={20}/>
-                      </button>
-                      
-                      <!-- Edit Button -->
-                      <button
-                          class="p-2   hover:bg-gray-400 rounded-lg transition-colors"
-                          onclick={() => goto(`/admin/pages/${page.id}/edit`)}
-                          aria-label="Edit page"
-                      >
-                          <SquarePenIcon size={16}/>
-                      </button>
-                      
-                      <!-- View Public Page (only if published) -->
-                      {#if page.status === 'published'}
-                          <button
-                              class="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                              onclick={() => navigateToExternal(`/${page.slug}`)}
-                              aria-label="View page"
-                          >
-                              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path
-                                      stroke-linecap="round"
-                                      stroke-linejoin="round"
-                                      stroke-width="2"
-                                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                                  />
-                              </svg>
-                          </button>
-                      {/if}
-                  </div>
-              </td>					
+							<td class="px-6 py-4 text-sm font-medium whitespace-nowrap">
+								<div class="flex items-center gap-2">
+									<!-- Preview Button -->
+									<button
+										class="rounded-lg p-2 transition-colors hover:bg-gray-400"
+										onclick={() => window.open(`/preview/pages/${page.id}`, '_blank')}
+										aria-label="Preview page"
+										title="Preview in new tab"
+									>
+										<EyeIcon size={20} />
+									</button>
 
-            </tr>
+									<!-- Edit Button -->
+									<button
+										class="rounded-lg p-2 transition-colors hover:bg-gray-400"
+										onclick={() => goto(`/admin/pages/${page.id}/edit`)}
+										aria-label="Edit page"
+									>
+										<SquarePenIcon size={16} />
+									</button>
+
+									<!-- View Public Page (only if published) -->
+									{#if page.status === 'published'}
+										<button
+											class="rounded-lg p-2 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
+											onclick={() => navigateToExternal(`/${page.slug}`)}
+											aria-label="View page"
+										>
+											<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path
+													stroke-linecap="round"
+													stroke-linejoin="round"
+													stroke-width="2"
+													d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+												/>
+											</svg>
+										</button>
+									{/if}
+								</div>
+							</td>
+						</tr>
 					{/each}
 				</tbody>
 			</table>
 		</div>
 
-    {@render pagination(data)}
+		{@render pagination(data)}
 	{/if}
 </div>
