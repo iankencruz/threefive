@@ -5,8 +5,20 @@
 	import BlockEditor from '$components/blocks/BlockEditor.svelte';
 	import SEOFields from '$components/admin/shared/SEOField.svelte';
 	import { toast } from 'svelte-sonner';
+	import type { SEOData } from '$types/seo';
 
-	let formData = $state({
+	let formData = $state<{
+		title: string;
+		slug: string;
+		status: 'draft' | 'published' | 'archived';
+		client_name: string;
+		project_year: number;
+		project_url: string;
+		technologies: string[];
+		project_status: 'completed' | 'ongoing' | 'archived';
+		blocks: any[];
+		seo: SEOData;
+	}>({
 		title: '',
 		slug: '',
 		status: 'draft' as 'draft' | 'published' | 'archived',

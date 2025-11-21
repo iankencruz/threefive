@@ -103,8 +103,6 @@
 	</thead>
 {/snippet}
 
-{#snippet tbody(header: string[])}{/snippet}
-
 <div class="mx-auto max-w-7xl">
 	<div class="mb-8 flex items-center justify-between">
 		<h1 class="">Pages</h1>

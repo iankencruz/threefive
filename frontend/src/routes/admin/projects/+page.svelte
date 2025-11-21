@@ -77,7 +77,7 @@
 		</button>
 	</div>
 
-	{#if !data.projects || data.projects.length === 0}
+	{#if !data.projects.data || data.projects.data.length === 0}
 		<!-- Empty State -->
 		<div class="rounded-lg border-2 border-dashed border-gray-700 bg-surface py-20 text-center">
 			<Layers class="mx-auto mb-4 h-12 w-12 text-gray-400" />
