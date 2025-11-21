@@ -1,7 +1,6 @@
-<!-- frontend/src/routes/admin/pages/[id]/edit/+page.svelte -->
+<!-- frontend/src/routes/admin/projects/[id]/edit/+page.svelte -->
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
 	import { PUBLIC_API_URL } from '$env/static/public';
 	import BlockEditor from '$components/blocks/BlockEditor.svelte';
 	import SEOFields from '$components/admin/shared/SEOField.svelte';
@@ -11,31 +10,32 @@
 
 	let { data }: { data: PageData } = $props();
 
-	let formData = $state<{
-		title: string;
-		slug: string;
-		status: 'draft' | 'published' | 'archived';
-		blocks: any[];
-		seo: SEOData;
-	}>({
-		title: data.page.title || '',
-		slug: data.page.slug || '',
-		status: data.page.status || ('draft' as 'draft' | 'published' | 'archived'),
-		blocks: data.page.blocks || [],
+	let formData = $state({
+		title: data.project.title || '',
+		slug: data.project.slug || '',
+		status: data.project.status || ('draft' as 'draft' | 'published' | 'archived'),
+		client_name: data.project.client_name || '',
+		project_year: data.project.project_year || new Date().getFullYear(),
+		project_url: data.project.project_url || '',
+		technologies: data.project.technologies || ([] as string[]),
+		project_status:
+			data.project.project_status || ('completed' as 'completed' | 'ongoing' | 'archived'),
+		blocks: data.project.blocks || [],
 		seo: {
-			meta_title: data.page.seo?.meta_title || '',
-			meta_description: data.page.seo?.meta_description || '',
-			og_title: data.page.seo?.og_title || '',
-			og_description: data.page.seo?.og_description || '',
-			robots_index: data.page.seo?.robots_index ?? true,
-			robots_follow: data.page.seo?.robots_follow ?? true,
-			canonical_url: data.page.seo?.canonical_url || ''
-		}
+			meta_title: data.project.seo?.meta_title || '',
+			meta_description: data.project.seo?.meta_description || '',
+			og_title: data.project.seo?.og_title || '',
+			og_description: data.project.seo?.og_description || '',
+			robots_index: data.project.seo?.robots_index ?? true,
+			robots_follow: data.project.seo?.robots_follow ?? true,
+			canonical_url: data.project.seo?.canonical_url || ''
+		} as SEOData
 	});
 
 	let errors = $state<Record<string, string>>({});
 	let loading = $state(false);
-	let currentTab = $state<'content' | 'seo'>('content');
+	let currentTab = $state<'content' | 'seo' | 'project'>('content');
+	let newTech = $state('');
 	let slugManuallyEdited = $state(false);
 
 	// Auto-generate slug from title
@@ -55,6 +55,17 @@
 		}
 	});
 
+	const addTechnology = () => {
+		if (newTech.trim() && !formData.technologies.includes(newTech.trim())) {
+			formData.technologies = [...formData.technologies, newTech.trim()];
+			newTech = '';
+		}
+	};
+
+	const removeTechnology = (tech: string) => {
+		formData.technologies = formData.technologies.filter((t: any) => t !== tech);
+	};
+
 	const handleSubmit = async () => {
 		loading = true;
 		errors = {};
@@ -63,13 +74,17 @@
 			const payload = {
 				title: formData.title,
 				slug: formData.slug,
-				page_type: 'generic',
 				status: formData.status,
+				client_name: formData.client_name,
+				project_year: formData.project_year,
+				project_url: formData.project_url,
+				technologies: formData.technologies,
+				project_status: formData.project_status,
 				blocks: formData.blocks,
 				seo: formData.seo.meta_title || formData.seo.meta_description ? formData.seo : undefined
 			};
 
-			const response = await fetch(`${PUBLIC_API_URL}/api/v1/pages/${data.page.id}`, {
+			const response = await fetch(`${PUBLIC_API_URL}/api/v1/projects/${data.project.id}`, {
 				method: 'PUT',
 				headers: {
 					'Content-Type': 'application/json'
@@ -84,18 +99,18 @@
 					errors = errorData.errors;
 					toast.error('Please fix the validation errors');
 				} else {
-					toast.error(errorData.message || 'Failed to update page');
+					toast.error(errorData.message || 'Failed to update project');
 				}
 				return;
 			}
 
 			const result = await response.json();
-			toast.success('Page updated successfully!');
+			toast.success('Project updated successfully!');
 
-			// Redirect to pages list
-			goto('/admin/pages');
+			// Redirect to projects list
+			goto('/admin/projects');
 		} catch (error) {
-			console.error('Error updating page:', error);
+			console.error('Error updating project:', error);
 			toast.error('An unexpected error occurred');
 		} finally {
 			loading = false;
@@ -106,7 +121,7 @@
 <div class="mx-auto max-w-7xl">
 	<div class="mb-8 flex items-center gap-4">
 		<button
-			onclick={() => goto('/admin/pages')}
+			onclick={() => goto('/admin/projects')}
 			class="rounded-lg p-2 transition-colors hover:bg-gray-700"
 		>
 			<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -118,7 +133,7 @@
 				/>
 			</svg>
 		</button>
-		<h1 class="">Edit Page</h1>
+		<h1 class="">Edit Project</h1>
 	</div>
 
 	<form
@@ -153,6 +168,16 @@
 					>
 						SEO
 					</button>
+					<button
+						type="button"
+						onclick={() => (currentTab = 'project')}
+						class="ml-8 border-b-2 px-1 py-4 text-sm font-medium transition-colors {currentTab ===
+						'project'
+							? 'border-primary text-primary'
+							: 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-200'}"
+					>
+						Project Details
+					</button>
 				</nav>
 			</div>
 
@@ -170,7 +195,7 @@
 									bind:value={formData.title}
 									required
 									class="form-input"
-									placeholder="Enter page title"
+									placeholder="Enter project title"
 								/>
 								{#if errors.title}
 									<p class="mt-1 text-sm text-red-600">{errors.title}</p>
@@ -187,7 +212,7 @@
 									oninput={() => (slugManuallyEdited = true)}
 									required
 									class="form-input"
-									placeholder="page-slug"
+									placeholder="project-slug"
 								/>
 								{#if errors.slug}
 									<p class="mt-1 text-sm text-red-600">{errors.slug}</p>
@@ -214,6 +239,95 @@
 				{:else if currentTab === 'seo'}
 					<!-- SEO Fields -->
 					<SEOFields bind:seo={formData.seo} onchange={(updated) => (formData.seo = updated)} />
+				{:else if currentTab === 'project'}
+					<!-- Project-Specific Fields -->
+					<div class="space-y-6">
+						<div class="grid grid-cols-2 gap-6">
+							<div>
+								<label class="mb-2 block text-sm font-medium">Client Name</label>
+								<input
+									type="text"
+									bind:value={formData.client_name}
+									class="form-input"
+									placeholder="Client or company name"
+								/>
+							</div>
+
+							<div>
+								<label class="mb-2 block text-sm font-medium">Project Year</label>
+								<input
+									type="number"
+									bind:value={formData.project_year}
+									min="1900"
+									max="2100"
+									class="form-input"
+								/>
+							</div>
+						</div>
+
+						<div>
+							<label class="mb-2 block text-sm font-medium">Project URL</label>
+							<input
+								type="url"
+								bind:value={formData.project_url}
+								class="form-input"
+								placeholder="https://example.com"
+							/>
+						</div>
+
+						<div>
+							<label class="mb-2 block text-sm font-medium">Technologies</label>
+							<div class="mb-3 flex gap-2">
+								<input
+									type="text"
+									bind:value={newTech}
+									onkeydown={(e) => e.key === 'Enter' && (e.preventDefault(), addTechnology())}
+									class="form-input flex-1"
+									placeholder="Add a technology"
+								/>
+								<button
+									onclick={addTechnology}
+									type="button"
+									class="rounded-lg bg-primary px-4 py-2 text-white transition-colors hover:bg-primary/90"
+								>
+									Add
+								</button>
+							</div>
+							<div class="flex flex-wrap gap-2">
+								{#each formData.technologies as tech}
+									<span
+										class="inline-flex items-center gap-1 rounded-full bg-blue-900/30 px-3 py-1 text-sm text-blue-300"
+									>
+										{tech}
+										<button
+											onclick={() => removeTechnology(tech)}
+											type="button"
+											class="hover:text-blue-100"
+											aria-label="Remove {tech}"
+										>
+											<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path
+													stroke-linecap="round"
+													stroke-linejoin="round"
+													stroke-width="2"
+													d="M6 18L18 6M6 6l12 12"
+												/>
+											</svg>
+										</button>
+									</span>
+								{/each}
+							</div>
+						</div>
+
+						<div>
+							<label class="mb-2 block text-sm font-medium">Project Status</label>
+							<select bind:value={formData.project_status} class="form-input">
+								<option value="completed">Completed</option>
+								<option value="ongoing">Ongoing</option>
+								<option value="archived">Archived</option>
+							</select>
+						</div>
+					</div>
 				{/if}
 			</div>
 		</div>
@@ -222,7 +336,7 @@
 		<div class="flex justify-end gap-4">
 			<button
 				type="button"
-				onclick={() => goto('/admin/pages')}
+				onclick={() => goto('/admin/projects')}
 				class="rounded-lg border border-gray-600 px-6 py-2 transition-colors hover:bg-gray-700"
 			>
 				Cancel
@@ -232,7 +346,7 @@
 				disabled={loading}
 				class="rounded-lg bg-primary px-6 py-2 text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
 			>
-				{loading ? 'Updating...' : 'Update Page'}
+				{loading ? 'Updating...' : 'Update Project'}
 			</button>
 		</div>
 	</form>

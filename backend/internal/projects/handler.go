@@ -59,6 +59,24 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	responses.WriteCreated(w, project)
 }
 
+// GetPageByID fetches a page by UUID (for admin editing)
+func (h *Handler) GetProjectByID(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		responses.WriteErr(w, err)
+		return
+	}
+
+	page, err := h.service.GetProjectByID(r.Context(), id)
+	if err != nil {
+		responses.WriteErr(w, err)
+		return
+	}
+
+	responses.WriteOK(w, page)
+}
+
 // GetProject handles retrieving a single project by ID or slug
 // GET /api/v1/projects/{slug}
 func (h *Handler) GetProjectBySlug(w http.ResponseWriter, r *http.Request) {

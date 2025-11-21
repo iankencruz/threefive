@@ -23,6 +23,7 @@ func RegisterRoutes(r chi.Router, handler *Handler, sessionManager *session.Mana
 			r.Use(authMiddleware.RequireAuth)
 
 			r.Post("/", handler.CreateBlog)                   // POST /api/v1/blogs
+			r.Get("/{id}", handler.GetBlogByID)               // PUT /api/v1/blogs/{id}
 			r.Put("/{id}", handler.UpdateBlog)                // PUT /api/v1/blogs/{id}
 			r.Patch("/{id}/status", handler.UpdateBlogStatus) // PATCH /api/v1/blogs/{id}/status
 			r.Delete("/{id}", handler.DeleteBlog)             // DELETE /api/v1/blogs/{id}

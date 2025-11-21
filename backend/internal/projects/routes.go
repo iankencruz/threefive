@@ -23,6 +23,7 @@ func RegisterRoutes(r chi.Router, handler *Handler, sessionManager *session.Mana
 			r.Use(authMiddleware.RequireAuth)
 
 			r.Post("/", handler.CreateProject)                   // POST /api/v1/projects
+			r.Get("/{id}", handler.GetProjectByID)               // POST /api/v1/projects
 			r.Put("/{id}", handler.UpdateProject)                // PUT /api/v1/projects/{id}
 			r.Patch("/{id}/status", handler.UpdateProjectStatus) // PATCH /api/v1/projects/{id}/status
 			r.Delete("/{id}", handler.DeleteProject)             // DELETE /api/v1/projects/{id}

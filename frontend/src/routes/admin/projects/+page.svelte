@@ -27,8 +27,6 @@
 				return 'bg-gray-100 text-gray-800';
 		}
 	};
-
-	console.log('.svelte data: ', data.projects);
 </script>
 
 {#snippet pagination(data: PageData)}

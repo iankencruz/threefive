@@ -1,9 +1,9 @@
-// frontend/src/routes/admin/projects/+page.ts
+// frontend/src/routes/admin/blogs/+page.ts
 import { error } from "@sveltejs/kit";
-import type { PageLoad } from "./$types";
+import type { PageServerLoad } from "./$types";
 import { PUBLIC_API_URL } from "$env/static/public";
 
-export const load: PageLoad = async ({ fetch, url, parent }) => {
+export const load: PageServerLoad = async ({ fetch, url, parent }) => {
   const { user } = await parent();
 
   const page = parseInt(url.searchParams.get("page") || "1");
@@ -16,21 +16,18 @@ export const load: PageLoad = async ({ fetch, url, parent }) => {
     });
 
     const response = await fetch(
-      `${PUBLIC_API_URL}/api/v1/projects?${params.toString()}`,
-      {
-        credentials: "include",
-      },
+      `${PUBLIC_API_URL}/api/v1/blogs?${params.toString()}`,
     );
 
     if (!response.ok) {
-      throw error(response.status, "Failed to fetch projects");
+      throw error(response.status, "Failed to fetch blogs");
     }
 
     const data = await response.json();
 
     return {
       user,
-      projects: data || [],
+      blogs: data.data || [], // Note: blogs API returns "data" not "blogs"
       pagination: data.pagination || {
         page: 1,
         limit: 20,
@@ -39,7 +36,7 @@ export const load: PageLoad = async ({ fetch, url, parent }) => {
       },
     };
   } catch (err) {
-    console.error("Error fetching projects:", err);
-    throw error(500, "Failed to load projects");
+    console.error("Error fetching blogs:", err);
+    throw error(500, "Failed to load blogs");
   }
 };

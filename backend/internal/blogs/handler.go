@@ -1,6 +1,7 @@
 package blogs
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -59,6 +60,25 @@ func (h *Handler) CreateBlog(w http.ResponseWriter, r *http.Request) {
 	}
 
 	responses.WriteCreated(w, blog)
+}
+
+// GetBlogByID handles retrieving a single blog by ID
+func (h *Handler) GetBlogByID(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		responses.WriteErr(w, err)
+		return
+	}
+
+	page, err := h.service.GetBlogByID(r.Context(), id)
+	if err != nil {
+		fmt.Print("Failed GetBlogByID service")
+		responses.WriteErr(w, err)
+		return
+	}
+
+	responses.WriteOK(w, page)
 }
 
 // GetBlogBySlug handles retrieving a single blog by slug

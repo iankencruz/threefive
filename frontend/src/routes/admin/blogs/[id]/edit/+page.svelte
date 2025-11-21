@@ -1,7 +1,6 @@
-<!-- frontend/src/routes/admin/pages/[id]/edit/+page.svelte -->
+<!-- frontend/src/routes/admin/blogs/[id]/edit/+page.svelte -->
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
 	import { PUBLIC_API_URL } from '$env/static/public';
 	import BlockEditor from '$components/blocks/BlockEditor.svelte';
 	import SEOFields from '$components/admin/shared/SEOField.svelte';
@@ -15,27 +14,33 @@
 		title: string;
 		slug: string;
 		status: 'draft' | 'published' | 'archived';
+		excerpt: string;
+		reading_time: number;
+		is_featured: boolean;
 		blocks: any[];
 		seo: SEOData;
 	}>({
-		title: data.page.title || '',
-		slug: data.page.slug || '',
-		status: data.page.status || ('draft' as 'draft' | 'published' | 'archived'),
-		blocks: data.page.blocks || [],
+		title: data.blog.title || '',
+		slug: data.blog.slug || '',
+		status: data.blog.status || ('draft' as 'draft' | 'published' | 'archived'),
+		excerpt: data.blog.excerpt || '',
+		reading_time: data.blog.reading_time || (undefined as number | undefined),
+		is_featured: data.blog.is_featured || false,
+		blocks: data.blog.blocks || [],
 		seo: {
-			meta_title: data.page.seo?.meta_title || '',
-			meta_description: data.page.seo?.meta_description || '',
-			og_title: data.page.seo?.og_title || '',
-			og_description: data.page.seo?.og_description || '',
-			robots_index: data.page.seo?.robots_index ?? true,
-			robots_follow: data.page.seo?.robots_follow ?? true,
-			canonical_url: data.page.seo?.canonical_url || ''
-		}
+			meta_title: data.blog.seo?.meta_title || '',
+			meta_description: data.blog.seo?.meta_description || '',
+			og_title: data.blog.seo?.og_title || '',
+			og_description: data.blog.seo?.og_description || '',
+			robots_index: data.blog.seo?.robots_index ?? true,
+			robots_follow: data.blog.seo?.robots_follow ?? true,
+			canonical_url: data.blog.seo?.canonical_url || ''
+		} as SEOData
 	});
 
 	let errors = $state<Record<string, string>>({});
 	let loading = $state(false);
-	let currentTab = $state<'content' | 'seo'>('content');
+	let currentTab = $state<'content' | 'seo' | 'blog'>('content');
 	let slugManuallyEdited = $state(false);
 
 	// Auto-generate slug from title
@@ -63,13 +68,15 @@
 			const payload = {
 				title: formData.title,
 				slug: formData.slug,
-				page_type: 'generic',
 				status: formData.status,
+				excerpt: formData.excerpt,
+				reading_time: formData.reading_time,
+				is_featured: formData.is_featured,
 				blocks: formData.blocks,
 				seo: formData.seo.meta_title || formData.seo.meta_description ? formData.seo : undefined
 			};
 
-			const response = await fetch(`${PUBLIC_API_URL}/api/v1/pages/${data.page.id}`, {
+			const response = await fetch(`${PUBLIC_API_URL}/api/v1/blogs/${data.blog.id}`, {
 				method: 'PUT',
 				headers: {
 					'Content-Type': 'application/json'
@@ -84,18 +91,18 @@
 					errors = errorData.errors;
 					toast.error('Please fix the validation errors');
 				} else {
-					toast.error(errorData.message || 'Failed to update page');
+					toast.error(errorData.message || 'Failed to update blog');
 				}
 				return;
 			}
 
 			const result = await response.json();
-			toast.success('Page updated successfully!');
+			toast.success('Blog updated successfully!');
 
-			// Redirect to pages list
-			goto('/admin/pages');
+			// Redirect to blogs list
+			goto('/admin/blogs');
 		} catch (error) {
-			console.error('Error updating page:', error);
+			console.error('Error updating blog:', error);
 			toast.error('An unexpected error occurred');
 		} finally {
 			loading = false;
@@ -106,7 +113,7 @@
 <div class="mx-auto max-w-7xl">
 	<div class="mb-8 flex items-center gap-4">
 		<button
-			onclick={() => goto('/admin/pages')}
+			onclick={() => goto('/admin/blogs')}
 			class="rounded-lg p-2 transition-colors hover:bg-gray-700"
 		>
 			<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -118,7 +125,7 @@
 				/>
 			</svg>
 		</button>
-		<h1 class="">Edit Page</h1>
+		<h1 class="">Edit Blog Post</h1>
 	</div>
 
 	<form
@@ -153,6 +160,16 @@
 					>
 						SEO
 					</button>
+					<button
+						type="button"
+						onclick={() => (currentTab = 'blog')}
+						class="ml-8 border-b-2 px-1 py-4 text-sm font-medium transition-colors {currentTab ===
+						'blog'
+							? 'border-primary text-primary'
+							: 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-200'}"
+					>
+						Blog Details
+					</button>
 				</nav>
 			</div>
 
@@ -170,7 +187,7 @@
 									bind:value={formData.title}
 									required
 									class="form-input"
-									placeholder="Enter page title"
+									placeholder="Enter blog post title"
 								/>
 								{#if errors.title}
 									<p class="mt-1 text-sm text-red-600">{errors.title}</p>
@@ -187,7 +204,7 @@
 									oninput={() => (slugManuallyEdited = true)}
 									required
 									class="form-input"
-									placeholder="page-slug"
+									placeholder="blog-post-slug"
 								/>
 								{#if errors.slug}
 									<p class="mt-1 text-sm text-red-600">{errors.slug}</p>
@@ -214,6 +231,51 @@
 				{:else if currentTab === 'seo'}
 					<!-- SEO Fields -->
 					<SEOFields bind:seo={formData.seo} onchange={(updated) => (formData.seo = updated)} />
+				{:else if currentTab === 'blog'}
+					<!-- Blog-Specific Fields -->
+					<div class="space-y-6">
+						<div>
+							<label class="mb-2 block text-sm font-medium">Excerpt</label>
+							<textarea
+								bind:value={formData.excerpt}
+								maxlength="500"
+								rows="4"
+								class="form-input"
+								placeholder="Brief summary of the blog post (500 chars max)"
+							></textarea>
+							<p class="mt-1 text-sm text-gray-500">
+								{formData.excerpt.length}/500 characters
+							</p>
+						</div>
+
+						<div>
+							<label class="mb-2 block text-sm font-medium">Reading Time (minutes)</label>
+							<input
+								type="number"
+								bind:value={formData.reading_time}
+								min="0"
+								class="form-input"
+								placeholder="Estimated reading time in minutes"
+							/>
+							<p class="mt-1 text-xs text-gray-500">
+								Leave empty to auto-calculate based on word count
+							</p>
+						</div>
+
+						<div>
+							<label class="flex cursor-pointer items-center gap-3">
+								<input
+									type="checkbox"
+									bind:checked={formData.is_featured}
+									class="h-4 w-4 rounded border-gray-600 text-primary focus:ring-primary"
+								/>
+								<span class="text-sm font-medium">Featured Post</span>
+							</label>
+							<p class="mt-1 ml-7 text-xs text-gray-500">
+								Featured posts appear prominently on the blog homepage
+							</p>
+						</div>
+					</div>
 				{/if}
 			</div>
 		</div>
@@ -222,7 +284,7 @@
 		<div class="flex justify-end gap-4">
 			<button
 				type="button"
-				onclick={() => goto('/admin/pages')}
+				onclick={() => goto('/admin/blogs')}
 				class="rounded-lg border border-gray-600 px-6 py-2 transition-colors hover:bg-gray-700"
 			>
 				Cancel
@@ -232,7 +294,7 @@
 				disabled={loading}
 				class="rounded-lg bg-primary px-6 py-2 text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
 			>
-				{loading ? 'Updating...' : 'Update Page'}
+				{loading ? 'Updating...' : 'Update Blog'}
 			</button>
 		</div>
 	</form>

@@ -53,10 +53,6 @@
 	}
 
 	const headerItems = ['title', 'status', 'updated', 'actions'];
-
-	{
-		console.log('svelte data: ', data);
-	}
 </script>
 
 {#snippet pagination(data: PageData)}
@@ -116,8 +112,6 @@
 			New Page
 		</button>
 	</div>
-
-	{console.log('datapages: ', data.pages.data)}
 
 	<!-- Table -->
 	{#if !data.pages || data.pages.data.length === 0}

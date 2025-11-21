@@ -66,6 +66,24 @@ func (h *Handler) CreatePage(w http.ResponseWriter, r *http.Request) {
 	responses.WriteCreated(w, page)
 }
 
+// GetPageByID fetches a page by UUID (for admin editing)
+func (h *Handler) GetPageByID(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		responses.WriteErr(w, err)
+		return
+	}
+
+	page, err := h.service.GetPageByID(r.Context(), id)
+	if err != nil {
+		responses.WriteErr(w, err)
+		return
+	}
+
+	responses.WriteOK(w, page)
+}
+
 // GetPage handles retrieving a single page by ID or slug
 // GET /api/v1/pages/{slug}
 func (h *Handler) GetPageBySlug(w http.ResponseWriter, r *http.Request) {
