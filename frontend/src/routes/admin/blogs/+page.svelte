@@ -2,7 +2,7 @@
 <script lang="ts">
 	import { goto } from "$app/navigation";
 	import type { PageData } from "./$types";
-	import { EyeIcon, SquarePenIcon, Layers } from "lucide-svelte";
+	import { EyeIcon, SquarePenIcon, Layers, Plus } from "lucide-svelte";
 	import { page } from "$app/state";
 
 	let { data }: { data: PageData } = $props();
@@ -96,14 +96,7 @@
 				onclick={() => goto('/admin/blogs/new')}
 				class="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg font-medium transition-colors"
 			>
-				<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M12 4v16m8-8H4"
-					/>
-				</svg>
+				<Plus size={18} />
 				Create Blog Post
 			</button>
 		</div>

@@ -2,7 +2,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import type { PageData } from './$types';
-	import { EyeIcon, Layers, SquarePenIcon } from 'lucide-svelte';
+	import { EyeIcon, Folders, Layers, Plus, SquarePenIcon } from 'lucide-svelte';
 	import { page } from '$app/state';
 
 	let { data }: { data: PageData } = $props();
@@ -78,21 +78,14 @@
 	{#if !data.projects.data || data.projects.data.length === 0}
 		<!-- Empty State -->
 		<div class="rounded-lg border-2 border-dashed border-gray-700 bg-surface py-20 text-center">
-			<Layers class="mx-auto mb-4 h-12 w-12 text-gray-400" />
+			<Folders class="mx-auto mb-4 h-12 w-12 text-gray-400" />
 			<h3 class="mb-2 text-lg font-medium text-gray-200">No projects yet</h3>
 			<p class="mb-6 text-gray-400">Get started by creating your first project.</p>
 			<button
 				onclick={() => goto('/admin/projects/new')}
 				class="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 font-medium text-white transition-colors hover:bg-primary/90"
 			>
-				<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M12 4v16m8-8H4"
-					/>
-				</svg>
+				<Plus size={18} />
 				Create Project
 			</button>
 		</div>

@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import type { PageData } from './$types';
 	import { browser } from '$app/environment';
-	import { EyeIcon, SquarePenIcon, Layers } from 'lucide-svelte';
+	import { EyeIcon, SquarePenIcon, Layers, Plus } from 'lucide-svelte';
 	import { page } from '$app/state';
 
 	let { data }: { data: PageData } = $props();
@@ -122,9 +122,10 @@
 			<h3 class="mb-2 text-xl font-semibold">No pages yet</h3>
 			<p class=" mb-6">Get started by creating your first page</p>
 			<button
-				class="cursor-pointer rounded-lg bg-primary px-6 py-2 font-medium text-white transition-colors hover:bg-primary"
+				class="inline-flex items-center gap-2 cursor-pointer rounded-lg bg-primary px-6 py-2 font-medium text-white transition-colors hover:bg-primary"
 				onclick={() => goto('/admin/pages/new')}
 			>
+				<Plus size={18} />
 				Create Page
 			</button>
 		</div>
