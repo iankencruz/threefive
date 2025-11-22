@@ -2,32 +2,40 @@
 package blogs
 
 import (
+	"log"
+
 	"github.com/go-chi/chi/v5"
 	authmiddleware "github.com/iankencruz/threefive/internal/auth"
 	"github.com/iankencruz/threefive/internal/shared/session"
 )
 
-// RegisterRoutes registers all blog routes
 func RegisterRoutes(r chi.Router, handler *Handler, sessionManager *session.Manager) {
 	authMiddleware := authmiddleware.NewMiddleware(sessionManager)
 
+	// ==========================================
+	// 1. PUBLIC ROUTES
+	// Base Path: /api/v1/blogs
+	// ==========================================
 	r.Route("/blogs", func(r chi.Router) {
-		// Public routes (no authentication required)
-		r.Group(func(r chi.Router) {
-			r.Get("/", handler.ListBlogs)           // GET /api/v1/blogs
-			r.Get("/{slug}", handler.GetBlogBySlug) // GET /api/v1/blogs/{slug}
-		})
+		// Anyone can list or read by slug
+		r.Get("/", handler.ListBlogs)           // GET /api/v1/blogs
+		r.Get("/{slug}", handler.GetBlogBySlug) // GET /api/v1/blogs/my-first-post
+	})
 
-		// Protected routes (authentication required)
-		r.Group(func(r chi.Router) {
-			r.Use(authMiddleware.RequireAuth)
+	// ==========================================
+	// 2. ADMIN / PROTECTED ROUTES
+	// Base Path: /api/v1/admin/blogs
+	// ==========================================
+	r.Route("/admin/blogs", func(r chi.Router) {
+		r.Use(authMiddleware.RequireAuth)
 
-			r.Post("/", handler.CreateBlog)                   // POST /api/v1/blogs
-			r.Get("/{id}", handler.GetBlogByID)               // PUT /api/v1/blogs/{id}
-			r.Put("/{id}", handler.UpdateBlog)                // PUT /api/v1/blogs/{id}
-			r.Patch("/{id}/status", handler.UpdateBlogStatus) // PATCH /api/v1/blogs/{id}/status
-			r.Delete("/{id}", handler.DeleteBlog)             // DELETE /api/v1/blogs/{id}
-			r.Post("/purge", handler.PurgeOldDeletedBlogs)    // POST /api/v1/blogs/purge
-		})
+		log.Println("📍 Registering GET /admin/blogs/{id}")
+		r.Get("/{id}", handler.GetBlogByID)
+
+		r.Post("/", handler.CreateBlog)
+		r.Put("/{id}", handler.UpdateBlog)
+		r.Patch("/{id}/status", handler.UpdateBlogStatus)
+		r.Delete("/{id}", handler.DeleteBlog)
+		r.Post("/purge", handler.PurgeOldDeletedBlogs)
 	})
 }

@@ -61,7 +61,10 @@ func (m *Middleware) RequireAuth(next http.Handler) http.Handler {
 			LastName:  sessionWithUser.LastName,
 		}
 
-		ctx := context.WithValue(r.Context(), UserContextKey, userInfo)
+		ctx := r.Context()
+
+		// Add values to the existing context instead of creating a new one
+		ctx = context.WithValue(ctx, UserContextKey, userInfo)
 		ctx = context.WithValue(ctx, SessionContextKey, sessionWithUser)
 
 		next.ServeHTTP(w, r.WithContext(ctx))

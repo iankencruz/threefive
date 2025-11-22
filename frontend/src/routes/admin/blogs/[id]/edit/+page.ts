@@ -6,9 +6,12 @@ import { error } from "@sveltejs/kit";
 export const load: PageLoad = async ({ params, fetch, parent }) => {
   const { user } = await parent();
 
-  const response = await fetch(`${PUBLIC_API_URL}/api/v1/blogs/${params.id}`, {
-    credentials: "include",
-  });
+  const response = await fetch(
+    `${PUBLIC_API_URL}/api/v1/admin/blogs/${params.id}`, // ← Changed from /api/v1/blogs
+    {
+      credentials: "include",
+    },
+  );
 
   if (!response.ok) {
     if (response.status === 404) {

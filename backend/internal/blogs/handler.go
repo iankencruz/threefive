@@ -1,15 +1,15 @@
 package blogs
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"strconv"
 
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/iankencruz/threefive/internal/blocks"
 	"github.com/iankencruz/threefive/internal/config"
+	"github.com/iankencruz/threefive/internal/shared/errors"
 	"github.com/iankencruz/threefive/internal/shared/responses"
 	"github.com/iankencruz/threefive/internal/shared/sqlc"
 	"github.com/iankencruz/threefive/internal/shared/validation"
@@ -55,26 +55,47 @@ func (h *Handler) CreateBlog(w http.ResponseWriter, r *http.Request) {
 	// Create blog
 	blog, err := h.service.CreateBlog(r.Context(), req)
 	if err != nil {
-		responses.WriteErr(w, err)
+		responses.WriteErr(w, errors.BadRequest("Failed to create blog", "blog_creation_failed"))
 		return
 	}
 
 	responses.WriteCreated(w, blog)
 }
 
-// GetBlogByID handles retrieving a single blog by ID
 func (h *Handler) GetBlogByID(w http.ResponseWriter, r *http.Request) {
+	// 👇 ADD THIS DEBUG BLOCK
+	if rctx := chi.RouteContext(r.Context()); rctx != nil {
+		log.Printf("🕵️ CHI DEBUG: Route Pattern: %s", rctx.RoutePattern())
+		log.Printf("🕵️ CHI DEBUG: URL Params Keys: %v", rctx.URLParams.Keys)
+		log.Printf("🕵️ CHI DEBUG: URL Params Values: %v", rctx.URLParams.Values)
+	} else {
+		log.Printf("🕵️ CHI DEBUG: RouteContext is NIL (Context was wiped!)")
+	}
+	// 👆 END DEBUG BLOCK
+
+	// Try getting ALL possible parameter names
 	idStr := chi.URLParam(r, "id")
+	slugStr := chi.URLParam(r, "slug")
+
+	log.Printf("🔵 URLParam 'id': '%s'", idStr)
+	log.Printf("🔵 URLParam 'slug': '%s'", slugStr)
+
+	// If id is empty but slug has the UUID, that's the problem
+	if idStr == "" && slugStr != "" {
+		log.Printf("⚠️ FOUND THE BUG: UUID is in 'slug' parameter, not 'id'!")
+		idStr = slugStr
+	}
+
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		responses.WriteErr(w, err)
+		log.Printf("🔵 UUID parse error: %v", err)
+		responses.WriteErr(w, errors.NotFound("Blog ID not found", "blog_not_found"))
 		return
 	}
 
 	page, err := h.service.GetBlogByID(r.Context(), id)
 	if err != nil {
-		fmt.Print("Failed GetBlogByID service")
-		responses.WriteErr(w, err)
+		responses.WriteErr(w, errors.NotFound("Failed to retrieve blog", "blog_retrieval_failed"))
 		return
 	}
 
@@ -85,7 +106,7 @@ func (h *Handler) GetBlogByID(w http.ResponseWriter, r *http.Request) {
 // GET /api/v1/blogs/{slug}
 func (h *Handler) GetBlogBySlug(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
-
+	log.Printf("DEBUG GetBlogBySlug: Called with slug: '%s', URL: %s", slug, r.URL.Path)
 	blog, err := h.service.GetBlogBySlug(r.Context(), slug)
 	if err != nil {
 		responses.WriteErr(w, err)

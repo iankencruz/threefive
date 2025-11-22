@@ -76,7 +76,7 @@
 				seo: formData.seo.meta_title || formData.seo.meta_description ? formData.seo : undefined
 			};
 
-			const response = await fetch(`${PUBLIC_API_URL}/api/v1/blogs/${data.blog.id}`, {
+			const response = await fetch(`${PUBLIC_API_URL}/api/v1/admin/blogs/${data.blog.id}`, {
 				method: 'PUT',
 				headers: {
 					'Content-Type': 'application/json'

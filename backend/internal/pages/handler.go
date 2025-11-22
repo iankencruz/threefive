@@ -69,8 +69,11 @@ func (h *Handler) CreatePage(w http.ResponseWriter, r *http.Request) {
 // GetPageByID fetches a page by UUID (for admin editing)
 func (h *Handler) GetPageByID(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
+	log.Printf("DEBUG GetPageByID: Captured ID parameter: '%s'", idStr)
+
 	id, err := uuid.Parse(idStr)
 	if err != nil {
+		log.Printf("DEBUG GetPageByID: UUID parse failed for: '%s'", idStr)
 		responses.WriteErr(w, err)
 		return
 	}
@@ -88,7 +91,7 @@ func (h *Handler) GetPageByID(w http.ResponseWriter, r *http.Request) {
 // GET /api/v1/pages/{slug}
 func (h *Handler) GetPageBySlug(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
-
+	log.Printf("DEBUG GetPageBySlug: Called with slug: '%s'", slug)
 	// Try to parse as UUID first
 	page, err := h.service.GetPageBySlug(r.Context(), slug)
 	if err != nil {
