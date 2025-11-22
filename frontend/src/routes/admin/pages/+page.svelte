@@ -154,7 +154,7 @@
 									<!-- Preview Button -->
 									<a
 										class="rounded-lg p-2 transition-colors hover:bg-gray-400"
-										href={`/${page.slug}`}
+										href={`/admin/pages/${page.id}/preview`}
                     target="_blank"
 										aria-label="Preview page"
 										title="Preview in new tab"
