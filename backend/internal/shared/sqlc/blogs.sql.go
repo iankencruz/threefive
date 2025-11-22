@@ -54,6 +54,22 @@ func (q *Queries) CountBlogs(ctx context.Context, arg CountBlogsParams) (int64, 
 	return count, err
 }
 
+const countPublishedBlogs = `-- name: CountPublishedBlogs :one
+SELECT COUNT(*) FROM blogs
+WHERE deleted_at IS NULL
+  AND status = 'published'
+  AND ($1::text = '' OR 
+       ($1 = 'true' AND is_featured = true) OR 
+       ($1 = 'false' AND is_featured = false))
+`
+
+func (q *Queries) CountPublishedBlogs(ctx context.Context, isFeatured string) (int64, error) {
+	row := q.db.QueryRow(ctx, countPublishedBlogs, isFeatured)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createBlog = `-- name: CreateBlog :one
 
 
@@ -205,6 +221,66 @@ func (q *Queries) ListBlogs(ctx context.Context, arg ListBlogsParams) ([]Blogs, 
 	rows, err := q.db.Query(ctx, listBlogs,
 		arg.Status,
 		arg.IsFeatured,
+		arg.SortBy,
+		arg.SortOrder,
+		arg.OffsetVal,
+		arg.LimitVal,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Blogs
+	for rows.Next() {
+		var i Blogs
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.Slug,
+			&i.Status,
+			&i.Excerpt,
+			&i.ReadingTime,
+			&i.IsFeatured,
+			&i.FeaturedImageID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.PublishedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPublishedBlogs = `-- name: ListPublishedBlogs :many
+SELECT id, title, slug, status, excerpt, reading_time, is_featured, featured_image_id, created_at, updated_at, published_at, deleted_at FROM blogs
+WHERE deleted_at IS NULL
+  AND status = 'published'
+ORDER BY 
+  CASE WHEN $1 = 'created_at' AND $2 = 'desc' THEN created_at END DESC,
+  CASE WHEN $1 = 'created_at' AND $2 = 'asc' THEN created_at END ASC,
+  CASE WHEN $1 = 'published_at' AND $2 = 'desc' THEN published_at END DESC,
+  CASE WHEN $1 = 'published_at' AND $2 = 'asc' THEN published_at END ASC,
+  CASE WHEN $1 = 'title' AND $2 = 'desc' THEN title END DESC,
+  CASE WHEN $1 = 'title' AND $2 = 'asc' THEN title END ASC,
+  published_at DESC
+LIMIT $4 OFFSET $3
+`
+
+type ListPublishedBlogsParams struct {
+	SortBy    interface{} `json:"sort_by"`
+	SortOrder interface{} `json:"sort_order"`
+	OffsetVal int32       `json:"offset_val"`
+	LimitVal  int32       `json:"limit_val"`
+}
+
+func (q *Queries) ListPublishedBlogs(ctx context.Context, arg ListPublishedBlogsParams) ([]Blogs, error) {
+	rows, err := q.db.Query(ctx, listPublishedBlogs,
 		arg.SortBy,
 		arg.SortOrder,
 		arg.OffsetVal,

@@ -5,9 +5,13 @@ meta {
 }
 
 get {
-  url: {{base-url}}/api/v1/projects
+  url: {{base-url}}/api/v1/projects?status=draft
   body: none
   auth: inherit
+}
+
+params:query {
+  status: draft
 }
 
 headers {

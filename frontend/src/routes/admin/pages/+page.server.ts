@@ -22,7 +22,7 @@ export const load: PageServerLoad = async ({ fetch, url, parent }) => {
       params.set("page_type", pageType);
     }
 
-    const response = await fetch(`/api/v1/pages?${params.toString()}`);
+    const response = await fetch(`/api/v1/admin/pages?${params.toString()}`);
 
     if (!response.ok) {
       throw error(response.status, "Failed to fetch pages");

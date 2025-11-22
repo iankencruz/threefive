@@ -198,6 +198,52 @@ func (s *Service) ListProjects(ctx context.Context, params ListProjectsParams) (
 	}, nil
 }
 
+func (s *Service) ListPublishedProjects(ctx context.Context, params ListProjectsParams) (*ProjectListResponse, error) {
+	// Get total count with filters
+	totalCount, err := s.queries.CountPublishedProjects(ctx)
+	if err != nil {
+		return nil, errors.Internal("Failed to count projects", err)
+	}
+
+	// Get projects with filters
+	projects, err := s.queries.ListPublishedProjects(ctx, sqlc.ListPublishedProjectsParams{
+		SortBy:    params.SortBy,
+		SortOrder: params.SortOrder,
+		OffsetVal: params.Offset,
+		LimitVal:  params.Limit,
+	})
+	if err != nil {
+		return nil, errors.Internal("Failed to list projects", err)
+	}
+
+	// Build responses
+	projectResponses := make([]ProjectResponse, 0, len(projects))
+	for _, project := range projects {
+		resp, err := s.buildProjectResponse(ctx, project)
+		if err != nil {
+			return nil, err
+		}
+		projectResponses = append(projectResponses, *resp)
+	}
+
+	// Calculate pagination
+	totalPages := int(totalCount) / int(params.Limit)
+	if int(totalCount)%int(params.Limit) > 0 {
+		totalPages++
+	}
+	currentPage := int(params.Offset)/int(params.Limit) + 1
+
+	return &ProjectListResponse{
+		Projects: projectResponses,
+		Pagination: Pagination{
+			Page:       currentPage,
+			Limit:      int(params.Limit),
+			TotalPages: totalPages,
+			TotalCount: int(totalCount),
+		},
+	}, nil
+}
+
 // UpdateProject updates a project and its related data in a transaction
 func (s *Service) UpdateProject(ctx context.Context, projectID uuid.UUID, req UpdateProjectRequest) (*ProjectResponse, error) {
 	// Check slug uniqueness if slug is being updated

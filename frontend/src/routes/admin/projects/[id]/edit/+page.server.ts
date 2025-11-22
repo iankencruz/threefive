@@ -1,6 +1,3 @@
-export const ssr = false;
-export const csr = true;
-
 import { PUBLIC_API_URL } from "$env/static/public";
 import { error } from "console";
 import type { PageServerLoad } from "./$types";
@@ -10,7 +7,7 @@ export const load: PageServerLoad = async ({ params, fetch, parent }) => {
 
   try {
     const response = await fetch(
-      `${PUBLIC_API_URL}/api/v1/projects/${params.id}`,
+      `${PUBLIC_API_URL}/api/v1/admin/projects/${params.id}`,
       {
         credentials: "include",
       },

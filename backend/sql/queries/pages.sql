@@ -41,10 +41,33 @@ ORDER BY
   created_at DESC
 LIMIT @limit_val OFFSET @offset_val;
 
+-- name: ListPublishedPages :many
+SELECT * FROM pages
+WHERE deleted_at IS NULL
+  AND status = 'published'
+ORDER BY 
+  CASE WHEN @sort_by = 'created_at_desc' AND @sort_order = 'desc' THEN created_at END DESC,
+  CASE WHEN @sort_by = 'created_at_asc' AND @sort_order = 'asc' THEN created_at END ASC,
+  CASE WHEN @sort_by = 'published_at_desc' AND  @sort_order = 'desc' THEN published_at END DESC,
+  CASE WHEN @sort_by = 'published_at_asc' AND @sort_order = 'asc' THEN published_at END ASC,
+  created_at DESC
+LIMIT @limit_val OFFSET @offset_val;
+
+
+
 -- name: CountPages :one
 SELECT COUNT(*) FROM pages
 WHERE deleted_at IS NULL
   AND (@status::text = '' OR status = @status::page_status);
+
+
+
+
+-- name: CountPublishedPages :one
+SELECT COUNT(*) FROM pages
+WHERE deleted_at IS NULL
+  AND status = 'published';
+
 
 
 

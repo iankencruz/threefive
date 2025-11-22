@@ -21,6 +21,9 @@ type Querier interface {
 	CountMedia(ctx context.Context) (int64, error)
 	CountPages(ctx context.Context, status string) (int64, error)
 	CountProjects(ctx context.Context, status interface{}) (int64, error)
+	CountPublishedBlogs(ctx context.Context, isFeatured string) (int64, error)
+	CountPublishedPages(ctx context.Context) (int64, error)
+	CountPublishedProjects(ctx context.Context) (int64, error)
 	CountSearchMedia(ctx context.Context, arg CountSearchMediaParams) (int64, error)
 	// backend/sql/queries/blocks.sql
 	// ============================================
@@ -116,6 +119,9 @@ type Querier interface {
 	ListMediaByUser(ctx context.Context, uploadedBy uuid.UUID) ([]Media, error)
 	ListPages(ctx context.Context, arg ListPagesParams) ([]Pages, error)
 	ListProjects(ctx context.Context, arg ListProjectsParams) ([]Projects, error)
+	ListPublishedBlogs(ctx context.Context, arg ListPublishedBlogsParams) ([]Blogs, error)
+	ListPublishedPages(ctx context.Context, arg ListPublishedPagesParams) ([]Pages, error)
+	ListPublishedProjects(ctx context.Context, arg ListPublishedProjectsParams) ([]Projects, error)
 	ListUsers(ctx context.Context) ([]Users, error)
 	PurgeOldDeletedPages(ctx context.Context, cutoffDate pgtype.Timestamptz) (int64, error)
 	SearchMedia(ctx context.Context, arg SearchMediaParams) ([]Media, error)

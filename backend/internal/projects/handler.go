@@ -162,6 +162,59 @@ func (h *Handler) ListProjects(w http.ResponseWriter, r *http.Request) {
 	responses.WriteJSON(w, http.StatusOK, response)
 }
 
+func (h *Handler) ListPublishedProjects(w http.ResponseWriter, r *http.Request) {
+	// Parse pagination params
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	if page < 1 {
+		page = 1
+	}
+
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	if limit < 1 || limit > 100 {
+		limit = 20
+	}
+
+	// Parse sort parameters
+	sortBy := r.URL.Query().Get("sort")
+	validSortFields := map[string]bool{
+		"created_at":   true,
+		"published_at": true,
+		"title":        true,
+		"project_date": true,
+		"project_year": true,
+	}
+	if sortBy == "" || !validSortFields[sortBy] {
+		sortBy = "created_at"
+	}
+
+	sortOrder := r.URL.Query().Get("order")
+	if sortOrder != "asc" && sortOrder != "desc" {
+		sortOrder = "desc"
+	}
+
+	offset := int32((page - 1) * limit)
+
+	// List projects with filters
+	result, err := h.service.ListProjects(r.Context(), ListProjectsParams{
+		SortBy:    sortBy,
+		SortOrder: sortOrder,
+		Limit:     int32(limit),
+		Offset:    offset,
+	})
+	if err != nil {
+		responses.WriteErr(w, err)
+		return
+	}
+
+	// Build response with pagination and filters
+	data := map[string]any{
+		"data":       result.Projects,
+		"pagination": result.Pagination,
+	}
+
+	responses.WriteJSON(w, http.StatusOK, data)
+}
+
 // UpdateProject handles updating a project
 // PUT /api/v1/projects/{id}
 func (h *Handler) UpdateProject(w http.ResponseWriter, r *http.Request) {

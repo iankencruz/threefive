@@ -170,6 +170,51 @@ func (h *Handler) ListPages(w http.ResponseWriter, r *http.Request) {
 	responses.WriteJSON(w, http.StatusOK, response)
 }
 
+// ListPublishedPages handles listing only published pages (public route)
+func (h *Handler) ListPublishedPages(w http.ResponseWriter, r *http.Request) {
+	// Parse pagination params (no status filter needed)
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	if page < 1 {
+		page = 1
+	}
+
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	if limit < 1 || limit > 100 {
+		limit = 20
+	}
+
+	// Parse sort params
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "published_at"
+	}
+
+	sortOrder := r.URL.Query().Get("order")
+	if sortOrder != "asc" && sortOrder != "desc" {
+		sortOrder = "desc"
+	}
+
+	offset := (page - 1) * limit
+
+	result, err := h.service.ListPublishedPages(r.Context(), ListPagesParams{
+		SortBy:    sortBy,
+		SortOrder: sortOrder,
+		Limit:     int32(limit),
+		Offset:    int32(offset),
+	})
+	if err != nil {
+		responses.WriteErr(w, err)
+		return
+	}
+
+	data := map[string]any{
+		"data":       result.Pages,
+		"pagination": result.Pagination,
+	}
+
+	responses.WriteJSON(w, http.StatusOK, data)
+}
+
 // UpdatePage handles updating a page
 // PUT /api/v1/pages/{id}
 func (h *Handler) UpdatePage(w http.ResponseWriter, r *http.Request) {

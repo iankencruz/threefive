@@ -1,15 +1,12 @@
-export const ssr = false;
-export const csr = true;
-
 import { error } from "@sveltejs/kit";
-import type { PageLoad } from "./$types";
+import type { PageServerLoad } from "./$types";
 import { PUBLIC_API_URL } from "$env/static/public";
 
-export const load: PageLoad = async ({ params, fetch, parent }) => {
+export const load: PageServerLoad = async ({ params, fetch, parent }) => {
   const { user } = await parent();
   try {
     const response = await fetch(
-      `${PUBLIC_API_URL}/api/v1/pages/${params.id}`,
+      `${PUBLIC_API_URL}/api/v1/admin/pages/${params.id}`,
       {
         credentials: "include",
       },

@@ -11,22 +11,30 @@ import (
 func RegisterRoutes(r chi.Router, handler *Handler, sessionManager *session.Manager) {
 	authMiddleware := authmiddleware.NewMiddleware(sessionManager)
 
+	// ==========================================
+	// 1. PUBLIC ROUTES
+	// Base Path: /api/v1/projects
+	// ==========================================
 	r.Route("/projects", func(r chi.Router) {
 		// Public routes - anyone can view projects
-		r.Group(func(r chi.Router) {
-			r.Get("/", handler.ListProjects)           // GET /api/v1/projects
-			r.Get("/{slug}", handler.GetProjectBySlug) // GET /api/v1/projects/{slug}
-		})
+		r.Get("/", handler.ListPublishedProjects)
+		r.Get("/{slug}", handler.GetProjectBySlug)
+	})
 
-		// Protected routes - require authentication
-		r.Group(func(r chi.Router) {
-			r.Use(authMiddleware.RequireAuth)
+	// ==========================================
+	// 2. ADMIN / PROTECTED ROUTES
+	// Base Path: /api/v1/admin/projects
+	// ==========================================
 
-			r.Post("/", handler.CreateProject)                   // POST /api/v1/projects
-			r.Get("/{id}", handler.GetProjectByID)               // POST /api/v1/projects
-			r.Put("/{id}", handler.UpdateProject)                // PUT /api/v1/projects/{id}
-			r.Patch("/{id}/status", handler.UpdateProjectStatus) // PATCH /api/v1/projects/{id}/status
-			r.Delete("/{id}", handler.DeleteProject)             // DELETE /api/v1/projects/{id}
-		})
+	// Protected routes - require authentication
+	r.Route("/admin/projects", func(r chi.Router) {
+		r.Use(authMiddleware.RequireAuth)
+
+		r.Get("/", handler.ListProjects)
+		r.Post("/", handler.CreateProject)
+		r.Get("/{id}", handler.GetProjectByID)
+		r.Put("/{id}", handler.UpdateProject)
+		r.Patch("/{id}/status", handler.UpdateProjectStatus)
+		r.Delete("/{id}", handler.DeleteProject)
 	})
 }

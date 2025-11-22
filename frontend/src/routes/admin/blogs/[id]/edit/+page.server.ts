@@ -1,9 +1,9 @@
 // frontend/src/routes/admin/blogs/[id]/edit/+page.ts
 import { PUBLIC_API_URL } from "$env/static/public";
-import type { PageLoad } from "./$types";
+import type { PageServerLoad } from "./$types";
 import { error } from "@sveltejs/kit";
 
-export const load: PageLoad = async ({ params, fetch, parent }) => {
+export const load: PageServerLoad = async ({ params, fetch, parent }) => {
   const { user } = await parent();
 
   const response = await fetch(

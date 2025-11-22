@@ -65,7 +65,7 @@
 				seo: formData.seo.meta_title || formData.seo.meta_description ? formData.seo : undefined
 			};
 
-			const response = await fetch(`${PUBLIC_API_URL}/api/v1/pages`, {
+			const response = await fetch(`${PUBLIC_API_URL}/api/v1/admin/pages`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json'

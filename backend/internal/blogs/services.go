@@ -197,6 +197,63 @@ func (s *Service) ListBlogs(ctx context.Context, params ListBlogsParams) (*BlogL
 	}, nil
 }
 
+// ListPublishedBlogs retrieves only published blogs (for public viewing)
+func (s *Service) ListPublishedBlogs(ctx context.Context, params ListBlogsParams) (*BlogListResponse, error) {
+	// Convert featured filter to string (empty string = no filter)
+	featuredStr := ""
+	if params.FeaturedFilter != nil {
+		if *params.FeaturedFilter {
+			featuredStr = "true"
+		} else {
+			featuredStr = "false"
+		}
+	}
+
+	// Count only published blogs (with optional featured filter)
+	totalCount, err := s.queries.CountPublishedBlogs(ctx, featuredStr)
+	if err != nil {
+		return nil, errors.Internal("Failed to count published blogs", err)
+	}
+
+	// Get only published blogs
+	blogs, err := s.queries.ListPublishedBlogs(ctx, sqlc.ListPublishedBlogsParams{
+		SortBy:    params.SortBy,
+		SortOrder: params.SortOrder,
+		OffsetVal: params.Offset,
+		LimitVal:  params.Limit,
+	})
+	if err != nil {
+		return nil, errors.Internal("Failed to list published blogs", err)
+	}
+
+	// Build responses
+	blogResponses := make([]BlogResponse, 0, len(blogs))
+	for _, blog := range blogs {
+		resp, err := s.buildBlogResponse(ctx, blog)
+		if err != nil {
+			return nil, err
+		}
+		blogResponses = append(blogResponses, *resp)
+	}
+
+	// Calculate pagination
+	totalPages := int(totalCount) / int(params.Limit)
+	if int(totalCount)%int(params.Limit) > 0 {
+		totalPages++
+	}
+	currentPage := int(params.Offset)/int(params.Limit) + 1
+
+	return &BlogListResponse{
+		Blogs: blogResponses,
+		Pagination: Pagination{
+			Page:       currentPage,
+			Limit:      int(params.Limit),
+			TotalPages: totalPages,
+			TotalCount: int(totalCount),
+		},
+	}, nil
+}
+
 // UpdateBlog updates a blog and its related data in a transaction
 func (s *Service) UpdateBlog(ctx context.Context, blogID uuid.UUID, req UpdateBlogRequest) (*BlogResponse, error) {
 	// Check slug uniqueness if slug is being updated

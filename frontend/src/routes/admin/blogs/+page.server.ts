@@ -16,7 +16,7 @@ export const load: PageServerLoad = async ({ fetch, url, parent }) => {
     });
 
     const response = await fetch(
-      `${PUBLIC_API_URL}/api/v1/blogs?${params.toString()}`,
+      `${PUBLIC_API_URL}/api/v1/admin/blogs?${params.toString()}`,
     );
 
     if (!response.ok) {

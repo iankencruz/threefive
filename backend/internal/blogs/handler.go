@@ -197,6 +197,58 @@ func (h *Handler) ListBlogs(w http.ResponseWriter, r *http.Request) {
 	responses.WriteJSON(w, http.StatusOK, response)
 }
 
+// ListPublishedBlogs handles listing only published blogs (public route)
+// GET /api/v1/blogs?page=1&limit=20&sort=published_at&order=desc
+func (h *Handler) ListPublishedBlogs(w http.ResponseWriter, r *http.Request) {
+	// Parse pagination params
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	if page < 1 {
+		page = 1
+	}
+
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	if limit < 1 || limit > 100 {
+		limit = 20
+	}
+
+	// Parse sort parameters
+	sortBy := r.URL.Query().Get("sort")
+	validSortFields := map[string]bool{
+		"created_at":   true,
+		"published_at": true,
+		"title":        true,
+	}
+	if sortBy == "" || !validSortFields[sortBy] {
+		sortBy = "published_at" // Default to published_at for public
+	}
+
+	sortOrder := r.URL.Query().Get("order")
+	if sortOrder != "asc" && sortOrder != "desc" {
+		sortOrder = "desc"
+	}
+
+	offset := (page - 1) * limit
+
+	// List published blogs
+	result, err := h.service.ListPublishedBlogs(r.Context(), ListBlogsParams{
+		SortBy:    sortBy,
+		SortOrder: sortOrder,
+		Limit:     int32(limit),
+		Offset:    int32(offset),
+	})
+	if err != nil {
+		responses.WriteErr(w, err)
+		return
+	}
+
+	data := map[string]any{
+		"data":       result.Blogs,
+		"pagination": result.Pagination,
+	}
+	// Simple response without filters (no status filter needed for public)
+	responses.WriteJSON(w, http.StatusOK, data)
+}
+
 // UpdateBlog handles updating a blog
 // PUT /api/v1/blogs/{id}
 func (h *Handler) UpdateBlog(w http.ResponseWriter, r *http.Request) {

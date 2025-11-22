@@ -176,6 +176,51 @@ func (s *Service) ListPages(ctx context.Context, params ListPagesParams) (*PageL
 	}, nil
 }
 
+func (s *Service) ListPublishedPages(ctx context.Context, params ListPagesParams) (*PageListResponse, error) {
+	// Get Total count with filters
+	totalCount, err := s.queries.CountPublishedPages(ctx)
+	if err != nil {
+		return nil, errors.Internal("Failed to count pages", err)
+	}
+
+	pages, err := s.queries.ListPublishedPages(ctx, sqlc.ListPublishedPagesParams{
+		SortBy:    params.SortBy,
+		SortOrder: params.SortOrder,
+		OffsetVal: params.Offset,
+		LimitVal:  params.Limit,
+	})
+	if err != nil {
+		return nil, errors.Internal("Failed to list published pages", err)
+	}
+
+	pageResponses := make([]PageResponse, 0, len(pages))
+	for _, page := range pages {
+		resp, err := s.buildPageResponse(ctx, page)
+		if err != nil {
+			return nil, err
+		}
+		pageResponses = append(pageResponses, *resp)
+	}
+
+	// Calculate pagination
+	totalPages := int(totalCount) / int(params.Limit)
+	if int(totalCount)%int(params.Limit) != 0 {
+		totalPages++
+	}
+
+	currentPage := int(params.Offset)/int(params.Limit) + 1
+
+	return &PageListResponse{
+		Pages: pageResponses,
+		Pagination: Pagination{
+			Page:       currentPage,
+			Limit:      int(params.Limit),
+			TotalPages: totalPages,
+			TotalCount: int(totalCount),
+		},
+	}, nil
+}
+
 // UpdatePage updates a page and its related data in a transaction
 func (s *Service) UpdatePage(ctx context.Context, pageID uuid.UUID, req UpdatePageRequest) (*PageResponse, error) {
 	// Check slug uniqueness if slug is being updated

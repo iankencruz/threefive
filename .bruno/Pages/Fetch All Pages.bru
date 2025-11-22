@@ -1,7 +1,7 @@
 meta {
-  name: Fetch Pages
+  name: Fetch All Pages
   type: http
-  seq: 1
+  seq: 4
 }
 
 get {
@@ -9,7 +9,6 @@ get {
   body: none
   auth: inherit
 }
-
 
 headers {
   Cookie: session_token=OU8QcXL4li2qmZgZG2DC50iHuM3EBDQg4pq8njOyDgs=
@@ -22,4 +21,5 @@ body:form-urlencoded {
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

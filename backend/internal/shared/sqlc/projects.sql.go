@@ -46,6 +46,19 @@ func (q *Queries) CountProjects(ctx context.Context, status interface{}) (int64,
 	return count, err
 }
 
+const countPublishedProjects = `-- name: CountPublishedProjects :one
+SELECT COUNT(*) FROM projects
+WHERE deleted_at IS NULL
+  AND status = 'published'
+`
+
+func (q *Queries) CountPublishedProjects(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countPublishedProjects)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createProject = `-- name: CreateProject :one
 
 
@@ -224,6 +237,74 @@ type ListProjectsParams struct {
 func (q *Queries) ListProjects(ctx context.Context, arg ListProjectsParams) ([]Projects, error) {
 	rows, err := q.db.Query(ctx, listProjects,
 		arg.Status,
+		arg.SortBy,
+		arg.SortOrder,
+		arg.OffsetVal,
+		arg.LimitVal,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Projects
+	for rows.Next() {
+		var i Projects
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.Slug,
+			&i.Description,
+			&i.ProjectDate,
+			&i.Status,
+			&i.ClientName,
+			&i.ProjectYear,
+			&i.ProjectUrl,
+			&i.Technologies,
+			&i.ProjectStatus,
+			&i.FeaturedImageID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.PublishedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPublishedProjects = `-- name: ListPublishedProjects :many
+SELECT id, title, slug, description, project_date, status, client_name, project_year, project_url, technologies, project_status, featured_image_id, created_at, updated_at, published_at, deleted_at FROM projects
+WHERE deleted_at IS NULL
+  AND status = 'published'
+ORDER BY 
+  CASE WHEN $1 = 'created_at' AND $2 = 'desc' THEN created_at END DESC,
+  CASE WHEN $1 = 'created_at' AND $2 = 'asc' THEN created_at END ASC,
+  CASE WHEN $1 = 'published_at' AND $2 = 'desc' THEN published_at END DESC,
+  CASE WHEN $1 = 'published_at' AND $2 = 'asc' THEN published_at END ASC,
+  CASE WHEN $1 = 'title' AND $2 = 'desc' THEN title END DESC,
+  CASE WHEN $1 = 'title' AND $2 = 'asc' THEN title END ASC,
+  CASE WHEN $1 = 'project_date' AND $2 = 'desc' THEN project_date END DESC,
+  CASE WHEN $1 = 'project_date' AND $2 = 'asc' THEN project_date END ASC,
+  CASE WHEN $1 = 'project_year' AND $2 = 'desc' THEN project_year END DESC,
+  CASE WHEN $1 = 'project_year' AND $2 = 'asc' THEN project_year END ASC,
+  created_at DESC
+LIMIT $4 OFFSET $3
+`
+
+type ListPublishedProjectsParams struct {
+	SortBy    interface{} `json:"sort_by"`
+	SortOrder interface{} `json:"sort_order"`
+	OffsetVal int32       `json:"offset_val"`
+	LimitVal  int32       `json:"limit_val"`
+}
+
+func (q *Queries) ListPublishedProjects(ctx context.Context, arg ListPublishedProjectsParams) ([]Projects, error) {
+	rows, err := q.db.Query(ctx, listPublishedProjects,
 		arg.SortBy,
 		arg.SortOrder,
 		arg.OffsetVal,

@@ -1,9 +1,9 @@
 // frontend/src/routes/admin/projects/+page.ts
 import { error } from "@sveltejs/kit";
-import type { PageLoad } from "./$types";
+import type { PageServerLoad } from "./$types";
 import { PUBLIC_API_URL } from "$env/static/public";
 
-export const load: PageLoad = async ({ fetch, url, parent }) => {
+export const load: PageServerLoad = async ({ fetch, url, parent }) => {
   const { user } = await parent();
 
   const page = parseInt(url.searchParams.get("page") || "1");
@@ -16,7 +16,7 @@ export const load: PageLoad = async ({ fetch, url, parent }) => {
     });
 
     const response = await fetch(
-      `${PUBLIC_API_URL}/api/v1/projects?${params.toString()}`,
+      `${PUBLIC_API_URL}/api/v1/admin/projects?${params.toString()}`,
       {
         credentials: "include",
       },

@@ -61,10 +61,39 @@ ORDER BY
   created_at DESC
 LIMIT @limit_val OFFSET @offset_val;
 
+
+-- name: ListPublishedProjects :many
+SELECT * FROM projects
+WHERE deleted_at IS NULL
+  AND status = 'published'
+ORDER BY 
+  CASE WHEN @sort_by = 'created_at' AND @sort_order = 'desc' THEN created_at END DESC,
+  CASE WHEN @sort_by = 'created_at' AND @sort_order = 'asc' THEN created_at END ASC,
+  CASE WHEN @sort_by = 'published_at' AND @sort_order = 'desc' THEN published_at END DESC,
+  CASE WHEN @sort_by = 'published_at' AND @sort_order = 'asc' THEN published_at END ASC,
+  CASE WHEN @sort_by = 'title' AND @sort_order = 'desc' THEN title END DESC,
+  CASE WHEN @sort_by = 'title' AND @sort_order = 'asc' THEN title END ASC,
+  CASE WHEN @sort_by = 'project_date' AND @sort_order = 'desc' THEN project_date END DESC,
+  CASE WHEN @sort_by = 'project_date' AND @sort_order = 'asc' THEN project_date END ASC,
+  CASE WHEN @sort_by = 'project_year' AND @sort_order = 'desc' THEN project_year END DESC,
+  CASE WHEN @sort_by = 'project_year' AND @sort_order = 'asc' THEN project_year END ASC,
+  created_at DESC
+LIMIT @limit_val OFFSET @offset_val;
+
+
+
 -- name: CountProjects :one
 SELECT COUNT(*) FROM projects
 WHERE deleted_at IS NULL
   AND (@status = '' OR status = @status::page_status);
+
+
+-- name: CountPublishedProjects :one
+SELECT COUNT(*) FROM projects
+WHERE deleted_at IS NULL
+  AND status = 'published';
+
+
 
 -- name: UpdateProject :one
 UPDATE projects

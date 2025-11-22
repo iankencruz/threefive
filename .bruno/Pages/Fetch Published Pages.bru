@@ -1,17 +1,13 @@
 meta {
-  name: Get Project By Slug
+  name: Fetch Published Pages
   type: http
-  seq: 2
+  seq: 1
 }
 
 get {
-  url: {{base-url}}/api/v1/projects/:slug
-  body: formUrlEncoded
+  url: {{base-url}}/api/v1/pages
+  body: none
   auth: inherit
-}
-
-params:path {
-  slug: home
 }
 
 headers {

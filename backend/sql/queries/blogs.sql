@@ -52,6 +52,24 @@ ORDER BY
   created_at DESC
 LIMIT @limit_val OFFSET @offset_val;
 
+
+
+-- name: ListPublishedBlogs :many
+SELECT * FROM blogs
+WHERE deleted_at IS NULL
+  AND status = 'published'
+ORDER BY 
+  CASE WHEN @sort_by = 'created_at' AND @sort_order = 'desc' THEN created_at END DESC,
+  CASE WHEN @sort_by = 'created_at' AND @sort_order = 'asc' THEN created_at END ASC,
+  CASE WHEN @sort_by = 'published_at' AND @sort_order = 'desc' THEN published_at END DESC,
+  CASE WHEN @sort_by = 'published_at' AND @sort_order = 'asc' THEN published_at END ASC,
+  CASE WHEN @sort_by = 'title' AND @sort_order = 'desc' THEN title END DESC,
+  CASE WHEN @sort_by = 'title' AND @sort_order = 'asc' THEN title END ASC,
+  published_at DESC
+LIMIT @limit_val OFFSET @offset_val;
+
+
+
 -- name: CountBlogs :one
 SELECT COUNT(*) FROM blogs
 WHERE deleted_at IS NULL
@@ -59,6 +77,17 @@ WHERE deleted_at IS NULL
   AND (@is_featured::text = '' OR 
        (@is_featured = 'true' AND is_featured = true) OR 
        (@is_featured = 'false' AND is_featured = false));
+
+-- name: CountPublishedBlogs :one
+SELECT COUNT(*) FROM blogs
+WHERE deleted_at IS NULL
+  AND status = 'published'
+  AND (@is_featured::text = '' OR 
+       (@is_featured = 'true' AND is_featured = true) OR 
+       (@is_featured = 'false' AND is_featured = false));
+
+
+
 
 -- name: UpdateBlog :one
 UPDATE blogs

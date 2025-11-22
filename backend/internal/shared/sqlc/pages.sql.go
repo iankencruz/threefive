@@ -46,6 +46,19 @@ func (q *Queries) CountPages(ctx context.Context, status string) (int64, error) 
 	return count, err
 }
 
+const countPublishedPages = `-- name: CountPublishedPages :one
+SELECT COUNT(*) FROM pages
+WHERE deleted_at IS NULL
+  AND status = 'published'
+`
+
+func (q *Queries) CountPublishedPages(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countPublishedPages)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createPage = `-- name: CreatePage :one
 
 
@@ -169,6 +182,61 @@ type ListPagesParams struct {
 func (q *Queries) ListPages(ctx context.Context, arg ListPagesParams) ([]Pages, error) {
 	rows, err := q.db.Query(ctx, listPages,
 		arg.Status,
+		arg.SortBy,
+		arg.SortOrder,
+		arg.OffsetVal,
+		arg.LimitVal,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Pages
+	for rows.Next() {
+		var i Pages
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.Slug,
+			&i.Status,
+			&i.FeaturedImageID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.PublishedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPublishedPages = `-- name: ListPublishedPages :many
+SELECT id, title, slug, status, featured_image_id, created_at, updated_at, published_at, deleted_at FROM pages
+WHERE deleted_at IS NULL
+  AND status = 'published'
+ORDER BY 
+  CASE WHEN $1 = 'created_at_desc' AND $2 = 'desc' THEN created_at END DESC,
+  CASE WHEN $1 = 'created_at_asc' AND $2 = 'asc' THEN created_at END ASC,
+  CASE WHEN $1 = 'published_at_desc' AND  $2 = 'desc' THEN published_at END DESC,
+  CASE WHEN $1 = 'published_at_asc' AND $2 = 'asc' THEN published_at END ASC,
+  created_at DESC
+LIMIT $4 OFFSET $3
+`
+
+type ListPublishedPagesParams struct {
+	SortBy    interface{} `json:"sort_by"`
+	SortOrder interface{} `json:"sort_order"`
+	OffsetVal int32       `json:"offset_val"`
+	LimitVal  int32       `json:"limit_val"`
+}
+
+func (q *Queries) ListPublishedPages(ctx context.Context, arg ListPublishedPagesParams) ([]Pages, error) {
+	rows, err := q.db.Query(ctx, listPublishedPages,
 		arg.SortBy,
 		arg.SortOrder,
 		arg.OffsetVal,
