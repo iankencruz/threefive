@@ -9,7 +9,6 @@
 		Image,
 		ScrollText,
 		Settings,
-		Users,
 	} from "lucide-svelte";
 
 	const { children } = $props();
@@ -61,10 +60,6 @@
 				Media
 			</a>
 
-			<a href="/admin/users" class={linkClasses("/admin/users")}>
-				<Users size={18}/>
-				Users
-			</a>
 
 			<a href="/admin/settings" class={linkClasses("/admin/settings")}>
 				<Settings size={18}/>
