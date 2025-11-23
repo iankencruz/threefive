@@ -10,6 +10,8 @@
 		ScrollText,
 		Settings,
 	} from "lucide-svelte";
+  
+	import "$src/app.css";
 
 	const { children } = $props();
 
@@ -29,6 +31,8 @@
 				: "hover:bg-background/40 hover:text-foreground",
 		].join(" ");
 </script>
+
+
 
 <div class="flex min-h-screen bg-background text-foreground">
 	<aside class="hidden md:flex w-[260px] flex-col bg-surface border-r border-surface/60">

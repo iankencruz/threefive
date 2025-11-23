@@ -72,7 +72,6 @@ func (s *Service) UpdateBlocks(ctx context.Context, qtx *sqlc.Queries, entityTyp
 		EntityType: entityType,
 		EntityID:   entityID,
 	})
-
 	if err != nil {
 		return errors.Internal("Failed to get existing blocks", err)
 	}
@@ -175,7 +174,6 @@ func (s *Service) GetBlocksByEntity(ctx context.Context, entityType string, enti
 		EntityType: entityType,
 		EntityID:   entityID,
 	})
-
 	if err != nil {
 		return nil, errors.Internal("Failed to get blocks", err)
 	}
@@ -256,14 +254,37 @@ func (s *Service) GetBlocksByEntity(ctx context.Context, entityType string, enti
 
 		// Attach type-specific data
 		switch block.Type {
+		// backend/internal/blocks/service.go - in GetBlocksByEntity method
 		case TypeHero:
 			if hero, ok := heroMap[block.ID]; ok {
-				blockResp.Data = HeroBlockData{
+				heroData := HeroBlockData{
 					Title:    hero.Title,
 					Subtitle: nullTextToPtr(hero.Subtitle),
 					ImageID:  nullUUIDToPtr(hero.ImageID),
 					CtaText:  nullTextToPtr(hero.CtaText),
 					CtaURL:   nullTextToPtr(hero.CtaUrl),
+				}
+
+				// ✨ NEW: Fetch the actual media if ImageID exists
+				if hero.ImageID.Valid {
+					mediaID := uuid.UUID(hero.ImageID.Bytes)
+					media, err := s.queries.GetMediaByID(ctx, mediaID)
+					if err == nil {
+						// Add media to the response as a map for flexibility
+						blockResp.Data = map[string]any{
+							"title":    heroData.Title,
+							"subtitle": heroData.Subtitle,
+							"image_id": heroData.ImageID,
+							"cta_text": heroData.CtaText,
+							"cta_url":  heroData.CtaURL,
+							"media":    media, // ← Add the full media object!
+						}
+					} else {
+						// If media fetch fails, use struct without media
+						blockResp.Data = heroData
+					}
+				} else {
+					blockResp.Data = heroData
 				}
 			}
 		case TypeRichtext:

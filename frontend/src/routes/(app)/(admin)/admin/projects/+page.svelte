@@ -159,13 +159,14 @@
 							</td>
 							<td class="px-6 py-4 text-sm font-medium whitespace-nowrap">
 								<div class="flex items-center gap-2">
-									<button
+									<a
 										class="rounded-lg p-2 transition-colors hover:bg-gray-700"
-										onclick={() => window.open(`/preview/pages/${project.id}`, '_blank')}
+										href={`/admin/projects/${project.id}/preview`}
+                    target="_blank"
 										title="Preview"
 									>
 										<EyeIcon class="h-4 w-4" />
-									</button>
+									</a>
 									<button
 										class="rounded-lg p-2 transition-colors hover:bg-gray-700"
 										onclick={() => goto(`/admin/projects/${project.id}/edit`)}

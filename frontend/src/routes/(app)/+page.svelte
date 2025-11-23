@@ -8,7 +8,7 @@
 </script>
 
 <svelte:head>
-	<title>{data.page.seo?.meta_title || data.page.title}</title>
+	<title>{ data.page.title || data.page.seo?.meta_title}</title>
 	<meta name="description" content={data.page.seo?.meta_description || ''} />
 	
 	{#if data.page.seo?.og_title}

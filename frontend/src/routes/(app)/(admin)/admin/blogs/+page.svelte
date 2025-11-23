@@ -29,6 +29,9 @@
 	};
 </script>
 
+<svelte:head>
+  <title>Admin: Blogs </title>
+</svelte:head>
 
 {#snippet pagination(data: PageData)}
 		{#if data.pagination && data.pagination.total_pages > 1}
@@ -186,14 +189,14 @@
 							</td>
 							<td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
 								<div class="flex items-center gap-2">
-									<button
+									<a
 										class="p-2 hover:bg-gray-700 rounded-lg transition-colors"
-										onclick={() =>
-											window.open(`/preview/pages/${blog.id}`, "_blank")}
+			
+										href={`/admin/blogs/${blog.id}/preview`}
 										title="Preview"
 									>
 										<EyeIcon class="w-4 h-4" />
-									</button>
+									</a>
 									<button
 										class="p-2 hover:bg-gray-700 rounded-lg transition-colors"
 										onclick={() => goto(`/admin/blogs/${blog.id}/edit`)}

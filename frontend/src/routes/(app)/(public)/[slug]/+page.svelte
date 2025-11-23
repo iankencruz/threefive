@@ -17,7 +17,7 @@
 
 <svelte:head>
 	<!-- SEO Meta Tags -->
-	<title>{data.page.seo?.meta_title || data.page.title}</title>
+	<title>{ data.page.title || data.page.seo?.meta_title }</title>
 	<meta name="description" content={data.page.seo?.meta_description || ''} />
 	
 	<!-- Open Graph -->
