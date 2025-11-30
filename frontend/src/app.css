@@ -11,6 +11,7 @@
 @theme {
   /* === Brand === */
   --color-primary: #ff4b1f;
+  --color-primary-light: #f4d5cd;
   --color-accent: #FF8D70;
   --color-accent-dark: #661400;
 

@@ -83,9 +83,13 @@
 
 		<!-- Blocks -->
 		{#if data.page.blocks && data.page.blocks.length > 0}
-			<BlockRenderer blocks={data.page.blocks} />
+			<div class="border border-dashed border-gray-400">
+				<BlockRenderer blocks={data.page.blocks} />
+			</div>
 		{:else}
-			<div class="rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 px-8 py-16 text-center">
+			<div
+				class="rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 px-8 py-16 text-center"
+			>
 				<p class="text-gray-500">No content blocks yet</p>
 			</div>
 		{/if}

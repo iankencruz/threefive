@@ -1,7 +1,6 @@
 <!-- frontend/src/routes/admin/pages/[id]/edit/+page.svelte -->
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
 	import { PUBLIC_API_URL } from '$env/static/public';
 	import BlockEditor from '$components/blocks/BlockEditor.svelte';
 	import SEOFields from '$components/admin/shared/SEOField.svelte';
@@ -90,6 +89,7 @@
 			}
 
 			const result = await response.json();
+			console.log('Update result:', result);
 			toast.success('Page updated successfully!');
 
 			// Redirect to pages list
@@ -102,53 +102,47 @@
 		}
 	};
 
-const handleDelete = async () => {
-		if (!confirm("Are you sure you want to delete this page?")) return;
+	const handleDelete = async () => {
+		if (!confirm('Are you sure you want to delete this page?')) return;
 
 		try {
-			const response = await fetch(
-				`${PUBLIC_API_URL}/api/v1/admin/pages/${data.page.id}`,
-				{
-					method: "DELETE",
-					credentials: "include",
-				},
-			);
+			const response = await fetch(`${PUBLIC_API_URL}/api/v1/admin/pages/${data.page.id}`, {
+				method: 'DELETE',
+				credentials: 'include'
+			});
 
 			if (!response.ok) {
-				throw new Error("Failed to delete page");
+				throw new Error('Failed to delete page');
 			}
 
-			toast.success("Page successfully deleted");
-			goto("/admin/pages");
+			toast.success('Page successfully deleted');
+			goto('/admin/pages');
 		} catch (err) {
-			alert(err instanceof Error ? err.message : "Failed to delete page");
+			alert(err instanceof Error ? err.message : 'Failed to delete page');
 		}
 	};
-
-
-
 </script>
 
 <div class="mx-auto max-w-7xl">
-	<div class="mb-8 flex justify-between items-center gap-4">
-    <div class="flex items-center gap-4">
-		<button
-			onclick={() => goto('/admin/pages')}
-			class="rounded-lg p-2 transition-colors hover:bg-gray-700"
-		>
-			<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					stroke-width="2"
-					d="M10 19l-7-7m0 0l7-7m-7 7h18"
-				/>
-			</svg>
-		</button>
-		<h1 class="">Edit Page</h1>
-
-    </div>
-    <button type="button" onclick={handleDelete} class="btn bg-primary">Delete</button>
+	<div class="mb-8 flex items-center justify-between gap-4">
+		<div class="flex items-center gap-4">
+			<button
+				onclick={() => goto('/admin/pages')}
+				class="rounded-lg p-2 transition-colors hover:bg-gray-700"
+				aria-label="Back to Pages List"
+			>
+				<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M10 19l-7-7m0 0l7-7m-7 7h18"
+					/>
+				</svg>
+			</button>
+			<h1 class="">Edit Page</h1>
+		</div>
+		<button type="button" onclick={handleDelete} class="btn bg-primary">Delete</button>
 	</div>
 
 	<form
@@ -158,10 +152,8 @@ const handleDelete = async () => {
 		}}
 		class="space-y-6"
 	>
-
 		<!-- Main Content Card -->
 		<div class="overflow-hidden rounded-lg bg-surface shadow-lg">
-
 			<!-- Tabs Navigation -->
 			<div class="border-b border-gray-700">
 				<nav class="flex px-6" aria-label="Tabs">
@@ -194,10 +186,11 @@ const handleDelete = async () => {
 					<div class="mb-8 space-y-6">
 						<div class="grid grid-cols-2 gap-6">
 							<div>
-								<label class="mb-2 block font-medium">
+								<label for="title" class="mb-2 block font-medium">
 									Title <span class="text-red-500">*</span>
 								</label>
 								<input
+									name="title"
 									type="text"
 									bind:value={formData.title}
 									required
@@ -207,15 +200,14 @@ const handleDelete = async () => {
 								{#if errors.title}
 									<p class="mt-1 text-sm text-red-600">{errors.title}</p>
 								{/if}
-
-
 							</div>
 
 							<div>
-								<label class="mb-2 block text-sm font-medium">
+								<label for="slug" class="mb-2 block text-sm font-medium">
 									Slug <span class="text-red-500">*</span>
 								</label>
 								<input
+									name="slug"
 									type="text"
 									bind:value={formData.slug}
 									oninput={() => (slugManuallyEdited = true)}
@@ -230,10 +222,18 @@ const handleDelete = async () => {
 						</div>
 
 						<div>
-							<label class="mb-2 block text-sm font-medium">
+							<label for="status" class="mb-2 block text-sm font-medium">
 								Status <span class="text-red-500">*</span>
 							</label>
-							<select bind:value={formData.status} class="form-input">
+							<select name="status" bind:value={formData.status} class="form-input">
+								<option value="draft">Draft</option>
+								<option value="published">Published</option>
+								<option value="archived">Archived</option>
+							</select>
+						</div>
+						<div>
+							<label for="status" class="mb-2 block text-sm font-medium"> Navigation Bar </label>
+							<select name="status" bind:value={formData.status} class="form-input">
 								<option value="draft">Draft</option>
 								<option value="published">Published</option>
 								<option value="archived">Archived</option>

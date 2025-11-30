@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { Media } from "$api/media";
-	import Navbar from "$components/ui/Navbar.svelte";
+	import type { Media } from '$api/media';
+	import Navbar from '$components/ui/Navbar.svelte';
 
 	interface HeroBlockData {
 		title: string;
@@ -18,19 +18,19 @@
 	let { data, media = null }: Props = $props();
 
 	// --- utils ---
-	const isVideo = (mime: string) => mime?.startsWith("video/");
-	const isImage = (mime: string) => mime?.startsWith("image/");
+	const isVideo = (mime: string) => mime?.startsWith('video/');
+	const isImage = (mime: string) => mime?.startsWith('image/');
 	const getImageUrl = (m: Media) => m.large_url || m.url;
 	const getVideoUrl = (m: Media) => m.url;
-	const getVideoPoster = (m: Media) => m.thumbnail_url || "";
+	const getVideoPoster = (m: Media) => m.thumbnail_url || '';
 </script>
 
 <!-- ✨ No more loading state! Media is pre-loaded -->
 {#if media}
 	<section class="relative overflow-hidden">
-		<Navbar />
+		<Navbar variant="ghost" />
 
-		<div class="relative min-h-screen flex items-center">
+		<div class="relative flex min-h-screen items-center">
 			<div class="absolute inset-0 bg-black">
 				{#if isVideo(media.mime_type)}
 					<video
@@ -40,7 +40,7 @@
 						muted
 						loop
 						playsinline
-						class="w-full h-full object-cover mask-radial-at-right mask-radial-from-100% "
+						class="h-full w-full mask-radial-from-100% mask-radial-at-right object-cover"
 					>
 						<track kind="captions" />
 					</video>
@@ -48,31 +48,34 @@
 					<img
 						src={getImageUrl(media)}
 						alt={data.title}
-						class="w-full h-full object-cover mask-radial-at-right mask-radial-from-100% "
+						class="h-full w-full mask-radial-from-100% mask-radial-at-right object-cover"
 					/>
 				{/if}
 
-				<div class="absolute inset-0 bg-linear-to-b from-black/85 via-transparent to-black/40"></div>
+				<div
+					class="absolute inset-0 bg-linear-to-b from-black/85 via-transparent to-black/40"
+				></div>
 				<div class="absolute inset-0 bg-linear-to-r from-black/70 via-black/5 to-transparent"></div>
 			</div>
 
-			<div class="@container absolute z-10 container mx-auto px-4 max-w-6xl left-12 bottom-8">
+			<div class="@container absolute bottom-8 left-12 z-10 container mx-auto max-w-6xl px-4">
 				<div class="w-full text-white">
-					<h1 class="@max-lg:text-2xl @lg:@max-2xl:text-5xl @2xl:text-7xl @5xl:text-9xl font-bold mb-6 leading-tight">
+					<h1
+						class="mb-6 leading-tight font-bold @max-lg:text-2xl @lg:@max-2xl:text-5xl @2xl:text-7xl @5xl:text-9xl"
+					>
 						{data.title}
 					</h1>
 
 					{#if data.subtitle}
-						<p class="text-xl md:text-2xl mb-8 text-gray-100 leading-relaxed">
+						<p class="mb-8 text-xl leading-relaxed text-gray-100 md:text-2xl">
 							{data.subtitle}
 						</p>
 					{/if}
 
 					{#if data.cta_text && data.cta_url}
-						
-            <a
+						<a
 							href={data.cta_url}
-							class="inline-flex items-center gap-2 bg-white text-gray-900 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-100 transition-all shadow-lg hover:shadow-xl hover:scale-105"
+							class="inline-flex items-center gap-2 rounded-lg bg-white px-8 py-4 text-lg font-semibold text-gray-900 shadow-lg transition-all hover:scale-105 hover:bg-gray-100 hover:shadow-xl"
 						>
 							{data.cta_text}
 						</a>
@@ -82,7 +85,7 @@
 		</div>
 	</section>
 {:else}
-	<section class="relative min-h-screen bg-gray-900 flex items-center justify-center">
-		<p class="text-white text-xl">{data.title} (No background media specified)</p>
+	<section class="relative flex min-h-screen items-center justify-center bg-gray-900">
+		<p class="text-xl text-white">{data.title} (No background media specified)</p>
 	</section>
 {/if}

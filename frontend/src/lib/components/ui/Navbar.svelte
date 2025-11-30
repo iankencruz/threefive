@@ -1,94 +1,338 @@
 <script lang="ts">
-	let variant = $state();
+	// 1. Import the SvelteKit page store to get the current URL
+	import { page } from '$app/state';
+	import type { Link } from '$types/pages';
 
-	let NavLinks = [
-		{ id: 1, title: "Home", href: "/" },
-		{ id: 2, title: "About Us", href: "/about" },
-		{ id: 3, title: "Contact Us", href: "/contact" },
+	let { variant } = $props<'standard' | 'ghost'>();
+
+	// 1. Separate the main navigation links (excluding 'Contact Us')
+	let PrimaryNavLinks: Link[] = [
+		{ id: 1, title: 'Home', href: '/' },
+		{ id: 2, title: 'About Us', href: '/about' }
+		// We removed Contact Us here
 	];
+
+	const ContactLink: Link = { id: 3, title: 'Contact', href: '/contact' };
+
+	// Project links now determine activity via route as well.
+	const ProjectLinks: Link[] = [
+		{ id: 1, title: 'Project Alpha', href: '/projects/project-alpha' },
+		{ id: 2, title: 'Project Beta', href: '/projects/project-beta' },
+		{ id: 3, title: 'Project Gamma', href: '/projects/project-gamma' }
+	];
+
+	const BlogLinks: Link[] = [
+		{ id: 4, title: 'Blog 1', href: '/blog-1' },
+		{ id: 5, title: 'Blog 2', href: '/blog-2' }
+	];
+
+	let NavLinks: Link[] = [...PrimaryNavLinks, ContactLink];
+
+	// State Declarations
+	let navbarOpen = $state(false);
+	let featuresOpen = $state(false);
+	let blogsOpen = $state(false);
+
+	// Helper to check if a link is active based on the current SvelteKit URL
+	// Checks for exact match OR if the current URL starts with the link's href (useful for path matching, e.g., /projects)
+	function checkIsActive(href: string): boolean {
+		const currentPath = page.url.pathname;
+
+		if (href === '/') {
+			// Home link is only active on the exact root path
+			return currentPath === '/';
+		}
+
+		// For non-root links, check if the current path starts with the link's href.
+		// E.g., if href is /about, and currentPath is /about/team, it matches.
+		return currentPath.startsWith(href);
+	}
+
+	// Function to close the main navbar when a link is clicked
+	function closeNavbar() {
+		if (navbarOpen) {
+			navbarOpen = false;
+		}
+	}
 </script>
 
-<nav class="py-10 w-full absolute  transition-all z-20 duration-500">
-    <div class="mx-auto max-w-8xl px-4 sm:px-6 lg:px-8">
-      <div class="w-full flex flex-col lg:flex-row">
-        <div class="flex justify-between lg:flex-row ">
-          <a href="/" class="flex items-center w-max">
-          Threefive Project
-          </a>
-          <div class="flex items-center justify-end gap-5">
-            <button data-collapse-toggle="navbar" type="button"
-              class="inline-flex items-center p-2 text-sm text-white hover:text-gray-900 rounded-lg lg:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200"
-              aria-controls="navbar-default" aria-expanded="false">
-              <span class="sr-only">Open main menu</span>
-              <svg class="w-6 h-6" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20"
-                xmlns="http://www.w3.org/2000/svg">
-                <path fill-rule="evenodd"
-                  d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
-                  clip-rule="evenodd"></path>
-              </svg>
-            </button>
-          </div>
+<nav
+	class="z-20 w-full transition-all duration-500"
+	class:absolute={variant === 'ghost'}
+	class:bg-background={variant !== 'ghost'}
+>
+	<div class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
+		<div class="flex w-full items-center justify-between py-4">
+			<a href="/" class="flex w-max items-center"> Threefive Project </a>
 
-        </div>
-        <div class="hidden w-full lg:flex lg:pl-11 max-lg:mt-1 max-lg:overflow-y-auto" id="navbar">
-          <ul
-            class="flex lg:items-center lg:justify-center flex-col gap-6 max-lg:pt-4 max-lg:mb-4 lg:mt-0 lg:flex-row lg:ml-auto ">
-          {#each NavLinks as link (link.id)}
-            <li>
-              <a href={link.href}
-                class="nav-link block lg:mx-3 md:mb-0 lg:text-left text-base text-white font-medium transition-all duration-500 hover:text-gray-400">
-                {link.title}
-              </a>
-            </li>
-          {/each}
-            
-            <li class="relative">
-              <button data-target="menu2"
-                class="dropdown-toggle flex items-center justify-between text-white text-center text-base font-medium transition-all duration-500 lg:mx-3 lg:mb-0 mr-auto lg:text-left lg:m-0 hover:text-gray-400">
-                Features
-                <svg class="w-3 h-2 ml-1.5" width="10" height="6" viewBox="0 0 10 6" fill="none"
-                  xmlns="http://www.w3.org/2000/svg">
-                  <path
-                    d="M1 1L3.58579 3.58579C4.25245 4.25245 4.58579 4.58579 5 4.58579C5.41421 4.58579 5.74755 4.25245 6.41421 3.58579L9 1"
-                    stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
-                </svg>
-              </button>
-              <!-- Dropdown menu -->
-              <div id="menu2" aria-labelledby="menu2"
-                class="dropdown-menu z-10 relative top-3 max-lg:mb-3 lg:absolute lg:top-14 font-normal bg-white rounded-lg w-64 xl:p-8 lg:p-4 p-2 hidden">
-                <ul class="text-sm text-gray-700" aria-labelledby="dropdownLargeButton">
-                  <h6 class="text-sm text-gray-500 font-medium mb-2">
-                    Features
-                  </h6>
-                  <li>
-                    <a href="javascript:;"
-                      class="block py-3 hover:text-prime-blue-700 text-base text-gray-900 font-semibold transition-all duration-500">Notification</a>
-                  </li>
-                  <li>
-                    <a href="javascript:;"
-                      class="block py-3 hover:text-prime-blue-700 text-base text-gray-900 font-semibold transition-all duration-500">Analytics</a>
-                  </li>
-                  <li>
-                    <a href="javascript:;"
-                      class="block py-3 hover:text-prime-blue-700 text-base text-gray-900 font-semibold transition-all duration-500">Integrations</a>
-                  </li>
-                  <li>
-                    <a href="javascript:;"
-                      class="block py-3 hover:text-prime-blue-700 text-base text-gray-900 font-semibold transition-all duration-500">Security</a>
-                  </li>
-                  <li>
-                    <a href="javascript:;"
-                      class="block py-3 hover:text-prime-blue-700 text-base text-gray-900 font-semibold transition-all duration-500">Documentation</a>
-                  </li>
-                  <li>
-                    <a href="javascript:;"
-                      class="block py-3 hover:text-prime-blue-700 text-base text-gray-900 font-semibold transition-all duration-500">Support</a>
-                  </li>
-                </ul>
-              </div>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
+			<div class="hidden w-full lg:flex lg:pl-11" id="navbar-desktop">
+				<ul class="flex gap-6 lg:mt-0 lg:ml-auto lg:flex-row lg:items-center lg:justify-center">
+					{#each PrimaryNavLinks as link (link.id)}
+						<li>
+							<a
+								href={link.href}
+								class="nav-link block text-base font-medium transition-all duration-500 lg:mx-3"
+								class:text-primary={checkIsActive(link.href)}
+								class:text-white={!checkIsActive(link.href)}
+								class:hover:text-gray-400={!checkIsActive(link.href)}
+							>
+								{link.title}
+							</a>
+						</li>
+					{/each}
+
+					{#if ProjectLinks.length > 0}
+						<li class="relative">
+							<button
+								onclick={() => (featuresOpen = !featuresOpen)}
+								class="dropdown-toggle mr-auto flex items-center justify-between text-center text-base font-medium text-white transition-all duration-500 hover:text-gray-400 lg:m-0 lg:mx-3 lg:mb-0 lg:text-left"
+								aria-expanded={featuresOpen}
+							>
+								Projects
+								<svg
+									class="ml-1.5 h-2 w-3"
+									width="10"
+									height="6"
+									viewBox="0 0 10 6"
+									fill="none"
+									xmlns="http://www.w3.org/2000/svg"
+								>
+									<path
+										d="M1 1L3.58579 3.58579C4.25245 4.25245 4.58579 4.58579 5 4.58579C5.41421 4.58579 5.74755 4.25245 6.41421 3.58579L9 1"
+										stroke="currentColor"
+										stroke-width="1.6"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+									></path>
+								</svg>
+							</button>
+
+							<div
+								id="menu2"
+								aria-labelledby="menu2"
+								class="dropdown-menu relative top-3 z-10 w-64 rounded-lg bg-white p-2 font-normal lg:absolute lg:top-14 lg:p-4 xl:p-8"
+								class:hidden={!featuresOpen}
+							>
+								<ul class="text-sm text-gray-700" aria-labelledby="dropdownLargeButton">
+									<h6 class="mb-2 text-sm font-medium text-gray-500">Projects</h6>
+									{#each ProjectLinks as feature}
+										<li>
+											<a
+												href={feature.href}
+												class="hover:text-prime-blue-700 block py-3 text-base font-semibold text-gray-900 transition-all duration-500"
+												class:text-indigo-600={checkIsActive(feature.href)}>{feature.title}</a
+											>
+										</li>
+									{/each}
+								</ul>
+							</div>
+						</li>
+					{/if}
+
+					{#if BlogLinks.length > 0}
+						<li class="relative">
+							<button
+								onclick={() => (blogsOpen = !blogsOpen)}
+								class="dropdown-toggle mr-auto flex items-center justify-between text-center text-base font-medium text-white transition-all duration-500 hover:text-gray-400 lg:m-0 lg:mx-3 lg:mb-0 lg:text-left"
+								aria-expanded={blogsOpen}
+							>
+								Blogs
+								<svg
+									class="ml-1.5 h-2 w-3"
+									width="10"
+									height="6"
+									viewBox="0 0 10 6"
+									fill="none"
+									xmlns="http://www.w3.org/2000/svg"
+								>
+									<path
+										d="M1 1L3.58579 3.58579C4.25245 4.25245 4.58579 4.58579 5 4.58579C5.41421 4.58579 5.74755 4.25245 6.41421 3.58579L9 1"
+										stroke="currentColor"
+										stroke-width="1.6"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+									></path>
+								</svg>
+							</button>
+
+							<div
+								id="menu3"
+								aria-labelledby="menu3"
+								class="dropdown-menu relative top-3 z-10 w-64 rounded-lg bg-white p-2 font-normal lg:absolute lg:top-14 lg:p-4 xl:p-8"
+								class:hidden={!blogsOpen}
+							>
+								<ul class="text-sm text-gray-700" aria-labelledby="dropdownLargeButton">
+									<h6 class="mb-2 text-sm font-medium text-gray-500">Blogs</h6>
+									{#each BlogLinks as blog}
+										<li>
+											<a
+												href={blog.href}
+												class="hover:text-prime-blue-700 block py-3 text-base font-semibold text-gray-900 transition-all duration-500"
+												class:text-indigo-600={checkIsActive(blog.href)}>{blog.title}</a
+											>
+										</li>
+									{/each}
+								</ul>
+							</div>
+						</li>
+					{/if}
+
+					<li>
+						<a
+							href={ContactLink.href}
+							class="nav-link block text-base font-medium transition-all duration-500 lg:mx-3"
+							class:text-primary={checkIsActive(ContactLink.href)}
+							class:text-white={!checkIsActive(ContactLink.href)}
+							class:hover:text-gray-400={!checkIsActive(ContactLink.href)}
+						>
+							{ContactLink.title}
+						</a>
+					</li>
+				</ul>
+			</div>
+
+			<div class="flex items-center justify-end gap-5 lg:hidden">
+				<button
+					onclick={() => (navbarOpen = !navbarOpen)}
+					type="button"
+					class="inline-flex items-center rounded-lg p-2 text-sm text-white hover:bg-gray-100 hover:text-gray-900 focus:ring-2 focus:ring-gray-200 focus:outline-none"
+					aria-controls="mobile-drawer"
+					aria-expanded={navbarOpen}
+				>
+					<span class="sr-only">Open main menu</span>
+					{#if navbarOpen}
+						<svg
+							class="h-6 w-6"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+							xmlns="http://www.w3.org/2000/svg"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M6 18L18 6M6 6l12 12"
+							></path>
+						</svg>
+					{:else}
+						<svg
+							class="h-6 w-6"
+							aria-hidden="true"
+							fill="currentColor"
+							viewBox="0 0 20 20"
+							xmlns="http://www.w3.org/2000/svg"
+						>
+							<path
+								fill-rule="evenodd"
+								d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+								clip-rule="evenodd"
+							></path>
+						</svg>
+					{/if}
+				</button>
+			</div>
+		</div>
+	</div>
 </nav>
+
+<div
+	id="mobile-drawer"
+	class="fixed inset-y-0 left-0 z-40 h-full w-full bg-white shadow-xl transition-transform duration-300 sm:w-84 lg:hidden"
+	class:translate-x-0={navbarOpen}
+	class:translate-x-[-100%]={!navbarOpen}
+>
+	<div class="flex items-center justify-between border-b border-gray-100 px-4 py-4">
+		<a href="/" class="flex w-max items-center">
+			<span class="text-lg font-bold text-gray-900">Threefive Project</span>
+		</a>
+
+		<button
+			onclick={() => (navbarOpen = false)}
+			type="button"
+			class="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+			aria-label="Close menu"
+		>
+			<svg
+				class="h-6 w-6"
+				fill="none"
+				stroke="currentColor"
+				viewBox="0 0 24 24"
+				xmlns="http://www.w3.org/2000/svg"
+			>
+				<path
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					stroke-width="2"
+					d="M6 18L18 6M6 6l12 12"
+				></path>
+			</svg>
+		</button>
+	</div>
+
+	<div class="overflow-y-auto py-2">
+		<ul class="space-y-0">
+			{#each NavLinks as link (link.id)}
+				<li>
+					<a
+						onclick={closeNavbar}
+						href={link.href}
+						class="block border-l-4 py-4 pr-4 pl-3 text-base font-medium transition duration-150 ease-in-out"
+						class:border-indigo-700={checkIsActive(link.href)}
+						class:bg-indigo-50={checkIsActive(link.href)}
+						class:text-indigo-700={checkIsActive(link.href)}
+						class:border-transparent={!checkIsActive(link.href)}
+						class:text-gray-700={!checkIsActive(link.href)}
+						class:hover:bg-gray-50={!checkIsActive(link.href)}
+						class:hover:text-gray-900={!checkIsActive(link.href)}
+					>
+						{link.title}
+					</a>
+				</li>
+			{/each}
+		</ul>
+
+		<div class="mt-4 border-t border-gray-100 pt-2">
+			<h6 class="mb-1 px-3 text-sm font-medium text-gray-500">Projects</h6>
+			<ul class="space-y-0">
+				{#each ProjectLinks as feature}
+					<li>
+						<a
+							onclick={closeNavbar}
+							href={feature.href}
+							class="block border-l-4 py-4 pr-4 pl-3 text-base font-medium transition duration-150 ease-in-out"
+							class:border-indigo-700={checkIsActive(feature.href)}
+							class:bg-indigo-50={checkIsActive(feature.href)}
+							class:text-indigo-700={checkIsActive(feature.href)}
+							class:border-transparent={!checkIsActive(feature.href)}
+							class:text-gray-700={!checkIsActive(feature.href)}
+							class:hover:bg-gray-50={!checkIsActive(feature.href)}
+							class:hover:text-gray-900={!checkIsActive(feature.href)}
+						>
+							{feature.title}
+						</a>
+					</li>
+				{/each}
+				<li>
+					<a
+						onclick={closeNavbar}
+						href="/projects"
+						class="block border-l-4 border-transparent py-4 pr-4 pl-3 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+					>
+						More...
+					</a>
+				</li>
+			</ul>
+		</div>
+		<div class="mt-4 border-t border-gray-100 pt-2">
+			<h6 class="mb-1 px-3 text-sm font-medium text-gray-500">Socials</h6>
+		</div>
+	</div>
+</div>
+
+<div
+	class="fixed inset-0 z-30 bg-black/50 transition-opacity duration-300 lg:hidden"
+	class:opacity-100={navbarOpen}
+	class:opacity-0={!navbarOpen}
+	class:pointer-events-none={!navbarOpen}
+></div>
