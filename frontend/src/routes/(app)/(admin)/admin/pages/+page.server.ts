@@ -25,6 +25,11 @@ export const load: PageServerLoad = async ({ fetch, url, parent }) => {
     const response = await fetch(`/api/v1/admin/pages?${params.toString()}`);
 
     if (!response.ok) {
+      if (response.status === 401) {
+        // If you need specific 401 handling beyond the generic 500
+        throw error(401, "Unauthorized");
+      }
+      // All other bad status codes (4xx, 5xx)
       throw error(response.status, "Failed to fetch pages");
     }
 
@@ -42,6 +47,14 @@ export const load: PageServerLoad = async ({ fetch, url, parent }) => {
     };
   } catch (err) {
     console.error("Error fetching pages:", err);
+    if (
+      typeof err === "object" &&
+      err !== null &&
+      "status" in err &&
+      typeof err.status === "number"
+    ) {
+      throw err;
+    }
     throw error(500, "Failed to load pages");
   }
 };

@@ -1,90 +1,87 @@
 <script lang="ts">
-	import DynamicForm, {
-		type FormConfig,
-	} from "$components/ui/DynamicForm.svelte";
-	import type { ErrorResponse } from "$types/auth";
-	import { authApi } from "$api/auth";
-	import { authStore } from "$stores/auth.svelte";
-	import { goto } from "$app/navigation";
-	import { toast } from "svelte-sonner";
+	import DynamicForm, { type FormConfig } from '$components/ui/DynamicForm.svelte';
+	import type { ErrorResponse } from '$types/auth';
+	import { authApi } from '$api/auth';
+	import { authStore } from '$stores/auth.svelte';
+	import { goto } from '$app/navigation';
+	import { toast } from 'svelte-sonner';
 
 	let formData = $state({
-		first_name: "",
-		last_name: "",
-		email: "",
-		password: "",
+		first_name: '',
+		last_name: '',
+		email: '',
+		password: ''
 	});
 	let errors = $state<Record<string, string>>({});
 	let loading = $state(false);
-	let generalError = $state("");
+	let generalError = $state('');
 
 	const formConfig: FormConfig = {
 		fields: [
 			{
-				name: "first_name",
-				type: "text",
-				label: "First Name",
-				placeholder: "John",
+				name: 'first_name',
+				type: 'text',
+				label: 'First Name',
+				placeholder: 'John',
 				required: true,
-				colSpan: 6,
+				colSpan: 6
 			},
 			{
-				name: "last_name",
-				type: "text",
-				label: "Last Name",
-				placeholder: "Doe",
+				name: 'last_name',
+				type: 'text',
+				label: 'Last Name',
+				placeholder: 'Doe',
 				required: true,
-				colSpan: 6,
+				colSpan: 6
 			},
 			{
-				name: "email",
-				type: "email",
-				label: "Email",
-				placeholder: "john@example.com",
+				name: 'email',
+				type: 'email',
+				label: 'Email',
+				placeholder: 'john@example.com',
+				required: true,
+				colSpan: 12
+			},
+			{
+				name: 'password',
+				type: 'password',
+				label: 'Password',
+				placeholder: 'Minimum 8 characters',
 				required: true,
 				colSpan: 12,
-			},
-			{
-				name: "password",
-				type: "password",
-				label: "Password",
-				placeholder: "Minimum 8 characters",
-				required: true,
-				colSpan: 12,
-				helperText:
-					"Must contain uppercase, lowercase, number, and special character",
-			},
+				helperText: 'Must contain uppercase, lowercase, number, and special character'
+			}
 		],
-		submitText: "Create Account",
-		submitVariant: "primary",
-		submitFullWidth: true,
+		submitText: 'Create Account',
+		submitVariant: 'primary',
+		submitFullWidth: true
 	};
 
 	function handleChange(data: Record<string, any>) {
 		formData = {
-			first_name: data.first_name || "",
-			last_name: data.last_name || "",
-			email: data.email || "",
-			password: data.password || "",
+			first_name: data.first_name || '',
+			last_name: data.last_name || '',
+			email: data.email || '',
+			password: data.password || ''
 		};
 	}
 
 	async function handleSubmit(data: Record<string, any>) {
 		loading = true;
 		errors = {};
-		generalError = "";
+		generalError = '';
 
 		try {
 			const response = await authApi.register({
 				first_name: data.first_name,
 				last_name: data.last_name,
 				email: data.email,
-				password: data.password,
+				password: data.password
 			});
 
 			authStore.setUser(response.user);
-			toast.success("Register success");
-			goto("/admin");
+			toast.success('Register success');
+			goto('/admin');
 		} catch (error) {
 			const err = error as ErrorResponse;
 
@@ -95,7 +92,7 @@
 					toast.error(e.message);
 				});
 			} else {
-				generalError = err.message || "Registration failed";
+				generalError = err.message || 'Registration failed';
 				toast.error(generalError);
 			}
 		} finally {
@@ -108,11 +105,9 @@
 	<div class="w-full max-w-md space-y-8">
 		<div class="text-center">
 			<h2 class="">Create your account</h2>
-			<p class="mt-2 ">
+			<p class="mt-2">
 				Already have an account?
-				<a href="/auth/login" class="hover:text-primary-dark font-medium text-primary">
-					Sign in
-				</a>
+				<a href="/auth/login" class="hover:text-primary-dark font-medium text-primary"> Sign in </a>
 			</p>
 		</div>
 

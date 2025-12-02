@@ -1,26 +1,17 @@
 <!-- frontend/src/lib/components/ui/DynamicForm.svelte -->
 <script lang="ts">
-	import Button from "./Button.svelte";
-	import Input from "./Input.svelte";
-	import { ImageUp, CheckCircle } from "lucide-svelte";
-	import { PUBLIC_API_URL } from "$env/static/public";
-	import type { Media } from "$api/media";
-	import { untrack } from "svelte";
-	import MediaPicker from "./MediaPicker.svelte";
+	import Button from './Button.svelte';
+	import Input from './Input.svelte';
+	import { ImageUp, CheckCircle } from 'lucide-svelte';
+	import { PUBLIC_API_URL } from '$env/static/public';
+	import type { Media } from '$api/media';
+	import { untrack } from 'svelte';
+	import MediaPicker from './MediaPicker.svelte';
 
 	interface FormField {
 		name: string;
 		label: string;
-		type?:
-			| "text"
-			| "email"
-			| "password"
-			| "tel"
-			| "url"
-			| "date"
-			| "number"
-			| "textarea"
-			| "media";
+		type?: 'text' | 'email' | 'password' | 'tel' | 'url' | 'date' | 'number' | 'textarea' | 'media';
 		placeholder?: string;
 		required?: boolean;
 		value?: string | number;
@@ -36,6 +27,8 @@
 		submitText?: string;
 		showSubmit?: boolean;
 		columns?: number;
+		submitVariant?: 'primary' | 'secondary' | 'tertiary';
+		submitFullWidth?: boolean;
 	}
 
 	interface Props {
@@ -44,7 +37,7 @@
 		onSubmit?: (data: Record<string, any>) => void | Promise<void>;
 		onchange?: (data: Record<string, any>) => void;
 		errors?: Record<string, string>;
-		children?: import("svelte").Snippet;
+		children?: import('svelte').Snippet;
 		asForm?: boolean;
 	}
 
@@ -55,7 +48,7 @@
 		onchange,
 		errors = {},
 		children,
-		asForm = true,
+		asForm = true
 	}: Props = $props();
 
 	// Helper function to get default values for all fields
@@ -65,10 +58,10 @@
 		return formConfig.fields.reduce(
 			(acc, field) => {
 				// Media fields default to null, others to empty string
-				acc[field.name] = field.value ?? (field.type === "media" ? null : "");
+				acc[field.name] = field.value ?? (field.type === 'media' ? null : '');
 				return acc;
 			},
-			{} as Record<string, any>,
+			{} as Record<string, any>
 		);
 	}
 
@@ -78,12 +71,12 @@
 			? initialFormData && Object.keys(initialFormData).length > 0
 				? { ...getDefaultFormData(config), ...initialFormData }
 				: getDefaultFormData(config)
-			: {},
+			: {}
 	);
 
 	// Media picker state
 	let showMediaPicker = $state(false);
-	let currentMediaField = $state<string>("");
+	let currentMediaField = $state<string>('');
 	let selectedMediaCache = $state<Map<string, Media>>(new Map());
 
 	// Notify parent of changes (with untrack to prevent infinite loops)
@@ -96,27 +89,23 @@
 	// Load media info for fields with existing values
 	$effect.pre(() => {
 		if (!config?.fields) {
-			console.log("   ❌ No config.fields");
+			console.log('   ❌ No config.fields');
 			return;
 		}
 
 		config.fields.forEach((field) => {
-			if (field.type !== "media") return;
+			if (field.type !== 'media') return;
 
 			const mediaId = formData[field.name];
 
-			if (
-				mediaId &&
-				typeof mediaId === "string" &&
-				!selectedMediaCache.has(mediaId)
-			) {
+			if (mediaId && typeof mediaId === 'string' && !selectedMediaCache.has(mediaId)) {
 				loadMediaInfo(mediaId);
 			}
 		});
 	});
 
 	function getColSpanClass(colSpan?: number): string {
-		if (!colSpan) return "col-span-1";
+		if (!colSpan) return 'col-span-1';
 		return `col-span-${colSpan}`;
 	}
 
@@ -134,7 +123,7 @@
 
 	function closeMediaPicker() {
 		showMediaPicker = false;
-		currentMediaField = "";
+		currentMediaField = '';
 	}
 
 	function handleMediaSelect(mediaId: string, media: Media) {
@@ -143,7 +132,7 @@
 			const newCache = new Map(selectedMediaCache);
 			newCache.set(mediaId, media);
 			selectedMediaCache = newCache;
-			currentMediaField = "";
+			currentMediaField = '';
 		}
 		closeMediaPicker();
 	}
@@ -161,22 +150,19 @@
 	// Load selected media info when field has a value
 	async function loadMediaInfo(mediaId: string) {
 		if (!mediaId) {
-			console.log("   ❌ No mediaId");
+			console.log('   ❌ No mediaId');
 			return;
 		}
 
 		if (selectedMediaCache.has(mediaId)) {
-			console.log("   i  Already in cache");
+			console.log('   i  Already in cache');
 			return;
 		}
 
 		try {
-			const response = await fetch(
-				`${PUBLIC_API_URL}/api/v1/media/${mediaId}`,
-				{
-					credentials: "include",
-				},
-			);
+			const response = await fetch(`${PUBLIC_API_URL}/api/v1/media/${mediaId}`, {
+				credentials: 'include'
+			});
 
 			if (response.ok) {
 				const media = await response.json();
@@ -185,45 +171,36 @@
 				selectedMediaCache = newCache;
 			}
 		} catch (err) {
-			console.error("   ❌ Failed to load media:", err);
+			console.error('   ❌ Failed to load media:', err);
 		}
 	}
 
 	// Helper to check if field type is media
 	function isMediaField(type?: string): boolean {
-		return type === "media";
+		return type === 'media';
 	}
 
 	// Helper to get valid input type (excludes 'media')
 	function getInputType(
-		type?: string,
-	):
-		| "text"
-		| "email"
-		| "password"
-		| "tel"
-		| "url"
-		| "date"
-		| "number"
-		| "textarea"
-		| undefined {
-		if (type === "media") return undefined;
+		type?: string
+	): 'text' | 'email' | 'password' | 'tel' | 'url' | 'date' | 'number' | 'textarea' | undefined {
+		if (type === 'media') return undefined;
 		return type as
-			| "text"
-			| "email"
-			| "password"
-			| "tel"
-			| "url"
-			| "date"
-			| "number"
-			| "textarea"
+			| 'text'
+			| 'email'
+			| 'password'
+			| 'tel'
+			| 'url'
+			| 'date'
+			| 'number'
+			| 'textarea'
 			| undefined;
 	}
 
 	function formatFileSize(bytes: number): string {
-		if (bytes < 1024) return bytes + " B";
-		if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
-		return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+		if (bytes < 1024) return bytes + ' B';
+		if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+		return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 	}
 </script>
 
@@ -231,29 +208,32 @@
 	{@const mediaId = formData[field.name]}
 	{@const hasMedia = mediaId && selectedMediaCache.has(mediaId)}
 	{@const media = hasMedia ? selectedMediaCache.get(mediaId) : null}
-	
+
 	<div class="space-y-2">
 		{#if field.label}
-			<label class="block text-sm font-medium ">
+			<label class="block text-sm font-medium">
 				{field.label}
 				{#if field.required}
 					<span class="text-red-500">*</span>
 				{/if}
 			</label>
 		{/if}
-		
-		
 
 		{#if hasMedia && media}
-			<div class="relative group border border-input-border rounded-lg p-4 bg-surface">
+			<div class="group relative rounded-lg border border-input-border bg-surface p-4">
 				<button
 					type="button"
 					onclick={() => clearMedia(field.name)}
-					class="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+					class="absolute top-2 right-2 rounded-full bg-red-500 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100"
 					title="Remove"
 				>
-					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M6 18L18 6M6 6l12 12"
+						/>
 					</svg>
 				</button>
 
@@ -261,10 +241,10 @@
 					<img
 						src={media.thumbnail_url || media.url}
 						alt={media.original_filename}
-						class="w-20 h-20 object-cover rounded"
+						class="h-20 w-20 rounded object-cover"
 					/>
-					<div class="flex-1 min-w-0">
-						<p class="text-sm font-medium  truncate">{media.original_filename}</p>
+					<div class="min-w-0 flex-1">
+						<p class="truncate text-sm font-medium">{media.original_filename}</p>
 						<p class="text-xs text-gray-500">
 							{formatFileSize(media.size_bytes)}
 							{#if media.width && media.height}
@@ -272,15 +252,15 @@
 							{/if}
 						</p>
 						{#if media.mime_type === 'image/webp'}
-							<span class="inline-flex items-center gap-1 mt-1 text-xs text-green-600 font-medium">
-								<CheckCircle class="w-3 h-3" />
+							<span class="mt-1 inline-flex items-center gap-1 text-xs font-medium text-green-600">
+								<CheckCircle class="h-3 w-3" />
 								WebP Optimized
 							</span>
 						{/if}
 					</div>
-					<button 
-						type="button" 
-						onclick={() => openMediaPicker(field.name)} 
+					<button
+						type="button"
+						onclick={() => openMediaPicker(field.name)}
 						class="px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-700"
 					>
 						Change
@@ -291,11 +271,13 @@
 			<button
 				type="button"
 				onclick={() => openMediaPicker(field.name)}
-				class="w-full border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors"
+				class="w-full rounded-lg border-2 border-dashed border-gray-300 p-6 text-center transition-colors hover:border-gray-400"
 			>
-				<ImageUp class="mx-auto h-12 w-12 text-gray-400 mb-2" />
+				<ImageUp class="mx-auto mb-2 h-12 w-12 text-gray-400" />
 				<p class="text-sm text-gray-600">Click to select or upload media</p>
-				<p class="text-xs text-gray-400 mt-1">Images will be converted to WebP • Videos will be optimized</p>
+				<p class="mt-1 text-xs text-gray-400">
+					Images will be converted to WebP • Videos will be optimized
+				</p>
 			</button>
 		{/if}
 
@@ -335,7 +317,7 @@
 			{#if children}
 				{@render children()}
 			{:else if config.showSubmit !== false}
-				<Button type="submit" class="w-full">
+				<Button type="submit" class="w-full py-2.5">
 					{config.submitText || 'Submit'}
 				</Button>
 			{/if}
@@ -374,8 +356,4 @@
 {/if}
 
 <!-- Media Picker Modal -->
-<MediaPicker 
-	show={showMediaPicker}
-	onselect={handleMediaSelect}
-	onclose={closeMediaPicker}
-/>
+<MediaPicker show={showMediaPicker} onselect={handleMediaSelect} onclose={closeMediaPicker} />
