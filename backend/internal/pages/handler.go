@@ -91,7 +91,7 @@ func (h *Handler) GetPageByID(w http.ResponseWriter, r *http.Request) {
 // GET /api/v1/pages/{slug}
 func (h *Handler) GetPageBySlug(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
-	log.Printf("DEBUG GetPageBySlug: Called with slug: '%s'", slug)
+	// log.Printf("DEBUG GetPageBySlug: Called with slug: '%s'", slug)
 	// Try to parse as UUID first
 	page, err := h.service.GetPageBySlug(r.Context(), slug)
 	if err != nil {
@@ -312,7 +312,6 @@ func (h *Handler) DeletePage(w http.ResponseWriter, r *http.Request) {
 // POST /api/v1/pages/purge
 func (h *Handler) PurgeDeletedPages(w http.ResponseWriter, r *http.Request) {
 	log.Printf("[Pages] Manual purge triggered by user")
-
 	// Call service to purge
 	err := h.service.PurgeOldDeletedPages(r.Context())
 	if err != nil {

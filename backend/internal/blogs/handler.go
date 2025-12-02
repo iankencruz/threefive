@@ -106,7 +106,6 @@ func (h *Handler) GetBlogByID(w http.ResponseWriter, r *http.Request) {
 // GET /api/v1/blogs/{slug}
 func (h *Handler) GetBlogBySlug(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
-	log.Printf("DEBUG GetBlogBySlug: Called with slug: '%s', URL: %s", slug, r.URL.Path)
 	blog, err := h.service.GetBlogBySlug(r.Context(), slug)
 	if err != nil {
 		responses.WriteErr(w, err)

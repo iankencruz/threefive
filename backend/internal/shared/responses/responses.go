@@ -2,7 +2,6 @@ package responses
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 
 	"github.com/iankencruz/threefive/internal/shared/errors"
@@ -31,13 +30,13 @@ func WriteErr(w http.ResponseWriter, err error, messages ...string) {
 
 	// --- LOGGING LOGIC ---
 	// We log both Server Errors (5xx) and Client Errors (4xx) to the terminal.
-	if appErr.StatusCode >= 500 {
-		// 500s: Log the underlying error (appErr.Err) which usually contains the stack trace or DB error
-		log.Printf("🛑 SERVER ERROR [%s]: %v\n", appErr.Code, appErr.Err)
-	} else {
-		// 400s: Log the message so you know why the request failed (e.g., "User not found")
-		log.Printf("⚠️  CLIENT ERROR [%d] [%s]: %s\n", appErr.StatusCode, appErr.Code, appErr.Message)
-	}
+	// if appErr.StatusCode >= 500 {
+	// 	// 500s: Log the underlying error (appErr.Err) which usually contains the stack trace or DB error
+	// 	log.Printf("🛑 SERVER ERROR [%s]: %v\n", appErr.Code, appErr.Err)
+	// } else {
+	// 	// 400s: Log the message so you know why the request failed (e.g., "User not found")
+	// 	log.Printf("⚠️  CLIENT ERROR [%d] [%s]: %s\n", appErr.StatusCode, appErr.Code, appErr.Message)
+	// }
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(appErr.StatusCode)

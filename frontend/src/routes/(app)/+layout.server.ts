@@ -1,10 +1,14 @@
-// src/routes/+layout.server.ts
 import type { LayoutServerLoad } from "./$types";
 import { PUBLIC_API_URL } from "$env/static/public";
 
-export const load: LayoutServerLoad = async ({ fetch }) => {
+export const load: LayoutServerLoad = async ({ locals, fetch }) => {
+  // For admin routes, user is already set in locals by hooks
+  if (locals.user) {
+    return { user: locals.user };
+  }
+
+  // For non-admin routes, still try to fetch user (optional auth)
   try {
-    // Try to get current user from backend
     const response = await fetch(`${PUBLIC_API_URL}/auth/me`, {
       credentials: "include",
     });
@@ -14,7 +18,6 @@ export const load: LayoutServerLoad = async ({ fetch }) => {
       return { user };
     }
   } catch (error) {
-    // Not authenticated or error - that's fine
     console.log("Not authenticated");
   }
 
