@@ -1,5 +1,5 @@
 # docker-compose.yml
-version: '3.8'
+version: "3.8"
 
 services:
   # Your existing PostgreSQL service
@@ -10,10 +10,15 @@ services:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: pass
       POSTGRES_DB: threefive
+      TZ: Australia/Sydney
+
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      # Mount the specific timezone file
+      - /usr/share/zoneinfo/Australia/Sydney:/etc/localtime:ro
+      # REMOVE the problematic /etc/timezone mount
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U user -d threefive"]
       interval: 10s
@@ -26,13 +31,17 @@ services:
     container_name: threefive-minio
     command: server /data --console-address ":9001"
     environment:
+      TZ: Australia/Sydney
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin123
     ports:
-      - "9000:9000"  # S3 API
-      - "9001:9001"  # Web Console
+      - "9000:9000" # S3 API
+      - "9001:9001" # Web Console
     volumes:
       - minio_data:/data
+      # Mount the specific timezone file, assuming your host has this path
+      - /usr/share/zoneinfo/Australia/Sydney:/etc/localtime:ro
+      # REMOVE the problematic /etc/timezone mount
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 30s
