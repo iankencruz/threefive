@@ -69,7 +69,7 @@ func (s *Service) CreateBlog(ctx context.Context, req CreateBlogRequest) (*BlogR
 		Title:           req.Title,
 		Slug:            req.Slug,
 		Status:          sqlc.NullPageStatus{PageStatus: sqlc.PageStatus(req.Status), Valid: true},
-		Excerpt:         utils.StrToPg(req.Excerpt),
+		Description:     utils.StrToPg(req.Description),
 		ReadingTime:     utils.IntToPg(req.ReadingTime),
 		IsFeatured:      pgtype.Bool{Bool: req.IsFeatured, Valid: true},
 		FeaturedImageID: utils.UUIDToPg(req.FeaturedImageID),
@@ -285,7 +285,7 @@ func (s *Service) UpdateBlog(ctx context.Context, blogID uuid.UUID, req UpdateBl
 		Title:           utils.PtrStr(req.Title),
 		Slug:            utils.PtrStr(req.Slug),
 		Status:          utils.StatusToPg(req.Status),
-		Excerpt:         utils.StrToPg(req.Excerpt),
+		Description:     utils.StrToPg(req.Description),
 		ReadingTime:     utils.IntToPg(req.ReadingTime),
 		IsFeatured:      utils.BoolToPg(req.IsFeatured, true),
 		FeaturedImageID: utils.UUIDToPg(req.FeaturedImageID),
@@ -387,9 +387,9 @@ func (s *Service) buildBlogResponse(ctx context.Context, blog sqlc.Blogs) (*Blog
 		UpdatedAt:  blog.UpdatedAt,
 	}
 
-	// Excerpt
-	if blog.Excerpt.Valid {
-		resp.Excerpt = &blog.Excerpt.String
+	// Description
+	if blog.Description.Valid {
+		resp.Description = &blog.Description.String
 	}
 
 	// Reading time

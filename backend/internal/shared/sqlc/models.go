@@ -187,7 +187,7 @@ type Blogs struct {
 	Title           string             `json:"title"`
 	Slug            string             `json:"slug"`
 	Status          NullPageStatus     `json:"status"`
-	Excerpt         pgtype.Text        `json:"excerpt"`
+	Description     pgtype.Text        `json:"description"`
 	ReadingTime     pgtype.Int4        `json:"reading_time"`
 	IsFeatured      pgtype.Bool        `json:"is_featured"`
 	FeaturedImageID pgtype.UUID        `json:"featured_image_id"`

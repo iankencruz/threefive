@@ -29,9 +29,9 @@ func (r *CreateBlogRequest) Validate(v *validation.Validator) {
 	v.Required("status", r.Status)
 	v.In("status", r.Status, ValidBlogStatuses)
 
-	// Excerpt validation (optional)
-	if r.Excerpt != nil {
-		v.MaxLength("excerpt", *r.Excerpt, 500)
+	// Description validation (optional)
+	if r.Description != nil {
+		v.MaxLength("description", *r.Description, 500)
 	}
 
 	// Reading time validation (optional, must be positive)
@@ -57,7 +57,7 @@ func (r *CreateBlogRequest) Validate(v *validation.Validator) {
 func (r *UpdateBlogRequest) Validate(v *validation.Validator) {
 	// At least one field must be provided
 	if r.Title == nil && r.Slug == nil && r.Status == nil &&
-		r.Excerpt == nil && r.ReadingTime == nil && r.IsFeatured == nil &&
+		r.Description == nil && r.ReadingTime == nil && r.IsFeatured == nil &&
 		r.FeaturedImageID == nil && r.Blocks == nil && r.SEO == nil {
 		v.AddError("update", "At least one field must be provided for update")
 		return
@@ -81,9 +81,9 @@ func (r *UpdateBlogRequest) Validate(v *validation.Validator) {
 		v.In("status", *r.Status, ValidBlogStatuses)
 	}
 
-	// Excerpt validation (if provided)
-	if r.Excerpt != nil {
-		v.MaxLength("excerpt", *r.Excerpt, 500)
+	// Description validation (if provided)
+	if r.Description != nil {
+		v.MaxLength("description", *r.Description, 500)
 	}
 
 	// Reading time validation (if provided)

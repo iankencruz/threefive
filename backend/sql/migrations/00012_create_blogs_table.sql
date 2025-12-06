@@ -13,7 +13,7 @@ CREATE TABLE blogs (
     status page_status DEFAULT 'draft', -- Reuse page_status enum
     
     -- Blog-specific fields
-    excerpt TEXT,
+    description TEXT,
     reading_time INTEGER,
     is_featured BOOLEAN DEFAULT false,
     

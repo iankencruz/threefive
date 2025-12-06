@@ -18,7 +18,7 @@ type CreateBlogRequest struct {
 	Title           string                `json:"title"`
 	Slug            string                `json:"slug"`
 	Status          string                `json:"status"` // draft, published, archived
-	Excerpt         *string               `json:"excerpt"`
+	Description     *string               `json:"description"`
 	ReadingTime     *int                  `json:"reading_time"`
 	IsFeatured      bool                  `json:"is_featured"`
 	FeaturedImageID *uuid.UUID            `json:"featured_image_id"`
@@ -31,7 +31,7 @@ type UpdateBlogRequest struct {
 	Title           *string                `json:"title"`
 	Slug            *string                `json:"slug"`
 	Status          *string                `json:"status"`
-	Excerpt         *string                `json:"excerpt"`
+	Description     *string                `json:"description"`
 	ReadingTime     *int                   `json:"reading_time"`
 	IsFeatured      *bool                  `json:"is_featured"`
 	FeaturedImageID *uuid.UUID             `json:"featured_image_id"`
@@ -54,7 +54,7 @@ type BlogResponse struct {
 	Title           string                 `json:"title"`
 	Slug            string                 `json:"slug"`
 	Status          string                 `json:"status"`
-	Excerpt         *string                `json:"excerpt"`
+	Description     *string                `json:"description"`
 	ReadingTime     *int                   `json:"reading_time"`
 	IsFeatured      bool                   `json:"is_featured"`
 	FeaturedImageID *uuid.UUID             `json:"featured_image_id"`
