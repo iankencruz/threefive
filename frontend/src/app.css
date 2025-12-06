@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP&display=swap');
 @import "tailwindcss";
 
 @plugin "@tailwindcss/forms" {
@@ -9,6 +10,9 @@
 
 /* Theme customization */
 @theme {
+  /* === Fonts === */
+  --font-ibm: "IBM+Plex+Sans", sans-serif;
+
   /* === Brand === */
   --color-primary: #ff4b1f;
   --color-primary-light: #f4d5cd;
@@ -61,9 +65,13 @@
 
 @layer base {
 
-  p,
-  span {
+  * {
+    @apply font-ibm;
+  }
+
+  p {
     color: var(--color-foreground);
+    @apply font-ibm;
   }
 
   h1 {

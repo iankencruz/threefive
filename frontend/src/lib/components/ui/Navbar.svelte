@@ -2,8 +2,9 @@
 	// 1. Import the SvelteKit page store to get the current URL
 	import { page } from '$app/state';
 	import type { Link } from '$types/pages';
-	import { Projects } from '$types/projects';
-	import { Blogs } from '$types/blogs';
+	import { Projects, type Project } from '$types/projects';
+	import { Blogs, type Blog } from '$types/blogs';
+	import { LayoutPanelLeft } from 'lucide-svelte';
 
 	let { variant } = $props<'standard' | 'ghost'>();
 
@@ -46,6 +47,68 @@
 	}
 </script>
 
+<!-- {#snippet flyoverMenu(data: Project[] | Blog[], parent: string)} -->
+{#snippet flyoverMenu(data: Project[] | Blog[], parent: string)}
+	<li class="relative">
+		<button
+			popovertarget={`desktop-menu-${parent}`}
+			class="dropdown-toggle mr-auto flex items-center justify-between text-center text-base font-medium text-white capitalize transition-all duration-500 hover:text-gray-400 lg:m-0 lg:mx-3 lg:mb-0 lg:text-left"
+		>
+			{parent}
+			<svg
+				class="ml-1.5 h-2 w-3"
+				width="10"
+				height="6"
+				viewBox="0 0 10 6"
+				fill="none"
+				xmlns="http://www.w3.org/2000/svg"
+			>
+				<path
+					d="M1 1L3.58579 3.58579C4.25245 4.25245 4.58579 4.58579 5 4.58579C5.41421 4.58579 5.74755 4.25245 6.41421 3.58579L9 1"
+					stroke="currentColor"
+					stroke-width="1.6"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				></path>
+			</svg>
+		</button>
+
+		<el-popover
+			id={`desktop-menu-${parent}`}
+			class:bg-transparent={variant === 'ghost'}
+			class:backdrop-blur-2xl={variant === 'ghost'}
+			class:backdrop:bg-transparent={variant === 'ghost'}
+			popover="auto"
+			class="absolute top-16 mx-auto mt-4 w-[95vw] overflow-visible transition transition-discrete open:block data-closed:-translate-y-1 data-closed:opacity-0 data-enter:duration-200 data-enter:ease-out data-leave:duration-150 data-leave:ease-in"
+		>
+			<!-- Presentational element used to render the bottom shadow, if we put the shadow on the actual panel it pokes out the top, so we use this shorter element to hide the top of the shadow -->
+			<div
+				class:bg-surface={variant !== 'ghost'}
+				class="mx-auto grid max-w-7xl grid-cols-4 gap-x-4 rounded-t-xl border border-white px-6 py-10 lg:px-8 xl:gap-x-8"
+			>
+				{#each data.slice(0, 4) as item}
+					<div class="group relative rounded-lg p-6 text-sm/6 hover:border hover:border-foreground">
+						<a href={`/${parent}/${item.slug}`} class=" block leading-5 font-semibold text-primary">
+							{item.title}
+							<span class="absolute inset-0"></span>
+						</a>
+						<p class="mt-1.5 line-clamp-2 leading-5 text-foreground">
+							{item.description || `Explore our ${parent.toLowerCase()}`}
+						</p>
+					</div>
+				{/each}
+			</div>
+			<a
+				href={`/${parent}`}
+				class="flex items-center justify-center gap-2 rounded-b-xl bg-white py-3 font-ibm text-sm/6 font-semibold text-gray-900 hover:text-primary"
+			>
+				<LayoutPanelLeft size={18} />
+				View all {parent}
+			</a>
+		</el-popover>
+	</li>
+{/snippet}
+
 <nav
 	class="z-20 w-full transition-all duration-500"
 	class:absolute={variant === 'ghost'}
@@ -53,7 +116,17 @@
 >
 	<div class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
 		<div class="flex w-full items-center justify-between py-4">
-			<a href="/" class="flex w-max items-center"> Threefive Project </a>
+			{#if variant !== 'ghost'}
+				<a href="/" class="w-full">
+					<div class="flex flex-row gap-2 leading-none font-bold text-primary sm:hidden">
+						<span>三</span>
+						<span>五</span>
+					</div>
+					<div class="hidden w-full text-lg font-bold text-foreground text-primary sm:block">
+						Threefive Project
+					</div>
+				</a>
+			{/if}
 
 			<div class="hidden w-full lg:flex lg:pl-11" id="navbar-desktop">
 				<ul class="flex gap-6 lg:mt-0 lg:ml-auto lg:flex-row lg:items-center lg:justify-center">
@@ -72,176 +145,11 @@
 					{/each}
 
 					{#if Projects.length > 0}
-						<li class="relative">
-							<button
-								popovertarget="desktop-menu-features"
-								onclick={() => (featuresOpen = !featuresOpen)}
-								class="dropdown-toggle mr-auto flex items-center justify-between text-center text-base font-medium text-white transition-all duration-500 hover:text-gray-400 lg:m-0 lg:mx-3 lg:mb-0 lg:text-left"
-								aria-expanded={featuresOpen}
-							>
-								Projects
-								<svg
-									class="ml-1.5 h-2 w-3"
-									width="10"
-									height="6"
-									viewBox="0 0 10 6"
-									fill="none"
-									xmlns="http://www.w3.org/2000/svg"
-								>
-									<path
-										d="M1 1L3.58579 3.58579C4.25245 4.25245 4.58579 4.58579 5 4.58579C5.41421 4.58579 5.74755 4.25245 6.41421 3.58579L9 1"
-										stroke="currentColor"
-										stroke-width="1.6"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-									></path>
-								</svg>
-							</button>
-
-							<el-popover
-								id="desktop-menu-features"
-								popover="auto"
-								class:hidden={!featuresOpen}
-								onclose={() => (featuresOpen = false)}
-								class="absolute top-16 w-full overflow-visible bg-white transition transition-discrete backdrop:bg-transparent open:block data-closed:-translate-y-1 data-closed:opacity-0 data-enter:duration-200 data-enter:ease-out data-leave:duration-150 data-leave:ease-in"
-							>
-								<!-- Presentational element used to render the bottom shadow, if we put the shadow on the actual panel it pokes out the top, so we use this shorter element to hide the top of the shadow -->
-								<div
-									aria-hidden="true"
-									class="absolute inset-0 top-1/2 bg-white shadow-lg ring-1 ring-gray-900/5"
-								></div>
-								<div class="relative bg-white">
-									<div
-										class="mx-auto grid max-w-7xl grid-cols-4 gap-x-4 px-6 py-10 lg:px-8 xl:gap-x-8"
-									>
-										{#each Projects.slice(0, 4) as project}
-											<div class="group relative rounded-lg p-6 text-sm/6 hover:bg-gray-50">
-												<a
-													href={`/projects/${project.slug}`}
-													class=" block font-semibold text-gray-900"
-												>
-													{project.title}
-													<span class="absolute inset-0"></span>
-												</a>
-												<p class="mt-1 text-gray-600">
-													{project.description || 'Explore our project'}
-												</p>
-											</div>
-										{/each}
-									</div>
-									<div class="bg-gray-50">
-										<div class="mx-auto max-w-7xl px-6 lg:px-8">
-											<div class="grid divide-x divide-gray-900/5 border-x border-gray-900/5">
-												<a
-													href={`/projects`}
-													class="flex items-center justify-center gap-x-2.5 p-3 text-sm/6 font-semibold text-gray-900 hover:bg-gray-100"
-												>
-													<svg
-														viewBox="0 0 20 20"
-														fill="currentColor"
-														data-slot="icon"
-														aria-hidden="true"
-														class="size-5 flex-none text-gray-400"
-													>
-														<path
-															d="M2.5 3A1.5 1.5 0 0 0 1 4.5v4A1.5 1.5 0 0 0 2.5 10h6A1.5 1.5 0 0 0 10 8.5v-4A1.5 1.5 0 0 0 8.5 3h-6Zm11 2A1.5 1.5 0 0 0 12 6.5v7a1.5 1.5 0 0 0 1.5 1.5h4a1.5 1.5 0 0 0 1.5-1.5v-7A1.5 1.5 0 0 0 17.5 5h-4Zm-10 7A1.5 1.5 0 0 0 2 13.5v2A1.5 1.5 0 0 0 3.5 17h6a1.5 1.5 0 0 0 1.5-1.5v-2A1.5 1.5 0 0 0 9.5 12h-6Z"
-															clip-rule="evenodd"
-															fill-rule="evenodd"
-														/>
-													</svg>
-													View all projects
-												</a>
-											</div>
-										</div>
-									</div>
-								</div>
-							</el-popover>
-						</li>
+						{@render flyoverMenu(Projects, 'projects')}
 					{/if}
 
 					{#if Blogs.length > 0}
-						<li class="relative">
-							<button
-								popovertarget="desktop-menu-blogs"
-								onclick={() => (blogsOpen = !blogsOpen)}
-								class="dropdown-toggle mr-auto flex items-center justify-between text-center text-base font-medium text-white transition-all duration-500 hover:text-gray-400 lg:m-0 lg:mx-3 lg:mb-0 lg:text-left"
-								aria-expanded={blogsOpen}
-							>
-								Blogs
-								<svg
-									class="ml-1.5 h-2 w-3"
-									width="10"
-									height="6"
-									viewBox="0 0 10 6"
-									fill="none"
-									xmlns="http://www.w3.org/2000/svg"
-								>
-									<path
-										d="M1 1L3.58579 3.58579C4.25245 4.25245 4.58579 4.58579 5 4.58579C5.41421 4.58579 5.74755 4.25245 6.41421 3.58579L9 1"
-										stroke="currentColor"
-										stroke-width="1.6"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-									></path>
-								</svg>
-							</button>
-
-							<el-popover
-								id="desktop-menu-blogs"
-								popover="auto"
-								class:hidden={!featuresOpen}
-								onclose={() => (featuresOpen = false)}
-								class="absolute top-16 w-full overflow-visible bg-white transition transition-discrete backdrop:bg-transparent open:block data-closed:-translate-y-1 data-closed:opacity-0 data-enter:duration-200 data-enter:ease-out data-leave:duration-150 data-leave:ease-in"
-							>
-								<!-- Presentational element used to render the bottom shadow, if we put the shadow on the actual panel it pokes out the top, so we use this shorter element to hide the top of the shadow -->
-								<div
-									aria-hidden="true"
-									class="absolute inset-0 top-1/2 bg-white shadow-lg ring-1 ring-gray-900/5"
-								></div>
-								<div class="relative bg-white">
-									<div
-										class="max-w-8xl mx-auto grid grid-cols-4 gap-x-4 px-6 py-10 lg:px-8 xl:gap-x-8"
-									>
-										{#each Blogs.slice(0, 4) as blog}
-											<div class="group relative rounded-lg p-6 text-sm/6 hover:bg-gray-50">
-												<a href={`/blogs/${blog.slug}`} class=" block font-semibold text-gray-900">
-													{blog.title}
-													<span class="absolute inset-0"></span>
-												</a>
-												<p class="mt-1 line-clamp-2 w-full text-ellipsis text-gray-600">
-													{blog.excerpt || 'Read our blog'}
-												</p>
-											</div>
-										{/each}
-									</div>
-									<div class="bg-gray-50">
-										<div class="mx-auto max-w-7xl px-6 lg:px-8">
-											<div class="grid divide-x divide-gray-900/5 border-x border-gray-900/5">
-												<a
-													href={`/projects`}
-													class="flex items-center justify-center gap-x-2.5 p-3 text-sm/6 font-semibold text-gray-900 hover:bg-gray-100"
-												>
-													<svg
-														viewBox="0 0 20 20"
-														fill="currentColor"
-														data-slot="icon"
-														aria-hidden="true"
-														class="size-5 flex-none text-gray-400"
-													>
-														<path
-															d="M2.5 3A1.5 1.5 0 0 0 1 4.5v4A1.5 1.5 0 0 0 2.5 10h6A1.5 1.5 0 0 0 10 8.5v-4A1.5 1.5 0 0 0 8.5 3h-6Zm11 2A1.5 1.5 0 0 0 12 6.5v7a1.5 1.5 0 0 0 1.5 1.5h4a1.5 1.5 0 0 0 1.5-1.5v-7A1.5 1.5 0 0 0 17.5 5h-4Zm-10 7A1.5 1.5 0 0 0 2 13.5v2A1.5 1.5 0 0 0 3.5 17h6a1.5 1.5 0 0 0 1.5-1.5v-2A1.5 1.5 0 0 0 9.5 12h-6Z"
-															clip-rule="evenodd"
-															fill-rule="evenodd"
-														/>
-													</svg>
-													View all blogs
-												</a>
-											</div>
-										</div>
-									</div>
-								</div>
-							</el-popover>
-						</li>
+						{@render flyoverMenu(Blogs, 'blogs')}
 					{/if}
 
 					<li>

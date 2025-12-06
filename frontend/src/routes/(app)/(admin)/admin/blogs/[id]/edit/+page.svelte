@@ -14,7 +14,7 @@
 		title: string;
 		slug: string;
 		status: 'draft' | 'published' | 'archived';
-		excerpt: string;
+		description: string;
 		reading_time: number;
 		is_featured: boolean;
 		blocks: any[];
@@ -23,7 +23,7 @@
 		title: data.blog.title || '',
 		slug: data.blog.slug || '',
 		status: data.blog.status || ('draft' as 'draft' | 'published' | 'archived'),
-		excerpt: data.blog.excerpt || '',
+		description: data.blog.description || '',
 		reading_time: data.blog.reading_time || (undefined as number | undefined),
 		is_featured: data.blog.is_featured || false,
 		blocks: data.blog.blocks || [],
@@ -69,7 +69,7 @@
 				title: formData.title,
 				slug: formData.slug,
 				status: formData.status,
-				excerpt: formData.excerpt,
+				description: formData.description,
 				reading_time: formData.reading_time,
 				is_featured: formData.is_featured,
 				blocks: formData.blocks,
@@ -109,30 +109,25 @@
 		}
 	};
 
-const handleDelete = async () => {
-		if (!confirm("Are you sure you want to delete this page?")) return;
+	const handleDelete = async () => {
+		if (!confirm('Are you sure you want to delete this page?')) return;
 
 		try {
-			const response = await fetch(
-				`${PUBLIC_API_URL}/api/v1/pages/${data.blog.id}`,
-				{
-					method: "DELETE",
-					credentials: "include",
-				},
-			);
+			const response = await fetch(`${PUBLIC_API_URL}/api/v1/pages/${data.blog.id}`, {
+				method: 'DELETE',
+				credentials: 'include'
+			});
 
 			if (!response.ok) {
-				throw new Error("Failed to delete page");
+				throw new Error('Failed to delete page');
 			}
 
-			toast.success("Page successfully deleted");
-			goto("/admin/pages");
+			toast.success('Page successfully deleted');
+			goto('/admin/pages');
 		} catch (err) {
-			alert(err instanceof Error ? err.message : "Failed to delete page");
+			alert(err instanceof Error ? err.message : 'Failed to delete page');
 		}
 	};
-
-
 </script>
 
 <div class="mx-auto max-w-7xl">
@@ -260,16 +255,16 @@ const handleDelete = async () => {
 					<!-- Blog-Specific Fields -->
 					<div class="space-y-6">
 						<div>
-							<label class="mb-2 block text-sm font-medium">Excerpt</label>
+							<label class="mb-2 block text-sm font-medium">Description</label>
 							<textarea
-								bind:value={formData.excerpt}
+								bind:value={formData.description}
 								maxlength="500"
 								rows="4"
 								class="form-input"
 								placeholder="Brief summary of the blog post (500 chars max)"
 							></textarea>
 							<p class="mt-1 text-sm text-gray-500">
-								{formData.excerpt.length}/500 characters
+								{formData.description.length}/500 characters
 							</p>
 						</div>
 

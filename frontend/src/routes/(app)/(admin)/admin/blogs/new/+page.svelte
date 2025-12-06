@@ -11,7 +11,7 @@
 		title: string;
 		slug: string;
 		status: 'draft' | 'published' | 'archived';
-		excerpt: string;
+		description: string;
 		reading_time: number;
 		is_featured: boolean;
 		blocks: any[];
@@ -20,7 +20,7 @@
 		title: '',
 		slug: '',
 		status: 'draft' as 'draft' | 'published' | 'archived',
-		excerpt: '',
+		description: '',
 		reading_time: 1,
 		is_featured: false,
 		blocks: [],
@@ -67,7 +67,7 @@
 				title: formData.title,
 				slug: formData.slug,
 				status: formData.status,
-				excerpt: formData.excerpt,
+				description: formData.description,
 				reading_time: formData.reading_time,
 				is_featured: formData.is_featured,
 				blocks: formData.blocks,
@@ -233,16 +233,16 @@
 					<!-- Blog-Specific Fields -->
 					<div class="space-y-6">
 						<div>
-							<label class="mb-2 block text-sm font-medium">Excerpt</label>
+							<label class="mb-2 block text-sm font-medium">Description</label>
 							<textarea
-								bind:value={formData.excerpt}
+								bind:value={formData.description}
 								maxlength="500"
 								rows="4"
 								class="form-input"
 								placeholder="Brief summary of the blog post (500 chars max)"
 							></textarea>
 							<p class="mt-1 text-sm text-gray-500">
-								{formData.excerpt.length}/500 characters
+								{formData.description.length}/500 characters
 							</p>
 						</div>
 

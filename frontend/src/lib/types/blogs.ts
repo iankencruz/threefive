@@ -7,7 +7,7 @@ export interface Blog {
   title: string;
   slug: string;
   status: BlogStatus | null;
-  excerpt: string | null;
+  description: string | null;
   reading_time: number | null;
   is_featured: boolean | null;
   featured_image_id: string | null;
@@ -37,7 +37,7 @@ export const Blogs: Blog[] = [
     title: "The Future of Web Development: Signals and AI Integration",
     slug: "future-web-development-signals-ai",
     status: "published",
-    excerpt:
+    description:
       "Exploring the shift towards reactive programming paradigms and how AI tools are fundamentally changing the development workflow and time-to-market for complex applications.",
     reading_time: 7,
     is_featured: true,
@@ -61,7 +61,7 @@ export const Blogs: Blog[] = [
     title: "Advanced TypeScript Utility Types for Enterprise Scale",
     slug: "typescript-utility-types-enterprise",
     status: "published",
-    excerpt:
+    description:
       "Beyond Partial and Readonly: A look at advanced techniques using conditional types, template literal types, and key remapping to build robust, scalable interfaces.",
     reading_time: 12,
     is_featured: false,
@@ -85,7 +85,7 @@ export const Blogs: Blog[] = [
     title: "Initial Draft: Understanding CSS Grid Layout",
     slug: "initial-draft-css-grid-layout",
     status: "draft",
-    excerpt:
+    description:
       "This is the first draft of a tutorial on CSS Grid. It currently covers basic syntax and a few examples of responsive two-column layouts. Needs review and expansion on nesting.",
     reading_time: 4,
     is_featured: false,
@@ -107,7 +107,7 @@ export const Blogs: Blog[] = [
     title: "The State of Functional Programming in 2022",
     slug: "fp-state-of-2022",
     status: "archived",
-    excerpt:
+    description:
       "An older analysis of the adoption of functional programming concepts in mainstream JavaScript frameworks, written back in late 2022. It still provides historical context.",
     reading_time: 6,
     is_featured: false,
@@ -129,7 +129,7 @@ export const Blogs: Blog[] = [
     title: "Optimizing Database Queries: A Deep Dive into Indexing",
     slug: "optimizing-db-queries-indexing",
     status: "published",
-    excerpt:
+    description:
       "Learn how to effectively use B-tree and Hash indexes to drastically reduce query execution time and improve application performance across various SQL and NoSQL databases.",
     reading_time: 15,
     is_featured: true,
