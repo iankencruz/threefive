@@ -2,27 +2,24 @@
 	// 1. Import the SvelteKit page store to get the current URL
 	import { page } from '$app/state';
 	import type { Link } from '$types/pages';
-	import { Projects, type Project } from '$types/projects';
-	import { Blogs, type Blog } from '$types/blogs';
+	import { type Project } from '$types/projects';
+	import { type Blog } from '$types/blogs';
 	import { LayoutPanelLeft } from 'lucide-svelte';
 
 	let { variant } = $props<'standard' | 'ghost'>();
 
-	// 1. Separate the main navigation links (excluding 'Contact Us')
-	let PrimaryNavLinks: Link[] = [
+	let NavLinks: Link[] = [
 		{ id: 1, title: 'Home', href: '/' },
-		{ id: 2, title: 'About Us', href: '/about' }
+		{ id: 2, title: 'About Us', href: '/about' },
+		{ id: 3, title: 'Projects', href: '/projects' },
+		{ id: 4, title: 'Blogs', href: '/blogs' }
 		// We removed Contact Us here
 	];
 
 	const ContactLink: Link = { id: 3, title: 'Contact', href: '/contact' };
 
-	let NavLinks: Link[] = [...PrimaryNavLinks, ContactLink];
-
 	// State Declarations
 	let navbarOpen = $state(false);
-	let featuresOpen = $state(false);
-	let blogsOpen = $state(false);
 
 	// Helper to check if a link is active based on the current SvelteKit URL
 	// Checks for exact match OR if the current URL starts with the link's href (useful for path matching, e.g., /projects)
@@ -47,68 +44,6 @@
 	}
 </script>
 
-<!-- {#snippet flyoverMenu(data: Project[] | Blog[], parent: string)} -->
-{#snippet flyoverMenu(data: Project[] | Blog[], parent: string)}
-	<li class="relative">
-		<button
-			popovertarget={`desktop-menu-${parent}`}
-			class="dropdown-toggle mr-auto flex items-center justify-between text-center text-base font-medium text-white capitalize transition-all duration-500 hover:text-gray-400 lg:m-0 lg:mx-3 lg:mb-0 lg:text-left"
-		>
-			{parent}
-			<svg
-				class="ml-1.5 h-2 w-3"
-				width="10"
-				height="6"
-				viewBox="0 0 10 6"
-				fill="none"
-				xmlns="http://www.w3.org/2000/svg"
-			>
-				<path
-					d="M1 1L3.58579 3.58579C4.25245 4.25245 4.58579 4.58579 5 4.58579C5.41421 4.58579 5.74755 4.25245 6.41421 3.58579L9 1"
-					stroke="currentColor"
-					stroke-width="1.6"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-				></path>
-			</svg>
-		</button>
-
-		<el-popover
-			id={`desktop-menu-${parent}`}
-			class:bg-transparent={variant === 'ghost'}
-			class:backdrop-blur-2xl={variant === 'ghost'}
-			class:backdrop:bg-transparent={variant === 'ghost'}
-			popover="auto"
-			class="absolute top-16 mx-auto mt-4 w-[95vw] overflow-visible transition transition-discrete open:block data-closed:-translate-y-1 data-closed:opacity-0 data-enter:duration-200 data-enter:ease-out data-leave:duration-150 data-leave:ease-in"
-		>
-			<!-- Presentational element used to render the bottom shadow, if we put the shadow on the actual panel it pokes out the top, so we use this shorter element to hide the top of the shadow -->
-			<div
-				class:bg-surface={variant !== 'ghost'}
-				class="mx-auto grid max-w-7xl grid-cols-4 gap-x-4 rounded-t-xl border border-white px-6 py-10 lg:px-8 xl:gap-x-8"
-			>
-				{#each data.slice(0, 4) as item}
-					<div class="group relative rounded-lg p-6 text-sm/6 hover:border hover:border-foreground">
-						<a href={`/${parent}/${item.slug}`} class=" block leading-5 font-semibold text-primary">
-							{item.title}
-							<span class="absolute inset-0"></span>
-						</a>
-						<p class="mt-1.5 line-clamp-2 leading-5 text-foreground">
-							{item.description || `Explore our ${parent.toLowerCase()}`}
-						</p>
-					</div>
-				{/each}
-			</div>
-			<a
-				href={`/${parent}`}
-				class="flex items-center justify-center gap-2 rounded-b-xl bg-white py-3 font-ibm text-sm/6 font-semibold text-gray-900 hover:text-primary"
-			>
-				<LayoutPanelLeft size={18} />
-				View all {parent}
-			</a>
-		</el-popover>
-	</li>
-{/snippet}
-
 <nav
 	class="z-20 w-full transition-all duration-500"
 	class:absolute={variant === 'ghost'}
@@ -122,15 +57,15 @@
 						<span>三</span>
 						<span>五</span>
 					</div>
-					<div class="hidden w-full text-lg font-bold text-foreground text-primary sm:block">
+					<div class="hidden w-full text-lg font-bold text-foreground sm:block">
 						Threefive Project
 					</div>
 				</a>
 			{/if}
 
-			<div class="hidden w-full lg:flex lg:pl-11" id="navbar-desktop">
-				<ul class="flex gap-6 lg:mt-0 lg:ml-auto lg:flex-row lg:items-center lg:justify-center">
-					{#each PrimaryNavLinks as link (link.id)}
+			<div class="hidden w-full pt-4 lg:flex lg:pl-11" id="navbar-desktop">
+				<ul class="flex gap-2 lg:mt-0 lg:ml-auto lg:flex-row lg:items-center lg:justify-center">
+					{#each NavLinks as link (link.id)}
 						<li>
 							<a
 								href={link.href}
@@ -143,14 +78,6 @@
 							</a>
 						</li>
 					{/each}
-
-					{#if Projects.length > 0}
-						{@render flyoverMenu(Projects, 'projects')}
-					{/if}
-
-					{#if Blogs.length > 0}
-						{@render flyoverMenu(Blogs, 'blogs')}
-					{/if}
 
 					<li>
 						<a
