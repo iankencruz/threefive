@@ -1,36 +1,49 @@
-// frontend/src/routes/+page.ts
-import { error } from "@sveltejs/kit";
+// frontend/src/routes/[slug]/+page.ts
+import { error, redirect } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
 import { PUBLIC_API_URL } from "$env/static/public";
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = async ({ params, fetch }) => {
+  // Block direct access to /home - redirect to /
+  if (params.slug === "home") {
+    throw redirect(308, "/");
+  }
+
   try {
-    // Fetch the "home" page
-    const response = await fetch(`${PUBLIC_API_URL}/api/v1/pages/home`);
+    const response = await fetch(
+      `${PUBLIC_API_URL}/api/v1/pages/${params.slug}`,
+    );
 
     if (!response.ok) {
-      throw error(response.status, "Failed to load homepage");
+      if (response.status === 404) {
+        throw error(404, {
+          message: "Page not found",
+        });
+      }
+      throw error(response.status, "Failed to load page");
     }
 
     const page = await response.json();
 
-    // Only show published pages
+    // Only show published pages on the public site
     if (page.status !== "published") {
       throw error(404, {
         message: "Page not found",
       });
     }
 
-    // ✨ Pre-fetch all media for blocks (same logic as [slug])
+    // ✨ NEW: Pre-fetch all media for blocks
     const mediaMap = new Map();
 
     if (page.blocks && Array.isArray(page.blocks)) {
+      // Collect all media IDs from blocks
       const mediaIds = new Set<string>();
 
       for (const block of page.blocks) {
         if (block.data?.image_id) {
           mediaIds.add(block.data.image_id);
         }
+        // Add more media fields if needed (e.g., gallery images)
         if (block.data?.images && Array.isArray(block.data.images)) {
           block.data.images.forEach((img: any) => {
             if (img.media_id) mediaIds.add(img.media_id);
@@ -38,6 +51,7 @@ export const load: PageServerLoad = async () => {
         }
       }
 
+      // Fetch all media in parallel
       const mediaPromises = Array.from(mediaIds).map(async (id) => {
         try {
           const res = await fetch(`${PUBLIC_API_URL}/api/v1/media/${id}`, {
@@ -61,15 +75,15 @@ export const load: PageServerLoad = async () => {
 
     return {
       page,
-      mediaMap: Object.fromEntries(mediaMap),
+      mediaMap: Object.fromEntries(mediaMap), // Convert to plain object for serialization
     };
   } catch (err) {
-    console.error("Error loading homepage:", err);
+    console.error("Error loading page:", err);
 
     if (err && typeof err === "object" && "status" in err) {
-      throw err;
+      throw err; // Re-throw SvelteKit errors
     }
 
-    throw error(500, "Failed to load homepage");
+    throw error(500, "Failed to load page");
   }
 };

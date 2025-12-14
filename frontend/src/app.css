@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
 @import "tailwindcss";
 
 @plugin "@tailwindcss/forms" {
@@ -11,19 +11,21 @@
 /* Theme customization */
 @theme {
   /* === Fonts === */
-  --font-ibm: "IBM+Plex+Sans", sans-serif;
-
+  --font-sans: "Montserrat", system-ui, sans-serif;
   /* === Brand === */
   --color-primary: #ff4b1f;
+  --color-primary-hover: #f5b3a3;
   --color-primary-light: #f4d5cd;
   --color-accent: #FF8D70;
+  --color-accent-hover: #f1bbac;
   --color-accent-dark: #661400;
+
 
   /* === Neutrals === */
   --color-background: #0c0c0c;
   --color-surface: #1a1a1a;
-  --color-foreground: #fff4e6;
-  --color-foreground-muted: #baabab;
+  --color-foreground: #ffffff;
+  --color-foreground-muted: #c9c9c9;
 
   /* === Brand Support === */
   --color-highlight: #ff934f;
@@ -65,13 +67,9 @@
 
 @layer base {
 
-  * {
-    @apply font-ibm;
-  }
 
   p {
     color: var(--color-foreground);
-    @apply font-ibm;
   }
 
   h1 {
@@ -150,7 +148,7 @@
   }
 
   .btn-primary {
-    @apply bg-primary text-foreground hover:bg-primary/80 focus:ring-primary/50 focus-visible:outline-primary;
+    @apply bg-primary text-foreground hover:bg-primary-hover focus:ring-primary-hover focus-visible:outline-primary;
   }
 
   .btn-success {

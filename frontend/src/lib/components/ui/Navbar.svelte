@@ -9,14 +9,12 @@
 	let { variant } = $props<'standard' | 'ghost'>();
 
 	let NavLinks: Link[] = [
-		{ id: 1, title: 'Home', href: '/' },
-		{ id: 2, title: 'About Us', href: '/about' },
+		{ id: 2, title: 'About', href: '/about' },
 		{ id: 3, title: 'Projects', href: '/projects' },
-		{ id: 4, title: 'Blogs', href: '/blogs' }
+		{ id: 4, title: 'Blogs', href: '/blogs' },
+		{ id: 5, title: 'Contact', href: '/contact' }
 		// We removed Contact Us here
 	];
-
-	const ContactLink: Link = { id: 3, title: 'Contact', href: '/contact' };
 
 	// State Declarations
 	let navbarOpen = $state(false);
@@ -51,14 +49,16 @@
 >
 	<div class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
 		<div class="flex w-full items-center justify-between py-4">
-			{#if variant !== 'ghost'}
-				<a href="/" class="w-full">
+			{#if variant === 'ghost'}
+				<a href="/" class="w-full pt-4">
 					<div class="flex flex-row gap-2 leading-none font-bold text-primary sm:hidden">
 						<span>三</span>
 						<span>五</span>
 					</div>
-					<div class="hidden w-full text-lg font-bold text-foreground sm:block">
-						Threefive Project
+					<div>
+						<span class="hidden w-full text-8xl font-bold tracking-tight text-foreground sm:block">
+							Threefive
+						</span>
 					</div>
 				</a>
 			{/if}
@@ -69,27 +69,15 @@
 						<li>
 							<a
 								href={link.href}
-								class="nav-link block text-base font-medium transition-all duration-500 lg:mx-3"
+								class="nav-link block rounded-full bg-gray-100/15 px-4 py-2 text-base font-medium transition-all duration-500 lg:mx-3"
 								class:text-primary={checkIsActive(link.href)}
 								class:text-white={!checkIsActive(link.href)}
-								class:hover:text-gray-400={!checkIsActive(link.href)}
+								class:hover:bg-gray-400={!checkIsActive(link.href)}
 							>
 								{link.title}
 							</a>
 						</li>
 					{/each}
-
-					<li>
-						<a
-							href={ContactLink.href}
-							class="nav-link block text-base font-medium transition-all duration-500 lg:mx-3"
-							class:text-primary={checkIsActive(ContactLink.href)}
-							class:text-white={!checkIsActive(ContactLink.href)}
-							class:hover:text-gray-400={!checkIsActive(ContactLink.href)}
-						>
-							{ContactLink.title}
-						</a>
-					</li>
 				</ul>
 			</div>
 
@@ -194,38 +182,6 @@
 			{/each}
 		</ul>
 
-		<div class="mt-4 border-t border-gray-100 pt-2">
-			<h6 class="mb-1 px-3 text-sm font-medium text-gray-500">Projects</h6>
-			<ul class="space-y-0">
-				{#each Projects as project}
-					<li>
-						<a
-							onclick={closeNavbar}
-							href={`/projects/${project.slug}`}
-							class="block border-l-4 py-4 pr-4 pl-3 text-base font-medium transition duration-150 ease-in-out"
-							class:border-indigo-700={checkIsActive(project.slug)}
-							class:bg-indigo-50={checkIsActive(project.slug)}
-							class:text-indigo-700={checkIsActive(project.slug)}
-							class:border-transparent={!checkIsActive(project.slug)}
-							class:text-gray-700={!checkIsActive(project.slug)}
-							class:hover:bg-gray-50={!checkIsActive(project.slug)}
-							class:hover:text-gray-900={!checkIsActive(project.slug)}
-						>
-							{project.title}
-						</a>
-					</li>
-				{/each}
-				<li>
-					<a
-						onclick={closeNavbar}
-						href="/projects"
-						class="block border-l-4 border-transparent py-4 pr-4 pl-3 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900"
-					>
-						More...
-					</a>
-				</li>
-			</ul>
-		</div>
 		<div class="mt-4 border-t border-gray-100 pt-2">
 			<h6 class="mb-1 px-3 text-sm font-medium text-gray-500">Socials</h6>
 		</div>

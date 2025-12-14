@@ -116,8 +116,8 @@ func NewProcessor(config ProcessorConfig, workDir string) (*Processor, error) {
 func DefaultVariants() []VariantConfig {
 	return []VariantConfig{
 		{Name: "original", MaxWidth: 0, MaxHeight: 0},      // No resize
-		{Name: "large", MaxWidth: 1920, MaxHeight: 1920},   // For hero sections
-		{Name: "medium", MaxWidth: 1024, MaxHeight: 1024},  // For content
+		{Name: "large", MaxWidth: 2560, MaxHeight: 1400},   // For hero sections
+		{Name: "medium", MaxWidth: 1200, MaxHeight: 1200},  // For content
 		{Name: "thumbnail", MaxWidth: 300, MaxHeight: 300}, // For previews
 	}
 }

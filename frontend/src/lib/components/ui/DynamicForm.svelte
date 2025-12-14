@@ -2,7 +2,7 @@
 <script lang="ts">
 	import Button from './Button.svelte';
 	import Input from './Input.svelte';
-	import { ImageUp, CheckCircle } from 'lucide-svelte';
+	import { ImageUp, CircleCheck } from 'lucide-svelte';
 	import { PUBLIC_API_URL } from '$env/static/public';
 	import type { Media } from '$api/media';
 	import { untrack } from 'svelte';
@@ -211,7 +211,7 @@
 
 	<div class="space-y-2">
 		{#if field.label}
-			<label class="block text-sm font-medium">
+			<label for={field.name} class="block text-sm font-medium">
 				{field.label}
 				{#if field.required}
 					<span class="text-red-500">*</span>
@@ -253,7 +253,7 @@
 						</p>
 						{#if media.mime_type === 'image/webp'}
 							<span class="mt-1 inline-flex items-center gap-1 text-xs font-medium text-green-600">
-								<CheckCircle class="h-3 w-3" />
+								<CircleCheck class="h-3 w-3" />
 								WebP Optimized
 							</span>
 						{/if}

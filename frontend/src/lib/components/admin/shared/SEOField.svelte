@@ -27,10 +27,9 @@
 
 <div class="space-y-6">
 	<div>
-		<label class="block text-sm font-medium mb-2">
-			Meta Title
-		</label>
+		<label for="meta_title" class="mb-2 block text-sm font-medium"> Meta Title </label>
 		<input
+			name="meta_title"
 			type="text"
 			bind:value={seo.meta_title}
 			class="form-input"
@@ -43,10 +42,9 @@
 	</div>
 
 	<div>
-		<label class="block text-sm font-medium mb-2">
-			Meta Description
-		</label>
+		<label for="meta_description" class="mb-2 block text-sm font-medium"> Meta Description </label>
 		<textarea
+			name="meta_description"
 			bind:value={seo.meta_description}
 			rows="3"
 			class="form-input"
@@ -59,10 +57,9 @@
 	</div>
 
 	<div>
-		<label class="block text-sm font-medium mb-2">
-			Open Graph Title
-		</label>
+		<label for="open_graph_title" class="mb-2 block text-sm font-medium"> Open Graph Title </label>
 		<input
+			name="open_graph_title"
 			type="text"
 			bind:value={seo.og_title}
 			class="form-input"
@@ -71,10 +68,11 @@
 	</div>
 
 	<div>
-		<label class="block text-sm font-medium mb-2">
+		<label for="open_graph_description" class="mb-2 block text-sm font-medium">
 			Open Graph Description
 		</label>
 		<textarea
+			name="open_graph_description"
 			bind:value={seo.og_description}
 			rows="3"
 			class="form-input"
@@ -83,43 +81,40 @@
 	</div>
 
 	<div>
-		<label class="block text-sm font-medium mb-2">
-			Canonical URL
-		</label>
+		<label for="canonical_url" class="mb-2 block text-sm font-medium"> Canonical URL </label>
 		<input
+			name="canonical_url"
 			type="url"
 			bind:value={seo.canonical_url}
 			class="form-input"
 			placeholder="https://example.com/canonical-page (optional)"
 		/>
-		<p class="mt-1 text-xs text-gray-500">
-			Specify the preferred URL for this content
-		</p>
+		<p class="mt-1 text-xs text-gray-500">Specify the preferred URL for this content</p>
 	</div>
 
 	<div class="grid grid-cols-2 gap-6">
-		<label class="flex items-center gap-3 cursor-pointer">
+		<label class="flex cursor-pointer items-center gap-3">
 			<input
 				type="checkbox"
 				bind:checked={seo.robots_index}
-				class="w-4 h-4 text-primary border-gray-600 rounded focus:ring-primary"
+				class="h-4 w-4 rounded border-gray-600 text-primary focus:ring-primary"
 			/>
 			<span class="text-sm font-medium">Allow search engines to index</span>
 		</label>
 
-		<label class="flex items-center gap-3 cursor-pointer">
+		<label class="flex cursor-pointer items-center gap-3">
 			<input
 				type="checkbox"
 				bind:checked={seo.robots_follow}
-				class="w-4 h-4 text-primary border-gray-600 rounded focus:ring-primary"
+				class="h-4 w-4 rounded border-gray-600 text-primary focus:ring-primary"
 			/>
 			<span class="text-sm font-medium">Allow search engines to follow links</span>
 		</label>
 	</div>
 
-	<div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-		<h4 class="text-sm font-medium text-blue-900 mb-2">SEO Tips</h4>
-		<ul class="text-xs text-blue-800 space-y-1">
+	<div class="rounded-lg border border-blue-200 bg-blue-50 p-4">
+		<h4 class="mb-2 text-sm font-medium text-blue-900">SEO Tips</h4>
+		<ul class="space-y-1 text-xs text-blue-800">
 			<li>• Meta title should be unique and descriptive (50-60 characters)</li>
 			<li>• Meta description should summarize the page content (150-160 characters)</li>
 			<li>• Open Graph tags control how content appears when shared on social media</li>
