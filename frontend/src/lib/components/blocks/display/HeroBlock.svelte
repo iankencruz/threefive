@@ -57,17 +57,38 @@
 				></div>
 				<div class="absolute inset-0 bg-linear-to-r from-black/70 via-black/5 to-transparent"></div>
 			</div>
+			<div
+				class="@container absolute bottom-16 left-12 z-10 container mx-auto max-w-6xl px-4 text-left"
+			>
+				<div class=" leading-tight font-normal text-white @max-lg:text-2xl @lg:text-4xl">
+					<div class="flex flex-col space-y-2">
+						<span>Not just photography.</span>
+						<span>Not just branding. </span>
+						<span>We builds visual identity. </span>
+					</div>
+					<a
+						href={data.cta_url || '/contact'}
+						class="mt-12 inline-flex max-w-max items-center gap-2 rounded-lg bg-white px-6 py-3 text-lg font-semibold text-gray-900 shadow-lg transition-all hover:scale-105 hover:bg-gray-100 hover:shadow-xl"
+					>
+						{data.cta_text || 'Book Now'}
+					</a>
+				</div>
+			</div>
 
-			<div class="@container absolute bottom-8 left-12 z-10 container mx-auto max-w-6xl px-4">
+			<div
+				class="@container absolute right-12 bottom-16 z-10 container mx-auto max-w-6xl px-4 text-right"
+			>
 				<div class="w-full text-white">
 					<h1
-						class="mb-6 leading-tight font-bold @max-lg:text-2xl @lg:@max-2xl:text-5xl @2xl:text-7xl @5xl:text-9xl"
+						class=" leading-tight font-bold text-primary @max-lg:text-2xl @lg:@max-2xl:text-5xl @2xl:text-7xl @5xl:text-9xl"
 					>
 						{data.title}
 					</h1>
 
 					{#if data.subtitle}
-						<p class="mb-8 text-xl leading-relaxed text-gray-100 md:text-2xl">
+						<p
+							class=" leading-tight font-bold @max-lg:text-2xl @lg:@max-2xl:text-4xl @2xl:text-6xl @5xl:text-8xl"
+						>
 							{data.subtitle}
 						</p>
 					{/if}
