@@ -5,6 +5,7 @@
 	import HeroBlockForm, { type HeroBlockData } from './forms/HeroBlockForm.svelte';
 	import RichTextBlockForm, { type RichtextBlockData } from './forms/RichTextBlockForm.svelte';
 	import AboutBlockForm, { type AboutBlockData } from './forms/AboutBlockForm.svelte';
+	import { Plus } from 'lucide-svelte';
 
 	interface BlockTypeMap {
 		hero: HeroBlockData;
@@ -212,11 +213,7 @@
 						<span
 							class=" flex items-center gap-1.5 rounded-full p-px text-gray-500 transition-colors group-hover:bg-gray-900 group-hover:text-white"
 						>
-							<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" class="h-5 w-5">
-								<path
-									d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z"
-								/>
-							</svg>
+							<Plus size={16} />
 						</span>
 					</div>
 					<div
@@ -342,11 +339,7 @@
 							<span
 								class=" flex items-center gap-1.5 rounded-full p-px text-gray-500 transition-colors group-hover:bg-gray-900 group-hover:text-white"
 							>
-								<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" class="h-5 w-5">
-									<path
-										d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z"
-									/>
-								</svg>
+								<Plus size={16} />
 							</span>
 						</div>
 						<div
