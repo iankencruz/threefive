@@ -17,7 +17,7 @@ CREATE TABLE blocks (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     
     -- Constraints
-    CONSTRAINT valid_block_type CHECK (type IN ('hero', 'richtext', 'header', 'gallery')),
+    CONSTRAINT valid_block_type CHECK (type IN ('hero', 'richtext', 'header', 'gallery', 'about')),
     CONSTRAINT valid_entity_type CHECK (entity_type IN ('page', 'project',  'blog'))
 );
 

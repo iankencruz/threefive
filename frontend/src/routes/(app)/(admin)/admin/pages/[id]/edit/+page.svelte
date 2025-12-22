@@ -153,7 +153,7 @@
 		class="space-y-6"
 	>
 		<!-- Main Content Card -->
-		<div class="overflow-hidden rounded-lg bg-surface shadow-lg">
+		<div class=" rounded-lg bg-surface shadow-lg">
 			<!-- Tabs Navigation -->
 			<div class="border-b border-gray-700">
 				<nav class="flex px-6" aria-label="Tabs">

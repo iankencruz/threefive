@@ -11,7 +11,17 @@
 	interface FormField {
 		name: string;
 		label: string;
-		type?: 'text' | 'email' | 'password' | 'tel' | 'url' | 'date' | 'number' | 'textarea' | 'media';
+		type?:
+			| 'text'
+			| 'email'
+			| 'password'
+			| 'tel'
+			| 'url'
+			| 'date'
+			| 'number'
+			| 'textarea'
+			| 'media'
+			| 'select';
 		placeholder?: string;
 		required?: boolean;
 		value?: string | number;

@@ -4,12 +4,14 @@
 	import HeaderBlockForm, { type HeaderBlockData } from './forms/HeaderBlockForm.svelte';
 	import HeroBlockForm, { type HeroBlockData } from './forms/HeroBlockForm.svelte';
 	import RichTextBlockForm, { type RichtextBlockData } from './forms/RichTextBlockForm.svelte';
+	import AboutBlockForm, { type AboutBlockData } from './forms/AboutBlockForm.svelte';
 
 	interface BlockTypeMap {
 		hero: HeroBlockData;
 		richtext: RichtextBlockData;
 		header: HeaderBlockData;
 		gallery: GalleryBlockData;
+		about: AboutBlockData;
 	}
 
 	type BlockType = keyof BlockTypeMap;
@@ -80,6 +82,8 @@
 				return { content: '' };
 			case 'header':
 				return { heading: '', subheading: '', level: 'h2' };
+			case 'about':
+				return { title: '', description: '', heading: '', subheading: '' };
 			default:
 				return {};
 		}
@@ -93,6 +97,10 @@
 				return 'bg-purple-100 text-purple-800';
 			case 'header':
 				return 'bg-green-100 text-green-800';
+			case 'gallery':
+				return 'bg-orange-100 text-orange-800';
+			case 'about':
+				return 'bg-teal-100 text-teal-800';
 			default:
 				return 'bg-gray-100 text-gray-800';
 		}
@@ -113,6 +121,44 @@
 		}
 	});
 </script>
+
+{#snippet AddBlockMenu(position: number)}
+	<button
+		onclick={() => addBlockAt('hero', position)}
+		type="button"
+		class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-nowrap text-white transition-colors hover:bg-blue-700"
+	>
+		+ Hero Block
+	</button>
+	<button
+		onclick={() => addBlockAt('richtext', position)}
+		type="button"
+		class="rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-nowrap text-white transition-colors hover:bg-purple-700"
+	>
+		+ Rich Text
+	</button>
+	<button
+		onclick={() => addBlockAt('header', position)}
+		type="button"
+		class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-nowrap text-white transition-colors hover:bg-green-700"
+	>
+		+ Header
+	</button>
+	<button
+		onclick={() => addBlockAt('gallery', position)}
+		type="button"
+		class="rounded-lg bg-orange-600 px-4 py-2 text-sm font-medium text-nowrap text-white transition-colors hover:bg-orange-700"
+	>
+		+ Gallery
+	</button>
+	<button
+		onclick={() => addBlockAt('about', position)}
+		type="button"
+		class="rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-nowrap text-white transition-colors hover:bg-teal-700"
+	>
+		+ About
+	</button>
+{/snippet}
 
 <div class="block-editor">
 	<div class="mb-6 flex items-center justify-between">
@@ -142,34 +188,7 @@
 
 			<!-- Initial Add Block Menu -->
 			<div class="flex justify-center gap-2">
-				<button
-					onclick={() => addBlockAt('hero', 0)}
-					type="button"
-					class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-				>
-					+ Hero Block
-				</button>
-				<button
-					onclick={() => addBlockAt('richtext', 0)}
-					type="button"
-					class="rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-purple-700"
-				>
-					+ Rich Text
-				</button>
-				<button
-					onclick={() => addBlockAt('header', 0)}
-					type="button"
-					class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700"
-				>
-					+ Header
-				</button>
-				<button
-					onclick={() => addBlockAt('gallery', 0)}
-					type="button"
-					class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700"
-				>
-					+ Gallery
-				</button>
+				{@render AddBlockMenu(0)}
 			</div>
 		</div>
 	{:else}
@@ -178,7 +197,6 @@
 			<!-- Insert separator at the top -->
 			<div class="relative my-2">
 				<button
-					aria-label="toggle add block menu"
 					type="button"
 					class="separator-trigger group flex w-full items-center rounded py-2 transition-colors"
 					onclick={(e) => {
@@ -210,34 +228,7 @@
 					<div
 						class="separator-menu absolute top-full left-1/2 z-10 mt-1 flex -translate-x-1/2 gap-2 rounded-lg border border-gray-200 bg-white p-2 shadow-lg"
 					>
-						<button
-							onclick={() => addBlockAt('hero', 0)}
-							type="button"
-							class="rounded-lg bg-blue-50 px-4 py-2 text-sm font-medium whitespace-nowrap text-blue-700 transition-colors hover:bg-blue-100"
-						>
-							Hero Block
-						</button>
-						<button
-							onclick={() => addBlockAt('richtext', 0)}
-							type="button"
-							class="rounded-lg bg-purple-50 px-4 py-2 text-sm font-medium whitespace-nowrap text-purple-700 transition-colors hover:bg-purple-100"
-						>
-							Rich Text
-						</button>
-						<button
-							onclick={() => addBlockAt('header', 0)}
-							type="button"
-							class="rounded-lg bg-green-50 px-4 py-2 text-sm font-medium whitespace-nowrap text-green-700 transition-colors hover:bg-green-100"
-						>
-							Header
-						</button>
-						<button
-							onclick={() => addBlockAt('gallery', 0)}
-							type="button"
-							class="rounded-lg bg-orange-50 px-4 py-2 text-sm font-medium whitespace-nowrap text-orange-700 transition-colors hover:bg-orange-100"
-						>
-							Gallery
-						</button>
+						{@render AddBlockMenu(0)}
 					</div>
 				{/if}
 			</div>
@@ -325,13 +316,17 @@
 							data={block.data as GalleryBlockData}
 							onchange={(data) => updateBlockData(index, data)}
 						/>
+					{:else if block.type === 'about'}
+						<AboutBlockForm
+							data={block.data as AboutBlockData}
+							onchange={(data) => updateBlockData(index, data)}
+						/>
 					{/if}
 				</div>
 
 				<!-- Insert separator after each block -->
 				<div class="relative my-2">
 					<button
-						aria-label="toggle add block menu"
 						type="button"
 						class="separator-trigger group flex w-full items-center rounded py-2 transition-colors"
 						onclick={(e) => {
@@ -363,34 +358,7 @@
 						<div
 							class="separator-menu absolute top-full left-1/2 z-10 mt-1 flex -translate-x-1/2 gap-2 rounded-lg border border-gray-200 bg-white p-2 shadow-lg"
 						>
-							<button
-								onclick={() => addBlockAt('hero', index + 1)}
-								type="button"
-								class="rounded-lg bg-blue-50 px-4 py-2 text-sm font-medium whitespace-nowrap text-blue-700 transition-colors hover:bg-blue-100"
-							>
-								Hero Block
-							</button>
-							<button
-								onclick={() => addBlockAt('richtext', index + 1)}
-								type="button"
-								class="rounded-lg bg-purple-50 px-4 py-2 text-sm font-medium whitespace-nowrap text-purple-700 transition-colors hover:bg-purple-100"
-							>
-								Rich Text
-							</button>
-							<button
-								onclick={() => addBlockAt('header', index + 1)}
-								type="button"
-								class="rounded-lg bg-green-50 px-4 py-2 text-sm font-medium whitespace-nowrap text-green-700 transition-colors hover:bg-green-100"
-							>
-								Header
-							</button>
-							<button
-								onclick={() => addBlockAt('gallery', index + 1)}
-								type="button"
-								class="rounded-lg bg-orange-50 px-4 py-2 text-sm font-medium whitespace-nowrap text-orange-700 transition-colors hover:bg-orange-100"
-							>
-								Gallery
-							</button>
+							{@render AddBlockMenu(index + 1)}
 						</div>
 					{/if}
 				</div>

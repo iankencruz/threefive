@@ -15,28 +15,28 @@
 	// Get the appropriate heading styles based on level
 	const getHeadingClasses = (level: string) => {
 		switch (level) {
-			case "h1":
-				return "text-4xl md:text-5xl lg:text-6xl font-bold";
-			case "h2":
-				return "text-3xl md:text-4xl lg:text-5xl font-bold";
-			case "h3":
-				return "text-2xl md:text-3xl lg:text-4xl font-semibold";
-			case "h4":
-				return "text-xl md:text-2xl lg:text-3xl font-semibold";
-			case "h5":
-				return "text-lg md:text-xl lg:text-2xl font-semibold";
-			case "h6":
-				return "text-base md:text-lg lg:text-xl font-semibold";
+			case 'h1':
+				return 'text-4xl md:text-5xl lg:text-6xl font-bold';
+			case 'h2':
+				return 'text-3xl md:text-4xl lg:text-5xl font-bold';
+			case 'h3':
+				return 'text-2xl md:text-3xl lg:text-4xl font-semibold';
+			case 'h4':
+				return 'text-xl md:text-2xl lg:text-3xl font-semibold';
+			case 'h5':
+				return 'text-lg md:text-xl lg:text-2xl font-semibold';
+			case 'h6':
+				return 'text-base md:text-lg lg:text-xl font-semibold';
 			default:
-				return "text-2xl md:text-3xl lg:text-4xl font-semibold";
+				return 'text-2xl md:text-3xl lg:text-4xl font-semibold';
 		}
 	};
 
 	const headingClasses = getHeadingClasses(data.level);
 </script>
 
-<section class="py-12 md:py-16 bg-background">
-	<div class="container mx-auto px-4 max-w-7xl">
+<section class="bg-background py-12 md:py-16">
+	<div class="container mx-auto max-w-7xl px-4">
 		<div class="text-center">
 			{#if data.level === 'h1'}
 				<h1 class="{headingClasses}  mb-4">
@@ -65,7 +65,7 @@
 			{/if}
 
 			{#if data.subheading}
-				<p class="text-lg md:text-xl max-w-2xl mx-auto">
+				<p class="mx-auto max-w-2xl text-lg md:text-xl">
 					{data.subheading}
 				</p>
 			{/if}

@@ -56,6 +56,10 @@ func (s *Service) CreateBlocks(ctx context.Context, qtx *sqlc.Queries, entityTyp
 			if err := s.createGalleryBlock(ctx, qtx, block.ID, blockReq.Data); err != nil {
 				return err
 			}
+		case TypeAbout:
+			if err := s.createAboutBlock(ctx, qtx, block.ID, blockReq.Data); err != nil {
+				return err
+			}
 		default:
 			return errors.BadRequest("Invalid block type", "invalid_block_type")
 		}
@@ -114,6 +118,10 @@ func (s *Service) UpdateBlocks(ctx context.Context, qtx *sqlc.Queries, entityTyp
 				}
 			case TypeGallery:
 				if err := s.updateGalleryBlock(ctx, qtx, *block.ID, block.Data); err != nil {
+					return err
+				}
+			case TypeAbout:
+				if err := s.updateAboutBlock(ctx, qtx, *block.ID, block.Data); err != nil {
 					return err
 				}
 			default:
@@ -221,6 +229,14 @@ func (s *Service) GetBlocksByEntity(ctx context.Context, entityType string, enti
 		return nil, errors.Internal("Failed to get gallery blocks", err)
 	}
 
+	aboutBlocks, err := s.queries.GetAboutBlocksByEntity(ctx, sqlc.GetAboutBlocksByEntityParams{
+		EntityType: entityType,
+		EntityID:   entityID,
+	})
+	if err != nil {
+		return nil, errors.Internal("Failed to get about me blocks", err)
+	}
+
 	// Build lookup maps
 	heroMap := make(map[uuid.UUID]sqlc.BlockHero)
 	for _, h := range heroBlocks {
@@ -240,6 +256,11 @@ func (s *Service) GetBlocksByEntity(ctx context.Context, entityType string, enti
 	galleryMap := make(map[uuid.UUID]sqlc.BlockGallery)
 	for _, gallery := range galleryBlocks {
 		galleryMap[gallery.BlockID] = gallery
+	}
+
+	aboutMap := make(map[uuid.UUID]sqlc.BlockAbout)
+	for _, about := range aboutBlocks {
+		aboutMap[about.BlockID] = about
 	}
 
 	// Assemble response
@@ -299,6 +320,15 @@ func (s *Service) GetBlocksByEntity(ctx context.Context, entityType string, enti
 					Heading:    header.Heading,
 					Subheading: nullTextToPtr(header.Subheading),
 					Level:      pgTextToString(header.Level),
+				}
+			}
+		case TypeAbout:
+			if about, ok := aboutMap[block.ID]; ok {
+				blockResp.Data = AboutBlockData{
+					Title:       about.Title,
+					Description: about.Description,
+					Heading:     about.Heading,
+					Subheading:  about.Subheading,
 				}
 			}
 		case TypeGallery:
@@ -433,6 +463,42 @@ func (s *Service) createGalleryBlock(ctx context.Context, qtx *sqlc.Queries, blo
 			return errors.Internal("Failed to link media to gallery block", err)
 		}
 	}
+
+	return nil
+}
+
+func (s *Service) createAboutBlock(ctx context.Context, qtx *sqlc.Queries, blockID uuid.UUID, data map[string]interface{}) error {
+	aboutData, err := ParseBlockData(TypeAbout, data)
+	if err != nil {
+		return errors.BadRequest("Invalid about me block data", "invalid_block_data")
+	}
+
+	about := aboutData.(*AboutBlockData)
+
+	// create about block
+	_, err = qtx.CreateAboutBlock(ctx, sqlc.CreateAboutBlockParams{
+		BlockID:     blockID,
+		Title:       about.Title,
+		Description: about.Description,
+		Heading:     about.Heading,
+		Subheading:  about.Subheading,
+	})
+	if err != nil {
+		return errors.Internal("Failed to create about me block", err)
+	}
+
+	// Link media to about block if any
+	// for i, mediaID := range about.MediaIDs {
+	// 	_, err := qtx.LinkMediaToEntity(ctx, sqlc.LinkMediaToEntityParams{
+	// 		MediaID:    mediaID,
+	// 		EntityType: "block_about",
+	// 		EntityID:   aboutBlock.ID,
+	// 		SortOrder:  pgtype.Int4{Int32: int32(i), Valid: true},
+	// 	})
+	// 	if err != nil {
+	// 		return errors.Internal("Failed to link media to about me block", err)
+	// 	}
+	// }
 
 	return nil
 }
