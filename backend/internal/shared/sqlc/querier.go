@@ -25,6 +25,11 @@ type Querier interface {
 	CountPublishedPages(ctx context.Context) (int64, error)
 	CountPublishedProjects(ctx context.Context) (int64, error)
 	CountSearchMedia(ctx context.Context, arg CountSearchMediaParams) (int64, error)
+	// backend/sql/queries/blocks_about.sql
+	// ============================================
+	// About Block Queries
+	// ============================================
+	CreateAboutBlock(ctx context.Context, arg CreateAboutBlockParams) (BlockAbout, error)
 	// backend/sql/queries/blocks.sql
 	// ============================================
 	// Base Blocks Queries (Polymorphic)
@@ -77,6 +82,7 @@ type Querier interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) (Users, error)
 	DeactivateAllUserSessions(ctx context.Context, userID uuid.UUID) error
 	DeactivateSession(ctx context.Context, token string) error
+	DeleteAboutBlock(ctx context.Context, blockID uuid.UUID) error
 	DeleteBlock(ctx context.Context, id uuid.UUID) error
 	DeleteBlocksByEntity(ctx context.Context, arg DeleteBlocksByEntityParams) error
 	DeleteGalleryBlock(ctx context.Context, blockID uuid.UUID) error
@@ -85,6 +91,8 @@ type Querier interface {
 	DeleteRichtextBlock(ctx context.Context, blockID uuid.UUID) error
 	DeleteSEO(ctx context.Context, arg DeleteSEOParams) error
 	DeleteUser(ctx context.Context, id uuid.UUID) error
+	GetAboutBlockByBlockID(ctx context.Context, blockID uuid.UUID) (BlockAbout, error)
+	GetAboutBlocksByEntity(ctx context.Context, arg GetAboutBlocksByEntityParams) ([]BlockAbout, error)
 	GetActiveSessionsByUserID(ctx context.Context, userID uuid.UUID) ([]Sessions, error)
 	GetBlockByID(ctx context.Context, id uuid.UUID) (Blocks, error)
 	GetBlocksByEntity(ctx context.Context, arg GetBlocksByEntityParams) ([]Blocks, error)
@@ -130,6 +138,7 @@ type Querier interface {
 	SoftDeletePage(ctx context.Context, id uuid.UUID) error
 	SoftDeleteProject(ctx context.Context, id uuid.UUID) error
 	UnlinkMediaFromEntity(ctx context.Context, arg UnlinkMediaFromEntityParams) error
+	UpdateAboutBlock(ctx context.Context, arg UpdateAboutBlockParams) (BlockAbout, error)
 	UpdateBlockOrder(ctx context.Context, arg UpdateBlockOrderParams) error
 	UpdateBlog(ctx context.Context, arg UpdateBlogParams) (Blogs, error)
 	UpdateBlogStatus(ctx context.Context, arg UpdateBlogStatusParams) (Blogs, error)

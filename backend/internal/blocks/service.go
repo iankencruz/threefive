@@ -564,6 +564,27 @@ func (s *Service) updateGalleryBlock(ctx context.Context, qtx *sqlc.Queries, blo
 	return nil
 }
 
+// updateAboutBlock
+func (s *Service) updateAboutBlock(ctx context.Context, qtx *sqlc.Queries, blockID uuid.UUID, data map[string]interface{}) error {
+	aboutMeData, err := ParseBlockData(TypeAbout, data)
+	if err != nil {
+		return errors.BadRequest("Invalid about me block data", "invalid_block_data")
+	}
+
+	aboutMe := aboutMeData.(*AboutBlockData)
+	_, err = qtx.UpdateAboutBlock(ctx, sqlc.UpdateAboutBlockParams{
+		BlockID:     blockID,
+		Title:       aboutMe.Title,
+		Description: aboutMe.Description,
+		Heading:     aboutMe.Heading,
+		Subheading:  aboutMe.Subheading,
+	})
+	if err != nil {
+		return errors.Internal("Failed to update about me block", err)
+	}
+	return nil
+}
+
 // ============================================
 // Helper Functions for Nullable Types
 // ============================================

@@ -30,6 +30,8 @@ func ValidateBlockRequest(v *validation.Validator, block *BlockRequest, fieldPre
 		ValidateHeaderBlockData(v, block.Data, fieldPrefix)
 	case TypeGallery:
 		ValidateGalleryBlockData(v, block.Data, fieldPrefix)
+	case TypeAbout:
+		ValidateAboutBlockData(v, block.Data, fieldPrefix)
 	}
 }
 
@@ -119,5 +121,40 @@ func ValidateGalleryBlockData(v *validation.Validator, data map[string]any, fiel
 		} else {
 			v.AddError(fmt.Sprintf("%s.data.media_ids[%d]", fieldPrefix, i), "Media ID must be a string")
 		}
+	}
+}
+
+// ValidateAboutBlockData validates about me block data
+func ValidateAboutBlockData(v *validation.Validator, data map[string]interface{}, fieldPrefix string) {
+	// Title is required
+	title, ok := data["title"].(string)
+	if !ok || title == "" {
+		v.AddError(fieldPrefix+".data.title", "About Me block title is required")
+		return
+	}
+	v.MinLength(fieldPrefix+".data.title", title, 1)
+	v.MaxLength(fieldPrefix+".data.title", title, 200)
+
+	// Description is required
+	description, ok := data["description"].(string)
+	if !ok || description == "" {
+		v.AddError(fieldPrefix+".data.description", "About Me block description is required")
+		return
+	}
+	v.MinLength(fieldPrefix+".data.description", description, 1)
+	v.MaxLength(fieldPrefix+".data.description", description, 1000)
+
+	// Heading is required
+	heading, ok := data["heading"].(string)
+	if !ok || heading == "" {
+		v.AddError(fieldPrefix+".data.heading", "About Me block heading is required")
+		return
+	}
+	v.MinLength(fieldPrefix+".data.heading", heading, 1)
+	v.MaxLength(fieldPrefix+".data.heading", heading, 200)
+
+	// Subheading is optional
+	if subheading, ok := data["subheading"].(string); ok {
+		v.MaxLength(fieldPrefix+".data.subheading", subheading, 200)
 	}
 }
