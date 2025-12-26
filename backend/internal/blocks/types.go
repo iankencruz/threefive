@@ -12,12 +12,12 @@ const (
 	TypeRichtext = "richtext"
 	TypeHeader   = "header"
 	TypeGallery  = "gallery"
-	TypeAbout    = "about"
+	TypeFeature  = "feature"
 )
 
 // ValidBlockTypes returns all valid block types
 func ValidBlockTypes() []string {
-	return []string{TypeHero, TypeRichtext, TypeHeader, TypeGallery, TypeAbout}
+	return []string{TypeHero, TypeRichtext, TypeHeader, TypeGallery, TypeFeature}
 }
 
 // ============================================
@@ -51,8 +51,8 @@ type GalleryBlockData struct {
 	MediaIDs []uuid.UUID `json:"media_ids"`
 }
 
-// AboutBlockData represents about me block data
-type AboutBlockData struct {
+// FeatureBlockData represents about me block data
+type FeatureBlockData struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	Heading     string `json:"heading"`

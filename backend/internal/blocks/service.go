@@ -56,8 +56,8 @@ func (s *Service) CreateBlocks(ctx context.Context, qtx *sqlc.Queries, entityTyp
 			if err := s.createGalleryBlock(ctx, qtx, block.ID, blockReq.Data); err != nil {
 				return err
 			}
-		case TypeAbout:
-			if err := s.createAboutBlock(ctx, qtx, block.ID, blockReq.Data); err != nil {
+		case TypeFeature:
+			if err := s.createFeatureBlock(ctx, qtx, block.ID, blockReq.Data); err != nil {
 				return err
 			}
 		default:
@@ -120,8 +120,8 @@ func (s *Service) UpdateBlocks(ctx context.Context, qtx *sqlc.Queries, entityTyp
 				if err := s.updateGalleryBlock(ctx, qtx, *block.ID, block.Data); err != nil {
 					return err
 				}
-			case TypeAbout:
-				if err := s.updateAboutBlock(ctx, qtx, *block.ID, block.Data); err != nil {
+			case TypeFeature:
+				if err := s.updateFeatureBlock(ctx, qtx, *block.ID, block.Data); err != nil {
 					return err
 				}
 			default:
@@ -229,7 +229,7 @@ func (s *Service) GetBlocksByEntity(ctx context.Context, entityType string, enti
 		return nil, errors.Internal("Failed to get gallery blocks", err)
 	}
 
-	aboutBlocks, err := s.queries.GetAboutBlocksByEntity(ctx, sqlc.GetAboutBlocksByEntityParams{
+	aboutBlocks, err := s.queries.GetFeatureBlocksByEntity(ctx, sqlc.GetFeatureBlocksByEntityParams{
 		EntityType: entityType,
 		EntityID:   entityID,
 	})
@@ -258,7 +258,7 @@ func (s *Service) GetBlocksByEntity(ctx context.Context, entityType string, enti
 		galleryMap[gallery.BlockID] = gallery
 	}
 
-	aboutMap := make(map[uuid.UUID]sqlc.BlockAbout)
+	aboutMap := make(map[uuid.UUID]sqlc.BlockFeature)
 	for _, about := range aboutBlocks {
 		aboutMap[about.BlockID] = about
 	}
@@ -322,9 +322,9 @@ func (s *Service) GetBlocksByEntity(ctx context.Context, entityType string, enti
 					Level:      pgTextToString(header.Level),
 				}
 			}
-		case TypeAbout:
+		case TypeFeature:
 			if about, ok := aboutMap[block.ID]; ok {
-				blockResp.Data = AboutBlockData{
+				blockResp.Data = FeatureBlockData{
 					Title:       about.Title,
 					Description: about.Description,
 					Heading:     about.Heading,
@@ -467,16 +467,16 @@ func (s *Service) createGalleryBlock(ctx context.Context, qtx *sqlc.Queries, blo
 	return nil
 }
 
-func (s *Service) createAboutBlock(ctx context.Context, qtx *sqlc.Queries, blockID uuid.UUID, data map[string]interface{}) error {
-	aboutData, err := ParseBlockData(TypeAbout, data)
+func (s *Service) createFeatureBlock(ctx context.Context, qtx *sqlc.Queries, blockID uuid.UUID, data map[string]interface{}) error {
+	aboutData, err := ParseBlockData(TypeFeature, data)
 	if err != nil {
 		return errors.BadRequest("Invalid about me block data", "invalid_block_data")
 	}
 
-	about := aboutData.(*AboutBlockData)
+	about := aboutData.(*FeatureBlockData)
 
 	// create about block
-	_, err = qtx.CreateAboutBlock(ctx, sqlc.CreateAboutBlockParams{
+	_, err = qtx.CreateFeatureBlock(ctx, sqlc.CreateFeatureBlockParams{
 		BlockID:     blockID,
 		Title:       about.Title,
 		Description: about.Description,
@@ -630,15 +630,15 @@ func (s *Service) updateGalleryBlock(ctx context.Context, qtx *sqlc.Queries, blo
 	return nil
 }
 
-// updateAboutBlock
-func (s *Service) updateAboutBlock(ctx context.Context, qtx *sqlc.Queries, blockID uuid.UUID, data map[string]interface{}) error {
-	aboutMeData, err := ParseBlockData(TypeAbout, data)
+// updateFeatureBlock()
+func (s *Service) updateFeatureBlock(ctx context.Context, qtx *sqlc.Queries, blockID uuid.UUID, data map[string]interface{}) error {
+	aboutMeData, err := ParseBlockData(TypeFeature, data)
 	if err != nil {
 		return errors.BadRequest("Invalid about me block data", "invalid_block_data")
 	}
 
-	aboutMe := aboutMeData.(*AboutBlockData)
-	_, err = qtx.UpdateAboutBlock(ctx, sqlc.UpdateAboutBlockParams{
+	aboutMe := aboutMeData.(*FeatureBlockData)
+	_, err = qtx.UpdateFeatureBlock(ctx, sqlc.UpdateFeatureBlockParams{
 		BlockID:     blockID,
 		Title:       aboutMe.Title,
 		Description: aboutMe.Description,

@@ -30,8 +30,8 @@ func ValidateBlockRequest(v *validation.Validator, block *BlockRequest, fieldPre
 		ValidateHeaderBlockData(v, block.Data, fieldPrefix)
 	case TypeGallery:
 		ValidateGalleryBlockData(v, block.Data, fieldPrefix)
-	case TypeAbout:
-		ValidateAboutBlockData(v, block.Data, fieldPrefix)
+	case TypeFeature:
+		ValidateFeatureBlockData(v, block.Data, fieldPrefix)
 	}
 }
 
@@ -124,8 +124,8 @@ func ValidateGalleryBlockData(v *validation.Validator, data map[string]any, fiel
 	}
 }
 
-// ValidateAboutBlockData validates about me block data
-func ValidateAboutBlockData(v *validation.Validator, data map[string]interface{}, fieldPrefix string) {
+// ValidateFeatureBlockData validates about me block data
+func ValidateFeatureBlockData(v *validation.Validator, data map[string]interface{}, fieldPrefix string) {
 	// Title is required
 	title, ok := data["title"].(string)
 	if !ok || title == "" {

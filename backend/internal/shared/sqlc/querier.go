@@ -25,11 +25,6 @@ type Querier interface {
 	CountPublishedPages(ctx context.Context) (int64, error)
 	CountPublishedProjects(ctx context.Context) (int64, error)
 	CountSearchMedia(ctx context.Context, arg CountSearchMediaParams) (int64, error)
-	// backend/sql/queries/blocks_about.sql
-	// ============================================
-	// About Block Queries
-	// ============================================
-	CreateAboutBlock(ctx context.Context, arg CreateAboutBlockParams) (BlockAbout, error)
 	// backend/sql/queries/blocks.sql
 	// ============================================
 	// Base Blocks Queries (Polymorphic)
@@ -40,6 +35,11 @@ type Querier interface {
 	// Blogs Queries
 	// ============================================
 	CreateBlog(ctx context.Context, arg CreateBlogParams) (Blogs, error)
+	// backend/sql/queries/blocks_about.sql
+	// ============================================
+	// Feature Block Queries
+	// ============================================
+	CreateFeatureBlock(ctx context.Context, arg CreateFeatureBlockParams) (BlockFeature, error)
 	// backend/sql/queries/blocks_gallery.sql
 	// ============================================
 	// Gallery Block Queries
@@ -82,23 +82,23 @@ type Querier interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) (Users, error)
 	DeactivateAllUserSessions(ctx context.Context, userID uuid.UUID) error
 	DeactivateSession(ctx context.Context, token string) error
-	DeleteAboutBlock(ctx context.Context, blockID uuid.UUID) error
 	DeleteBlock(ctx context.Context, id uuid.UUID) error
 	DeleteBlocksByEntity(ctx context.Context, arg DeleteBlocksByEntityParams) error
+	DeleteFeatureBlock(ctx context.Context, blockID uuid.UUID) error
 	DeleteGalleryBlock(ctx context.Context, blockID uuid.UUID) error
 	DeleteHeaderBlock(ctx context.Context, blockID uuid.UUID) error
 	DeleteHeroBlock(ctx context.Context, blockID uuid.UUID) error
 	DeleteRichtextBlock(ctx context.Context, blockID uuid.UUID) error
 	DeleteSEO(ctx context.Context, arg DeleteSEOParams) error
 	DeleteUser(ctx context.Context, id uuid.UUID) error
-	GetAboutBlockByBlockID(ctx context.Context, blockID uuid.UUID) (BlockAbout, error)
-	GetAboutBlocksByEntity(ctx context.Context, arg GetAboutBlocksByEntityParams) ([]BlockAbout, error)
 	GetActiveSessionsByUserID(ctx context.Context, userID uuid.UUID) ([]Sessions, error)
 	GetBlockByID(ctx context.Context, id uuid.UUID) (Blocks, error)
 	GetBlocksByEntity(ctx context.Context, arg GetBlocksByEntityParams) ([]Blocks, error)
 	GetBlogByID(ctx context.Context, id uuid.UUID) (Blogs, error)
 	GetBlogBySlug(ctx context.Context, slug string) (Blogs, error)
 	GetEntitiesForMedia(ctx context.Context, mediaID uuid.UUID) ([]GetEntitiesForMediaRow, error)
+	GetFeatureBlockByBlockID(ctx context.Context, blockID uuid.UUID) (BlockFeature, error)
+	GetFeatureBlocksByEntity(ctx context.Context, arg GetFeatureBlocksByEntityParams) ([]BlockFeature, error)
 	GetGalleryBlockByBlockID(ctx context.Context, blockID uuid.UUID) (BlockGallery, error)
 	GetGalleryBlocksByEntity(ctx context.Context, arg GetGalleryBlocksByEntityParams) ([]BlockGallery, error)
 	GetHeaderBlockByBlockID(ctx context.Context, blockID uuid.UUID) (BlockHeader, error)
@@ -138,10 +138,10 @@ type Querier interface {
 	SoftDeletePage(ctx context.Context, id uuid.UUID) error
 	SoftDeleteProject(ctx context.Context, id uuid.UUID) error
 	UnlinkMediaFromEntity(ctx context.Context, arg UnlinkMediaFromEntityParams) error
-	UpdateAboutBlock(ctx context.Context, arg UpdateAboutBlockParams) (BlockAbout, error)
 	UpdateBlockOrder(ctx context.Context, arg UpdateBlockOrderParams) error
 	UpdateBlog(ctx context.Context, arg UpdateBlogParams) (Blogs, error)
 	UpdateBlogStatus(ctx context.Context, arg UpdateBlogStatusParams) (Blogs, error)
+	UpdateFeatureBlock(ctx context.Context, arg UpdateFeatureBlockParams) (BlockFeature, error)
 	UpdateGalleryBlock(ctx context.Context, arg UpdateGalleryBlockParams) (BlockGallery, error)
 	UpdateHeaderBlock(ctx context.Context, arg UpdateHeaderBlockParams) (BlockHeader, error)
 	UpdateHeroBlock(ctx context.Context, arg UpdateHeroBlockParams) (BlockHero, error)

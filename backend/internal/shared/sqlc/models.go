@@ -142,7 +142,7 @@ func (ns NullStorageType) Value() (driver.Value, error) {
 	return string(ns.StorageType), nil
 }
 
-type BlockAbout struct {
+type BlockFeature struct {
 	ID          uuid.UUID `json:"id"`
 	BlockID     uuid.UUID `json:"block_id"`
 	Title       string    `json:"title"`

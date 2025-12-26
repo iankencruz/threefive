@@ -17,8 +17,8 @@ func ParseBlockData(blockType string, data map[string]interface{}) (interface{},
 		return parseHeaderBlockData(data)
 	case TypeGallery:
 		return parseGalleryBlockData(data)
-	case TypeAbout:
-		return parseAboutBlockData(data)
+	case TypeFeature:
+		return parseFeatureBlockData(data)
 	default:
 		return nil, fmt.Errorf("unknown block type: %s", blockType)
 	}
@@ -85,12 +85,12 @@ func parseGalleryBlockData(data map[string]interface{}) (*GalleryBlockData, erro
 	return &galleryData, nil
 }
 
-func parseAboutBlockData(data map[string]interface{}) (*AboutBlockData, error) {
+func parseFeatureBlockData(data map[string]interface{}) (*FeatureBlockData, error) {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal about me block data: %w", err)
 	}
-	var aboutData AboutBlockData
+	var aboutData FeatureBlockData
 	if err := json.Unmarshal(jsonData, &aboutData); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal about me block data: %w", err)
 	}

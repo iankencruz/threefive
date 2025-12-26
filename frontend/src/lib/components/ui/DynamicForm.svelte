@@ -39,6 +39,7 @@
 		columns?: number;
 		submitVariant?: 'primary' | 'secondary' | 'tertiary';
 		submitFullWidth?: boolean;
+		initialMediaCache?: Record<string, Media>;
 	}
 
 	interface Props {
@@ -49,6 +50,7 @@
 		errors?: Record<string, string>;
 		children?: import('svelte').Snippet;
 		asForm?: boolean;
+		initialMediaCache?: Record<string, Media>;
 	}
 
 	let {
@@ -58,7 +60,8 @@
 		onchange,
 		errors = {},
 		children,
-		asForm = true
+		asForm = true,
+		initialMediaCache = {}
 	}: Props = $props();
 
 	// Helper function to get default values for all fields
@@ -87,7 +90,7 @@
 	// Media picker state
 	let showMediaPicker = $state(false);
 	let currentMediaField = $state<string>('');
-	let selectedMediaCache = $state<Map<string, Media>>(new Map());
+	let selectedMediaCache = $state<Map<string, Media>>(new Map(Object.entries(initialMediaCache)));
 
 	// Notify parent of changes (with untrack to prevent infinite loops)
 	$effect(() => {
@@ -99,7 +102,6 @@
 	// Load media info for fields with existing values
 	$effect.pre(() => {
 		if (!config?.fields) {
-			console.log('   ❌ No config.fields');
 			return;
 		}
 
@@ -108,6 +110,7 @@
 
 			const mediaId = formData[field.name];
 
+			// This check now works! If media is in cache, no API call
 			if (mediaId && typeof mediaId === 'string' && !selectedMediaCache.has(mediaId)) {
 				loadMediaInfo(mediaId);
 			}

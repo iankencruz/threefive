@@ -1,11 +1,11 @@
 -- backend/sql/queries/blocks_about.sql
 
 -- ============================================
--- About Block Queries
+-- Feature Block Queries
 -- ============================================
 
--- name: CreateAboutBlock :one
-INSERT INTO block_about (
+-- name: CreateFeatureBlock :one
+INSERT INTO block_feature (
   block_id, 
   title,
   description,
@@ -22,19 +22,19 @@ VALUES (
 returning *;
 
 
--- name: GetAboutBlockByBlockID :one
-SELECT * FROM block_about
+-- name: GetFeatureBlockByBlockID :one
+SELECT * FROM block_feature
 WHERE block_id = @block_id;
 
--- name: GetAboutBlocksByEntity :many
-SELECT ba.*
-FROM block_about ba
-INNER JOIN blocks b ON b.id = ba.block_id
+-- name: GetFeatureBlocksByEntity :many
+SELECT bf.*
+FROM block_feature bf
+INNER JOIN blocks b ON b.id = bf.block_id
 WHERE b.entity_type = @entity_type AND b.entity_id = @entity_id
 ORDER BY b.sort_order;
 
--- name: UpdateAboutBlock :one
-UPDATE block_about
+-- name: UpdateFeatureBlock :one
+UPDATE block_feature
 SET 
   title = COALESCE(@title, title),
   description = COALESCE(@description, description),
@@ -43,5 +43,5 @@ SET
 WHERE block_id = @block_id
 RETURNING *;
 
--- name: DeleteAboutBlock :exec
-DELETE FROM block_about WHERE block_id = @block_id;
+-- name: DeleteFeatureBlock :exec
+DELETE FROM block_feature WHERE block_id = @block_id;
