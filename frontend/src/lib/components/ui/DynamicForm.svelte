@@ -21,10 +21,11 @@
 			| 'number'
 			| 'textarea'
 			| 'media'
+			| 'checkbox'
 			| 'select';
 		placeholder?: string;
 		required?: boolean;
-		value?: string | number;
+		value?: string | number | boolean;
 		colSpan?: number;
 		class?: string;
 		helperText?: string;
@@ -70,8 +71,14 @@
 
 		return formConfig.fields.reduce(
 			(acc, field) => {
-				// Media fields default to null, others to empty string
-				acc[field.name] = field.value ?? (field.type === 'media' ? null : '');
+				// Different defaults based on field type
+				if (field.type === 'media') {
+					acc[field.name] = field.value ?? null;
+				} else if (field.type === 'checkbox') {
+					acc[field.name] = field.value ?? false;
+				} else {
+					acc[field.name] = field.value ?? '';
+				}
 				return acc;
 			},
 			{} as Record<string, any>
@@ -188,28 +195,6 @@
 		}
 	}
 
-	// Helper to check if field type is media
-	function isMediaField(type?: string): boolean {
-		return type === 'media';
-	}
-
-	// Helper to get valid input type (excludes 'media')
-	function getInputType(
-		type?: string
-	): 'text' | 'email' | 'password' | 'tel' | 'url' | 'date' | 'number' | 'textarea' | undefined {
-		if (type === 'media') return undefined;
-		return type as
-			| 'text'
-			| 'email'
-			| 'password'
-			| 'tel'
-			| 'url'
-			| 'date'
-			| 'number'
-			| 'textarea'
-			| undefined;
-	}
-
 	function formatFileSize(bytes: number): string {
 		if (bytes < 1024) return bytes + ' B';
 		if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
@@ -300,6 +285,101 @@
 	</div>
 {/snippet}
 
+{#snippet checkboxFieldInput(field: FormField)}
+	<div class="flex items-center gap-3">
+		<div
+			class="group relative inline-flex w-11 shrink-0 rounded-full bg-gray-200 p-0.5 inset-ring inset-ring-gray-900/5 outline-offset-2 outline-primary transition-colors duration-200 ease-in-out has-checked:bg-primary has-focus-visible:outline-2"
+		>
+			<span
+				class="relative size-5 rounded-full bg-white shadow-xs ring-1 ring-gray-900/5 transition-transform duration-200 ease-in-out group-has-checked:translate-x-5"
+			>
+				<span
+					aria-hidden="true"
+					class="absolute inset-0 flex size-full items-center justify-center opacity-100 transition-opacity duration-200 ease-in group-has-checked:opacity-0 group-has-checked:duration-100 group-has-checked:ease-out"
+				>
+					<svg viewBox="0 0 12 12" fill="none" class="size-3 text-gray-400">
+						<path
+							d="M4 8l2-2m0 0l2-2M6 6L4 4m2 2l2 2"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						/>
+					</svg>
+				</span>
+				<span
+					aria-hidden="true"
+					class="absolute inset-0 flex size-full items-center justify-center opacity-0 transition-opacity duration-100 ease-out group-has-checked:opacity-100 group-has-checked:duration-200 group-has-checked:ease-in"
+				>
+					<svg viewBox="0 0 12 12" fill="currentColor" class="size-3 text-indigo-600">
+						<path
+							d="M3.707 5.293a1 1 0 00-1.414 1.414l1.414-1.414zM5 8l-.707.707a1 1 0 001.414 0L5 8zm4.707-3.293a1 1 0 00-1.414-1.414l1.414 1.414zm-7.414 2l2 2 1.414-1.414-2-2-1.414 1.414zm3.414 2l4-4-1.414-1.414-4 4 1.414 1.414z"
+						/>
+					</svg>
+				</span>
+			</span>
+			<input
+				type="checkbox"
+				id={field.name}
+				name={field.name}
+				bind:checked={formData[field.name]}
+				aria-label={field.label}
+				class="absolute inset-0 size-full appearance-none rounded-lg focus:outline-hidden"
+			/>
+		</div>
+		{#if field.label}
+			<label for={field.name} class="text-sm font-medium">
+				{field.label}
+				{#if field.required}
+					<span class="text-red-500">*</span>
+				{/if}
+			</label>
+		{/if}
+	</div>
+	{#if field.helperText}
+		<p class="mt-1 ml-7 text-sm text-gray-500">{field.helperText}</p>
+	{/if}
+	{#if errors[field.name]}
+		<p class="mt-1 ml-7 text-sm text-red-600">{errors[field.name]}</p>
+	{/if}
+{/snippet}
+
+{#snippet standardFieldInput(field: FormField)}
+	<Input
+		type={field.type === 'checkbox' || field.type === 'media'
+			? 'text'
+			: (field.type as
+					| 'text'
+					| 'email'
+					| 'password'
+					| 'tel'
+					| 'url'
+					| 'date'
+					| 'number'
+					| 'textarea'
+					| undefined)}
+		name={field.name}
+		label={field.label}
+		placeholder={field.placeholder}
+		required={field.required}
+		bind:value={formData[field.name]}
+		error={errors[field.name]}
+		helperText={field.helperText}
+		rows={field.rows}
+		inputClass={field.inputClass}
+	/>
+{/snippet}
+
+{#snippet renderField(field: FormField)}
+	{#if field.type === 'media'}
+		{@render mediaFieldInput(field)}
+	{:else if field.type === 'checkbox'}
+		{@render checkboxFieldInput(field)}
+	{:else}
+		{@render standardFieldInput(field)}
+	{/if}
+{/snippet}
+
 {#if config?.fields}
 	{#if asForm}
 		<!-- Render as a form when asForm is true -->
@@ -307,22 +387,7 @@
 			<div class="grid grid-cols-{config.columns || 1} gap-4">
 				{#each config.fields as field}
 					<div class="{getColSpanClass(field.colSpan)} {field.class || ''}">
-						{#if isMediaField(field.type)}
-							{@render mediaFieldInput(field)}
-						{:else}
-							<Input
-								type={getInputType(field.type) || 'text'}
-								name={field.name}
-								label={field.label}
-								placeholder={field.placeholder}
-								required={field.required}
-								bind:value={formData[field.name]}
-								error={errors[field.name]}
-								helperText={field.helperText}
-								rows={field.rows}
-								inputClass={field.inputClass}
-							/>
-						{/if}
+						{@render renderField(field)}
 					</div>
 				{/each}
 			</div>
@@ -341,22 +406,7 @@
 			<div class="grid grid-cols-{config.columns || 1} gap-4">
 				{#each config.fields as field}
 					<div class="{getColSpanClass(field.colSpan)} {field.class || ''}">
-						{#if isMediaField(field.type)}
-							{@render mediaFieldInput(field)}
-						{:else}
-							<Input
-								type={getInputType(field.type) || 'text'}
-								name={field.name}
-								label={field.label}
-								placeholder={field.placeholder}
-								required={field.required}
-								bind:value={formData[field.name]}
-								error={errors[field.name]}
-								helperText={field.helperText}
-								rows={field.rows}
-								inputClass={field.inputClass}
-							/>
-						{/if}
+						{@render renderField(field)}
 					</div>
 				{/each}
 			</div>

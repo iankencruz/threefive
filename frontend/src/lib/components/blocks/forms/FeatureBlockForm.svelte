@@ -55,6 +55,11 @@
 				type: 'media',
 				label: 'Featured Image',
 				colSpan: 12
+			},
+			{
+				name: 'status',
+				type: 'checkbox',
+				label: 'Active'
 			}
 		]
 	};
