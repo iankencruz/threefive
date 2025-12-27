@@ -92,15 +92,6 @@
 							{data.subtitle}
 						</p>
 					{/if}
-
-					{#if data.cta_text && data.cta_url}
-						<a
-							href={data.cta_url}
-							class="inline-flex items-center gap-2 rounded-lg bg-white px-8 py-4 text-lg font-semibold text-gray-900 shadow-lg transition-all hover:scale-105 hover:bg-gray-100 hover:shadow-xl"
-						>
-							{data.cta_text}
-						</a>
-					{/if}
 				</div>
 			</div>
 		</div>

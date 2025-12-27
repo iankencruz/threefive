@@ -46,12 +46,7 @@
 				placeholder: 'Enter subtitle (optional)',
 				colSpan: 12
 			},
-			{
-				name: 'image_id',
-				type: 'media',
-				label: 'Background Image',
-				colSpan: 12
-			},
+
 			{
 				name: 'cta_text',
 				type: 'text',
@@ -61,10 +56,16 @@
 			},
 			{
 				name: 'cta_url',
-				type: 'url',
+				type: 'text',
 				label: 'CTA URL',
 				placeholder: 'Button link (optional)',
 				colSpan: 6
+			},
+			{
+				name: 'image_id',
+				type: 'media',
+				label: 'Background Image',
+				colSpan: 12
 			}
 		]
 	};

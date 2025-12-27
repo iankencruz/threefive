@@ -123,8 +123,8 @@
 	};
 </script>
 
-<div class="mx-auto max-w-7xl">
-	<div class="mb-8 flex items-center justify-between gap-4">
+<div class="  mx-auto max-w-7xl">
+	<div class="relative mb-8 flex items-center justify-between gap-4">
 		<div class="flex items-center gap-4">
 			<button
 				onclick={() => goto('/admin/pages')}
@@ -142,7 +142,6 @@
 			</button>
 			<h1 class="">Edit Page</h1>
 		</div>
-		<button type="button" onclick={handleDelete} class="btn bg-primary">Delete</button>
 	</div>
 
 	<form
@@ -150,7 +149,7 @@
 			e.preventDefault();
 			handleSubmit();
 		}}
-		class="space-y-6"
+		class=" space-y-6"
 	>
 		<!-- Main Content Card -->
 		<div class=" rounded-lg bg-surface shadow-lg">
@@ -183,7 +182,7 @@
 			<div class="p-6">
 				{#if currentTab === 'content'}
 					<!-- Basic Info -->
-					<div class="mb-8 space-y-6">
+					<div class=" mb-8 space-y-6">
 						<div class="grid grid-cols-2 gap-6">
 							<div>
 								<label for="title" class="mb-2 block font-medium">
@@ -231,14 +230,6 @@
 								<option value="archived">Archived</option>
 							</select>
 						</div>
-						<div>
-							<label for="status" class="mb-2 block text-sm font-medium"> Navigation Bar </label>
-							<select name="status" bind:value={formData.status} class="form-input">
-								<option value="draft">Draft</option>
-								<option value="published">Published</option>
-								<option value="archived">Archived</option>
-							</select>
-						</div>
 					</div>
 
 					<!-- Blocks Section -->
@@ -253,21 +244,24 @@
 		</div>
 
 		<!-- Footer Actions -->
-		<div class="flex justify-end gap-4">
-			<button
-				type="button"
-				onclick={() => goto('/admin/pages')}
-				class="rounded-lg border border-gray-600 px-6 py-2 transition-colors hover:bg-gray-700"
-			>
-				Cancel
-			</button>
-			<button
-				type="submit"
-				disabled={loading}
-				class="rounded-lg bg-primary px-6 py-2 text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
-			>
-				{loading ? 'Updating...' : 'Update Page'}
-			</button>
+		<div
+			class="fixed right-0 bottom-0 flex w-full justify-end gap-4 border-t border-gray-400 bg-background p-3"
+		>
+			<div class="mr-4 flex gap-4">
+				<button
+					type="button"
+					onclick={handleDelete}
+					class="btn border-gray-400 underline-offset-6 hover:underline">Delete</button
+				>
+
+				<button
+					type="submit"
+					disabled={loading}
+					class="rounded-lg bg-primary px-6 py-2 text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+				>
+					{loading ? 'Updating...' : 'Save'}
+				</button>
+			</div>
 		</div>
 	</form>
 </div>

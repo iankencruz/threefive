@@ -100,7 +100,7 @@
 </script>
 
 <div class="mx-auto max-w-7xl">
-	<div class="mb-8 flex items-center gap-4">
+	<div class="relative mb-8 flex items-center gap-4">
 		<button
 			onclick={() => goto('/admin/pages')}
 			class="rounded-lg p-2 transition-colors hover:bg-gray-700"
@@ -215,21 +215,26 @@
 		</div>
 
 		<!-- Footer Actions -->
-		<div class="flex justify-end gap-4">
-			<button
-				type="button"
-				onclick={() => goto('/admin/pages')}
-				class="rounded-lg border border-gray-600 px-6 py-2 transition-colors hover:bg-gray-700"
-			>
-				Cancel
-			</button>
-			<button
-				type="submit"
-				disabled={loading}
-				class="rounded-lg bg-primary px-6 py-2 text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
-			>
-				{loading ? 'Creating...' : 'Create Page'}
-			</button>
+		<div
+			class="fixed right-0 bottom-0 flex w-full justify-end gap-4 border-t border-gray-400 bg-background p-3"
+		>
+			<div class="mr-4 flex gap-4">
+				<button
+					type="button"
+					onclick={() => goto('/admin/pages')}
+					class="rounded-lg border border-gray-600 px-6 py-2 transition-colors hover:bg-gray-700"
+				>
+					Cancel
+				</button>
+
+				<button
+					type="submit"
+					disabled={loading}
+					class="rounded-lg bg-primary px-6 py-2 text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+				>
+					{loading ? 'Creating...' : 'Create'}
+				</button>
+			</div>
 		</div>
 	</form>
 </div>

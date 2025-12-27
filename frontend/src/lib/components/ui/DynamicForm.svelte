@@ -311,7 +311,7 @@
 					aria-hidden="true"
 					class="absolute inset-0 flex size-full items-center justify-center opacity-0 transition-opacity duration-100 ease-out group-has-checked:opacity-100 group-has-checked:duration-200 group-has-checked:ease-in"
 				>
-					<svg viewBox="0 0 12 12" fill="currentColor" class="size-3 text-indigo-600">
+					<svg viewBox="0 0 12 12" fill="currentColor" class="size-3 text-primary">
 						<path
 							d="M3.707 5.293a1 1 0 00-1.414 1.414l1.414-1.414zM5 8l-.707.707a1 1 0 001.414 0L5 8zm4.707-3.293a1 1 0 00-1.414-1.414l1.414 1.414zm-7.414 2l2 2 1.414-1.414-2-2-1.414 1.414zm3.414 2l4-4-1.414-1.414-4 4 1.414 1.414z"
 						/>
@@ -384,9 +384,9 @@
 	{#if asForm}
 		<!-- Render as a form when asForm is true -->
 		<form onsubmit={handleSubmit} class="space-y-6">
-			<div class="grid grid-cols-{config.columns || 1} gap-4">
+			<div class="grid grid-cols-12 gap-4">
 				{#each config.fields as field}
-					<div class="{getColSpanClass(field.colSpan)} {field.class || ''}">
+					<div class="{getColSpanClass(field.colSpan || 12)} {field.class || ''}">
 						{@render renderField(field)}
 					</div>
 				{/each}
@@ -403,9 +403,9 @@
 	{:else}
 		<!-- Render just the fields when asForm is false -->
 		<div class="space-y-6">
-			<div class="grid grid-cols-{config.columns || 1} gap-4">
+			<div class="grid grid-cols-12 gap-4">
 				{#each config.fields as field}
-					<div class="{getColSpanClass(field.colSpan)} {field.class || ''}">
+					<div class="{getColSpanClass(field.colSpan || 12)} {field.class || ''}">
 						{@render renderField(field)}
 					</div>
 				{/each}

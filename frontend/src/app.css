@@ -1,15 +1,23 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
 @import "tailwindcss";
 
+@plugin "@tailwindcss/forms" {
+  strategy: "base";
+}
 
 
-;
 @plugin "@tailwindcss/typography";
+
+@source inline('{sm:,md:,lg:,xl:,}col-span-{1,2,3,4,5,6,7,8,9,10,11,12}');
 
 /* Theme customization */
 @theme {
   /* === Fonts === */
   --font-sans: "Montserrat", system-ui, sans-serif;
+
+  /* === Spacing === */
+  --spacing-7xl: 96rem;
+
   /* === Brand === */
   --color-primary: #ff4b1f;
   --color-primary-hover: #f5b3a3;
