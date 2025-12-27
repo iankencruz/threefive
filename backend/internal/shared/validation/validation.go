@@ -31,6 +31,10 @@ var (
 	AlphaSpaceRegex = regexp.MustCompile(`^[a-zA-Z\s]+`)
 )
 
+type Validatable interface {
+	Validate(v *Validator)
+}
+
 // ValidationError represents a single validation error
 type ValidationError struct {
 	Field   string `json:"field"`
@@ -274,20 +278,22 @@ func (v *Validator) StrongPassword(field, value string) {
 	}
 }
 
-// ParseAndValidateJSON parses JSON request body and validates it
-func ParseAndValidateJSON(r *http.Request, dest any, validateFn func(*Validator)) error {
+// ParseAndValidate is a generic function that both parses and validates
+func ParseAndValidate[T Validatable](r *http.Request) (T, error) {
+	var data T
+
 	// Parse JSON
-	if err := json.NewDecoder(r.Body).Decode(dest); err != nil {
-		return errors.BadRequest("Invalid JSON format", "invalid_json")
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		return data, errors.BadRequest("Invalid JSON format", "invalid_json")
 	}
 
 	// Validate
 	validator := New()
-	validateFn(validator)
+	data.Validate(validator)
 
 	if validator.HasErrors() {
-		return validator.ToAppError()
+		return data, validator.ToAppError()
 	}
 
-	return nil
+	return data, nil
 }

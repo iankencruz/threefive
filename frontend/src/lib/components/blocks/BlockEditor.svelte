@@ -1,10 +1,11 @@
 <!-- frontend/src/lib/components/blocks/BlockEditor.svelte -->
 <script lang="ts">
+	import type { FeatureBlockData } from './forms/FeatureBlockForm.svelte';
+	import FeatureBlockForm from './forms/FeatureBlockForm.svelte';
 	import GalleryBlockForm, { type GalleryBlockData } from './forms/GalleryBlockForm.svelte';
 	import HeaderBlockForm, { type HeaderBlockData } from './forms/HeaderBlockForm.svelte';
 	import HeroBlockForm, { type HeroBlockData } from './forms/HeroBlockForm.svelte';
 	import RichTextBlockForm, { type RichtextBlockData } from './forms/RichTextBlockForm.svelte';
-	import AboutBlockForm, { type AboutBlockData } from './forms/AboutBlockForm.svelte';
 	import { Plus } from 'lucide-svelte';
 
 	interface BlockTypeMap {
@@ -12,7 +13,7 @@
 		richtext: RichtextBlockData;
 		header: HeaderBlockData;
 		gallery: GalleryBlockData;
-		about: AboutBlockData;
+		feature: FeatureBlockData;
 	}
 
 	type BlockType = keyof BlockTypeMap;
@@ -83,7 +84,7 @@
 				return { content: '' };
 			case 'header':
 				return { heading: '', subheading: '', level: 'h2' };
-			case 'about':
+			case 'feature':
 				return { title: '', description: '', heading: '', subheading: '' };
 			default:
 				return {};
@@ -100,7 +101,7 @@
 				return 'bg-green-100 text-green-800';
 			case 'gallery':
 				return 'bg-orange-100 text-orange-800';
-			case 'about':
+			case 'feature':
 				return 'bg-teal-100 text-teal-800';
 			default:
 				return 'bg-gray-100 text-gray-800';
@@ -153,11 +154,11 @@
 		+ Gallery
 	</button>
 	<button
-		onclick={() => addBlockAt('about', position)}
+		onclick={() => addBlockAt('feature', position)}
 		type="button"
 		class="rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-nowrap text-white transition-colors hover:bg-teal-700"
 	>
-		+ About
+		+ Feature
 	</button>
 {/snippet}
 
@@ -313,9 +314,9 @@
 							data={block.data as GalleryBlockData}
 							onchange={(data) => updateBlockData(index, data)}
 						/>
-					{:else if block.type === 'about'}
-						<AboutBlockForm
-							data={block.data as AboutBlockData}
+					{:else if block.type === 'feature'}
+						<FeatureBlockForm
+							data={block.data as FeatureBlockData}
 							onchange={(data) => updateBlockData(index, data)}
 						/>
 					{/if}

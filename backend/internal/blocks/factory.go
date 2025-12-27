@@ -7,7 +7,7 @@ import (
 )
 
 // ParseBlockData parses block data map into specific block type
-func ParseBlockData(blockType string, data map[string]interface{}) (interface{}, error) {
+func ParseBlockData(blockType string, data map[string]any) (any, error) {
 	switch blockType {
 	case TypeHero:
 		return parseHeroBlockData(data)
@@ -24,7 +24,7 @@ func ParseBlockData(blockType string, data map[string]interface{}) (interface{},
 	}
 }
 
-func parseHeroBlockData(data map[string]interface{}) (*HeroBlockData, error) {
+func parseHeroBlockData(data map[string]any) (*HeroBlockData, error) {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal hero block data: %w", err)
@@ -38,7 +38,7 @@ func parseHeroBlockData(data map[string]interface{}) (*HeroBlockData, error) {
 	return &heroData, nil
 }
 
-func parseRichtextBlockData(data map[string]interface{}) (*RichtextBlockData, error) {
+func parseRichtextBlockData(data map[string]any) (*RichtextBlockData, error) {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal richtext block data: %w", err)
@@ -52,7 +52,7 @@ func parseRichtextBlockData(data map[string]interface{}) (*RichtextBlockData, er
 	return &richtextData, nil
 }
 
-func parseHeaderBlockData(data map[string]interface{}) (*HeaderBlockData, error) {
+func parseHeaderBlockData(data map[string]any) (*HeaderBlockData, error) {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal header block data: %w", err)
@@ -71,7 +71,7 @@ func parseHeaderBlockData(data map[string]interface{}) (*HeaderBlockData, error)
 	return &headerData, nil
 }
 
-func parseGalleryBlockData(data map[string]interface{}) (*GalleryBlockData, error) {
+func parseGalleryBlockData(data map[string]any) (*GalleryBlockData, error) {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal gallery block data: %w", err)
@@ -85,7 +85,7 @@ func parseGalleryBlockData(data map[string]interface{}) (*GalleryBlockData, erro
 	return &galleryData, nil
 }
 
-func parseFeatureBlockData(data map[string]interface{}) (*FeatureBlockData, error) {
+func parseFeatureBlockData(data map[string]any) (*FeatureBlockData, error) {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal about me block data: %w", err)

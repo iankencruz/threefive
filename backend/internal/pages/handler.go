@@ -8,7 +8,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	"github.com/iankencruz/threefive/internal/auth"
 	"github.com/iankencruz/threefive/internal/blocks"
 	"github.com/iankencruz/threefive/internal/config"
 	"github.com/iankencruz/threefive/internal/shared/responses"
@@ -42,22 +41,16 @@ func NewHandler(db *pgxpool.Pool, queries *sqlc.Queries, cfg *config.Config) *Ha
 // CreatePage handles page creation
 // POST /api/v1/pages
 func (h *Handler) CreatePage(w http.ResponseWriter, r *http.Request) {
-	var req CreatePageRequest
-
-	// Get current user from context
-	user := auth.MustGetUserFromContext(r.Context())
 
 	// Parse and validate request
-	err := validation.ParseAndValidateJSON(r, &req, func(v *validation.Validator) {
-		req.Validate(v)
-	})
+	req, err := validation.ParseAndValidate[*CreatePageRequest](r)
 	if err != nil {
 		responses.WriteErr(w, err)
 		return
 	}
 
 	// Create page
-	page, err := h.service.CreatePage(r.Context(), req, user.ID)
+	page, err := h.service.CreatePage(r.Context(), req)
 	if err != nil {
 		responses.WriteErr(w, err)
 		return
@@ -218,7 +211,6 @@ func (h *Handler) ListPublishedPages(w http.ResponseWriter, r *http.Request) {
 // UpdatePage handles updating a page
 // PUT /api/v1/pages/{id}
 func (h *Handler) UpdatePage(w http.ResponseWriter, r *http.Request) {
-	var req UpdatePageRequest
 
 	// Parse page ID
 	idStr := chi.URLParam(r, "id")
@@ -229,14 +221,15 @@ func (h *Handler) UpdatePage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Parse and validate request
-	err = validation.ParseAndValidateJSON(r, &req, func(v *validation.Validator) {
-		req.Validate(v)
-	})
+	// err = validation.ParseAndValidate(r, &req, func(v *validation.Validator) {
+	// 	req.Validate(v)
+	// })
+
+	req, err := validation.ParseAndValidate[*UpdatePageRequest](r)
 	if err != nil {
 		responses.WriteErr(w, err)
 		return
 	}
-
 	// Update page
 	page, err := h.service.UpdatePage(r.Context(), id, req)
 	if err != nil {
@@ -250,7 +243,6 @@ func (h *Handler) UpdatePage(w http.ResponseWriter, r *http.Request) {
 // UpdatePageStatus handles updating page status
 // PATCH /api/v1/pages/{id}/status
 func (h *Handler) UpdatePageStatus(w http.ResponseWriter, r *http.Request) {
-	var req UpdatePageStatusRequest
 
 	// Parse page ID
 	idStr := chi.URLParam(r, "id")
@@ -261,9 +253,7 @@ func (h *Handler) UpdatePageStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Parse and validate request
-	err = validation.ParseAndValidateJSON(r, &req, func(v *validation.Validator) {
-		req.Validate(v)
-	})
+	req, err := validation.ParseAndValidate[*UpdatePageStatusRequest](r)
 	if err != nil {
 		responses.WriteErr(w, err)
 		return

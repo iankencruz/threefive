@@ -53,10 +53,11 @@ type GalleryBlockData struct {
 
 // FeatureBlockData represents about me block data
 type FeatureBlockData struct {
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Heading     string `json:"heading"`
-	Subheading  string `json:"subheading,omitempty"`
+	Title       string     `json:"title"`
+	Description string     `json:"description"`
+	Heading     string     `json:"heading"`
+	Subheading  string     `json:"subheading,omitempty"`
+	ImageID     *uuid.UUID `json:"image_id,omitempty"`
 }
 
 // ValidHeaderLevels returns all valid header levels...

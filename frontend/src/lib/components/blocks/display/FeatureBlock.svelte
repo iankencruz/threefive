@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { AboutBlockData } from '../forms/AboutBlockForm.svelte';
+	import type { FeatureBlockData } from '../forms/FeatureBlockForm.svelte';
 
 	interface Props {
-		data: AboutBlockData;
+		data: FeatureBlockData;
 	}
 
 	let { data }: Props = $props();

@@ -34,7 +34,7 @@ func NewService(db *pgxpool.Pool, queries *sqlc.Queries, blockService *blocks.Se
 }
 
 // CreateProject creates a new project with blocks and SEO in a transaction
-func (s *Service) CreateProject(ctx context.Context, req CreateProjectRequest, userID uuid.UUID) (*ProjectResponse, error) {
+func (s *Service) CreateProject(ctx context.Context, req *CreateProjectRequest, userID uuid.UUID) (*ProjectResponse, error) {
 	exists, err := s.queries.CheckProjectSlugExists(ctx, sqlc.CheckProjectSlugExistsParams{
 		Slug:      req.Slug,
 		ExcludeID: uuid.Nil,
@@ -245,7 +245,7 @@ func (s *Service) ListPublishedProjects(ctx context.Context, params ListProjects
 }
 
 // UpdateProject updates a project and its related data in a transaction
-func (s *Service) UpdateProject(ctx context.Context, projectID uuid.UUID, req UpdateProjectRequest) (*ProjectResponse, error) {
+func (s *Service) UpdateProject(ctx context.Context, projectID uuid.UUID, req *UpdateProjectRequest) (*ProjectResponse, error) {
 	// Check slug uniqueness if slug is being updated
 	if req.Slug != nil {
 		exists, err := s.queries.CheckProjectSlugExists(ctx, sqlc.CheckProjectSlugExistsParams{

@@ -31,12 +31,9 @@ func NewHandler(db *pgxpool.Pool, queries *sqlc.Queries, sessionManager *session
 
 // Register handles user registration
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
-	var req RegisterRequest
 
 	// Parse and validate request
-	err := validation.ParseAndValidateJSON(r, &req, func(v *validation.Validator) {
-		req.Validate(v)
-	})
+	req, err := validation.ParseAndValidate[*RegisterRequest](r)
 	if err != nil {
 		responses.WriteErr(w, err)
 		return
@@ -71,12 +68,9 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 
 // Login handles user login
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
-	var req LoginRequest
 
 	// Parse and validate request
-	err := validation.ParseAndValidateJSON(r, &req, func(v *validation.Validator) {
-		req.Validate(v)
-	})
+	req, err := validation.ParseAndValidate[*LoginRequest](r)
 	if err != nil {
 		responses.WriteErr(w, err)
 		return
@@ -171,12 +165,9 @@ func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
 
 // ChangePassword handles password change
 func (h *Handler) ChangePassword(w http.ResponseWriter, r *http.Request) {
-	var req ChangePasswordRequest
 
 	// Parse and validate request
-	err := validation.ParseAndValidateJSON(r, &req, func(v *validation.Validator) {
-		req.Validate(v)
-	})
+	req, err := validation.ParseAndValidate[*ChangePasswordRequest](r)
 	if err != nil {
 		responses.WriteErr(w, err)
 		return
@@ -204,12 +195,9 @@ func (h *Handler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 
 // RequestPasswordReset handles password reset request
 func (h *Handler) RequestPasswordReset(w http.ResponseWriter, r *http.Request) {
-	var req PasswordResetRequest
 
 	// Parse and validate request
-	err := validation.ParseAndValidateJSON(r, &req, func(v *validation.Validator) {
-		req.Validate(v)
-	})
+	req, err := validation.ParseAndValidate[*PasswordResetRequest](r)
 	if err != nil {
 		responses.WriteErr(w, err)
 		return
@@ -231,12 +219,9 @@ func (h *Handler) RequestPasswordReset(w http.ResponseWriter, r *http.Request) {
 
 // ResetPassword handles password reset confirmation
 func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
-	var req PasswordResetConfirmRequest
 
 	// Parse and validate request
-	err := validation.ParseAndValidateJSON(r, &req, func(v *validation.Validator) {
-		req.Validate(v)
-	})
+	req, err := validation.ParseAndValidate[*PasswordResetConfirmRequest](r)
 	if err != nil {
 		responses.WriteErr(w, err)
 		return

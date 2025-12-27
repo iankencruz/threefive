@@ -258,9 +258,9 @@ func (s *Service) GetBlocksByEntity(ctx context.Context, entityType string, enti
 		galleryMap[gallery.BlockID] = gallery
 	}
 
-	aboutMap := make(map[uuid.UUID]sqlc.BlockFeature)
+	featureMap := make(map[uuid.UUID]sqlc.BlockFeature)
 	for _, about := range aboutBlocks {
-		aboutMap[about.BlockID] = about
+		featureMap[about.BlockID] = about
 	}
 
 	// Assemble response
@@ -323,12 +323,33 @@ func (s *Service) GetBlocksByEntity(ctx context.Context, entityType string, enti
 				}
 			}
 		case TypeFeature:
-			if about, ok := aboutMap[block.ID]; ok {
-				blockResp.Data = FeatureBlockData{
-					Title:       about.Title,
-					Description: about.Description,
-					Heading:     about.Heading,
-					Subheading:  about.Subheading,
+			if feature, ok := featureMap[block.ID]; ok {
+				featureData := FeatureBlockData{
+					Title:       feature.Title,
+					Description: feature.Description,
+					Heading:     feature.Heading,
+					Subheading:  feature.Subheading,
+					ImageID:     nullUUIDToPtr(feature.ImageID),
+				}
+
+				// Fetch the actual media if ImageID exists (same pattern as Hero)
+				if feature.ImageID.Valid {
+					mediaID := uuid.UUID(feature.ImageID.Bytes)
+					media, err := s.queries.GetMediaByID(ctx, mediaID)
+					if err == nil {
+						blockResp.Data = map[string]any{
+							"title":       featureData.Title,
+							"description": featureData.Description,
+							"heading":     featureData.Heading,
+							"subheading":  featureData.Subheading,
+							"image_id":    featureData.ImageID,
+							"media":       media,
+						}
+					} else {
+						blockResp.Data = featureData
+					}
+				} else {
+					blockResp.Data = featureData
 				}
 			}
 		case TypeGallery:
@@ -343,7 +364,7 @@ func (s *Service) GetBlocksByEntity(ctx context.Context, entityType string, enti
 				if err != nil {
 					// Log error but continue with empty media
 					log.Printf("Warning: Failed to fetch media for gallery block %s: %v", gallery.ID, err)
-					blockResp.Data = map[string]interface{}{
+					blockResp.Data = map[string]any{
 						"title": nullTextToPtr(gallery.Title),
 						"media": []sqlc.Media{}, // Empty array instead of nil
 					}
@@ -352,7 +373,7 @@ func (s *Service) GetBlocksByEntity(ctx context.Context, entityType string, enti
 					if media == nil {
 						media = []sqlc.Media{}
 					}
-					blockResp.Data = map[string]interface{}{
+					blockResp.Data = map[string]any{
 						"title": nullTextToPtr(gallery.Title),
 						"media": media,
 					}
@@ -370,7 +391,7 @@ func (s *Service) GetBlocksByEntity(ctx context.Context, entityType string, enti
 // Private Helper Methods - Create
 // ============================================
 
-func (s *Service) createHeroBlock(ctx context.Context, qtx *sqlc.Queries, blockID uuid.UUID, data map[string]interface{}) error {
+func (s *Service) createHeroBlock(ctx context.Context, qtx *sqlc.Queries, blockID uuid.UUID, data map[string]any) error {
 	heroData, err := ParseBlockData(TypeHero, data)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
@@ -394,7 +415,7 @@ func (s *Service) createHeroBlock(ctx context.Context, qtx *sqlc.Queries, blockI
 	return nil
 }
 
-func (s *Service) createRichtextBlock(ctx context.Context, qtx *sqlc.Queries, blockID uuid.UUID, data map[string]interface{}) error {
+func (s *Service) createRichtextBlock(ctx context.Context, qtx *sqlc.Queries, blockID uuid.UUID, data map[string]any) error {
 	richtextData, err := ParseBlockData(TypeRichtext, data)
 	if err != nil {
 		return errors.BadRequest("Invalid richtext block data", "invalid_block_data")
@@ -413,7 +434,7 @@ func (s *Service) createRichtextBlock(ctx context.Context, qtx *sqlc.Queries, bl
 	return nil
 }
 
-func (s *Service) createHeaderBlock(ctx context.Context, qtx *sqlc.Queries, blockID uuid.UUID, data map[string]interface{}) error {
+func (s *Service) createHeaderBlock(ctx context.Context, qtx *sqlc.Queries, blockID uuid.UUID, data map[string]any) error {
 	headerData, err := ParseBlockData(TypeHeader, data)
 	if err != nil {
 		return errors.BadRequest("Invalid header block data", "invalid_block_data")
@@ -434,7 +455,7 @@ func (s *Service) createHeaderBlock(ctx context.Context, qtx *sqlc.Queries, bloc
 	return nil
 }
 
-func (s *Service) createGalleryBlock(ctx context.Context, qtx *sqlc.Queries, blockID uuid.UUID, data map[string]interface{}) error {
+func (s *Service) createGalleryBlock(ctx context.Context, qtx *sqlc.Queries, blockID uuid.UUID, data map[string]any) error {
 	galleryData, err := ParseBlockData(TypeGallery, data)
 	if err != nil {
 		return errors.BadRequest("Invalid gallery block data", "invalid_block_data")
@@ -467,39 +488,26 @@ func (s *Service) createGalleryBlock(ctx context.Context, qtx *sqlc.Queries, blo
 	return nil
 }
 
-func (s *Service) createFeatureBlock(ctx context.Context, qtx *sqlc.Queries, blockID uuid.UUID, data map[string]interface{}) error {
-	aboutData, err := ParseBlockData(TypeFeature, data)
+func (s *Service) createFeatureBlock(ctx context.Context, qtx *sqlc.Queries, blockID uuid.UUID, data map[string]any) error {
+	featureData, err := ParseBlockData(TypeFeature, data)
 	if err != nil {
 		return errors.BadRequest("Invalid about me block data", "invalid_block_data")
 	}
 
-	about := aboutData.(*FeatureBlockData)
+	feature := featureData.(*FeatureBlockData)
 
-	// create about block
+	// create feature block
 	_, err = qtx.CreateFeatureBlock(ctx, sqlc.CreateFeatureBlockParams{
 		BlockID:     blockID,
-		Title:       about.Title,
-		Description: about.Description,
-		Heading:     about.Heading,
-		Subheading:  about.Subheading,
+		Title:       feature.Title,
+		Description: feature.Description,
+		Heading:     feature.Heading,
+		Subheading:  feature.Subheading,
+		ImageID:     uuidToNullUUID(feature.ImageID),
 	})
 	if err != nil {
-		return errors.Internal("Failed to create about me block", err)
+		return errors.Internal("Failed to create Feature block", err)
 	}
-
-	// Link media to about block if any
-	// for i, mediaID := range about.MediaIDs {
-	// 	_, err := qtx.LinkMediaToEntity(ctx, sqlc.LinkMediaToEntityParams{
-	// 		MediaID:    mediaID,
-	// 		EntityType: "block_about",
-	// 		EntityID:   aboutBlock.ID,
-	// 		SortOrder:  pgtype.Int4{Int32: int32(i), Valid: true},
-	// 	})
-	// 	if err != nil {
-	// 		return errors.Internal("Failed to link media to about me block", err)
-	// 	}
-	// }
-
 	return nil
 }
 
@@ -507,7 +515,7 @@ func (s *Service) createFeatureBlock(ctx context.Context, qtx *sqlc.Queries, blo
 // Private Helper Methods - Update
 // ============================================
 
-func (s *Service) updateHeroBlock(ctx context.Context, qtx *sqlc.Queries, blockID uuid.UUID, data map[string]interface{}) error {
+func (s *Service) updateHeroBlock(ctx context.Context, qtx *sqlc.Queries, blockID uuid.UUID, data map[string]any) error {
 	heroData, err := ParseBlockData(TypeHero, data)
 	if err != nil {
 		return errors.BadRequest("Invalid hero block data", "invalid_block_data")
@@ -530,7 +538,7 @@ func (s *Service) updateHeroBlock(ctx context.Context, qtx *sqlc.Queries, blockI
 	return nil
 }
 
-func (s *Service) updateRichtextBlock(ctx context.Context, qtx *sqlc.Queries, blockID uuid.UUID, data map[string]interface{}) error {
+func (s *Service) updateRichtextBlock(ctx context.Context, qtx *sqlc.Queries, blockID uuid.UUID, data map[string]any) error {
 	richtextData, err := ParseBlockData(TypeRichtext, data)
 	if err != nil {
 		return errors.BadRequest("Invalid richtext block data", "invalid_block_data")
@@ -549,7 +557,7 @@ func (s *Service) updateRichtextBlock(ctx context.Context, qtx *sqlc.Queries, bl
 	return nil
 }
 
-func (s *Service) updateHeaderBlock(ctx context.Context, qtx *sqlc.Queries, blockID uuid.UUID, data map[string]interface{}) error {
+func (s *Service) updateHeaderBlock(ctx context.Context, qtx *sqlc.Queries, blockID uuid.UUID, data map[string]any) error {
 	headerData, err := ParseBlockData(TypeHeader, data)
 	if err != nil {
 		return errors.BadRequest("Invalid header block data", "invalid_block_data")
@@ -570,7 +578,7 @@ func (s *Service) updateHeaderBlock(ctx context.Context, qtx *sqlc.Queries, bloc
 	return nil
 }
 
-func (s *Service) updateGalleryBlock(ctx context.Context, qtx *sqlc.Queries, blockID uuid.UUID, data map[string]interface{}) error {
+func (s *Service) updateGalleryBlock(ctx context.Context, qtx *sqlc.Queries, blockID uuid.UUID, data map[string]any) error {
 	galleryData, err := ParseBlockData(TypeGallery, data)
 	if err != nil {
 		return errors.BadRequest("Invalid gallery block data", "invalid_block_data")
@@ -631,19 +639,20 @@ func (s *Service) updateGalleryBlock(ctx context.Context, qtx *sqlc.Queries, blo
 }
 
 // updateFeatureBlock()
-func (s *Service) updateFeatureBlock(ctx context.Context, qtx *sqlc.Queries, blockID uuid.UUID, data map[string]interface{}) error {
-	aboutMeData, err := ParseBlockData(TypeFeature, data)
+func (s *Service) updateFeatureBlock(ctx context.Context, qtx *sqlc.Queries, blockID uuid.UUID, data map[string]any) error {
+	featureData, err := ParseBlockData(TypeFeature, data)
 	if err != nil {
 		return errors.BadRequest("Invalid about me block data", "invalid_block_data")
 	}
 
-	aboutMe := aboutMeData.(*FeatureBlockData)
+	feature := featureData.(*FeatureBlockData)
 	_, err = qtx.UpdateFeatureBlock(ctx, sqlc.UpdateFeatureBlockParams{
 		BlockID:     blockID,
-		Title:       aboutMe.Title,
-		Description: aboutMe.Description,
-		Heading:     aboutMe.Heading,
-		Subheading:  aboutMe.Subheading,
+		Title:       feature.Title,
+		Description: feature.Description,
+		Heading:     feature.Heading,
+		Subheading:  feature.Subheading,
+		ImageID:     uuidToNullUUID(feature.ImageID),
 	})
 	if err != nil {
 		return errors.Internal("Failed to update about me block", err)

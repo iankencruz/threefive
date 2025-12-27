@@ -35,15 +35,12 @@ func NewHandler(db *pgxpool.Pool, queries *sqlc.Queries) *Handler {
 // CreateProject handles project creation
 // POST /api/v1/projects
 func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
-	var req CreateProjectRequest
 
 	// Get current user from context
 	user := auth.MustGetUserFromContext(r.Context())
 
 	// Parse and validate request
-	err := validation.ParseAndValidateJSON(r, &req, func(v *validation.Validator) {
-		req.Validate(v)
-	})
+	req, err := validation.ParseAndValidate[*CreateProjectRequest](r)
 	if err != nil {
 		responses.WriteErr(w, err)
 		return
@@ -218,7 +215,6 @@ func (h *Handler) ListPublishedProjects(w http.ResponseWriter, r *http.Request) 
 // UpdateProject handles updating a project
 // PUT /api/v1/projects/{id}
 func (h *Handler) UpdateProject(w http.ResponseWriter, r *http.Request) {
-	var req UpdateProjectRequest
 
 	// Parse project ID
 	idStr := chi.URLParam(r, "id")
@@ -229,9 +225,7 @@ func (h *Handler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Parse and validate request
-	err = validation.ParseAndValidateJSON(r, &req, func(v *validation.Validator) {
-		req.Validate(v)
-	})
+	req, err := validation.ParseAndValidate[*UpdateProjectRequest](r)
 	if err != nil {
 		responses.WriteErr(w, err)
 		return
@@ -250,7 +244,6 @@ func (h *Handler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 // UpdateProjectStatus handles updating project status
 // PATCH /api/v1/projects/{id}/status
 func (h *Handler) UpdateProjectStatus(w http.ResponseWriter, r *http.Request) {
-	var req UpdateProjectStatusRequest
 
 	// Parse project ID
 	idStr := chi.URLParam(r, "id")
@@ -261,9 +254,7 @@ func (h *Handler) UpdateProjectStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Parse and validate request
-	err = validation.ParseAndValidateJSON(r, &req, func(v *validation.Validator) {
-		req.Validate(v)
-	})
+	req, err := validation.ParseAndValidate[*UpdateProjectStatusRequest](r)
 	if err != nil {
 		responses.WriteErr(w, err)
 		return

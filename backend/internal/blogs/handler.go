@@ -41,12 +41,9 @@ func NewHandler(db *pgxpool.Pool, queries *sqlc.Queries, cfg *config.Config) *Ha
 // CreateBlog handles blog creation
 // POST /api/v1/blogs
 func (h *Handler) CreateBlog(w http.ResponseWriter, r *http.Request) {
-	var req CreateBlogRequest
 
 	// Parse and validate request
-	err := validation.ParseAndValidateJSON(r, &req, func(v *validation.Validator) {
-		req.Validate(v)
-	})
+	req, err := validation.ParseAndValidate[*CreateBlogRequest](r)
 	if err != nil {
 		responses.WriteErr(w, err)
 		return
@@ -259,12 +256,8 @@ func (h *Handler) UpdateBlog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req UpdateBlogRequest
-
 	// Parse and validate request
-	err = validation.ParseAndValidateJSON(r, &req, func(v *validation.Validator) {
-		req.Validate(v)
-	})
+	req, err := validation.ParseAndValidate[*UpdateBlogRequest](r)
 	if err != nil {
 		responses.WriteErr(w, err)
 		return
@@ -291,12 +284,8 @@ func (h *Handler) UpdateBlogStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req UpdateBlogStatusRequest
-
 	// Parse and validate request
-	err = validation.ParseAndValidateJSON(r, &req, func(v *validation.Validator) {
-		req.Validate(v)
-	})
+	req, err := validation.ParseAndValidate[*UpdateBlogStatusRequest](r)
 	if err != nil {
 		responses.WriteErr(w, err)
 		return

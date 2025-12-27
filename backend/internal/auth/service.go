@@ -33,7 +33,7 @@ func NewService(db *pgxpool.Pool, queries *sqlc.Queries, sessionManager *session
 }
 
 // Register creates a new user account
-func (s *Service) Register(ctx context.Context, req RegisterRequest, r *http.Request) (*sqlc.Users, sqlc.Sessions, error) {
+func (s *Service) Register(ctx context.Context, req *RegisterRequest, r *http.Request) (*sqlc.Users, sqlc.Sessions, error) {
 	// Check if user already exists
 	_, err := s.queries.GetUserByEmail(ctx, req.Email)
 	if err == nil {
@@ -70,7 +70,7 @@ func (s *Service) Register(ctx context.Context, req RegisterRequest, r *http.Req
 }
 
 // Login authenticates a user and creates a session
-func (s *Service) Login(ctx context.Context, req LoginRequest, r *http.Request) (*sqlc.Users, sqlc.Sessions, error) {
+func (s *Service) Login(ctx context.Context, req *LoginRequest, r *http.Request) (*sqlc.Users, sqlc.Sessions, error) {
 	// Get user by email
 	user, err := s.queries.GetUserByEmail(ctx, req.Email)
 	if err != nil {
@@ -133,7 +133,7 @@ func (s *Service) GetCurrentUser(ctx context.Context, token string) (sqlc.GetSes
 }
 
 // ChangePassword changes a user's password
-func (s *Service) ChangePassword(ctx context.Context, userID uuid.UUID, req ChangePasswordRequest) error {
+func (s *Service) ChangePassword(ctx context.Context, userID uuid.UUID, req *ChangePasswordRequest) error {
 	// Get current user
 	user, err := s.queries.GetUserByID(ctx, userID)
 	if err != nil {
@@ -171,7 +171,7 @@ func (s *Service) ChangePassword(ctx context.Context, userID uuid.UUID, req Chan
 }
 
 // RequestPasswordReset creates a password reset token
-func (s *Service) RequestPasswordReset(ctx context.Context, req PasswordResetRequest) error {
+func (s *Service) RequestPasswordReset(ctx context.Context, req *PasswordResetRequest) error {
 	// Check if user exists
 	user, err := s.queries.GetUserByEmail(ctx, req.Email)
 	if err != nil {
@@ -208,7 +208,7 @@ func (s *Service) RequestPasswordReset(ctx context.Context, req PasswordResetReq
 }
 
 // ResetPassword resets a user's password using a reset token
-func (s *Service) ResetPassword(ctx context.Context, req PasswordResetConfirmRequest) error {
+func (s *Service) ResetPassword(ctx context.Context, req *PasswordResetConfirmRequest) error {
 	// Get and validate reset token
 	resetToken, err := s.queries.GetPasswordResetToken(ctx, req.Token)
 	if err != nil {

@@ -40,7 +40,7 @@ func NewService(db *pgxpool.Pool, queries *sqlc.Queries, blockService *blocks.Se
 }
 
 // CreateBlog creates a new blog with blocks in a transaction
-func (s *Service) CreateBlog(ctx context.Context, req CreateBlogRequest) (*BlogResponse, error) {
+func (s *Service) CreateBlog(ctx context.Context, req *CreateBlogRequest) (*BlogResponse, error) {
 	// Check slug uniqueness
 	var nilUUID uuid.UUID
 
@@ -255,7 +255,7 @@ func (s *Service) ListPublishedBlogs(ctx context.Context, params ListBlogsParams
 }
 
 // UpdateBlog updates a blog and its related data in a transaction
-func (s *Service) UpdateBlog(ctx context.Context, blogID uuid.UUID, req UpdateBlogRequest) (*BlogResponse, error) {
+func (s *Service) UpdateBlog(ctx context.Context, blogID uuid.UUID, req *UpdateBlogRequest) (*BlogResponse, error) {
 	// Check slug uniqueness if slug is being updated
 	if req.Slug != nil {
 		exists, err := s.queries.CheckBlogSlugExists(ctx, sqlc.CheckBlogSlugExistsParams{

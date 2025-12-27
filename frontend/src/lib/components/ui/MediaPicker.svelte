@@ -1,7 +1,15 @@
 <script lang="ts">
 	import { PUBLIC_API_URL } from '$env/static/public';
 	import { type Media, getMediaUrl } from '$api/media';
-	import { ImageUp, Plus, Loader, Funnel, CircleCheck, CircleAlert } from 'lucide-svelte';
+	import {
+		ImageUp,
+		Plus,
+		Loader,
+		Funnel,
+		CircleCheck,
+		CircleAlert,
+		RefreshCw
+	} from 'lucide-svelte';
 	import Pagination from './Pagination.svelte';
 
 	interface Props {
@@ -36,12 +44,15 @@
 	let sortOrder = $state<string>('desc');
 	let showFilters = $state(false);
 
+	let hasLoadedMedia = $state(false);
+
 	const ACCEPTED_FILE_TYPES = 'image/*,video/*,video/mp4,video/quicktime,.mp4,.mov,.avi,.gif';
 
 	// Load media when modal opens
 	$effect(() => {
-		if (show && media.length === 0) {
+		if (show && !hasLoadedMedia) {
 			loadMedia();
+			hasLoadedMedia = true;
 		}
 	});
 
@@ -86,6 +97,11 @@
 	async function changePage(newPage: number) {
 		if (newPage < 1 || newPage > totalPages) return;
 		currentPage = newPage;
+		await loadMedia();
+	}
+
+	async function refreshMedia() {
+		currentPage = 1;
 		await loadMedia();
 	}
 
@@ -354,6 +370,15 @@
 							placeholder="Search media..."
 							class="form-input grow-0 py-1"
 						/>
+						<!-- Refresh Button -->
+						<button
+							onclick={refreshMedia}
+							disabled={loading}
+							class="rounded-lg px-3 py-2 text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+							title="Refresh media"
+						>
+							<RefreshCw class="h-5 w-5 {loading ? 'animate-spin' : ''}" />
+						</button>
 						<button
 							onclick={() => (showFilters = !showFilters)}
 							class="rounded-lg px-3 py-2 hover:bg-gray-100 {showFilters

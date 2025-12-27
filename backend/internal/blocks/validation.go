@@ -8,6 +8,10 @@ import (
 	"github.com/iankencruz/threefive/internal/shared/validation"
 )
 
+// ============================================
+// Block Request Validation
+// ============================================
+
 // ValidateBlockRequest validates a block request
 func ValidateBlockRequest(v *validation.Validator, block *BlockRequest, fieldPrefix string) {
 	// Type validation
@@ -23,20 +27,31 @@ func ValidateBlockRequest(v *validation.Validator, block *BlockRequest, fieldPre
 	// Type-specific validation
 	switch block.Type {
 	case TypeHero:
-		ValidateHeroBlockData(v, block.Data, fieldPrefix)
+		validateHeroBlockData(v, block.Data, fieldPrefix)
 	case TypeRichtext:
-		ValidateRichtextBlockData(v, block.Data, fieldPrefix)
+		validateRichtextBlockData(v, block.Data, fieldPrefix)
 	case TypeHeader:
-		ValidateHeaderBlockData(v, block.Data, fieldPrefix)
+		validateHeaderBlockData(v, block.Data, fieldPrefix)
 	case TypeGallery:
-		ValidateGalleryBlockData(v, block.Data, fieldPrefix)
+		validateGalleryBlockData(v, block.Data, fieldPrefix)
 	case TypeFeature:
-		ValidateFeatureBlockData(v, block.Data, fieldPrefix)
+		validateFeatureBlockData(v, block.Data, fieldPrefix)
 	}
 }
 
-// ValidateHeroBlockData validates hero block data
-func ValidateHeroBlockData(v *validation.Validator, data map[string]interface{}, fieldPrefix string) {
+// ValidateBlocks validates an array of block requests
+func ValidateBlocks(v *validation.Validator, blocks []BlockRequest) {
+	for i, block := range blocks {
+		fieldPrefix := fmt.Sprintf("blocks[%d]", i)
+		ValidateBlockRequest(v, &block, fieldPrefix)
+	}
+}
+
+// ============================================
+// Block Type-Specific Validation
+// ============================================
+
+func validateHeroBlockData(v *validation.Validator, data map[string]interface{}, fieldPrefix string) {
 	// Title is required
 	title, ok := data["title"].(string)
 	if !ok || title == "" {
@@ -46,7 +61,7 @@ func ValidateHeroBlockData(v *validation.Validator, data map[string]interface{},
 	v.MinLength(fieldPrefix+".data.title", title, 1)
 	v.MaxLength(fieldPrefix+".data.title", title, 200)
 
-	// CTA validation (if both are provided or neither)
+	// CTA validation (both or neither)
 	_, hasCtaText := data["cta_text"].(string)
 	ctaURL, hasCtaURL := data["cta_url"].(string)
 
@@ -63,19 +78,16 @@ func ValidateHeroBlockData(v *validation.Validator, data map[string]interface{},
 	}
 }
 
-// ValidateRichtextBlockData validates richtext block data
-func ValidateRichtextBlockData(v *validation.Validator, data map[string]interface{}, fieldPrefix string) {
+func validateRichtextBlockData(v *validation.Validator, data map[string]interface{}, fieldPrefix string) {
 	content, ok := data["content"].(string)
 	if !ok || content == "" {
 		v.AddError(fieldPrefix+".data.content", "Richtext block content is required")
 		return
 	}
-
 	v.MinLength(fieldPrefix+".data.content", content, 1)
 }
 
-// ValidateHeaderBlockData validates header block data
-func ValidateHeaderBlockData(v *validation.Validator, data map[string]interface{}, fieldPrefix string) {
+func validateHeaderBlockData(v *validation.Validator, data map[string]interface{}, fieldPrefix string) {
 	// Heading is required
 	heading, ok := data["heading"].(string)
 	if !ok || heading == "" {
@@ -91,17 +103,8 @@ func ValidateHeaderBlockData(v *validation.Validator, data map[string]interface{
 	}
 }
 
-// ValidateBlocks validates an array of block requests
-func ValidateBlocks(v *validation.Validator, blocks []BlockRequest) {
-	for i, block := range blocks {
-		fieldPrefix := fmt.Sprintf("blocks[%d]", i)
-		ValidateBlockRequest(v, &block, fieldPrefix)
-	}
-}
-
-// ValidateGalleryBlockData validates gallery block data
-func ValidateGalleryBlockData(v *validation.Validator, data map[string]any, fieldPrefix string) {
-	// Media ID Validation
+func validateGalleryBlockData(v *validation.Validator, data map[string]any, fieldPrefix string) {
+	// Media IDs validation
 	mediaIDs, ok := data["media_ids"].([]any)
 	if !ok {
 		v.AddError(fieldPrefix+".data.media_ids", "Gallery block media_ids must be an array")
@@ -110,26 +113,27 @@ func ValidateGalleryBlockData(v *validation.Validator, data map[string]any, fiel
 
 	if len(mediaIDs) == 0 {
 		v.AddError(fieldPrefix+".data.media_ids", "Gallery block must have at least one media ID")
+		return
 	}
 
 	// Validate each media ID is a valid UUID
 	for i, id := range mediaIDs {
-		if idStr, ok := id.(string); ok {
-			if _, err := uuid.Parse(idStr); err != nil {
-				v.AddError(fmt.Sprintf("%s.data.media_ids[%d]", fieldPrefix, i), "Invalid media ID format")
-			}
-		} else {
+		idStr, ok := id.(string)
+		if !ok {
 			v.AddError(fmt.Sprintf("%s.data.media_ids[%d]", fieldPrefix, i), "Media ID must be a string")
+			continue
+		}
+		if _, err := uuid.Parse(idStr); err != nil {
+			v.AddError(fmt.Sprintf("%s.data.media_ids[%d]", fieldPrefix, i), "Invalid media ID format")
 		}
 	}
 }
 
-// ValidateFeatureBlockData validates about me block data
-func ValidateFeatureBlockData(v *validation.Validator, data map[string]interface{}, fieldPrefix string) {
+func validateFeatureBlockData(v *validation.Validator, data map[string]interface{}, fieldPrefix string) {
 	// Title is required
 	title, ok := data["title"].(string)
 	if !ok || title == "" {
-		v.AddError(fieldPrefix+".data.title", "About Me block title is required")
+		v.AddError(fieldPrefix+".data.title", "Feature block title is required")
 		return
 	}
 	v.MinLength(fieldPrefix+".data.title", title, 1)
@@ -138,7 +142,7 @@ func ValidateFeatureBlockData(v *validation.Validator, data map[string]interface
 	// Description is required
 	description, ok := data["description"].(string)
 	if !ok || description == "" {
-		v.AddError(fieldPrefix+".data.description", "About Me block description is required")
+		v.AddError(fieldPrefix+".data.description", "Feature block description is required")
 		return
 	}
 	v.MinLength(fieldPrefix+".data.description", description, 1)
@@ -147,14 +151,14 @@ func ValidateFeatureBlockData(v *validation.Validator, data map[string]interface
 	// Heading is required
 	heading, ok := data["heading"].(string)
 	if !ok || heading == "" {
-		v.AddError(fieldPrefix+".data.heading", "About Me block heading is required")
+		v.AddError(fieldPrefix+".data.heading", "Feature block heading is required")
 		return
 	}
 	v.MinLength(fieldPrefix+".data.heading", heading, 1)
 	v.MaxLength(fieldPrefix+".data.heading", heading, 200)
 
 	// Subheading is optional
-	if subheading, ok := data["subheading"].(string); ok {
+	if subheading, ok := data["subheading"].(string); ok && subheading != "" {
 		v.MaxLength(fieldPrefix+".data.subheading", subheading, 200)
 	}
 }

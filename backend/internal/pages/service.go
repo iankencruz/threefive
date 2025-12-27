@@ -40,7 +40,7 @@ func NewService(db *pgxpool.Pool, queries *sqlc.Queries, blockService *blocks.Se
 }
 
 // CreatePage creates a new page with blocks in a transaction
-func (s *Service) CreatePage(ctx context.Context, req CreatePageRequest, userID uuid.UUID) (*PageResponse, error) {
+func (s *Service) CreatePage(ctx context.Context, req *CreatePageRequest) (*PageResponse, error) {
 	// Check slug uniqueness - pass nil UUID for new pages
 	var nilUUID uuid.UUID
 
@@ -48,9 +48,13 @@ func (s *Service) CreatePage(ctx context.Context, req CreatePageRequest, userID 
 		Slug:      req.Slug,
 		ExcludeID: nilUUID,
 	})
+
+	// Check slug errors
 	if err != nil {
 		return nil, errors.Internal("Failed to check slug", err)
 	}
+
+	// check slug existence
 	if exists {
 		return nil, errors.Conflict("Slug already exists", "slug_exists")
 	}
@@ -222,7 +226,7 @@ func (s *Service) ListPublishedPages(ctx context.Context, params ListPagesParams
 }
 
 // UpdatePage updates a page and its related data in a transaction
-func (s *Service) UpdatePage(ctx context.Context, pageID uuid.UUID, req UpdatePageRequest) (*PageResponse, error) {
+func (s *Service) UpdatePage(ctx context.Context, pageID uuid.UUID, req *UpdatePageRequest) (*PageResponse, error) {
 	// Check slug uniqueness if slug is being updated
 	if req.Slug != nil {
 		exists, err := s.queries.CheckSlugExists(ctx, sqlc.CheckSlugExistsParams{

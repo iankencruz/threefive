@@ -4,7 +4,7 @@
 	import RichTextBlock from './display/RichTextBlock.svelte';
 	import HeaderBlock from './display/HeaderBlock.svelte';
 	import GalleryBlock from './display/GalleryBlock.svelte';
-	import AboutBlock from './display/AboutBlock.svelte';
+	import FeatureBlock from './display/FeatureBlock.svelte';
 
 	interface Block {
 		id?: string;
@@ -56,8 +56,8 @@
 			<HeaderBlock data={block.data as any} />
 		{:else if block.type === 'gallery'}
 			<GalleryBlock data={block.data as any} />
-		{:else if block.type === 'about'}
-			<AboutBlock data={block.data as any} />
+		{:else if block.type === 'feature'}
+			<FeatureBlock data={block.data as any} />
 		{:else}
 			<!-- Unknown block type -->
 			<div class="border-l-4 border-yellow-400 bg-yellow-50 py-8">

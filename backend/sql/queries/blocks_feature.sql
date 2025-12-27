@@ -10,14 +10,16 @@ INSERT INTO block_feature (
   title,
   description,
   heading,
-  subheading
+  subheading,
+  image_id
 )
 VALUES (
   @block_id, 
   @title,
   @description,
   @heading,
-  @subheading
+  @subheading,
+  @image_id
 )
 returning *;
 
@@ -39,7 +41,8 @@ SET
   title = COALESCE(@title, title),
   description = COALESCE(@description, description),
   heading =  COALESCE(@heading, heading),
-  subheading = COALESCE(@subheading, subheading)
+  subheading = COALESCE(@subheading, subheading),
+  image_id = COALESCE(@image_id, image_id)
 WHERE block_id = @block_id
 RETURNING *;
 
