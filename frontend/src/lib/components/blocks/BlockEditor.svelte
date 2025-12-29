@@ -315,6 +315,7 @@
 							onchange={(data) => updateBlockData(index, data)}
 						/>
 					{:else if block.type === 'feature'}
+						{@const _ = console.log('🟡 BlockEditor passing to FeatureBlockForm:', block.data)}
 						<FeatureBlockForm
 							data={block.data as FeatureBlockData}
 							onchange={(data) => updateBlockData(index, data)}

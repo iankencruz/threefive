@@ -21,6 +21,8 @@ export const load: PageServerLoad = async ({ params, fetch, parent }) => {
 
     const json = await response.json();
 
+    console.log("🟠 Raw page data from API:", json);
+
     return {
       user,
       page: json.data || json,

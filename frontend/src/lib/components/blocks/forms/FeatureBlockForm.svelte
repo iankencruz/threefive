@@ -16,16 +16,14 @@
 		onchange?: (data: FeatureBlockData) => void;
 	}
 
-	let {
-		data = $bindable({
-			title: '',
-			description: '',
-			heading: '',
-			subheading: '',
-			media_ids: []
-		}),
-		onchange
-	}: Props = $props();
+	let { data, onchange }: Props = $props();
+
+	// ADD THIS LOG
+	$effect(() => {
+		console.log('🔴 FeatureBlockForm received data:', data);
+		console.log('🔴 Media array:', data?.media);
+		console.log('🔴 Media IDs:', data?.media_ids);
+	});
 
 	const formConfig: FormConfig = {
 		fields: [

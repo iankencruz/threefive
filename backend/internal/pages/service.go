@@ -267,22 +267,11 @@ func (s *Service) UpdatePage(ctx context.Context, pageID uuid.UUID, req *UpdateP
 
 	// Update blocks if provided
 	if req.Blocks != nil {
-		// Delete existing blocks
-		if err := qtx.DeleteBlocksByEntity(ctx, sqlc.DeleteBlocksByEntityParams{
-			EntityType: "page",
-			EntityID:   pageID,
-		}); err != nil {
-			return nil, errors.Internal("Failed to delete existing blocks", err)
-		}
-
-		// Create new blocks
-		if len(*req.Blocks) > 0 {
-			if err := s.blockService.CreateBlocks(ctx, qtx, "page", pageID, *req.Blocks); err != nil {
-				return nil, err
-			}
+		// Use UpdateBlocks instead of deleting and recreating
+		if err := s.blockService.UpdateBlocks(ctx, qtx, "page", pageID, *req.Blocks); err != nil {
+			return nil, err
 		}
 	}
-
 	// Update SEO if provided
 	if req.SEO != nil {
 		if err := seo.Upsert(ctx, qtx, "page", page.ID, req.SEO); err != nil {

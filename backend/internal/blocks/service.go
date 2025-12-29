@@ -70,14 +70,19 @@ func (s *Service) CreateBlocks(ctx context.Context, qtx *sqlc.Queries, entityTyp
 
 // UpdateBlocks updates blocks for a page in a transaction
 func (s *Service) UpdateBlocks(ctx context.Context, qtx *sqlc.Queries, entityType string, entityID uuid.UUID, blocks []BlockRequest) error {
-	// Get existing blocks to determine what to update/delete/create
-	// existingBlocks, err := qtx.GetBlocksByPageID(ctx, pageID)
+	log.Printf("🔍 UpdateBlocks called with %d blocks", len(blocks))
+
 	existingBlocks, err := qtx.GetBlocksByEntity(ctx, sqlc.GetBlocksByEntityParams{
 		EntityType: entityType,
 		EntityID:   entityID,
 	})
 	if err != nil {
 		return errors.Internal("Failed to get existing blocks", err)
+	}
+
+	log.Printf("🔍 Found %d existing blocks in database", len(existingBlocks))
+	for i, eb := range existingBlocks {
+		log.Printf("   DB Block %d: ID=%s, Type=%s", i, eb.ID, eb.Type)
 	}
 
 	// Create a map of existing block IDs
@@ -91,7 +96,10 @@ func (s *Service) UpdateBlocks(ctx context.Context, qtx *sqlc.Queries, entityTyp
 
 	// Process each block in the request
 	for i, block := range blocks {
+		log.Printf("🔍 Processing request block %d: Type=%s, ID=%v", i, block.Type, block.ID)
 		if block.ID != nil {
+			log.Printf("   Block has ID: %s", *block.ID)
+			log.Printf("   Does it exist in DB? %v", existingBlockMap[*block.ID])
 			// Update existing block
 			updatedBlockIDs[*block.ID] = true
 
@@ -139,6 +147,8 @@ func (s *Service) UpdateBlocks(ctx context.Context, qtx *sqlc.Queries, entityTyp
 				return errors.Internal("Failed to create block", err)
 			}
 
+			log.Printf("   ✅ Created new block with ID: %s", newBlock.ID)
+
 			// Create type-specific block data
 			switch block.Type {
 			case TypeHero:
@@ -155,6 +165,10 @@ func (s *Service) UpdateBlocks(ctx context.Context, qtx *sqlc.Queries, entityTyp
 				}
 			case TypeGallery:
 				if err := s.createGalleryBlock(ctx, qtx, newBlock.ID, block.Data); err != nil {
+					return err
+				}
+			case TypeFeature:
+				if err := s.createFeatureBlock(ctx, qtx, newBlock.ID, block.Data); err != nil {
 					return err
 				}
 			default:
@@ -324,33 +338,44 @@ func (s *Service) GetBlocksByEntity(ctx context.Context, entityType string, enti
 			}
 		case TypeFeature:
 			if feature, ok := featureMap[block.ID]; ok {
+				log.Printf("🟢 GetBlocksByEntity - Feature block: id=%s, block_id=%s", feature.ID, feature.BlockID)
+
 				// Fetch media for this feature block
 				media, err := s.queries.GetMediaForEntity(ctx, sqlc.GetMediaForEntityParams{
 					EntityType: "block_feature",
 					EntityID:   feature.ID,
 				})
 
+				log.Printf("🟢 GetMediaForEntity result: count=%d, err=%v", len(media), err)
+
 				// Always set data structure, even if media fetch fails or is empty
 				if err != nil {
-					// Log error but continue with empty media
-					log.Printf("Warning: Failed to fetch media for feature block %s: %v", feature.ID, err)
+					log.Printf("❌ Failed to fetch media: %v", err)
 					blockResp.Data = map[string]any{
 						"title":       feature.Title,
 						"description": feature.Description,
 						"heading":     feature.Heading,
 						"subheading":  feature.Subheading,
-						"media":       []sqlc.Media{}, // Empty array instead of nil
+						"media_ids":   []string{}, // ✅ ADD THIS
+						"media":       []sqlc.Media{},
 					}
 				} else {
-					// Ensure media is never nil
 					if media == nil {
 						media = []sqlc.Media{}
 					}
+
+					// ✅ Extract media IDs from media array
+					mediaIDs := make([]string, len(media))
+					for i, m := range media {
+						mediaIDs[i] = m.ID.String()
+					}
+
 					blockResp.Data = map[string]any{
 						"title":       feature.Title,
 						"description": feature.Description,
 						"heading":     feature.Heading,
 						"subheading":  feature.Subheading,
+						"media_ids":   mediaIDs, // ✅ ADD THIS
 						"media":       media,
 					}
 				}
@@ -656,19 +681,26 @@ func (s *Service) updateGalleryBlock(ctx context.Context, qtx *sqlc.Queries, blo
 
 // updateFeatureBlock()
 func (s *Service) updateFeatureBlock(ctx context.Context, qtx *sqlc.Queries, blockID uuid.UUID, data map[string]any) error {
+	log.Printf("🔵 updateFeatureBlock called for block_id: %s", blockID)
+
 	featureData, err := ParseBlockData(TypeFeature, data)
 	if err != nil {
-		return errors.BadRequest("Invalid about me block data", "invalid_block_data")
+		return errors.BadRequest("Invalid feature block data", "invalid_block_data")
 	}
 
 	feature := featureData.(*FeatureBlockData)
+	log.Printf("🔵 Parsed MediaIDs: %v", feature.MediaIDs)
 
 	// Get existing feature block
 	existingFeature, err := qtx.GetFeatureBlockByBlockID(ctx, blockID)
 	if err != nil {
+		log.Printf("❌ Failed to get feature block: %v", err)
 		return errors.Internal("Failed to get feature block", err)
 	}
 
+	log.Printf("🔵 Found existing feature block: id=%s, block_id=%s", existingFeature.ID, existingFeature.BlockID)
+
+	// Update feature block
 	_, err = qtx.UpdateFeatureBlock(ctx, sqlc.UpdateFeatureBlockParams{
 		BlockID:     blockID,
 		Title:       feature.Title,
@@ -677,31 +709,41 @@ func (s *Service) updateFeatureBlock(ctx context.Context, qtx *sqlc.Queries, blo
 		Subheading:  feature.Subheading,
 	})
 	if err != nil {
-		return errors.Internal("Failed to update about me block", err)
+		log.Printf("❌ Failed to update feature block: %v", err)
+		return errors.Internal("Failed to update feature block", err)
 	}
+	log.Printf("✅ Updated feature block fields")
+
 	// Update media links - remove old ones
 	existingMedia, err := qtx.GetMediaForEntity(ctx, sqlc.GetMediaForEntityParams{
 		EntityType: "block_feature",
 		EntityID:   existingFeature.ID,
 	})
 	if err != nil {
+		log.Printf("❌ Failed to get existing media: %v", err)
 		return errors.Internal("Failed to get existing media", err)
 	}
 
+	log.Printf("🔵 Found %d existing media relations", len(existingMedia))
+
 	// Unlink all existing media
 	for _, media := range existingMedia {
+		log.Printf("🗑️  Unlinking media: %s", media.ID)
 		err := qtx.UnlinkMediaFromEntity(ctx, sqlc.UnlinkMediaFromEntityParams{
 			MediaID:    media.ID,
 			EntityType: "block_feature",
 			EntityID:   existingFeature.ID,
 		})
 		if err != nil {
+			log.Printf("❌ Failed to unlink media %s: %v", media.ID, err)
 			return errors.Internal("Failed to unlink media", err)
 		}
 	}
+	log.Printf("✅ Unlinked %d media items", len(existingMedia))
 
 	// Link new media
 	for i, mediaID := range feature.MediaIDs {
+		log.Printf("🔗 Linking media: %s (order: %d)", mediaID, i)
 		_, err := qtx.LinkMediaToEntity(ctx, sqlc.LinkMediaToEntityParams{
 			MediaID:    mediaID,
 			EntityType: "block_feature",
@@ -709,9 +751,11 @@ func (s *Service) updateFeatureBlock(ctx context.Context, qtx *sqlc.Queries, blo
 			SortOrder:  pgtype.Int4{Int32: int32(i), Valid: true},
 		})
 		if err != nil {
+			log.Printf("❌ Failed to link media %s: %v", mediaID, err)
 			return errors.Internal("Failed to link media to feature block", err)
 		}
 	}
+	log.Printf("✅ Successfully linked %d new media items", len(feature.MediaIDs))
 
 	return nil
 }
