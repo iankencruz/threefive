@@ -4,11 +4,11 @@
 
 	export interface FeatureBlockData {
 		title: string;
-		description?: string;
-		heading?: string;
-		subheading?: string;
-		image_id?: string | null;
-		media?: Media;
+		description: string;
+		heading: string;
+		subheading: string;
+		media_ids?: string[];
+		media?: Media[];
 	}
 
 	interface Props {
@@ -22,7 +22,7 @@
 			description: '',
 			heading: '',
 			subheading: '',
-			image_id: null
+			media_ids: []
 		}),
 		onchange
 	}: Props = $props();
@@ -33,39 +33,56 @@
 				name: 'title',
 				label: 'Title',
 				type: 'text',
-				required: true
+				required: true,
+				colSpan: 12
 			},
 			{
 				name: 'description',
 				label: 'Description',
-				type: 'textarea'
+				type: 'textarea',
+				required: true,
+				colSpan: 12
 			},
 			{
 				name: 'heading',
 				label: 'Heading',
-				type: 'text'
+				type: 'text',
+				required: true,
+				colSpan: 12
 			},
 			{
 				name: 'subheading',
 				label: 'Subheading',
-				type: 'text'
+				type: 'text',
+				colSpan: 12
 			},
 			{
-				name: 'image_id',
+				name: 'media_ids',
 				type: 'media',
-				label: 'Featured Image',
-				colSpan: 12
+				label: 'Feature Images',
+				colSpan: 12,
+				multiple: true, // NEW: Enable multi-select
+				required: true
 			}
 		]
 	};
 
-	// Build initialMediaCache from data.media
+	// Build initialMediaCache from data.media array
 	const initialMediaCache = $derived<Record<string, Media>>(
-		data?.media && data.image_id ? { [data.image_id]: data.media } : {}
+		data?.media?.reduce(
+			(acc, media) => {
+				acc[media.id] = media;
+				return acc;
+			},
+			{} as Record<string, Media>
+		) || {}
 	);
 
 	const handleChange = (updatedData: Record<string, any>) => {
-		data = updatedData as FeatureBlockData;
+		data = {
+			...updatedData,
+			media: updatedData.media_ids?.map((id: string) => initialMediaCache[id]).filter(Boolean) || []
+		} as FeatureBlockData;
 		onchange?.(data);
 	};
 </script>

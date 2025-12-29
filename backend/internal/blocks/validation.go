@@ -129,7 +129,7 @@ func validateGalleryBlockData(v *validation.Validator, data map[string]any, fiel
 	}
 }
 
-func validateFeatureBlockData(v *validation.Validator, data map[string]interface{}, fieldPrefix string) {
+func validateFeatureBlockData(v *validation.Validator, data map[string]any, fieldPrefix string) {
 	// Title is required
 	title, ok := data["title"].(string)
 	if !ok || title == "" {
@@ -160,5 +160,29 @@ func validateFeatureBlockData(v *validation.Validator, data map[string]interface
 	// Subheading is optional
 	if subheading, ok := data["subheading"].(string); ok && subheading != "" {
 		v.MaxLength(fieldPrefix+".data.subheading", subheading, 200)
+	}
+
+	// Media IDs validation
+	mediaIDs, ok := data["media_ids"].([]any)
+	if !ok {
+		v.AddError(fieldPrefix+".data.media_ids", "Feature block media_ids must be an array")
+		return
+	}
+
+	if len(mediaIDs) == 0 {
+		v.AddError(fieldPrefix+".data.media_ids", "Feature block must have at least one media ID")
+		return
+	}
+
+	// Validate each media ID is a valid UUID
+	for i, id := range mediaIDs {
+		idStr, ok := id.(string)
+		if !ok {
+			v.AddError(fmt.Sprintf("%s.data.media_ids[%d]", fieldPrefix, i), "Media ID must be a string")
+			continue
+		}
+		if _, err := uuid.Parse(idStr); err != nil {
+			v.AddError(fmt.Sprintf("%s.data.media_ids[%d]", fieldPrefix, i), "Invalid media ID format")
+		}
 	}
 }

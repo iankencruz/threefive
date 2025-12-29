@@ -324,32 +324,35 @@ func (s *Service) GetBlocksByEntity(ctx context.Context, entityType string, enti
 			}
 		case TypeFeature:
 			if feature, ok := featureMap[block.ID]; ok {
-				featureData := FeatureBlockData{
-					Title:       feature.Title,
-					Description: feature.Description,
-					Heading:     feature.Heading,
-					Subheading:  feature.Subheading,
-					ImageID:     nullUUIDToPtr(feature.ImageID),
-				}
+				// Fetch media for this feature block
+				media, err := s.queries.GetMediaForEntity(ctx, sqlc.GetMediaForEntityParams{
+					EntityType: "block_feature",
+					EntityID:   feature.ID,
+				})
 
-				// Fetch the actual media if ImageID exists (same pattern as Hero)
-				if feature.ImageID.Valid {
-					mediaID := uuid.UUID(feature.ImageID.Bytes)
-					media, err := s.queries.GetMediaByID(ctx, mediaID)
-					if err == nil {
-						blockResp.Data = map[string]any{
-							"title":       featureData.Title,
-							"description": featureData.Description,
-							"heading":     featureData.Heading,
-							"subheading":  featureData.Subheading,
-							"image_id":    featureData.ImageID,
-							"media":       media,
-						}
-					} else {
-						blockResp.Data = featureData
+				// Always set data structure, even if media fetch fails or is empty
+				if err != nil {
+					// Log error but continue with empty media
+					log.Printf("Warning: Failed to fetch media for feature block %s: %v", feature.ID, err)
+					blockResp.Data = map[string]any{
+						"title":       feature.Title,
+						"description": feature.Description,
+						"heading":     feature.Heading,
+						"subheading":  feature.Subheading,
+						"media":       []sqlc.Media{}, // Empty array instead of nil
 					}
 				} else {
-					blockResp.Data = featureData
+					// Ensure media is never nil
+					if media == nil {
+						media = []sqlc.Media{}
+					}
+					blockResp.Data = map[string]any{
+						"title":       feature.Title,
+						"description": feature.Description,
+						"heading":     feature.Heading,
+						"subheading":  feature.Subheading,
+						"media":       media,
+					}
 				}
 			}
 		case TypeGallery:
@@ -497,17 +500,30 @@ func (s *Service) createFeatureBlock(ctx context.Context, qtx *sqlc.Queries, blo
 	feature := featureData.(*FeatureBlockData)
 
 	// create feature block
-	_, err = qtx.CreateFeatureBlock(ctx, sqlc.CreateFeatureBlockParams{
+	featureBlock, err := qtx.CreateFeatureBlock(ctx, sqlc.CreateFeatureBlockParams{
 		BlockID:     blockID,
 		Title:       feature.Title,
 		Description: feature.Description,
 		Heading:     feature.Heading,
 		Subheading:  feature.Subheading,
-		ImageID:     uuidToNullUUID(feature.ImageID),
 	})
 	if err != nil {
 		return errors.Internal("Failed to create Feature block", err)
 	}
+
+	// Link media to feature block
+	for i, mediaID := range feature.MediaIDs {
+		_, err := qtx.LinkMediaToEntity(ctx, sqlc.LinkMediaToEntityParams{
+			MediaID:    mediaID,
+			EntityType: "block_feature",
+			EntityID:   featureBlock.ID,
+			SortOrder:  pgtype.Int4{Int32: int32(i), Valid: true},
+		})
+		if err != nil {
+			return errors.Internal("Failed to link media to feature block", err)
+		}
+	}
+
 	return nil
 }
 
@@ -646,17 +662,57 @@ func (s *Service) updateFeatureBlock(ctx context.Context, qtx *sqlc.Queries, blo
 	}
 
 	feature := featureData.(*FeatureBlockData)
+
+	// Get existing feature block
+	existingFeature, err := qtx.GetFeatureBlockByBlockID(ctx, blockID)
+	if err != nil {
+		return errors.Internal("Failed to get feature block", err)
+	}
+
 	_, err = qtx.UpdateFeatureBlock(ctx, sqlc.UpdateFeatureBlockParams{
 		BlockID:     blockID,
 		Title:       feature.Title,
 		Description: feature.Description,
 		Heading:     feature.Heading,
 		Subheading:  feature.Subheading,
-		ImageID:     uuidToNullUUID(feature.ImageID),
 	})
 	if err != nil {
 		return errors.Internal("Failed to update about me block", err)
 	}
+	// Update media links - remove old ones
+	existingMedia, err := qtx.GetMediaForEntity(ctx, sqlc.GetMediaForEntityParams{
+		EntityType: "block_feature",
+		EntityID:   existingFeature.ID,
+	})
+	if err != nil {
+		return errors.Internal("Failed to get existing media", err)
+	}
+
+	// Unlink all existing media
+	for _, media := range existingMedia {
+		err := qtx.UnlinkMediaFromEntity(ctx, sqlc.UnlinkMediaFromEntityParams{
+			MediaID:    media.ID,
+			EntityType: "block_feature",
+			EntityID:   existingFeature.ID,
+		})
+		if err != nil {
+			return errors.Internal("Failed to unlink media", err)
+		}
+	}
+
+	// Link new media
+	for i, mediaID := range feature.MediaIDs {
+		_, err := qtx.LinkMediaToEntity(ctx, sqlc.LinkMediaToEntityParams{
+			MediaID:    mediaID,
+			EntityType: "block_feature",
+			EntityID:   existingFeature.ID,
+			SortOrder:  pgtype.Int4{Int32: int32(i), Valid: true},
+		})
+		if err != nil {
+			return errors.Internal("Failed to link media to feature block", err)
+		}
+	}
+
 	return nil
 }
 

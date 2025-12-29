@@ -93,7 +93,7 @@
 			toast.success('Page updated successfully!');
 
 			// Redirect to pages list
-			goto('/admin/pages');
+			goto(`/admin/pages/${data.page.id}/edit`);
 		} catch (error) {
 			console.error('Error updating page:', error);
 			toast.error('An unexpected error occurred');

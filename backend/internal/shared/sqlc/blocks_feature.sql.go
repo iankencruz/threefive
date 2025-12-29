@@ -9,7 +9,6 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createFeatureBlock = `-- name: CreateFeatureBlock :one
@@ -20,30 +19,27 @@ INSERT INTO block_feature (
   title,
   description,
   heading,
-  subheading,
-  image_id
+  subheading
 )
 VALUES (
   $1, 
   $2,
   $3,
   $4,
-  $5,
-  $6
+  $5
 )
-returning id, block_id, title, description, heading, subheading, image_id
+RETURNING id, block_id, title, description, heading, subheading
 `
 
 type CreateFeatureBlockParams struct {
-	BlockID     uuid.UUID   `json:"block_id"`
-	Title       string      `json:"title"`
-	Description string      `json:"description"`
-	Heading     string      `json:"heading"`
-	Subheading  string      `json:"subheading"`
-	ImageID     pgtype.UUID `json:"image_id"`
+	BlockID     uuid.UUID `json:"block_id"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	Heading     string    `json:"heading"`
+	Subheading  string    `json:"subheading"`
 }
 
-// backend/sql/queries/blocks_about.sql
+// backend/sql/queries/blocks_feature.sql
 // ============================================
 // Feature Block Queries
 // ============================================
@@ -54,7 +50,6 @@ func (q *Queries) CreateFeatureBlock(ctx context.Context, arg CreateFeatureBlock
 		arg.Description,
 		arg.Heading,
 		arg.Subheading,
-		arg.ImageID,
 	)
 	var i BlockFeature
 	err := row.Scan(
@@ -64,7 +59,6 @@ func (q *Queries) CreateFeatureBlock(ctx context.Context, arg CreateFeatureBlock
 		&i.Description,
 		&i.Heading,
 		&i.Subheading,
-		&i.ImageID,
 	)
 	return i, err
 }
@@ -79,7 +73,7 @@ func (q *Queries) DeleteFeatureBlock(ctx context.Context, blockID uuid.UUID) err
 }
 
 const getFeatureBlockByBlockID = `-- name: GetFeatureBlockByBlockID :one
-SELECT id, block_id, title, description, heading, subheading, image_id FROM block_feature
+SELECT id, block_id, title, description, heading, subheading FROM block_feature
 WHERE block_id = $1
 `
 
@@ -93,13 +87,12 @@ func (q *Queries) GetFeatureBlockByBlockID(ctx context.Context, blockID uuid.UUI
 		&i.Description,
 		&i.Heading,
 		&i.Subheading,
-		&i.ImageID,
 	)
 	return i, err
 }
 
 const getFeatureBlocksByEntity = `-- name: GetFeatureBlocksByEntity :many
-SELECT bf.id, bf.block_id, bf.title, bf.description, bf.heading, bf.subheading, bf.image_id
+SELECT bf.id, bf.block_id, bf.title, bf.description, bf.heading, bf.subheading
 FROM block_feature bf
 INNER JOIN blocks b ON b.id = bf.block_id
 WHERE b.entity_type = $1 AND b.entity_id = $2
@@ -127,7 +120,6 @@ func (q *Queries) GetFeatureBlocksByEntity(ctx context.Context, arg GetFeatureBl
 			&i.Description,
 			&i.Heading,
 			&i.Subheading,
-			&i.ImageID,
 		); err != nil {
 			return nil, err
 		}
@@ -144,20 +136,18 @@ UPDATE block_feature
 SET 
   title = COALESCE($1, title),
   description = COALESCE($2, description),
-  heading =  COALESCE($3, heading),
-  subheading = COALESCE($4, subheading),
-  image_id = COALESCE($5, image_id)
-WHERE block_id = $6
-RETURNING id, block_id, title, description, heading, subheading, image_id
+  heading = COALESCE($3, heading),
+  subheading = COALESCE($4, subheading)
+WHERE block_id = $5
+RETURNING id, block_id, title, description, heading, subheading
 `
 
 type UpdateFeatureBlockParams struct {
-	Title       string      `json:"title"`
-	Description string      `json:"description"`
-	Heading     string      `json:"heading"`
-	Subheading  string      `json:"subheading"`
-	ImageID     pgtype.UUID `json:"image_id"`
-	BlockID     uuid.UUID   `json:"block_id"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	Heading     string    `json:"heading"`
+	Subheading  string    `json:"subheading"`
+	BlockID     uuid.UUID `json:"block_id"`
 }
 
 func (q *Queries) UpdateFeatureBlock(ctx context.Context, arg UpdateFeatureBlockParams) (BlockFeature, error) {
@@ -166,7 +156,6 @@ func (q *Queries) UpdateFeatureBlock(ctx context.Context, arg UpdateFeatureBlock
 		arg.Description,
 		arg.Heading,
 		arg.Subheading,
-		arg.ImageID,
 		arg.BlockID,
 	)
 	var i BlockFeature
@@ -177,7 +166,6 @@ func (q *Queries) UpdateFeatureBlock(ctx context.Context, arg UpdateFeatureBlock
 		&i.Description,
 		&i.Heading,
 		&i.Subheading,
-		&i.ImageID,
 	)
 	return i, err
 }

@@ -35,7 +35,7 @@ type Querier interface {
 	// Blogs Queries
 	// ============================================
 	CreateBlog(ctx context.Context, arg CreateBlogParams) (Blogs, error)
-	// backend/sql/queries/blocks_about.sql
+	// backend/sql/queries/blocks_feature.sql
 	// ============================================
 	// Feature Block Queries
 	// ============================================

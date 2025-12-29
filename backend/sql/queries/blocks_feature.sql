@@ -1,4 +1,4 @@
--- backend/sql/queries/blocks_about.sql
+-- backend/sql/queries/blocks_feature.sql
 
 -- ============================================
 -- Feature Block Queries
@@ -10,18 +10,16 @@ INSERT INTO block_feature (
   title,
   description,
   heading,
-  subheading,
-  image_id
+  subheading
 )
 VALUES (
   @block_id, 
   @title,
   @description,
   @heading,
-  @subheading,
-  @image_id
+  @subheading
 )
-returning *;
+RETURNING *;
 
 
 -- name: GetFeatureBlockByBlockID :one
@@ -40,9 +38,8 @@ UPDATE block_feature
 SET 
   title = COALESCE(@title, title),
   description = COALESCE(@description, description),
-  heading =  COALESCE(@heading, heading),
-  subheading = COALESCE(@subheading, subheading),
-  image_id = COALESCE(@image_id, image_id)
+  heading = COALESCE(@heading, heading),
+  subheading = COALESCE(@subheading, subheading)
 WHERE block_id = @block_id
 RETURNING *;
 

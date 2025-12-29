@@ -31,6 +31,7 @@
 		helperText?: string;
 		rows?: number;
 		inputClass?: string;
+		multiple?: boolean;
 	}
 
 	export interface FormConfig {
@@ -73,7 +74,8 @@
 			(acc, field) => {
 				// Different defaults based on field type
 				if (field.type === 'media') {
-					acc[field.name] = field.value ?? null;
+					// Support both single and multiple media
+					acc[field.name] = field.multiple ? [] : (field.value ?? null);
 				} else if (field.type === 'checkbox') {
 					acc[field.name] = field.value ?? false;
 				} else {
@@ -115,11 +117,20 @@
 		config.fields.forEach((field) => {
 			if (field.type !== 'media') return;
 
-			const mediaId = formData[field.name];
-
-			// This check now works! If media is in cache, no API call
-			if (mediaId && typeof mediaId === 'string' && !selectedMediaCache.has(mediaId)) {
-				loadMediaInfo(mediaId);
+			if (field.multiple) {
+				// Handle array of media IDs
+				const mediaIds = formData[field.name] || [];
+				mediaIds.forEach((mediaId: string) => {
+					if (mediaId && typeof mediaId === 'string' && !selectedMediaCache.has(mediaId)) {
+						loadMediaInfo(mediaId);
+					}
+				});
+			} else {
+				// Handle single media ID
+				const mediaId = formData[field.name];
+				if (mediaId && typeof mediaId === 'string' && !selectedMediaCache.has(mediaId)) {
+					loadMediaInfo(mediaId);
+				}
 			}
 		});
 	});
@@ -148,13 +159,39 @@
 
 	function handleMediaSelect(mediaId: string, media: Media) {
 		if (currentMediaField) {
-			formData[currentMediaField] = mediaId;
+			const field = config.fields.find((f) => f.name === currentMediaField);
+
+			if (field?.multiple) {
+				// Multi-select: add to array
+				const currentMedia = formData[currentMediaField] || [];
+				const exists = currentMedia.some((id: string) => id === mediaId);
+
+				if (!exists) {
+					formData[currentMediaField] = [...currentMedia, mediaId];
+				}
+			} else {
+				// Single select: replace
+				formData[currentMediaField] = mediaId;
+			}
+
 			const newCache = new Map(selectedMediaCache);
 			newCache.set(mediaId, media);
 			selectedMediaCache = newCache;
 			currentMediaField = '';
 		}
 		closeMediaPicker();
+	}
+
+	function removeMediaFromArray(fieldName: string, mediaId: string) {
+		const mediaIds = formData[fieldName] || [];
+		formData[fieldName] = mediaIds.filter((id: string) => id !== mediaId);
+	}
+
+	function moveMediaInArray(fieldName: string, fromIndex: number, toIndex: number) {
+		const mediaIds = [...(formData[fieldName] || [])];
+		const [removed] = mediaIds.splice(fromIndex, 1);
+		mediaIds.splice(toIndex, 0, removed);
+		formData[fieldName] = mediaIds;
 	}
 
 	function clearMedia(fieldName: string) {
@@ -370,9 +407,129 @@
 	/>
 {/snippet}
 
+{#snippet multiMediaFieldInput(field: FormField)}
+	{@const mediaIds = formData[field.name] || []}
+	{@const mediaList = mediaIds.map((id: string) => selectedMediaCache.get(id)).filter(Boolean)}
+
+	<div class="space-y-2">
+		{#if field.label}
+			<label class="block text-sm font-medium">
+				{field.label}
+				{#if field.required}
+					<span class="text-red-500">*</span>
+				{/if}
+			</label>
+		{/if}
+
+		{#if mediaList.length > 0}
+			<div class="space-y-2">
+				{#each mediaList as media, index}
+					{@const mediaId = mediaIds[index]}
+					<div class="flex items-center gap-3 rounded-lg border border-gray-300 bg-gray-50 p-3">
+						<img
+							src={media.thumbnail_url || media.url}
+							alt={media.original_filename}
+							class="h-16 w-16 rounded object-cover"
+						/>
+						<div class="flex-1">
+							<p class="text-sm font-medium text-gray-900">{media.original_filename}</p>
+							<p class="text-xs text-gray-500">{media.mime_type}</p>
+						</div>
+						<div class="flex items-center gap-1">
+							<button
+								type="button"
+								onclick={() => moveMediaInArray(field.name, index, index - 1)}
+								disabled={index === 0}
+								class="rounded p-1 text-gray-600 hover:bg-gray-200 disabled:opacity-30"
+								title="Move up"
+							>
+								<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M5 15l7-7 7 7"
+									/>
+								</svg>
+							</button>
+							<button
+								type="button"
+								onclick={() => moveMediaInArray(field.name, index, index + 1)}
+								disabled={index === mediaList.length - 1}
+								class="rounded p-1 text-gray-600 hover:bg-gray-200 disabled:opacity-30"
+								title="Move down"
+							>
+								<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M19 9l-7 7-7-7"
+									/>
+								</svg>
+							</button>
+							<button
+								type="button"
+								onclick={() => removeMediaFromArray(field.name, mediaId)}
+								class="rounded p-1 text-red-600 hover:bg-red-100"
+								title="Remove"
+							>
+								<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M6 18L18 6M6 6l12 12"
+									/>
+								</svg>
+							</button>
+						</div>
+					</div>
+				{/each}
+			</div>
+
+			<button
+				type="button"
+				onclick={() => openMediaPicker(field.name)}
+				class="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 p-4 text-gray-600 transition-colors hover:border-gray-400 hover:text-gray-700"
+			>
+				<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M12 4v16m8-8H4"
+					/>
+				</svg>
+				<span class="text-sm font-medium">Add More Images</span>
+			</button>
+		{:else}
+			<button
+				type="button"
+				onclick={() => openMediaPicker(field.name)}
+				class="w-full rounded-lg border-2 border-dashed border-gray-300 p-6 text-center transition-colors hover:border-gray-400"
+			>
+				<ImageUp class="mx-auto mb-2 h-12 w-12 text-gray-400" />
+				<p class="text-sm text-gray-600">Click to select media</p>
+				<p class="mt-1 text-xs text-gray-400">
+					{field.required ? 'At least one file is required' : 'Optional'}
+				</p>
+			</button>
+		{/if}
+
+		{#if errors[field.name]}
+			<p class="text-sm text-red-600">{errors[field.name]}</p>
+		{/if}
+	</div>
+{/snippet}
+
 {#snippet renderField(field: FormField)}
 	{#if field.type === 'media'}
-		{@render mediaFieldInput(field)}
+		{#if field.multiple}
+			{@render multiMediaFieldInput(field)}
+		{:else}
+			{@render mediaFieldInput(field)}
+		{/if}
 	{:else if field.type === 'checkbox'}
 		{@render checkboxFieldInput(field)}
 	{:else}
