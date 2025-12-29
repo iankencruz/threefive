@@ -1,9 +1,9 @@
 <script lang="ts">
-	import DynamicForm, { type FormConfig } from '$components/ui/DynamicForm.svelte';
 	import type { ErrorResponse } from '$types/auth';
 	import { authApi } from '$api/auth';
 	import { authStore } from '$stores/auth.svelte';
 	import { goto } from '$app/navigation';
+	import DynamicForm from '$components/ui/form/DynamicForm.svelte';
 
 	interface FormData {
 		first_name: string;

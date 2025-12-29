@@ -356,7 +356,7 @@ func (s *Service) GetBlocksByEntity(ctx context.Context, entityType string, enti
 						"description": feature.Description,
 						"heading":     feature.Heading,
 						"subheading":  feature.Subheading,
-						"media_ids":   []string{}, // ✅ ADD THIS
+						"media_ids":   []string{},
 						"media":       []sqlc.Media{},
 					}
 				} else {
@@ -375,7 +375,7 @@ func (s *Service) GetBlocksByEntity(ctx context.Context, entityType string, enti
 						"description": feature.Description,
 						"heading":     feature.Heading,
 						"subheading":  feature.Subheading,
-						"media_ids":   mediaIDs, // ✅ ADD THIS
+						"media_ids":   mediaIDs,
 						"media":       media,
 					}
 				}
@@ -393,17 +393,26 @@ func (s *Service) GetBlocksByEntity(ctx context.Context, entityType string, enti
 					// Log error but continue with empty media
 					log.Printf("Warning: Failed to fetch media for gallery block %s: %v", gallery.ID, err)
 					blockResp.Data = map[string]any{
-						"title": nullTextToPtr(gallery.Title),
-						"media": []sqlc.Media{}, // Empty array instead of nil
+						"title":     nullTextToPtr(gallery.Title),
+						"media_ids": []string{},
+						"media":     []sqlc.Media{}, // Empty array instead of nil
 					}
 				} else {
 					// Ensure media is never nil
 					if media == nil {
 						media = []sqlc.Media{}
 					}
+
+					// ✅ Extract media IDs from media array
+					mediaIDs := make([]string, len(media))
+					for i, m := range media {
+						mediaIDs[i] = m.ID.String()
+					}
+
 					blockResp.Data = map[string]any{
-						"title": nullTextToPtr(gallery.Title),
-						"media": media,
+						"title":     nullTextToPtr(gallery.Title),
+						"media_ids": mediaIDs,
+						"media":     media,
 					}
 				}
 			}

@@ -1,10 +1,10 @@
 <script lang="ts">
-	import DynamicForm, { type FormConfig } from '$components/ui/DynamicForm.svelte';
 	import type { ErrorResponse } from '$types/auth';
 	import { authApi } from '$api/auth';
 	import { authStore } from '$stores/auth.svelte';
 	import { goto } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
+	import DynamicForm from '$components/ui/form/DynamicForm.svelte';
 
 	let formData = $state({
 		first_name: '',

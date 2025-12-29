@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Media } from '$api/media';
-	import DynamicForm, { type FormConfig } from '$components/ui/DynamicForm.svelte';
+	import DynamicForm from '$components/ui/form/DynamicForm.svelte';
 
 	export interface FeatureBlockData {
 		title: string;

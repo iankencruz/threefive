@@ -1,6 +1,6 @@
 <!-- frontend/src/lib/components/blocks/forms/HeaderBlockForm.svelte -->
 <script lang="ts">
-	import DynamicForm, { type FormConfig } from '$components/ui/DynamicForm.svelte';
+	import DynamicForm from '$components/ui/form/DynamicForm.svelte';
 
 	export interface HeaderBlockData {
 		heading: string;

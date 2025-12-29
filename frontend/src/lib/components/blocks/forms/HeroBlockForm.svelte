@@ -1,7 +1,7 @@
 <!-- frontend/src/lib/components/blocks/forms/HeroBlockForm.svelte -->
 <script lang="ts">
 	import type { Media } from '$api/media';
-	import DynamicForm, { type FormConfig } from '$components/ui/DynamicForm.svelte';
+	import DynamicForm from '$components/ui/form/DynamicForm.svelte';
 
 	export interface HeroBlockData {
 		title: string;
