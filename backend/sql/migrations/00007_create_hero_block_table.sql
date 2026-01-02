@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS block_hero (
     image_id UUID REFERENCES media(id) ON DELETE SET NULL,
     cta_text TEXT,
     cta_url TEXT,
+    navigation_bar BOOLEAN DEFAULT FALSE,
     
     CONSTRAINT title_not_empty CHECK (trim(title) <> '')
 );

@@ -8,6 +8,7 @@
 		image_id?: string | null;
 		cta_text?: string | null;
 		cta_url?: string | null;
+		navigation_bar?: boolean;
 	}
 
 	interface Props {
@@ -28,7 +29,9 @@
 <!-- ✨ No more loading state! Media is pre-loaded -->
 {#if media}
 	<section class="relative overflow-hidden">
-		<Navbar variant="ghost" />
+		{#if data?.navigation_bar}
+			<Navbar variant="ghost" />
+		{/if}
 
 		<div class="relative flex min-h-screen items-center">
 			<div class="absolute inset-0 bg-black">

@@ -59,7 +59,6 @@ func (h *Handler) CreatePage(w http.ResponseWriter, r *http.Request) {
 	responses.WriteCreated(w, page)
 }
 
-// GetPageByID fetches a page by UUID (for admin editing)
 func (h *Handler) GetPageByID(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	log.Printf("DEBUG GetPageByID: Captured ID parameter: '%s'", idStr)

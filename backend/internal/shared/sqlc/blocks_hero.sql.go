@@ -21,19 +21,21 @@ INSERT INTO block_hero (
     subtitle, 
     image_id, 
     cta_text, 
-    cta_url
+    cta_url,
+    navigation_bar
 )
-VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, block_id, title, subtitle, image_id, cta_text, cta_url
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING id, block_id, title, subtitle, image_id, cta_text, cta_url, navigation_bar
 `
 
 type CreateHeroBlockParams struct {
-	BlockID  uuid.UUID   `json:"block_id"`
-	Title    string      `json:"title"`
-	Subtitle pgtype.Text `json:"subtitle"`
-	ImageID  pgtype.UUID `json:"image_id"`
-	CtaText  pgtype.Text `json:"cta_text"`
-	CtaUrl   pgtype.Text `json:"cta_url"`
+	BlockID       uuid.UUID   `json:"block_id"`
+	Title         string      `json:"title"`
+	Subtitle      pgtype.Text `json:"subtitle"`
+	ImageID       pgtype.UUID `json:"image_id"`
+	CtaText       pgtype.Text `json:"cta_text"`
+	CtaUrl        pgtype.Text `json:"cta_url"`
+	NavigationBar pgtype.Bool `json:"navigation_bar"`
 }
 
 // backend/sql/queries/blocks_hero.sql
@@ -48,6 +50,7 @@ func (q *Queries) CreateHeroBlock(ctx context.Context, arg CreateHeroBlockParams
 		arg.ImageID,
 		arg.CtaText,
 		arg.CtaUrl,
+		arg.NavigationBar,
 	)
 	var i BlockHero
 	err := row.Scan(
@@ -58,6 +61,7 @@ func (q *Queries) CreateHeroBlock(ctx context.Context, arg CreateHeroBlockParams
 		&i.ImageID,
 		&i.CtaText,
 		&i.CtaUrl,
+		&i.NavigationBar,
 	)
 	return i, err
 }
@@ -72,7 +76,7 @@ func (q *Queries) DeleteHeroBlock(ctx context.Context, blockID uuid.UUID) error 
 }
 
 const getHeroBlockByBlockID = `-- name: GetHeroBlockByBlockID :one
-SELECT id, block_id, title, subtitle, image_id, cta_text, cta_url FROM block_hero
+SELECT id, block_id, title, subtitle, image_id, cta_text, cta_url, navigation_bar FROM block_hero
 WHERE block_id = $1
 `
 
@@ -87,12 +91,13 @@ func (q *Queries) GetHeroBlockByBlockID(ctx context.Context, blockID uuid.UUID) 
 		&i.ImageID,
 		&i.CtaText,
 		&i.CtaUrl,
+		&i.NavigationBar,
 	)
 	return i, err
 }
 
 const getHeroBlocksByEntity = `-- name: GetHeroBlocksByEntity :many
-SELECT bh.id, bh.block_id, bh.title, bh.subtitle, bh.image_id, bh.cta_text, bh.cta_url
+SELECT bh.id, bh.block_id, bh.title, bh.subtitle, bh.image_id, bh.cta_text, bh.cta_url, bh.navigation_bar
 FROM block_hero bh
 INNER JOIN blocks b ON b.id = bh.block_id
 WHERE b.entity_type = $1 AND b.entity_id = $2
@@ -121,6 +126,7 @@ func (q *Queries) GetHeroBlocksByEntity(ctx context.Context, arg GetHeroBlocksBy
 			&i.ImageID,
 			&i.CtaText,
 			&i.CtaUrl,
+			&i.NavigationBar,
 		); err != nil {
 			return nil, err
 		}
@@ -139,18 +145,20 @@ SET
     subtitle = $2,
     image_id = $3,
     cta_text = $4,
-    cta_url = $5
-WHERE block_id = $6
-RETURNING id, block_id, title, subtitle, image_id, cta_text, cta_url
+    cta_url = $5,
+    navigation_bar = $6
+WHERE block_id = $7
+RETURNING id, block_id, title, subtitle, image_id, cta_text, cta_url, navigation_bar
 `
 
 type UpdateHeroBlockParams struct {
-	Title    string      `json:"title"`
-	Subtitle pgtype.Text `json:"subtitle"`
-	ImageID  pgtype.UUID `json:"image_id"`
-	CtaText  pgtype.Text `json:"cta_text"`
-	CtaUrl   pgtype.Text `json:"cta_url"`
-	BlockID  uuid.UUID   `json:"block_id"`
+	Title         string      `json:"title"`
+	Subtitle      pgtype.Text `json:"subtitle"`
+	ImageID       pgtype.UUID `json:"image_id"`
+	CtaText       pgtype.Text `json:"cta_text"`
+	CtaUrl        pgtype.Text `json:"cta_url"`
+	NavigationBar pgtype.Bool `json:"navigation_bar"`
+	BlockID       uuid.UUID   `json:"block_id"`
 }
 
 func (q *Queries) UpdateHeroBlock(ctx context.Context, arg UpdateHeroBlockParams) (BlockHero, error) {
@@ -160,6 +168,7 @@ func (q *Queries) UpdateHeroBlock(ctx context.Context, arg UpdateHeroBlockParams
 		arg.ImageID,
 		arg.CtaText,
 		arg.CtaUrl,
+		arg.NavigationBar,
 		arg.BlockID,
 	)
 	var i BlockHero
@@ -171,6 +180,7 @@ func (q *Queries) UpdateHeroBlock(ctx context.Context, arg UpdateHeroBlockParams
 		&i.ImageID,
 		&i.CtaText,
 		&i.CtaUrl,
+		&i.NavigationBar,
 	)
 	return i, err
 }

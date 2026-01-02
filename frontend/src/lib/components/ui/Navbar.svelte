@@ -61,6 +61,14 @@
 						</span>
 					</div>
 				</a>
+			{:else}
+				<a href="/" class="w-full pt-4">
+					<div>
+						<span class="hidden w-full text-4xl font-bold tracking-tight text-foreground sm:block">
+							Threefive
+						</span>
+					</div>
+				</a>
 			{/if}
 
 			<div class="hidden w-full pt-4 lg:flex lg:pl-11" id="navbar-desktop">

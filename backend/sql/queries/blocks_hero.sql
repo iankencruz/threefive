@@ -11,9 +11,10 @@ INSERT INTO block_hero (
     subtitle, 
     image_id, 
     cta_text, 
-    cta_url
+    cta_url,
+    navigation_bar
 )
-VALUES (@block_id, @title, @subtitle, @image_id, @cta_text, @cta_url)
+VALUES (@block_id, @title, @subtitle, @image_id, @cta_text, @cta_url, @navigation_bar)
 RETURNING *;
 
 -- name: GetHeroBlockByBlockID :one
@@ -34,7 +35,8 @@ SET
     subtitle = @subtitle,
     image_id = @image_id,
     cta_text = @cta_text,
-    cta_url = @cta_url
+    cta_url = @cta_url,
+    navigation_bar = @navigation_bar
 WHERE block_id = @block_id
 RETURNING *;
 

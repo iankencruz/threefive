@@ -76,6 +76,7 @@ func validateHeroBlockData(v *validation.Validator, data map[string]interface{},
 	if hasCtaURL && ctaURL != "" {
 		v.URL(fieldPrefix+".data.cta_url", ctaURL)
 	}
+
 }
 
 func validateRichtextBlockData(v *validation.Validator, data map[string]interface{}, fieldPrefix string) {

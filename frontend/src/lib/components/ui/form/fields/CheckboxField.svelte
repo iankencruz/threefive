@@ -14,7 +14,23 @@
 	}
 </script>
 
-<div class="flex items-start gap-3">
+<div class="my-2 flex w-full items-start gap-3">
+	<div class="flex-1">
+		{#if field.label}
+			<label for={field.name} class="text-sm font-medium">
+				{field.label}
+				{#if field.required}
+					<span class="text-red-500">*</span>
+				{/if}
+			</label>
+		{/if}
+		{#if field.helperText}
+			<p class="mt-1 text-sm text-gray-500">{field.helperText}</p>
+		{/if}
+		{#if error}
+			<p class="mt-1 text-sm text-red-600">{error}</p>
+		{/if}
+	</div>
 	<div
 		class="group relative inline-flex w-11 shrink-0 rounded-full bg-gray-200 p-0.5 inset-ring inset-ring-gray-900/5 outline-offset-2 outline-primary transition-colors duration-200 ease-in-out has-checked:bg-primary has-focus-visible:outline-2"
 	>
@@ -56,22 +72,5 @@
 			class="absolute inset-0 size-full appearance-none rounded-lg focus:outline-hidden"
 			onchange={handleChange}
 		/>
-	</div>
-
-	<div class="flex-1">
-		{#if field.label}
-			<label for={field.name} class="text-sm font-medium">
-				{field.label}
-				{#if field.required}
-					<span class="text-red-500">*</span>
-				{/if}
-			</label>
-		{/if}
-		{#if field.helperText}
-			<p class="mt-1 text-sm text-gray-500">{field.helperText}</p>
-		{/if}
-		{#if error}
-			<p class="mt-1 text-sm text-red-600">{error}</p>
-		{/if}
 	</div>
 </div>

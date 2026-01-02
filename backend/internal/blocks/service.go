@@ -293,11 +293,12 @@ func (s *Service) GetBlocksByEntity(ctx context.Context, entityType string, enti
 		case TypeHero:
 			if hero, ok := heroMap[block.ID]; ok {
 				heroData := HeroBlockData{
-					Title:    hero.Title,
-					Subtitle: nullTextToPtr(hero.Subtitle),
-					ImageID:  nullUUIDToPtr(hero.ImageID),
-					CtaText:  nullTextToPtr(hero.CtaText),
-					CtaURL:   nullTextToPtr(hero.CtaUrl),
+					Title:         hero.Title,
+					Subtitle:      nullTextToPtr(hero.Subtitle),
+					ImageID:       nullUUIDToPtr(hero.ImageID),
+					CtaText:       nullTextToPtr(hero.CtaText),
+					CtaURL:        nullTextToPtr(hero.CtaUrl),
+					NavigationBar: hero.NavigationBar.Bool,
 				}
 
 				// ✨ NEW: Fetch the actual media if ImageID exists
@@ -307,12 +308,13 @@ func (s *Service) GetBlocksByEntity(ctx context.Context, entityType string, enti
 					if err == nil {
 						// Add media to the response as a map for flexibility
 						blockResp.Data = map[string]any{
-							"title":    heroData.Title,
-							"subtitle": heroData.Subtitle,
-							"image_id": heroData.ImageID,
-							"cta_text": heroData.CtaText,
-							"cta_url":  heroData.CtaURL,
-							"media":    media, // ← Add the full media object!
+							"title":          heroData.Title,
+							"subtitle":       heroData.Subtitle,
+							"image_id":       heroData.ImageID,
+							"cta_text":       heroData.CtaText,
+							"cta_url":        heroData.CtaURL,
+							"navigation_bar": heroData.NavigationBar,
+							"media":          media, // ← Add the full media object!
 						}
 					} else {
 						// If media fetch fails, use struct without media
@@ -438,12 +440,13 @@ func (s *Service) createHeroBlock(ctx context.Context, qtx *sqlc.Queries, blockI
 	hero := heroData.(*HeroBlockData)
 
 	_, err = qtx.CreateHeroBlock(ctx, sqlc.CreateHeroBlockParams{
-		BlockID:  blockID,
-		Title:    hero.Title,
-		Subtitle: strToNullText(hero.Subtitle),
-		ImageID:  uuidToNullUUID(hero.ImageID),
-		CtaText:  strToNullText(hero.CtaText),
-		CtaUrl:   strToNullText(hero.CtaURL),
+		BlockID:       blockID,
+		Title:         hero.Title,
+		Subtitle:      strToNullText(hero.Subtitle),
+		ImageID:       uuidToNullUUID(hero.ImageID),
+		CtaText:       strToNullText(hero.CtaText),
+		CtaUrl:        strToNullText(hero.CtaURL),
+		NavigationBar: boolToPgBool(hero.NavigationBar),
 	})
 	if err != nil {
 		return errors.Internal("Failed to create hero block", err)
@@ -574,12 +577,13 @@ func (s *Service) updateHeroBlock(ctx context.Context, qtx *sqlc.Queries, blockI
 	hero := heroData.(*HeroBlockData)
 
 	_, err = qtx.UpdateHeroBlock(ctx, sqlc.UpdateHeroBlockParams{
-		BlockID:  blockID,
-		Title:    hero.Title,
-		Subtitle: strToNullText(hero.Subtitle),
-		ImageID:  uuidToNullUUID(hero.ImageID),
-		CtaText:  strToNullText(hero.CtaText),
-		CtaUrl:   strToNullText(hero.CtaURL),
+		BlockID:       blockID,
+		Title:         hero.Title,
+		Subtitle:      strToNullText(hero.Subtitle),
+		ImageID:       uuidToNullUUID(hero.ImageID),
+		CtaText:       strToNullText(hero.CtaText),
+		CtaUrl:        strToNullText(hero.CtaURL),
+		NavigationBar: boolToPgBool(hero.NavigationBar),
 	})
 	if err != nil {
 		return errors.Internal("Failed to update hero block", err)
@@ -772,6 +776,11 @@ func (s *Service) updateFeatureBlock(ctx context.Context, qtx *sqlc.Queries, blo
 // ============================================
 // Helper Functions for Nullable Types
 // ============================================
+
+// bool to PG bool
+func boolToPgBool(b bool) pgtype.Bool {
+	return pgtype.Bool{Bool: b, Valid: true}
+}
 
 func stringToPgText(s string) pgtype.Text {
 	if s == "" {

@@ -166,13 +166,14 @@ type BlockHeader struct {
 }
 
 type BlockHero struct {
-	ID       uuid.UUID   `json:"id"`
-	BlockID  uuid.UUID   `json:"block_id"`
-	Title    string      `json:"title"`
-	Subtitle pgtype.Text `json:"subtitle"`
-	ImageID  pgtype.UUID `json:"image_id"`
-	CtaText  pgtype.Text `json:"cta_text"`
-	CtaUrl   pgtype.Text `json:"cta_url"`
+	ID            uuid.UUID   `json:"id"`
+	BlockID       uuid.UUID   `json:"block_id"`
+	Title         string      `json:"title"`
+	Subtitle      pgtype.Text `json:"subtitle"`
+	ImageID       pgtype.UUID `json:"image_id"`
+	CtaText       pgtype.Text `json:"cta_text"`
+	CtaUrl        pgtype.Text `json:"cta_url"`
+	NavigationBar pgtype.Bool `json:"navigation_bar"`
 }
 
 type BlockRichtext struct {

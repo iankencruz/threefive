@@ -25,7 +25,7 @@
 <div class="flex min-h-screen bg-background text-foreground">
 	<aside class="hidden w-[260px] flex-col border-r border-surface/60 bg-surface md:flex">
 		<div class="border-b border-surface/60 px-6 py-8">
-			<h2 class="m-0 text-xl font-bold text-foreground">Admin Panel</h2>
+			<a href="/" class="m-0 text-xl font-bold text-foreground">Admin Panel</a>
 		</div>
 
 		<nav class="flex flex-col gap-1 px-4 py-6">

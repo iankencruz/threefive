@@ -1,6 +1,7 @@
 <!-- frontend/src/lib/components/blocks/forms/HeroBlockForm.svelte -->
 <script lang="ts">
 	import type { Media } from '$api/media';
+	import type { FormConfig } from '$components/ui/form';
 	import DynamicForm from '$components/ui/form/DynamicForm.svelte';
 
 	export interface HeroBlockData {
@@ -60,6 +61,12 @@
 				label: 'CTA URL',
 				placeholder: 'Button link (optional)',
 				colSpan: 6
+			},
+			{
+				name: 'navigation_bar',
+				type: 'checkbox',
+				label: 'Show Navigation Bar',
+				colSpan: 12
 			},
 			{
 				name: 'image_id',

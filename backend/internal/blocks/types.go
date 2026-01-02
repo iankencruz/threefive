@@ -26,11 +26,12 @@ func ValidBlockTypes() []string {
 
 // HeroBlockData represents hero block data
 type HeroBlockData struct {
-	Title    string     `json:"title"`
-	Subtitle *string    `json:"subtitle,omitempty"`
-	ImageID  *uuid.UUID `json:"image_id,omitempty"`
-	CtaText  *string    `json:"cta_text,omitempty"`
-	CtaURL   *string    `json:"cta_url,omitempty"`
+	Title         string     `json:"title"`
+	Subtitle      *string    `json:"subtitle,omitempty"`
+	ImageID       *uuid.UUID `json:"image_id,omitempty"`
+	CtaText       *string    `json:"cta_text,omitempty"`
+	CtaURL        *string    `json:"cta_url,omitempty"`
+	NavigationBar bool       `json:"navigation_bar"`
 }
 
 // RichtextBlockData represents richtext block data
