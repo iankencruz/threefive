@@ -1,8 +1,10 @@
+// frontend/src/lib/types/projects.ts
 import type { SEOData } from "./seo";
+import type { Media } from "$api/media";
 
 // Define custom TypeScript types that map to your PostgreSQL ENUMs
 type PageStatus = "draft" | "published" | "archived";
-type ProjectStatus = "completed" | "in_progress" | "on_hold" | string;
+type ProjectStatus = "completed" | "ongoing" | "archived";
 
 export interface Project {
   id: string;
@@ -13,50 +15,51 @@ export interface Project {
   slug: string;
   description: string | null;
 
-  project_date: Date | null;
+  project_date: string | null;
   client_name: string | null;
   project_year: number | null;
   project_url: string | null;
 
-  status: PageStatus | null;
+  status: PageStatus;
   project_status: ProjectStatus;
 
-  technologies: string[] | { [key: string]: any } | null;
+  technologies: string[];
 
   featured_image_id: string | null;
+  media: Media[]; // NEW: Array of project media
+  featured_image?: Media | null; // NEW: Full featured image object
 
   published_at: Date | null;
   deleted_at: Date | null;
 
-  seo: SEOData;
+  seo?: SEOData | null;
 }
 
 // Project Mocks
 export const Projects: Project[] = [
   {
-    // Minimal required fields
     id: "a1b2c3d4-e5f6-7890-abcd-ef0123456789",
     created_at: new Date(),
     updated_at: new Date(),
     title: "Project Alpha",
     slug: "project-alpha",
     project_status: "completed",
-    seo: { meta_title: "Project Alpha" },
-
-    // Fields used in your Svelte component/required fields
+    status: "published",
     description:
       "A powerful app for managing daily tasks and schedules efficiently.",
-
-    // Remaining optional/nullable fields
-    project_date: new Date("2024-05-15"),
+    project_date: "2024-05-15",
     client_name: "TechCorp Inc.",
     project_year: 2024,
-    project_url: "/projects/project-alpha", // Matches the original 'href' intent
-    status: "published",
-    technologies: ["SvelteKit", "PostgreSQL"],
+    project_url: "https://project-alpha.com",
+    technologies: ["SvelteKit", "PostgreSQL", "TailwindCSS"],
     featured_image_id: null,
+    media: [],
     published_at: new Date(),
     deleted_at: null,
+    seo: {
+      meta_title: "Project Alpha",
+      meta_description: "Task management app",
+    },
   },
   {
     id: "b1c2d3e4-f5a6-7890-bcde-f01234567890",
@@ -64,21 +67,23 @@ export const Projects: Project[] = [
     updated_at: new Date(),
     title: "Project Beta",
     slug: "project-beta",
-    project_status: "in_progress",
-    seo: { meta_title: "Project Beta" },
-
+    project_status: "ongoing",
+    status: "draft",
     description:
       "Developing a modern e-commerce platform with a focus on speed.",
-
     project_date: null,
     client_name: "RetailGiant LLC",
     project_year: 2025,
-    project_url: "/projects/project-beta",
-    status: "draft",
-    technologies: ["React", "Node.js"],
+    project_url: "https://project-beta.com",
+    technologies: ["React", "Node.js", "MongoDB"],
     featured_image_id: null,
+    media: [],
     published_at: null,
     deleted_at: null,
+    seo: {
+      meta_title: "Project Beta",
+      meta_description: "E-commerce platform",
+    },
   },
   {
     id: "c1d2e3f4-a5b6-7890-cdef-012345678901",
@@ -86,40 +91,22 @@ export const Projects: Project[] = [
     updated_at: new Date(),
     title: "Project Gamma",
     slug: "project-gamma",
-    project_status: "on_hold",
-    seo: { meta_title: "Project Gamma" },
-
+    project_status: "archived",
+    status: "archived",
     description:
       "A cutting-edge solution for data visualization and analytics.",
-
-    project_date: new Date("2023-11-01"),
+    project_date: "2023-11-01",
     client_name: null,
     project_year: 2023,
-    project_url: "/projects/project-gamma",
-    status: "archived",
-    technologies: ["Vue.js", "Python"],
+    project_url: "https://project-gamma.com",
+    technologies: ["Vue.js", "Python", "D3.js"],
     featured_image_id: "12345678-90ab-cdef-1234-567890abcdef",
+    media: [],
     published_at: new Date("2023-12-01"),
     deleted_at: null,
-  },
-  {
-    id: "d1e2f3a4-b5c6-7890-def0-1234567890ab",
-    created_at: new Date(),
-    updated_at: new Date(),
-    title: "Project Delta",
-    slug: "project-delta",
-    project_status: "completed",
-    seo: { meta_title: "Project Delta" },
-    description:
-      "An innovative mobile app designed to enhance user productivity.",
-    project_date: new Date("2022-08-20"),
-    client_name: "AppMakers Co.",
-    project_year: 2022,
-    project_url: "/projects/project-delta",
-    status: "published",
-    technologies: { frontend: "Flutter", backend: "Firebase" },
-    featured_image_id: null,
-    published_at: new Date("2022-09-15"),
-    deleted_at: null,
+    seo: {
+      meta_title: "Project Gamma",
+      meta_description: "Data visualization tool",
+    },
   },
 ];

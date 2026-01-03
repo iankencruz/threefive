@@ -2,7 +2,6 @@
 package projects
 
 import (
-	"github.com/iankencruz/threefive/internal/blocks"
 	"github.com/iankencruz/threefive/internal/shared/seo"
 	"github.com/iankencruz/threefive/internal/shared/validation"
 )
@@ -52,9 +51,18 @@ func (r *CreateProjectRequest) Validate(v *validation.Validator) {
 		v.URL("project_url", *r.ProjectURL)
 	}
 
-	// Validate blocks if provided
-	if len(r.Blocks) > 0 {
-		blocks.ValidateBlocks(v, r.Blocks)
+	// Validate featured_image_id is in media_ids if both provided
+	if r.FeaturedImageID != nil && len(r.MediaIDs) > 0 {
+		found := false
+		for _, mediaID := range r.MediaIDs {
+			if mediaID == *r.FeaturedImageID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			v.AddError("featured_image_id", "Must be one of the media_ids")
+		}
 	}
 
 	// Validate SEO if provided
@@ -108,9 +116,18 @@ func (r *UpdateProjectRequest) Validate(v *validation.Validator) {
 		v.URL("project_url", *r.ProjectURL)
 	}
 
-	// Validate blocks if provided
-	if r.Blocks != nil {
-		blocks.ValidateBlocks(v, *r.Blocks)
+	// Validate featured_image_id is in media_ids if both provided
+	if r.FeaturedImageID != nil && r.MediaIDs != nil && len(*r.MediaIDs) > 0 {
+		found := false
+		for _, mediaID := range *r.MediaIDs {
+			if mediaID == *r.FeaturedImageID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			v.AddError("featured_image_id", "Must be one of the media_ids")
+		}
 	}
 
 	// Validate SEO if provided

@@ -8,7 +8,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/iankencruz/threefive/internal/auth"
-	"github.com/iankencruz/threefive/internal/blocks"
 	"github.com/iankencruz/threefive/internal/shared/responses"
 	"github.com/iankencruz/threefive/internal/shared/sqlc"
 	"github.com/iankencruz/threefive/internal/shared/validation"
@@ -21,11 +20,8 @@ type Handler struct {
 
 // NewHandler creates a new projects handler with its own service
 func NewHandler(db *pgxpool.Pool, queries *sqlc.Queries) *Handler {
-	// Create block service internally (only needs queries)
-	blockService := blocks.NewService(queries)
-
-	// Create projects service
-	service := NewService(db, queries, blockService)
+	// Create projects service (no longer needs block service)
+	service := NewService(db, queries)
 
 	return &Handler{
 		service: service,
@@ -33,9 +29,8 @@ func NewHandler(db *pgxpool.Pool, queries *sqlc.Queries) *Handler {
 }
 
 // CreateProject handles project creation
-// POST /api/v1/projects
+// POST /api/v1/admin/projects
 func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
-
 	// Get current user from context
 	user := auth.MustGetUserFromContext(r.Context())
 
@@ -56,7 +51,8 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	responses.WriteCreated(w, project)
 }
 
-// GetPageByID fetches a page by UUID (for admin editing)
+// GetProjectByID fetches a project by UUID (for admin editing)
+// GET /api/v1/admin/projects/{id}
 func (h *Handler) GetProjectByID(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
@@ -65,21 +61,20 @@ func (h *Handler) GetProjectByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	page, err := h.service.GetProjectByID(r.Context(), id)
+	project, err := h.service.GetProjectByID(r.Context(), id)
 	if err != nil {
 		responses.WriteErr(w, err)
 		return
 	}
 
-	responses.WriteOK(w, page)
+	responses.WriteOK(w, project)
 }
 
-// GetProject handles retrieving a single project by ID or slug
+// GetProjectBySlug handles retrieving a single project by slug (public)
 // GET /api/v1/projects/{slug}
 func (h *Handler) GetProjectBySlug(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
 
-	// Try to parse as UUID first
 	project, err := h.service.GetProjectBySlug(r.Context(), slug)
 	if err != nil {
 		responses.WriteErr(w, err)
@@ -89,8 +84,8 @@ func (h *Handler) GetProjectBySlug(w http.ResponseWriter, r *http.Request) {
 	responses.WriteOK(w, project)
 }
 
-// ListProjects handles listing projects with pagination and optional filters
-// GET /api/v1/projects?status=published&page=1&limit=20&sort=created_at&order=desc
+// ListProjects handles listing projects with pagination and optional filters (admin)
+// GET /api/v1/admin/projects?status=published&page=1&limit=20&sort=created_at&order=desc
 func (h *Handler) ListProjects(w http.ResponseWriter, r *http.Request) {
 	// Parse pagination params
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
@@ -159,6 +154,8 @@ func (h *Handler) ListProjects(w http.ResponseWriter, r *http.Request) {
 	responses.WriteJSON(w, http.StatusOK, response)
 }
 
+// ListPublishedProjects handles listing published projects (public)
+// GET /api/v1/projects?page=1&limit=20&sort=created_at&order=desc
 func (h *Handler) ListPublishedProjects(w http.ResponseWriter, r *http.Request) {
 	// Parse pagination params
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
@@ -191,19 +188,21 @@ func (h *Handler) ListPublishedProjects(w http.ResponseWriter, r *http.Request) 
 
 	offset := int32((page - 1) * limit)
 
-	// List projects with filters
+	// List published projects only
+	publishedStatus := "published"
 	result, err := h.service.ListProjects(r.Context(), ListProjectsParams{
-		SortBy:    sortBy,
-		SortOrder: sortOrder,
-		Limit:     int32(limit),
-		Offset:    offset,
+		StatusFilter: &publishedStatus,
+		SortBy:       sortBy,
+		SortOrder:    sortOrder,
+		Limit:        int32(limit),
+		Offset:       offset,
 	})
 	if err != nil {
 		responses.WriteErr(w, err)
 		return
 	}
 
-	// Build response with pagination and filters
+	// Build response with pagination
 	data := map[string]any{
 		"data":       result.Projects,
 		"pagination": result.Pagination,
@@ -213,9 +212,8 @@ func (h *Handler) ListPublishedProjects(w http.ResponseWriter, r *http.Request) 
 }
 
 // UpdateProject handles updating a project
-// PUT /api/v1/projects/{id}
+// PUT /api/v1/admin/projects/{id}
 func (h *Handler) UpdateProject(w http.ResponseWriter, r *http.Request) {
-
 	// Parse project ID
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
@@ -242,9 +240,8 @@ func (h *Handler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 }
 
 // UpdateProjectStatus handles updating project status
-// PATCH /api/v1/projects/{id}/status
+// PATCH /api/v1/admin/projects/{id}/status
 func (h *Handler) UpdateProjectStatus(w http.ResponseWriter, r *http.Request) {
-
 	// Parse project ID
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
@@ -275,7 +272,7 @@ func (h *Handler) UpdateProjectStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteProject handles soft deleting a project
-// DELETE /api/v1/projects/{id}
+// DELETE /api/v1/admin/projects/{id}
 func (h *Handler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 	// Parse project ID
 	idStr := chi.URLParam(r, "id")

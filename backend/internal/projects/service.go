@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/iankencruz/threefive/internal/blocks"
 	"github.com/iankencruz/threefive/internal/shared/errors"
 	"github.com/iankencruz/threefive/internal/shared/seo"
 	"github.com/iankencruz/threefive/internal/shared/sqlc"
@@ -17,24 +16,22 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// Service handles projects business logic
 type Service struct {
-	db           *pgxpool.Pool
-	queries      *sqlc.Queries
-	blockService *blocks.Service
+	db      *pgxpool.Pool
+	queries *sqlc.Queries
 }
 
 // NewService creates a new projects service
-func NewService(db *pgxpool.Pool, queries *sqlc.Queries, blockService *blocks.Service) *Service {
+func NewService(db *pgxpool.Pool, queries *sqlc.Queries) *Service {
 	return &Service{
-		db:           db,
-		queries:      queries,
-		blockService: blockService,
+		db:      db,
+		queries: queries,
 	}
 }
 
-// CreateProject creates a new project with blocks and SEO in a transaction
+// CreateProject creates a new project with media and SEO
 func (s *Service) CreateProject(ctx context.Context, req *CreateProjectRequest, userID uuid.UUID) (*ProjectResponse, error) {
+	// Validate slug uniqueness
 	exists, err := s.queries.CheckProjectSlugExists(ctx, sqlc.CheckProjectSlugExistsParams{
 		Slug:      req.Slug,
 		ExcludeID: uuid.Nil,
@@ -44,6 +41,20 @@ func (s *Service) CreateProject(ctx context.Context, req *CreateProjectRequest, 
 	}
 	if exists {
 		return nil, errors.Conflict("Slug already exists", "slug_exists")
+	}
+
+	// Validate featured_image_id is in media_ids if provided
+	if req.FeaturedImageID != nil && len(req.MediaIDs) > 0 {
+		featuredFound := false
+		for _, mid := range req.MediaIDs {
+			if mid == *req.FeaturedImageID {
+				featuredFound = true
+				break
+			}
+		}
+		if !featuredFound {
+			return nil, errors.BadRequest("featured_image_id must be one of the media_ids", "invalid_featured_image")
+		}
 	}
 
 	// Start transaction
@@ -63,7 +74,7 @@ func (s *Service) CreateProject(ctx context.Context, req *CreateProjectRequest, 
 
 	// Parse project date if provided
 	var projectDate pgtype.Date
-	if req.ProjectDate != nil {
+	if req.ProjectDate != nil && *req.ProjectDate != "" {
 		parsedDate, err := time.Parse("2006-01-02", *req.ProjectDate)
 		if err != nil {
 			return nil, errors.BadRequest("Invalid project date format, use YYYY-MM-DD", "invalid_date")
@@ -74,7 +85,7 @@ func (s *Service) CreateProject(ctx context.Context, req *CreateProjectRequest, 
 		}
 	}
 
-	// 1. Create project
+	// Create project
 	project, err := qtx.CreateProject(ctx, sqlc.CreateProjectParams{
 		Title:           req.Title,
 		Slug:            req.Slug,
@@ -93,14 +104,22 @@ func (s *Service) CreateProject(ctx context.Context, req *CreateProjectRequest, 
 		return nil, errors.Internal("Failed to create project", err)
 	}
 
-	// 2. Create blocks using blocks service
-	if len(req.Blocks) > 0 {
-		if err := s.blockService.CreateBlocks(ctx, qtx, "project", project.ID, req.Blocks); err != nil {
-			return nil, err
+	// Link media to project
+	if len(req.MediaIDs) > 0 {
+		for i, mediaID := range req.MediaIDs {
+			_, err := qtx.LinkMediaToEntity(ctx, sqlc.LinkMediaToEntityParams{
+				MediaID:    mediaID,
+				EntityType: "project",
+				EntityID:   project.ID,
+				SortOrder:  pgtype.Int4{Int32: int32(i), Valid: true},
+			})
+			if err != nil {
+				return nil, errors.Internal("Failed to link media to project", err)
+			}
 		}
 	}
 
-	// 3. Create SEO if provided
+	// Create SEO if provided
 	if req.SEO != nil {
 		if err := seo.Create(ctx, qtx, "project", project.ID, req.SEO); err != nil {
 			return nil, err
@@ -170,60 +189,14 @@ func (s *Service) ListProjects(ctx context.Context, params ListProjectsParams) (
 		return nil, errors.Internal("Failed to list projects", err)
 	}
 
-	// Build responses
+	// Build response for each project
 	projectResponses := make([]ProjectResponse, 0, len(projects))
-	for _, project := range projects {
-		resp, err := s.buildProjectResponse(ctx, project)
+	for _, proj := range projects {
+		response, err := s.buildProjectResponse(ctx, proj)
 		if err != nil {
 			return nil, err
 		}
-		projectResponses = append(projectResponses, *resp)
-	}
-
-	// Calculate pagination
-	totalPages := int(totalCount) / int(params.Limit)
-	if int(totalCount)%int(params.Limit) > 0 {
-		totalPages++
-	}
-	currentPage := int(params.Offset)/int(params.Limit) + 1
-
-	return &ProjectListResponse{
-		Projects: projectResponses,
-		Pagination: Pagination{
-			Page:       currentPage,
-			Limit:      int(params.Limit),
-			TotalPages: totalPages,
-			TotalCount: int(totalCount),
-		},
-	}, nil
-}
-
-func (s *Service) ListPublishedProjects(ctx context.Context, params ListProjectsParams) (*ProjectListResponse, error) {
-	// Get total count with filters
-	totalCount, err := s.queries.CountPublishedProjects(ctx)
-	if err != nil {
-		return nil, errors.Internal("Failed to count projects", err)
-	}
-
-	// Get projects with filters
-	projects, err := s.queries.ListPublishedProjects(ctx, sqlc.ListPublishedProjectsParams{
-		SortBy:    params.SortBy,
-		SortOrder: params.SortOrder,
-		OffsetVal: params.Offset,
-		LimitVal:  params.Limit,
-	})
-	if err != nil {
-		return nil, errors.Internal("Failed to list projects", err)
-	}
-
-	// Build responses
-	projectResponses := make([]ProjectResponse, 0, len(projects))
-	for _, project := range projects {
-		resp, err := s.buildProjectResponse(ctx, project)
-		if err != nil {
-			return nil, err
-		}
-		projectResponses = append(projectResponses, *resp)
+		projectResponses = append(projectResponses, *response)
 	}
 
 	// Calculate pagination
@@ -257,6 +230,20 @@ func (s *Service) UpdateProject(ctx context.Context, projectID uuid.UUID, req *U
 		}
 		if exists {
 			return nil, errors.Conflict("Slug already exists", "slug_exists")
+		}
+	}
+
+	// Validate featured_image_id is in media_ids if both provided
+	if req.FeaturedImageID != nil && req.MediaIDs != nil && len(*req.MediaIDs) > 0 {
+		featuredFound := false
+		for _, mid := range *req.MediaIDs {
+			if mid == *req.FeaturedImageID {
+				featuredFound = true
+				break
+			}
+		}
+		if !featuredFound {
+			return nil, errors.BadRequest("featured_image_id must be one of the media_ids", "invalid_featured_image")
 		}
 	}
 
@@ -316,20 +303,53 @@ func (s *Service) UpdateProject(ctx context.Context, projectID uuid.UUID, req *U
 		return nil, errors.Internal("Failed to update project", err)
 	}
 
-	// Update blocks if provided
-	if req.Blocks != nil {
-		// Delete existing blocks
-		if err := qtx.DeleteBlocksByEntity(ctx, sqlc.DeleteBlocksByEntityParams{
+	// Update media if provided
+	if req.MediaIDs != nil {
+		// Get existing media relations
+		existingMedia, err := qtx.GetMediaForEntity(ctx, sqlc.GetMediaForEntityParams{
 			EntityType: "project",
 			EntityID:   projectID,
-		}); err != nil {
-			return nil, errors.Internal("Failed to delete existing blocks", err)
+		})
+		if err != nil {
+			return nil, errors.Internal("Failed to get existing media", err)
 		}
 
-		// Create new blocks
-		if len(*req.Blocks) > 0 {
-			if err := s.blockService.CreateBlocks(ctx, qtx, "project", projectID, *req.Blocks); err != nil {
-				return nil, err
+		// Create map of existing media IDs
+		existingMap := make(map[uuid.UUID]bool)
+		for _, m := range existingMedia {
+			existingMap[m.ID] = true
+		}
+
+		// Create map of new media IDs
+		newMap := make(map[uuid.UUID]bool)
+		for _, mid := range *req.MediaIDs {
+			newMap[mid] = true
+		}
+
+		// Remove media that are no longer in the list
+		for _, m := range existingMedia {
+			if !newMap[m.ID] {
+				err := qtx.UnlinkMediaFromEntity(ctx, sqlc.UnlinkMediaFromEntityParams{
+					MediaID:    m.ID,
+					EntityType: "project",
+					EntityID:   projectID,
+				})
+				if err != nil {
+					return nil, errors.Internal("Failed to unlink media", err)
+				}
+			}
+		}
+
+		// Add/update new media with proper sort order
+		for i, mediaID := range *req.MediaIDs {
+			_, err := qtx.LinkMediaToEntity(ctx, sqlc.LinkMediaToEntityParams{
+				MediaID:    mediaID,
+				EntityType: "project",
+				EntityID:   projectID,
+				SortOrder:  pgtype.Int4{Int32: int32(i), Valid: true},
+			})
+			if err != nil {
+				return nil, errors.Internal("Failed to link media to project", err)
 			}
 		}
 	}
@@ -378,86 +398,107 @@ func (s *Service) DeleteProject(ctx context.Context, projectID uuid.UUID) error 
 }
 
 // ============================================
-// Helper functions
+// Helper Functions
 // ============================================
 
-// buildProjectResponse builds a complete project response with all relations
+// buildProjectResponse builds a complete ProjectResponse with all related data
 func (s *Service) buildProjectResponse(ctx context.Context, project sqlc.Projects) (*ProjectResponse, error) {
-	resp := &ProjectResponse{
-		ID:            project.ID,
-		Title:         project.Title,
-		Slug:          project.Slug,
-		Status:        string(project.Status.PageStatus),
-		ProjectStatus: string(project.ProjectStatus.ProjectStatus),
-		CreatedAt:     project.CreatedAt,
-		UpdatedAt:     project.UpdatedAt,
-	}
-
-	// Description
-	if project.Description.Valid {
-		desc := project.Description.String
-		resp.Description = &desc
-	}
-
-	// Project date
-	if project.ProjectDate.Valid {
-		dateStr := project.ProjectDate.Time.Format("2006-01-02")
-		resp.ProjectDate = &dateStr
-	}
-
-	// Client name
-	if project.ClientName.Valid {
-		clientName := project.ClientName.String
-		resp.ClientName = &clientName
-	}
-
-	// Project year
-	if project.ProjectYear.Valid {
-		year := int(project.ProjectYear.Int32)
-		resp.ProjectYear = &year
-	}
-
-	// Project URL
-	if project.ProjectUrl.Valid {
-		url := project.ProjectUrl.String
-		resp.ProjectURL = &url
-	}
-
-	// Technologies
+	// Parse technologies
 	var technologies []string
-	if err := json.Unmarshal(project.Technologies, &technologies); err != nil {
-		technologies = []string{}
-	}
-	resp.Technologies = technologies
-
-	// Featured image
-	if project.FeaturedImageID.Valid {
-		featuredImageID := uuid.UUID(project.FeaturedImageID.Bytes)
-		resp.FeaturedImageID = &featuredImageID
+	if len(project.Technologies) > 0 {
+		if err := json.Unmarshal(project.Technologies, &technologies); err != nil {
+			return nil, errors.Internal("Failed to unmarshal technologies", err)
+		}
 	}
 
-	// Published at
-	if project.PublishedAt.Valid {
-		resp.PublishedAt = &project.PublishedAt.Time
-	}
-
-	// Deleted at
-	if project.DeletedAt.Valid {
-		resp.DeletedAt = &project.DeletedAt.Time
-	}
-
-	// Get blocks
-	blockResponses, err := s.blockService.GetBlocksByEntity(ctx, "project", project.ID)
+	// Get media for project
+	media, err := s.queries.GetMediaForEntity(ctx, sqlc.GetMediaForEntityParams{
+		EntityType: "project",
+		EntityID:   project.ID,
+	})
 	if err != nil {
-		return nil, err
+		return nil, errors.Internal("Failed to get project media", err)
 	}
-	resp.Blocks = blockResponses
+
+	// Convert media to MediaItem
+	mediaItems := make([]MediaItem, 0, len(media))
+	for i, m := range media {
+		mediaItems = append(mediaItems, MediaItem{
+			ID:               m.ID,
+			Filename:         m.Filename,
+			OriginalFilename: m.OriginalFilename,
+			MimeType:         m.MimeType,
+			URL:              *utils.PgToStr(m.Url),
+			ThumbnailURL:     *utils.PgToStr(m.ThumbnailUrl),
+			MediumURL:        *utils.PgToStr(m.MediumUrl),
+			LargeURL:         *utils.PgToStr(m.LargeUrl),
+			Width:            utils.PgToInt(m.Width),
+			Height:           utils.PgToInt(m.Height),
+			SizeBytes:        m.SizeBytes,
+			SortOrder:        i,
+		})
+	}
+
+	// Get featured image if set
+	var featuredImage *MediaItem
+	if project.FeaturedImageID.Valid {
+		featuredID := uuid.UUID(project.FeaturedImageID.Bytes)
+		featuredMedia, err := s.queries.GetMediaByID(ctx, featuredID)
+		if err == nil {
+			featuredImage = &MediaItem{
+				ID:               featuredMedia.ID,
+				Filename:         featuredMedia.Filename,
+				OriginalFilename: featuredMedia.OriginalFilename,
+				MimeType:         featuredMedia.MimeType,
+				URL:              *utils.PgToStr(featuredMedia.Url),
+				ThumbnailURL:     *utils.PgToStr(featuredMedia.ThumbnailUrl),
+				MediumURL:        *utils.PgToStr(featuredMedia.MediumUrl),
+				LargeURL:         *utils.PgToStr(featuredMedia.LargeUrl),
+				Width:            utils.PgToInt(featuredMedia.Width),
+				Height:           utils.PgToInt(featuredMedia.Height),
+				SizeBytes:        featuredMedia.SizeBytes,
+			}
+		}
+	}
 
 	// Get SEO
-	resp.SEO, err = seo.Get(ctx, s.queries, "project", project.ID)
-	if err != nil {
-		return nil, err
+	var seoResponse *seo.Response
+	seoData, err := seo.Get(ctx, s.queries, "project", project.ID)
+	if err == nil && seoData != nil {
+		seoResponse = seoData
 	}
 
-	return resp, nil
+	// Format project date
+	var projectDate *string
+	if project.ProjectDate.Valid {
+		formatted := project.ProjectDate.Time.Format("2006-01-02")
+		projectDate = &formatted
+	}
+
+	// Format published_at
+	var publishedAt *time.Time
+	if project.PublishedAt.Valid {
+		publishedAt = &project.PublishedAt.Time
+	}
+
+	return &ProjectResponse{
+		ID:              project.ID,
+		Title:           project.Title,
+		Slug:            project.Slug,
+		Description:     utils.PgToStr(project.Description),
+		ProjectDate:     projectDate,
+		Status:          string(project.Status.PageStatus),
+		ClientName:      utils.PgToStr(project.ClientName),
+		ProjectYear:     utils.PgToInt(project.ProjectYear),
+		ProjectURL:      utils.PgToStr(project.ProjectUrl),
+		Technologies:    technologies,
+		ProjectStatus:   string(project.ProjectStatus.ProjectStatus),
+		FeaturedImageID: utils.PgToUUID(project.FeaturedImageID),
+		CreatedAt:       project.CreatedAt,
+		UpdatedAt:       project.UpdatedAt,
+		PublishedAt:     publishedAt,
+		Media:           mediaItems,
+		FeaturedImage:   featuredImage,
+		SEO:             seoResponse,
+	}, nil
 }
