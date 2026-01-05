@@ -162,7 +162,7 @@
 									<a
 										class="rounded-lg p-2 transition-colors hover:bg-gray-700"
 										href={`/admin/projects/${project.id}/preview`}
-                    target="_blank"
+										target="_blank"
 										title="Preview"
 									>
 										<EyeIcon class="h-4 w-4" />
@@ -174,12 +174,12 @@
 									>
 										<SquarePenIcon class="h-4 w-4" />
 									</button>
-                  <!-- View Public Page (only if published) -->
+									<!-- View Public Page (only if published) -->
 									{#if project.status === 'published'}
 										<a
 											class="rounded-lg p-2 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
 											href={`/projects/${project.slug}`}
-                      target="_blank"
+											target="_blank"
 											aria-label="View page"
 										>
 											<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -192,7 +192,6 @@
 											</svg>
 										</a>
 									{/if}
-
 								</div>
 							</td>
 						</tr>

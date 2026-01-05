@@ -423,20 +423,33 @@ func (s *Service) buildProjectResponse(ctx context.Context, project sqlc.Project
 	// Convert media to MediaItem
 	mediaItems := make([]MediaItem, 0, len(media))
 	for i, m := range media {
-		mediaItems = append(mediaItems, MediaItem{
+		item := MediaItem{
 			ID:               m.ID,
 			Filename:         m.Filename,
 			OriginalFilename: m.OriginalFilename,
 			MimeType:         m.MimeType,
-			URL:              *utils.PgToStr(m.Url),
-			ThumbnailURL:     *utils.PgToStr(m.ThumbnailUrl),
-			MediumURL:        *utils.PgToStr(m.MediumUrl),
-			LargeURL:         *utils.PgToStr(m.LargeUrl),
-			Width:            utils.PgToInt(m.Width),
-			Height:           utils.PgToInt(m.Height),
 			SizeBytes:        m.SizeBytes,
 			SortOrder:        i,
-		})
+		}
+
+		// Safely handle URL fields that might be null
+		if urlPtr := utils.PgToStr(m.Url); urlPtr != nil {
+			item.URL = *urlPtr
+		}
+		if thumbPtr := utils.PgToStr(m.ThumbnailUrl); thumbPtr != nil {
+			item.ThumbnailURL = *thumbPtr
+		}
+		if medPtr := utils.PgToStr(m.MediumUrl); medPtr != nil {
+			item.MediumURL = *medPtr
+		}
+		if largePtr := utils.PgToStr(m.LargeUrl); largePtr != nil {
+			item.LargeURL = *largePtr
+		}
+
+		item.Width = utils.PgToInt(m.Width)
+		item.Height = utils.PgToInt(m.Height)
+
+		mediaItems = append(mediaItems, item)
 	}
 
 	// Get featured image if set
@@ -445,19 +458,32 @@ func (s *Service) buildProjectResponse(ctx context.Context, project sqlc.Project
 		featuredID := uuid.UUID(project.FeaturedImageID.Bytes)
 		featuredMedia, err := s.queries.GetMediaByID(ctx, featuredID)
 		if err == nil {
-			featuredImage = &MediaItem{
+			item := &MediaItem{
 				ID:               featuredMedia.ID,
 				Filename:         featuredMedia.Filename,
 				OriginalFilename: featuredMedia.OriginalFilename,
 				MimeType:         featuredMedia.MimeType,
-				URL:              *utils.PgToStr(featuredMedia.Url),
-				ThumbnailURL:     *utils.PgToStr(featuredMedia.ThumbnailUrl),
-				MediumURL:        *utils.PgToStr(featuredMedia.MediumUrl),
-				LargeURL:         *utils.PgToStr(featuredMedia.LargeUrl),
-				Width:            utils.PgToInt(featuredMedia.Width),
-				Height:           utils.PgToInt(featuredMedia.Height),
 				SizeBytes:        featuredMedia.SizeBytes,
 			}
+
+			// Safely handle URL fields
+			if urlPtr := utils.PgToStr(featuredMedia.Url); urlPtr != nil {
+				item.URL = *urlPtr
+			}
+			if thumbPtr := utils.PgToStr(featuredMedia.ThumbnailUrl); thumbPtr != nil {
+				item.ThumbnailURL = *thumbPtr
+			}
+			if medPtr := utils.PgToStr(featuredMedia.MediumUrl); medPtr != nil {
+				item.MediumURL = *medPtr
+			}
+			if largePtr := utils.PgToStr(featuredMedia.LargeUrl); largePtr != nil {
+				item.LargeURL = *largePtr
+			}
+
+			item.Width = utils.PgToInt(featuredMedia.Width)
+			item.Height = utils.PgToInt(featuredMedia.Height)
+
+			featuredImage = item
 		}
 	}
 

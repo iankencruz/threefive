@@ -1,6 +1,6 @@
 // frontend/src/lib/types/projects.ts
+import type { Media } from "./media";
 import type { SEOData } from "./seo";
-import type { Media } from "$api/media";
 
 // Define custom TypeScript types that map to your PostgreSQL ENUMs
 type PageStatus = "draft" | "published" | "archived";
