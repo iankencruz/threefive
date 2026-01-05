@@ -1,18 +1,20 @@
-<!-- frontend/src/routes/admin/projects/[id]/edit/+page.svelte -->
+<!-- frontend/src/routes/(app)/(admin)/admin/projects/[id]/edit/+page.svelte -->
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { PUBLIC_API_URL } from '$env/static/public';
-	import BlockEditor from '$components/blocks/BlockEditor.svelte';
 	import SEOFields from '$components/admin/shared/SEOField.svelte';
+	import ProjectMediaGallery from '$components/projects/ProjectMediaGallery.svelte';
 	import { toast } from 'svelte-sonner';
 	import type { PageData } from './$types';
 	import type { SEOData } from '$lib/types/seo';
+	import type { Media } from '$api/media';
 
 	let { data }: { data: PageData } = $props();
 
 	let formData = $state({
 		title: data.project.title || '',
 		slug: data.project.slug || '',
+		description: data.project.description || '',
 		status: data.project.status || ('draft' as 'draft' | 'published' | 'archived'),
 		client_name: data.project.client_name || '',
 		project_year: data.project.project_year || new Date().getFullYear(),
@@ -20,7 +22,8 @@
 		technologies: data.project.technologies || ([] as string[]),
 		project_status:
 			data.project.project_status || ('completed' as 'completed' | 'ongoing' | 'archived'),
-		blocks: data.project.blocks || [],
+		media_ids: data.project.media?.map((m: Media) => m.id) || ([] as string[]),
+		featured_image_id: data.project.featured_image_id || null,
 		seo: {
 			meta_title: data.project.seo?.meta_title || '',
 			meta_description: data.project.seo?.meta_description || '',
@@ -32,6 +35,7 @@
 		} as SEOData
 	});
 
+	let projectMedia = $state<Media[]>(data.project.media || []);
 	let errors = $state<Record<string, string>>({});
 	let loading = $state(false);
 	let currentTab = $state<'content' | 'seo' | 'project'>('content');
@@ -74,13 +78,15 @@
 			const payload = {
 				title: formData.title,
 				slug: formData.slug,
+				description: formData.description || null,
 				status: formData.status,
-				client_name: formData.client_name,
+				client_name: formData.client_name || null,
 				project_year: formData.project_year,
-				project_url: formData.project_url,
+				project_url: formData.project_url || null,
 				technologies: formData.technologies,
 				project_status: formData.project_status,
-				blocks: formData.blocks,
+				media_ids: formData.media_ids,
+				featured_image_id: formData.featured_image_id,
 				seo: formData.seo.meta_title || formData.seo.meta_description ? formData.seo : undefined
 			};
 
@@ -104,13 +110,11 @@
 				return;
 			}
 
-			const result = await response.json();
+			await response.json();
 			toast.success('Project updated successfully!');
-
-			// Redirect to projects list
 			goto('/admin/projects');
 		} catch (error) {
-			console.error('Error updating project:', error);
+			console.error('Submit error:', error);
 			toast.error('An unexpected error occurred');
 		} finally {
 			loading = false;
@@ -118,22 +122,9 @@
 	};
 </script>
 
-<div class="mx-auto max-w-7xl">
-	<div class="mb-8 flex items-center gap-4">
-		<button
-			onclick={() => goto('/admin/projects')}
-			class="rounded-lg p-2 transition-colors hover:bg-gray-700"
-		>
-			<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					stroke-width="2"
-					d="M10 19l-7-7m0 0l7-7m-7 7h18"
-				/>
-			</svg>
-		</button>
-		<h1 class="">Edit Project</h1>
+<div class="mx-auto max-w-5xl">
+	<div class="mb-8">
+		<h1 class="text-3xl font-bold">Edit Project</h1>
 	</div>
 
 	<form
@@ -141,13 +132,12 @@
 			e.preventDefault();
 			handleSubmit();
 		}}
-		class="space-y-6"
+		class="space-y-8"
 	>
-		<!-- Main Content Card -->
-		<div class="rounded-lg bg-surface shadow-lg">
-			<!-- Tabs Navigation -->
+		<div class="rounded-lg bg-surface shadow-sm">
+			<!-- Tabs -->
 			<div class="border-b border-gray-700">
-				<nav class="flex px-6" aria-label="Tabs">
+				<nav class="flex space-x-8 px-6" aria-label="Tabs">
 					<button
 						type="button"
 						onclick={() => (currentTab = 'content')}
@@ -161,8 +151,7 @@
 					<button
 						type="button"
 						onclick={() => (currentTab = 'seo')}
-						class="ml-8 border-b-2 px-1 py-4 text-sm font-medium transition-colors {currentTab ===
-						'seo'
+						class="border-b-2 px-1 py-4 text-sm font-medium transition-colors {currentTab === 'seo'
 							? 'border-primary text-primary'
 							: 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-200'}"
 					>
@@ -171,7 +160,7 @@
 					<button
 						type="button"
 						onclick={() => (currentTab = 'project')}
-						class="ml-8 border-b-2 px-1 py-4 text-sm font-medium transition-colors {currentTab ===
+						class="border-b-2 px-1 py-4 text-sm font-medium transition-colors {currentTab ===
 						'project'
 							? 'border-primary text-primary'
 							: 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-200'}"
@@ -184,7 +173,7 @@
 			<div class="p-6">
 				{#if currentTab === 'content'}
 					<!-- Basic Info -->
-					<div class="mb-8 space-y-6">
+					<div class="space-y-6">
 						<div class="grid grid-cols-2 gap-6">
 							<div>
 								<label class="mb-2 block font-medium">
@@ -221,6 +210,19 @@
 						</div>
 
 						<div>
+							<label class="mb-2 block text-sm font-medium">Description</label>
+							<textarea
+								bind:value={formData.description}
+								rows="4"
+								class="form-input"
+								placeholder="Brief description of the project"
+							></textarea>
+							{#if errors.description}
+								<p class="mt-1 text-sm text-red-600">{errors.description}</p>
+							{/if}
+						</div>
+
+						<div>
 							<label class="mb-2 block text-sm font-medium">
 								Status <span class="text-red-500">*</span>
 							</label>
@@ -230,11 +232,16 @@
 								<option value="archived">Archived</option>
 							</select>
 						</div>
-					</div>
 
-					<!-- Blocks Section -->
-					<div class="border-t border-gray-700 pt-8">
-						<BlockEditor bind:blocks={formData.blocks} />
+						<!-- Project Media Gallery -->
+						<div class="border-t border-gray-200 pt-8">
+							<ProjectMediaGallery
+								bind:media={projectMedia}
+								bind:featuredImageId={formData.featured_image_id}
+								onMediaChange={(mediaIds) => (formData.media_ids = mediaIds)}
+								onFeaturedImageChange={(mediaId) => (formData.featured_image_id = mediaId)}
+							/>
+						</div>
 					</div>
 				{:else if currentTab === 'seo'}
 					<!-- SEO Fields -->
@@ -296,13 +303,13 @@
 							<div class="flex flex-wrap gap-2">
 								{#each formData.technologies as tech}
 									<span
-										class="inline-flex items-center gap-1 rounded-full bg-blue-900/30 px-3 py-1 text-sm text-blue-300"
+										class="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-sm text-primary"
 									>
 										{tech}
 										<button
 											onclick={() => removeTechnology(tech)}
 											type="button"
-											class="hover:text-blue-100"
+											class="hover:text-primary/70"
 											aria-label="Remove {tech}"
 										>
 											<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -337,7 +344,7 @@
 			<button
 				type="button"
 				onclick={() => goto('/admin/projects')}
-				class="rounded-lg border border-gray-600 px-6 py-2 transition-colors hover:bg-gray-700"
+				class="rounded-lg border border-gray-300 px-6 py-2 transition-colors hover:bg-gray-50"
 			>
 				Cancel
 			</button>

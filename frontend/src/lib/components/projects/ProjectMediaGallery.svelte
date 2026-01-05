@@ -1,7 +1,8 @@
+<!-- frontend/src/lib/components/projects/ProjectMediaGallery.svelte -->
 <script lang="ts">
-	import { PUBLIC_API_URL } from '$env/static/public';
 	import { toast } from 'svelte-sonner';
-	import { Upload, X, Star, ImageUp, Video, Loader } from 'lucide-svelte';
+	import { X, Star, ImageUp, Video, Plus, Image } from 'lucide-svelte';
+	import MediaPicker from '$lib/components/ui/MediaPicker.svelte';
 	import type { Media } from '$api/media';
 
 	interface Props {
@@ -18,61 +19,18 @@
 		onFeaturedImageChange
 	}: Props = $props();
 
-	let uploading = $state(false);
-	let dragOver = $state(false);
+	let showMediaPicker = $state(false);
 	let draggedIndex = $state<number | null>(null);
 
-	// Handle file upload
-	async function handleFileUpload(files: FileList | null) {
-		if (!files || files.length === 0) return;
-
-		uploading = true;
-
-		try {
-			const uploadPromises = Array.from(files).map(async (file) => {
-				const formData = new FormData();
-				formData.append('file', file);
-
-				const response = await fetch(`${PUBLIC_API_URL}/api/v1/media/upload`, {
-					method: 'POST',
-					credentials: 'include',
-					body: formData
-				});
-
-				if (!response.ok) {
-					throw new Error(`Failed to upload ${file.name}`);
-				}
-
-				return await response.json();
-			});
-
-			const uploadedMedia = await Promise.all(uploadPromises);
-
-			// Add new media to the list
-			media = [...media, ...uploadedMedia];
-
-			// Update parent with new media IDs
+	// Handle media selection from picker
+	function handleMediaSelect(mediaId: string, selectedMedia: Media) {
+		const exists = media.some((m) => m.id === mediaId);
+		if (!exists) {
+			media = [...media, selectedMedia];
 			onMediaChange(media.map((m) => m.id));
-
-			toast.success(`Uploaded ${uploadedMedia.length} file(s)`);
-		} catch (error) {
-			console.error('Upload error:', error);
-			toast.error('Failed to upload files');
-		} finally {
-			uploading = false;
+			toast.success('Media added');
 		}
-	}
-
-	function handleDrop(e: DragEvent) {
-		e.preventDefault();
-		dragOver = false;
-		handleFileUpload(e.dataTransfer?.files || null);
-	}
-
-	function handleFileSelect(e: Event) {
-		const target = e.target as HTMLInputElement;
-		handleFileUpload(target.files);
-		target.value = ''; // Reset input
+		showMediaPicker = false;
 	}
 
 	function removeMedia(index: number) {
@@ -117,6 +75,24 @@
 		draggedIndex = null;
 	}
 
+	function moveMediaUp(index: number) {
+		if (index > 0) {
+			const newMedia = [...media];
+			[newMedia[index - 1], newMedia[index]] = [newMedia[index], newMedia[index - 1]];
+			media = newMedia;
+			onMediaChange(media.map((m) => m.id));
+		}
+	}
+
+	function moveMediaDown(index: number) {
+		if (index < media.length - 1) {
+			const newMedia = [...media];
+			[newMedia[index], newMedia[index + 1]] = [newMedia[index + 1], newMedia[index]];
+			media = newMedia;
+			onMediaChange(media.map((m) => m.id));
+		}
+	}
+
 	function formatFileSize(bytes: number): string {
 		if (bytes < 1024) return bytes + ' B';
 		if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
@@ -133,65 +109,49 @@
 </script>
 
 <div class="space-y-6">
-	<!-- Upload Area -->
-	<div
-		aria-pressed="false"
-		class="relative cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition-colors"
-		class:border-primary={dragOver}
-		class:bg-primary={dragOver}
-		class:border-gray-300={!dragOver}
-		ondragover={(e) => {
-			e.preventDefault();
-			dragOver = true;
-		}}
-		ondragleave={() => {
-			dragOver = false;
-		}}
-		ondrop={handleDrop}
-		onclick={() => document.getElementById('file-input')?.click()}
-	>
-		<input
-			id="file-input"
-			type="file"
-			accept="image/*,video/*"
-			multiple
-			onchange={handleFileSelect}
-			class="hidden"
-		/>
-
-		{#if uploading}
-			<div class="flex flex-col items-center gap-4">
-				<Loader class="h-12 w-12 animate-spin text-primary" />
-				<p class="text-lg font-medium">Uploading...</p>
-			</div>
-		{:else}
-			<Upload class="mx-auto mb-4 h-12 w-12 text-gray-400" />
-			<div class="space-y-2">
-				<p class="text-lg font-medium">Drop files here or click to upload</p>
-				<p class="text-sm text-gray-500">
-					Images will be converted to WebP • Videos will be optimized
-				</p>
-				<p class="text-xs text-gray-400">Images: 50MB max • Videos: 200MB max</p>
-			</div>
-		{/if}
+	<!-- Header with Add Button -->
+	<div class="flex items-center justify-between">
+		<h3 class="text-lg font-semibold">Project Media ({media.length})</h3>
+		<button
+			type="button"
+			onclick={() => (showMediaPicker = true)}
+			class="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/90"
+		>
+			<Plus class="h-4 w-4" />
+			Add Media
+		</button>
 	</div>
 
 	<!-- Media Grid -->
-	{#if media.length > 0}
-		<div>
-			<div class="mb-4 flex items-center justify-between">
-				<h3 class="text-lg font-semibold">Project Media ({media.length})</h3>
-				<p class="text-sm text-gray-500">Drag to reorder • Click star to set featured</p>
+	{#if media.length === 0}
+		<div class="rounded-lg border-2 border-dashed border-gray-300 p-12 text-center">
+			<div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
+				<Image class="h-8 w-8 text-gray-400" />
 			</div>
-
-			<div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+			<p class="mb-2 text-gray-600">No media added yet</p>
+			<p class="mb-4 text-sm text-gray-500">
+				Click "Add Media" to select images and videos from your media library
+			</p>
+			<button
+				type="button"
+				onclick={() => (showMediaPicker = true)}
+				class="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/90"
+			>
+				<Plus class="h-4 w-4" />
+				Add Media
+			</button>
+		</div>
+	{:else}
+		<div>
+			<p class="mb-4 text-sm text-gray-500">Drag to reorder • Click star to set featured image</p>
+			<div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4">
 				{#each media as item, index (item.id)}
 					<div
 						draggable="true"
 						ondragstart={() => handleDragStart(index)}
 						ondragover={(e) => handleDragOver(e, index)}
 						ondragend={handleDragEnd}
-						class="group relative cursor-move overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all hover:shadow-md"
+						class="group relative cursor-move overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all hover:border-primary hover:shadow-md"
 						class:ring-2={draggedIndex === index}
 						class:ring-primary={draggedIndex === index}
 					>
@@ -202,11 +162,18 @@
 							</div>
 						{/if}
 
+						<!-- Position Badge -->
+						<div
+							class="absolute top-2 right-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-white shadow-md"
+						>
+							{index + 1}
+						</div>
+
 						<!-- Image/Video Preview -->
 						<div class="aspect-square bg-gray-100">
 							{#if isImage(item)}
 								<img
-									src={item.thumbnail_url}
+									src={item.thumbnail_url || item.medium_url || item.url}
 									alt={item.original_filename}
 									class="h-full w-full object-cover"
 								/>
@@ -221,9 +188,44 @@
 							{/if}
 						</div>
 
-						<!-- Info & Actions -->
-						<div class="p-3">
-							<p class="truncate text-sm font-medium" title={item.original_filename}>
+						<!-- Controls Overlay -->
+						<div
+							class="absolute inset-x-2 top-10 z-10 flex flex-col items-end gap-1 opacity-0 transition-opacity group-hover:opacity-100"
+						>
+							<button
+								type="button"
+								onclick={(e) => {
+									e.stopPropagation();
+									removeMedia(index);
+								}}
+								class="flex h-7 w-7 items-center justify-center rounded bg-red-600 text-white hover:bg-red-700"
+								title="Remove"
+							>
+								<X class="h-4 w-4" />
+							</button>
+							<button
+								type="button"
+								onclick={() => moveMediaUp(index)}
+								disabled={index === 0}
+								class="flex h-7 w-7 items-center justify-center rounded bg-white text-sm font-bold text-gray-900 hover:bg-gray-100 disabled:hidden"
+								title="Move up"
+							>
+								↑
+							</button>
+							<button
+								type="button"
+								onclick={() => moveMediaDown(index)}
+								disabled={index === media.length - 1}
+								class="flex h-7 w-7 items-center justify-center rounded bg-white text-sm font-bold text-gray-900 hover:bg-gray-100 disabled:hidden"
+								title="Move down"
+							>
+								↓
+							</button>
+						</div>
+
+						<!-- Info -->
+						<div class="p-2">
+							<p class="truncate text-xs font-medium" title={item.original_filename}>
 								{item.original_filename}
 							</p>
 							<p class="text-xs text-gray-500">
@@ -234,19 +236,20 @@
 							</p>
 
 							<!-- Action Buttons -->
-							<div class="mt-2 flex gap-2">
+							<div class="mt-2 flex gap-1">
 								<button
 									type="button"
 									onclick={(e) => {
 										e.stopPropagation();
 										setFeaturedImage(item.id);
 									}}
-									class="flex-1 rounded bg-gray-100 px-2 py-1 text-xs transition-colors hover:bg-gray-200"
+									class="group flex-1 rounded bg-yellow-300/30 px-2 py-1 text-xs transition-colors hover:bg-yellow-500"
 									class:bg-yellow-100={featuredImageId === item.id}
 									class:text-yellow-700={featuredImageId === item.id}
+									title="Set as featured"
 								>
 									<Star
-										class={`mx-auto h-3 w-3 ${featuredImageId === item.id ? 'fill-current' : ''}`}
+										class={`mx-auto h-3 w-3 group-hover:fill-yellow-700 ${featuredImageId === item.id ? 'fill-current' : 'text-yellow-700'}`}
 									/>
 								</button>
 								<button
@@ -256,6 +259,7 @@
 										removeMedia(index);
 									}}
 									class="flex-1 rounded bg-red-100 px-2 py-1 text-xs text-red-600 transition-colors hover:bg-red-200"
+									title="Remove"
 								>
 									<X class="mx-auto h-3 w-3" />
 								</button>
@@ -265,10 +269,22 @@
 				{/each}
 			</div>
 		</div>
-	{:else}
-		<div class="rounded-lg border border-dashed border-gray-300 p-8 text-center">
-			<ImageUp class="mx-auto mb-3 h-12 w-12 text-gray-400" />
-			<p class="text-sm text-gray-500">No media added yet</p>
-		</div>
+	{/if}
+
+	<!-- Validation warning -->
+	{#if media.length === 0}
+		<p class="flex items-center gap-2 text-sm text-amber-500">
+			<span>!</span>
+			No media added. Add at least one image to showcase your project.
+		</p>
 	{/if}
 </div>
+
+<!-- Media Picker Modal -->
+{#if showMediaPicker}
+	<MediaPicker
+		show={showMediaPicker}
+		onselect={handleMediaSelect}
+		onclose={() => (showMediaPicker = false)}
+	/>
+{/if}

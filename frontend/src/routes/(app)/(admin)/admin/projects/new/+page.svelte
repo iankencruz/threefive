@@ -3,10 +3,10 @@
 	import { goto } from '$app/navigation';
 	import { PUBLIC_API_URL } from '$env/static/public';
 	import SEOFields from '$components/admin/shared/SEOField.svelte';
+	import ProjectMediaGallery from '$components/projects/ProjectMediaGallery.svelte';
 	import { toast } from 'svelte-sonner';
 	import type { SEOData } from '$types/seo';
 	import type { Media } from '$api/media';
-	import ProjectMediaGallery from '$components/projects/ProjectMediaGallery.svelte';
 
 	let formData = $state<{
 		title: string;
@@ -144,7 +144,7 @@
 		}}
 		class="space-y-8"
 	>
-		<div class="rounded-lg border border-gray-200 bg-white shadow-sm">
+		<div class="rounded-lg bg-surface shadow-sm">
 			<!-- Tabs -->
 			<div class="border-b border-gray-200">
 				<nav class="flex space-x-8 px-6" aria-label="Tabs">
@@ -245,12 +245,11 @@
 
 						<!-- Project Media Gallery -->
 						<div class="border-t border-gray-200 pt-8">
-							<h3 class="mb-4 text-lg font-semibold">Project Media</h3>
 							<ProjectMediaGallery
 								bind:media={projectMedia}
 								bind:featuredImageId={formData.featured_image_id}
-								onMediaChange={(mediaIds: any) => (formData.media_ids = mediaIds)}
-								onFeaturedImageChange={(mediaId: any) => (formData.featured_image_id = mediaId)}
+								onMediaChange={(mediaIds) => (formData.media_ids = mediaIds)}
+								onFeaturedImageChange={(mediaId) => (formData.featured_image_id = mediaId)}
 							/>
 						</div>
 					</div>
