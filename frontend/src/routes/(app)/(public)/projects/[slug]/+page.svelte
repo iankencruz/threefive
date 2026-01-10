@@ -1,12 +1,13 @@
 <!-- frontend/src/routes/(app)/(public)/projects/[slug]/+page.svelte -->
 <script lang="ts">
 	import type { PageData } from './$types';
-	import { Calendar, ExternalLink, User } from 'lucide-svelte';
+	import { Calendar, ChevronLeft, ChevronRight, ExternalLink, User } from 'lucide-svelte';
 	import MediaLightbox from '$lib/components/ui/MediaLightbox.svelte';
 
 	let { data }: { data: PageData } = $props();
 
-	// Lightbox state
+	// Slider state
+	let currentSlide = $state(0);
 	let lightboxOpen = $state(false);
 	let lightboxIndex = $state(0);
 
@@ -25,6 +26,22 @@
 
 	function isImage(mimeType: string): boolean {
 		return mimeType.startsWith('image/');
+	}
+
+	function nextSlide() {
+		if (data.projectMedia) {
+			currentSlide = (currentSlide + 1) % data.projectMedia.length;
+		}
+	}
+
+	function prevSlide() {
+		if (data.projectMedia) {
+			currentSlide = currentSlide === 0 ? data.projectMedia.length - 1 : currentSlide - 1;
+		}
+	}
+
+	function goToSlide(index: number) {
+		currentSlide = index;
 	}
 
 	function openLightbox(index: number) {
@@ -47,25 +64,40 @@
 			lightboxIndex--;
 		}
 	}
+
+	// Handle keyboard navigation for slider
+	function handleKeydown(e: KeyboardEvent) {
+		if (lightboxOpen) return; // Don't interfere with lightbox
+
+		if (e.key === 'ArrowRight') {
+			nextSlide();
+		} else if (e.key === 'ArrowLeft') {
+			prevSlide();
+		}
+	}
+
+	$effect(() => {
+		window.addEventListener('keydown', handleKeydown);
+		return () => {
+			window.removeEventListener('keydown', handleKeydown);
+		};
+	});
 </script>
 
 <svelte:head>
-	<!-- SEO Meta Tags -->
 	<title>{data.project.title || data.project.seo?.meta_title}</title>
-	<meta
-		name="description"
-		content={data.project.seo?.meta_description || data.project.description || ''}
-	/>
-
-	<!-- Open Graph -->
+	{#if data.project.seo?.meta_description || data.project.description}
+		<meta
+			name="description"
+			content={data.project.seo?.meta_description || data.project.description}
+		/>
+	{/if}
 	{#if data.project.seo?.og_title}
 		<meta property="og:title" content={data.project.seo.og_title} />
 	{/if}
 	{#if data.project.seo?.og_description}
 		<meta property="og:description" content={data.project.seo.og_description} />
 	{/if}
-
-	<!-- Robots -->
 	{#if data.project.seo}
 		<meta
 			name="robots"
@@ -75,45 +107,160 @@
 				: 'nofollow'}"
 		/>
 	{/if}
-
-	<!-- Canonical URL -->
 	{#if data.project.seo?.canonical_url}
 		<link rel="canonical" href={data.project.seo.canonical_url} />
 	{/if}
 </svelte:head>
 
-<!-- Page Content -->
-<div class="min-h-screen bg-background">
-	<!-- Project Header -->
-	<section class="border-b border-gray-200 bg-background py-16">
-		<div class="container mx-auto max-w-6xl px-4">
-			<h1 class="mb-4 text-4xl font-bold text-gray-100 md:text-5xl">{data.project.title}</h1>
-			{#if data.project.description}
-				<p class="text-xl text-gray-200">{data.project.description}</p>
-			{/if}
-		</div>
-	</section>
-
-	<!-- Project Media Gallery -->
-	{#if data.projectMedia && data.projectMedia.length > 0}
-		<section class="py-12">
-			<div class="container mx-auto max-w-7xl px-4">
-				<div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-					{#each data.projectMedia as media, index}
-						<button
-							onclick={() => openLightbox(index)}
-							class="group relative aspect-square overflow-hidden rounded-lg bg-gray-100 transition-transform hover:scale-[1.02]"
+<!-- Project Media Slider -->
+{#if data.projectMedia && data.projectMedia.length > 0}
+	{@const currentMedia = data.projectMedia[currentSlide]}
+	{@const secondaryMedia = data.projectMedia[(currentSlide + 1) % data.projectMedia.length]}
+	{@const tertiaryMedia = data.projectMedia[(currentSlide + 2) % data.projectMedia.length]}
+	<section class="-mx-4 h-[calc(100vh-5rem)] bg-background px-4 sm:-mx-6 lg:-mx-8">
+		<div class="flex h-full gap-4 p-4">
+			<!-- Left: Primary Image (2 columns) -->
+			<div class="relative flex flex-[2]">
+				<button
+					onclick={() => openLightbox(currentSlide)}
+					class="group h-full w-full overflow-hidden rounded-lg bg-gray-800"
+				>
+					{#if isImage(currentMedia.mime_type)}
+						<img
+							src={currentMedia.large_url || currentMedia.url}
+							alt={currentMedia.original_filename}
+							class="h-full w-full object-cover transition-transform group-hover:scale-105"
+						/>
+					{:else if isVideo(currentMedia.mime_type)}
+						<video
+							src={currentMedia.url}
+							poster={currentMedia.thumbnail_url}
+							class="h-full w-full object-cover"
+							muted
 						>
-							{#if isImage(media.mime_type)}
+							<track kind="captions" />
+						</video>
+						<!-- Video play icon overlay -->
+						<div class="pointer-events-none absolute inset-0 flex items-center justify-center">
+							<div class="rounded-full bg-black/50 p-6 text-white backdrop-blur-sm">
+								<svg class="h-12 w-12" fill="currentColor" viewBox="0 0 24 24">
+									<path d="M8 5v14l11-7z" />
+								</svg>
+							</div>
+						</div>
+					{/if}
+				</button>
+
+				<!-- Navigation Arrows -->
+				{#if data.projectMedia.length > 1}
+					<button
+						onclick={prevSlide}
+						class="absolute top-1/2 left-4 z-10 -translate-y-1/2 rounded-full bg-white/10 p-3 text-white backdrop-blur-sm transition-all hover:bg-white/20"
+						aria-label="Previous image"
+					>
+						<ChevronLeft size={24} />
+					</button>
+
+					<button
+						onclick={nextSlide}
+						class="absolute top-1/2 right-4 z-10 -translate-y-1/2 rounded-full bg-white/10 p-3 text-white backdrop-blur-sm transition-all hover:bg-white/20"
+						aria-label="Next image"
+					>
+						<ChevronRight size={24} />
+					</button>
+				{/if}
+			</div>
+
+			<!-- Right: Project Details + Secondary + Tertiary Images (1 column) -->
+			<div class="flex min-h-0 flex-1 flex-col gap-4">
+				<!-- Project Details Card -->
+				<div
+					class="max-h-[40%] flex-shrink-0 overflow-y-auto rounded-lg border border-gray-800 bg-gray-950 p-6"
+				>
+					<h2 class="mb-4 text-2xl font-bold text-white">{data.project.title}</h2>
+
+					<div class="space-y-4">
+						{#if data.project.description}
+							<p class="text-sm leading-relaxed text-gray-400">{data.project.description}</p>
+						{/if}
+
+						{#if data.project.client_name}
+							<div>
+								<div class="mb-1 text-xs font-medium tracking-wide text-gray-500 uppercase">
+									Client
+								</div>
+								<div class="text-sm text-white">{data.project.client_name}</div>
+							</div>
+						{/if}
+
+						{#if data.project.project_year}
+							<div>
+								<div class="mb-1 text-xs font-medium tracking-wide text-gray-500 uppercase">
+									Year
+								</div>
+								<div class="text-sm text-white">{data.project.project_year}</div>
+							</div>
+						{/if}
+
+						{#if data.project.technologies && data.project.technologies.length > 0}
+							<div>
+								<div class="mb-2 text-xs font-medium tracking-wide text-gray-500 uppercase">
+									Technologies
+								</div>
+								<div class="flex flex-wrap gap-2">
+									{#each data.project.technologies as tech}
+										<span class="rounded bg-gray-800 px-2 py-1 text-xs text-gray-300">
+											{tech}
+										</span>
+									{/each}
+								</div>
+							</div>
+						{/if}
+
+						{#if data.project.project_url}
+							<div>
+								<div class="mb-1 text-xs font-medium tracking-wide text-gray-500 uppercase">
+									Live Project
+								</div>
+								<a
+									href={data.project.project_url}
+									target="_blank"
+									rel="noopener noreferrer"
+									class="inline-flex items-center gap-1 text-sm text-blue-400 transition-colors hover:text-blue-300"
+								>
+									Visit Website
+									<ExternalLink size={14} />
+								</a>
+							</div>
+						{/if}
+					</div>
+
+					<!-- Image Counter -->
+					<div class="mt-6 border-t border-gray-800 pt-4 text-center">
+						<div class="text-sm text-gray-400">
+							{currentSlide + 1} / {data.projectMedia.length}
+						</div>
+					</div>
+				</div>
+
+				<!-- Secondary and Tertiary Images in 2 rows -->
+				{#if data.projectMedia.length > 1}
+					<div class="flex min-h-0 flex-1 flex-col gap-4">
+						<!-- Secondary Image (Top) -->
+						<button
+							onclick={nextSlide}
+							class="group relative min-h-0 flex-1 overflow-hidden rounded-lg bg-gray-800"
+						>
+							{#if isImage(secondaryMedia.mime_type)}
 								<img
-									src={media.medium_url || media.url}
-									alt={media.original_filename}
-									class="h-full w-full object-cover transition-opacity group-hover:opacity-90"
+									src={secondaryMedia.large_url || secondaryMedia.url}
+									alt={secondaryMedia.original_filename}
+									class="h-full w-full object-cover transition-transform group-hover:scale-105"
 								/>
-							{:else if isVideo(media.mime_type)}
+							{:else if isVideo(secondaryMedia.mime_type)}
 								<video
-									src={media.url}
-									poster={media.thumbnail_url}
+									src={secondaryMedia.url}
+									poster={secondaryMedia.thumbnail_url}
 									class="h-full w-full object-cover"
 									muted
 								>
@@ -129,86 +276,49 @@
 								</div>
 							{/if}
 						</button>
-					{/each}
-				</div>
-			</div>
-		</section>
-	{/if}
 
-	<!-- Project Metadata Section -->
-	<section class=" bg-surface py-16">
-		<div class="container mx-auto max-w-4xl px-4">
-			<h2 class="mb-8 text-center text-2xl font-bold text-gray-100">Project Details</h2>
-
-			<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-				<!-- Client Name -->
-				{#if data.project.client_name}
-					<div class="rounded-lg bg-white p-6 shadow-sm">
-						<div class="mb-2 flex items-center gap-2 text-sm font-medium text-gray-500">
-							<User size={16} />
-							<h3>Client</h3>
-						</div>
-						<p class="text-lg font-semibold text-gray-900">{data.project.client_name}</p>
-					</div>
-				{/if}
-
-				<!-- Project Year -->
-				{#if data.project.project_year}
-					<div class="rounded-lg bg-white p-6 shadow-sm">
-						<div class="mb-2 flex items-center gap-2 text-sm font-medium text-gray-500">
-							<Calendar size={16} />
-							<h3>Year</h3>
-						</div>
-						<p class="text-lg font-semibold text-gray-900">{data.project.project_year}</p>
-					</div>
-				{/if}
-
-				<!-- Technologies -->
-				{#if data.project.technologies && data.project.technologies.length > 0}
-					<div class="rounded-lg bg-white p-6 shadow-sm md:col-span-2">
-						<h3 class="mb-3 text-sm font-medium text-gray-500">Technologies</h3>
-						<div class="flex flex-wrap gap-2">
-							{#each data.project.technologies as tech}
-								<span class="rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
-									{tech}
-								</span>
-							{/each}
-						</div>
-					</div>
-				{/if}
-
-				<!-- Project URL -->
-				{#if data.project.project_url}
-					<div class="rounded-lg bg-white p-6 shadow-sm md:col-span-2">
-						<div class="mb-2 flex items-center gap-2 text-sm font-medium text-gray-500">
-							<ExternalLink size={16} />
-							<h3>Live Project</h3>
-						</div>
-						<a
-							href={data.project.project_url}
-							target="_blank"
-							rel="noopener noreferrer"
-							class="inline-flex items-center gap-2 text-lg font-semibold text-blue-600 transition-colors hover:text-blue-800"
-						>
-							Visit Website
-							<ExternalLink size={18} />
-						</a>
-					</div>
-				{/if}
-
-				<!-- Published Date -->
-				{#if data.project.published_at}
-					<div class="rounded-lg bg-white p-6 shadow-sm md:col-span-2">
-						<h3 class="mb-2 text-sm font-medium text-gray-500">Published</h3>
-						<p class="text-lg font-semibold text-gray-900">
-							{formatDate(data.project.published_at)}
-						</p>
+						<!-- Tertiary Image (Bottom) -->
+						{#if data.projectMedia.length > 2}
+							<button
+								onclick={() => {
+									currentSlide = (currentSlide + 2) % data.projectMedia.length;
+								}}
+								class="group relative min-h-0 flex-1 overflow-hidden rounded-lg bg-gray-800"
+							>
+								{#if isImage(tertiaryMedia.mime_type)}
+									<img
+										src={tertiaryMedia.large_url || tertiaryMedia.url}
+										alt={tertiaryMedia.original_filename}
+										class="h-full w-full object-cover transition-transform group-hover:scale-105"
+									/>
+								{:else if isVideo(tertiaryMedia.mime_type)}
+									<video
+										src={tertiaryMedia.url}
+										poster={tertiaryMedia.thumbnail_url}
+										class="h-full w-full object-cover"
+										muted
+									>
+										<track kind="captions" />
+									</video>
+									<!-- Video play icon overlay -->
+									<div
+										class="pointer-events-none absolute inset-0 flex items-center justify-center"
+									>
+										<div class="rounded-full bg-black/50 p-4 text-white backdrop-blur-sm">
+											<svg class="h-8 w-8" fill="currentColor" viewBox="0 0 24 24">
+												<path d="M8 5v14l11-7z" />
+											</svg>
+										</div>
+									</div>
+								{/if}
+							</button>
+						{/if}
 					</div>
 				{/if}
 			</div>
 		</div>
 	</section>
-</div>
+{/if}
 
 <!-- Lightbox Component -->
 <MediaLightbox
