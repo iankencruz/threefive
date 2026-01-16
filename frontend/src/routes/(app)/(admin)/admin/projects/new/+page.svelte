@@ -138,6 +138,10 @@
 	};
 </script>
 
+<svelte:head>
+	<title>Admin: Create New Project</title>
+</svelte:head>
+
 <div class="mx-auto max-w-5xl">
 	<div class="mb-8">
 		<h1 class="text-3xl font-bold">Create New Project</h1>

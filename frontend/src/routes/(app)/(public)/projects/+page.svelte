@@ -7,6 +7,10 @@
 	let pagination = $derived(data.pagination);
 </script>
 
+<svelte:head>
+	<title>Projects</title>
+</svelte:head>
+
 <div class="mx-auto w-full py-8">
 	<h1 class="mb-8 text-3xl font-bold">Projects</h1>
 

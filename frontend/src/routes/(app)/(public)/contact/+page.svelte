@@ -123,7 +123,7 @@
 </script>
 
 <svelte:head>
-	<title>Contact Us</title>
+	<title>TFP - Contact Us</title>
 	<meta name="description" content="Get in touch with us. We'd love to hear from you." />
 </svelte:head>
 

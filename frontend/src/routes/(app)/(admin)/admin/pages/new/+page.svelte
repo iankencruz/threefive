@@ -104,6 +104,10 @@
 	};
 </script>
 
+<svelte:head>
+	<title>Admin: Create New Page</title>
+</svelte:head>
+
 <div class="mx-auto max-w-7xl">
 	<div class="relative mb-8 flex items-center gap-4">
 		<button

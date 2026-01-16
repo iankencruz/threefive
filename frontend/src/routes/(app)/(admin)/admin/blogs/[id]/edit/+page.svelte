@@ -130,6 +130,10 @@
 	};
 </script>
 
+<svelte:head>
+	<title>Admin: Edit Blog - {formData.title}</title>
+</svelte:head>
+
 <div class="mx-auto max-w-7xl">
 	<div class="mb-8 flex items-center gap-4">
 		<button

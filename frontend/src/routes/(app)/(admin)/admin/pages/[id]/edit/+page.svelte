@@ -127,6 +127,10 @@
 	};
 </script>
 
+<svelte:head>
+	<title>Admin: Edit Page - {data.page.title}</title>
+</svelte:head>
+
 <div class="  mx-auto max-w-7xl">
 	<div class="relative mb-8 flex items-center justify-between gap-4">
 		<div class="flex items-center gap-4">

@@ -85,7 +85,7 @@
 </script>
 
 <svelte:head>
-	<title>{data.project.title || data.project.seo?.meta_title}</title>
+	<title>TFP - {data.project.title || data.project.seo?.meta_title}</title>
 	{#if data.project.seo?.meta_description || data.project.description}
 		<meta
 			name="description"

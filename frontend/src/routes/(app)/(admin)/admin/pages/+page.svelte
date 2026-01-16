@@ -45,10 +45,12 @@
 		}
 	};
 
-	
-
 	const headerItems = ['title', 'status', 'updated', 'actions'];
 </script>
+
+<svelte:head>
+	<title>Admin: Pages</title>
+</svelte:head>
 
 {#snippet pagination(data: PageData)}
 	{#if data.pagination && data.pagination.total_pages > 1}
@@ -117,7 +119,7 @@
 			<h3 class="mb-2 text-xl font-semibold">No pages yet</h3>
 			<p class=" mb-6">Get started by creating your first page</p>
 			<button
-				class="inline-flex items-center gap-2 cursor-pointer rounded-lg bg-primary px-6 py-2 font-medium text-white transition-colors hover:bg-primary"
+				class="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-primary px-6 py-2 font-medium text-white transition-colors hover:bg-primary"
 				onclick={() => goto('/admin/pages/new')}
 			>
 				<Plus size={18} />
@@ -155,7 +157,7 @@
 									<a
 										class="rounded-lg p-2 transition-colors hover:bg-gray-400"
 										href={`/admin/pages/${page.id}/preview`}
-                    target="_blank"
+										target="_blank"
 										aria-label="Preview page"
 										title="Preview in new tab"
 									>
@@ -175,7 +177,7 @@
 									{#if page.status === 'published'}
 										<a
 											class="rounded-lg p-2 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
-                      href={`/${page.slug}`}
+											href={`/${page.slug}`}
 											aria-label="View page"
 										>
 											<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

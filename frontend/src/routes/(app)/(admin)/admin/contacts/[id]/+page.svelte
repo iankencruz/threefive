@@ -55,7 +55,7 @@
 </script>
 
 <svelte:head>
-	<title>Contact: {data.contact.name}</title>
+	<title>Admin: Contact: {data.contact.name}</title>
 </svelte:head>
 
 <div class="mx-auto max-w-4xl">

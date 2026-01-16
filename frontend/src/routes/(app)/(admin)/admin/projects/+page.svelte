@@ -29,6 +29,10 @@
 	};
 </script>
 
+<svelte:head>
+	<title>Admin: Projects</title>
+</svelte:head>
+
 {#snippet pagination(data: PageData)}
 	{#if data.pagination && data.pagination.total_pages > 1}
 		<div class="mt-8 flex items-center justify-center gap-4">

@@ -132,6 +132,10 @@
 	};
 </script>
 
+<svelte:head>
+	<title>Admin: Edit Project - {formData.title || 'Untitled'}</title>
+</svelte:head>
+
 <div class="mx-auto max-w-5xl">
 	<div class="mb-8">
 		<h1 class="text-3xl font-bold">Edit Project</h1>
