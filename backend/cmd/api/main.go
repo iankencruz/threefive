@@ -27,9 +27,12 @@ func main() {
 		log.Fatalf("Failed to create server: %v", err)
 	}
 
+	// Create a context that is cancelled on shutdown
+	ctx := context.Background()
+
 	// Start server in a goroutine
 	go func() {
-		if err := srv.Start(); err != nil && err != http.ErrServerClosed {
+		if err := srv.Start(ctx); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Server failed to start: %v", err)
 		}
 	}()

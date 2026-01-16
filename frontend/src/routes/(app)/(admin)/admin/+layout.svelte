@@ -1,7 +1,16 @@
 <!-- frontend/src/routes/admin/+layout.svelte -->
 <script lang="ts">
 	import { page } from '$app/state';
-	import { BookOpenText, Files, House, Image, ScrollText, Settings } from 'lucide-svelte';
+	import {
+		BookOpenText,
+		Files,
+		House,
+		Image,
+		Mail,
+		PersonStanding,
+		ScrollText,
+		Settings
+	} from 'lucide-svelte';
 
 	import '$src/app.css';
 
@@ -50,6 +59,11 @@
 			<a href="/admin/media" class={linkClasses('/admin/media')}>
 				<Image size={18} />
 				Media
+			</a>
+
+			<a href="/admin/contacts" class={linkClasses('/admin/contacts')}>
+				<Mail size={18} />
+				Contacts
 			</a>
 
 			<a href="/admin/settings" class={linkClasses('/admin/settings')}>

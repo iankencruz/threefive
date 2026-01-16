@@ -20,6 +20,16 @@ type Config struct {
 	MediaMaxSize           int64 // in bytes
 	AutoPurgeEnabled       bool
 	AutoPurgeRetentionDays int
+	SMTP                   SMTPConfig `mapstructure:"smtp"`
+}
+
+type SMTPConfig struct {
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
+	From     string `mapstructure:"from"`
+	FromName string `mapstructure:"from_name"`
 }
 
 type ServerConfig struct {

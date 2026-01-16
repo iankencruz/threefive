@@ -7,6 +7,7 @@
 	import { toast } from 'svelte-sonner';
 	import type { SEOData } from '$types/seo';
 	import type { Media } from '$api/media';
+	import { capitalize } from '$src/lib/utilities';
 
 	let formData = $state<{
 		title: string;
@@ -108,18 +109,24 @@
 				body: JSON.stringify(payload)
 			});
 
+			const result = await response.json();
+
 			if (!response.ok) {
-				const errorData = await response.json();
-				if (errorData.errors) {
-					errors = errorData.errors;
-					toast.error('Please fix the validation errors');
+				if (result.errors && Array.isArray(result.errors)) {
+					const newErrors: Record<string, string> = {};
+
+					result.errors.forEach((err: { field: string; message: string }) => {
+						newErrors[err.field] = err.message;
+						toast.error(`${capitalize(err.field)}: ${err.message}`);
+					});
+
+					errors = newErrors;
 				} else {
-					toast.error(errorData.message || 'Failed to create project');
+					toast.error(result.message || 'Failed to create project');
 				}
 				return;
 			}
 
-			const result = await response.json();
 			toast.success('Project created successfully!');
 			goto(`/admin/projects/${result.id}/edit`);
 		} catch (error) {

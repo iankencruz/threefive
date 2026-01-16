@@ -1,0 +1,16 @@
+meta {
+  name: List Contacts
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base-url}}/api/v1/admin/contacts
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

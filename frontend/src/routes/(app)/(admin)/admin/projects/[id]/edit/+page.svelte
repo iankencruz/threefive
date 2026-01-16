@@ -8,6 +8,7 @@
 	import type { PageData } from './$types';
 	import type { SEOData } from '$lib/types/seo';
 	import type { Media } from '$api/media';
+	import { capitalize } from '$src/lib/utilities';
 
 	let { data }: { data: PageData } = $props();
 
@@ -99,18 +100,27 @@
 				body: JSON.stringify(payload)
 			});
 
+			const result = await response.json();
+
 			if (!response.ok) {
-				const errorData = await response.json();
-				if (errorData.errors) {
-					errors = errorData.errors;
-					toast.error('Please fix the validation errors');
+				if (result.errors && Array.isArray(result.errors)) {
+					const newErrors: Record<string, string> = {};
+
+					result.errors.forEach((err: { field: string; message: string }) => {
+						// Store error for the red UI messages below inputs
+						newErrors[err.field] = err.message;
+
+						// Show capitalized toast for each error
+						toast.error(`${capitalize(err.field)}: ${err.message}`);
+					});
+
+					errors = newErrors;
 				} else {
-					toast.error(errorData.message || 'Failed to update project');
+					toast.error(result.message || 'Failed to update project');
 				}
 				return;
 			}
 
-			await response.json();
 			toast.success('Project updated successfully!');
 			goto('/admin/projects');
 		} catch (error) {

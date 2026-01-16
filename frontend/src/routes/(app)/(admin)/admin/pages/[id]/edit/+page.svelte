@@ -7,6 +7,7 @@
 	import { toast } from 'svelte-sonner';
 	import type { PageData } from './$types';
 	import type { SEOData } from '$lib/types/seo';
+	import { capitalize } from '$src/lib/utilities';
 
 	let { data }: { data: PageData } = $props();
 
@@ -77,22 +78,25 @@
 				body: JSON.stringify(payload)
 			});
 
+			const result = await response.json();
+
 			if (!response.ok) {
-				const errorData = await response.json();
-				if (errorData.errors) {
-					errors = errorData.errors;
-					toast.error('Please fix the validation errors');
+				if (result.errors && Array.isArray(result.errors)) {
+					const newErrors: Record<string, string> = {};
+
+					result.errors.forEach((err: { field: string; message: string }) => {
+						newErrors[err.field] = err.message;
+						toast.error(`${capitalize(err.field)}: ${err.message}`);
+					});
+
+					errors = newErrors;
 				} else {
-					toast.error(errorData.message || 'Failed to update page');
+					toast.error(result.message || 'Failed to update page');
 				}
 				return;
 			}
 
-			const result = await response.json();
-			console.log('Update result:', result);
 			toast.success('Page updated successfully!');
-
-			// Redirect to pages list
 			goto(`/admin/pages/${data.page.id}/edit`);
 		} catch (error) {
 			console.error('Error updating page:', error);

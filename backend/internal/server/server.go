@@ -11,11 +11,13 @@ import (
 	"github.com/iankencruz/threefive/internal/auth"
 	"github.com/iankencruz/threefive/internal/blogs"
 	"github.com/iankencruz/threefive/internal/config"
+	"github.com/iankencruz/threefive/internal/contacts"
 	"github.com/iankencruz/threefive/internal/jobs"
 	"github.com/iankencruz/threefive/internal/media"
 	"github.com/iankencruz/threefive/internal/pages"
 	"github.com/iankencruz/threefive/internal/projects"
 	"github.com/iankencruz/threefive/internal/shared/database"
+	"github.com/iankencruz/threefive/internal/shared/email"
 	"github.com/iankencruz/threefive/internal/shared/session"
 	"github.com/iankencruz/threefive/internal/shared/sqlc"
 	"github.com/iankencruz/threefive/internal/shared/storage"
@@ -34,10 +36,14 @@ type Server struct {
 	MediaHandler   *media.Handler
 	PageHandler    *pages.Handler
 	ProjectHandler *projects.Handler
+	ContactHandler *contacts.Handler
 	BlogHandler    *blogs.Handler
 	CleanupWorker  *jobs.PageCleanupWorker // Add cleanup worker
+	EmailService   *email.Service
+	EmailWorker    *jobs.EmailWorker
 }
 
+// New creates a new server instance with all dependencies initialized
 // New creates a new server instance with all dependencies initialized
 func New(cfg *config.Config) (*Server, error) {
 	// 1. Connect to database
@@ -75,57 +81,41 @@ func New(cfg *config.Config) (*Server, error) {
 	sessionConfig := session.DefaultConfig()
 	sessionManager := session.NewManager(db, queries, sessionConfig)
 
-	// 4. Initialize feature handlers (they create their own services)
+	// 4. Initialize email service
+	emailService := email.NewService(cfg.SMTP)
+
+	// 5. Initialize feature handlers
 	authHandler := auth.NewHandler(db, queries, sessionManager)
 	mediaHandler := media.NewHandler(db, queries, storageInstance)
 	pageHandler := pages.NewHandler(db, queries, cfg)
 	projectHandler := projects.NewHandler(db, queries)
 	blogHandler := blogs.NewHandler(db, queries, cfg)
+	contactHandler := contacts.NewHandler(db, queries, emailService)
 
-	// 5. Initialize cleanup worker if enabled
-	var cleanupWorker *jobs.PageCleanupWorker
-	if cfg.AutoPurgeEnabled {
-		cleanupWorker = jobs.NewPageCleanupWorker(queries, cfg.AutoPurgeRetentionDays)
-	}
+	// 6. Initialize workers
+	cleanupWorker := jobs.NewPageCleanupWorker(queries, cfg.AutoPurgeRetentionDays)
+	emailWorker := jobs.NewEmailWorker(contactHandler.Service)
 
-	// Create server instance
-	srv := &Server{
+	return &Server{
 		Config:         cfg,
 		DB:             db,
 		Queries:        queries,
 		Storage:        storageInstance,
 		SessionManager: sessionManager,
-		CleanupWorker:  cleanupWorker,
 		AuthHandler:    authHandler,
 		MediaHandler:   mediaHandler,
 		PageHandler:    pageHandler,
 		ProjectHandler: projectHandler,
 		BlogHandler:    blogHandler,
-	}
-
-	// 6. Create default admin user if it doesn't exist
-	if err := srv.createDefaultAdminUser(context.Background()); err != nil {
-		log.Printf("Warning: Failed to create default admin user: %v", err)
-		// Don't fail server startup if this fails
-	}
-
-	// 7. Setup router with all initialized components
-	router := srv.setupRouter()
-
-	// 8. Create HTTP server
-	srv.Server = &http.Server{
-		Addr:         cfg.ServerAddress(),
-		Handler:      router,
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
-		IdleTimeout:  60 * time.Second,
-	}
-
-	return srv, nil
+		ContactHandler: contactHandler,
+		CleanupWorker:  cleanupWorker,
+		EmailService:   emailService,
+		EmailWorker:    emailWorker,
+	}, nil
 }
 
 // Start starts the HTTP server and background workers
-func (s *Server) Start() error {
+func (s *Server) Start(ctx context.Context) error {
 	fmt.Printf("\n🚀 Server starting on http://%s\n", s.Config.ServerAddress())
 	fmt.Printf("📊 Environment: %s\n\n", s.Config.Server.Env)
 	fmt.Printf("📁 Storage: %s\n\n", s.Storage.Type())
@@ -141,19 +131,32 @@ func (s *Server) Start() error {
 		fmt.Println("================================================")
 	}
 
-	// Start background cleanup routine for sessions
-	ctx := context.Background()
-	s.SessionManager.StartCleanupRoutine(ctx, 1*time.Hour)
+	// Start cleanup worker
+	s.CleanupWorker.Start(ctx)
 
-	// Start page cleanup worker if enabled
-	if s.CleanupWorker != nil {
-		s.CleanupWorker.Start(ctx)
-		log.Printf("✅ Page cleanup worker started (retention: %d days)", s.Config.AutoPurgeRetentionDays)
-	} else {
-		log.Println("ℹ️  Page auto-purge disabled")
+	// Start email retry worker
+	s.EmailWorker.Start(ctx)
+
+	// Setup router
+	handler := s.setupRouter()
+
+	// Create HTTP server (this was missing!)
+	s.Server = &http.Server{
+		Addr:         fmt.Sprintf(":%d", s.Config.Server.Port),
+		Handler:      handler,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		IdleTimeout:  60 * time.Second,
 	}
 
-	return s.Server.ListenAndServe()
+	log.Printf("Server starting on port %d", s.Config.Server.Port)
+
+	// Start server
+	if err := s.Server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		return fmt.Errorf("server failed to start: %w", err)
+	}
+
+	return nil
 }
 
 // Shutdown gracefully shuts down the server and background workers

@@ -207,6 +207,23 @@ type Blogs struct {
 	DeletedAt       pgtype.Timestamptz `json:"deleted_at"`
 }
 
+type Contacts struct {
+	ID          uuid.UUID          `json:"id"`
+	Name        string             `json:"name"`
+	Email       string             `json:"email"`
+	Subject     pgtype.Text        `json:"subject"`
+	Message     string             `json:"message"`
+	Status      string             `json:"status"`
+	IpAddress   *netip.Addr        `json:"ip_address"`
+	UserAgent   pgtype.Text        `json:"user_agent"`
+	EmailSent   bool               `json:"email_sent"`
+	EmailError  pgtype.Text        `json:"email_error"`
+	EmailSentAt pgtype.Timestamptz `json:"email_sent_at"`
+	CreatedAt   time.Time          `json:"created_at"`
+	UpdatedAt   time.Time          `json:"updated_at"`
+	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
+}
+
 type Media struct {
 	ID               uuid.UUID   `json:"id"`
 	Filename         string      `json:"filename"`

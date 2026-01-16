@@ -4,6 +4,7 @@ package projects
 import (
 	"context"
 	"encoding/json"
+	"slices"
 	"time"
 
 	"github.com/google/uuid"
@@ -46,12 +47,11 @@ func (s *Service) CreateProject(ctx context.Context, req *CreateProjectRequest, 
 	// Validate featured_image_id is in media_ids if provided
 	if req.FeaturedImageID != nil && len(req.MediaIDs) > 0 {
 		featuredFound := false
-		for _, mid := range req.MediaIDs {
-			if mid == *req.FeaturedImageID {
-				featuredFound = true
-				break
-			}
+
+		if req.FeaturedImageID != nil {
+			featuredFound = slices.Contains(req.MediaIDs, *req.FeaturedImageID)
 		}
+
 		if !featuredFound {
 			return nil, errors.BadRequest("featured_image_id must be one of the media_ids", "invalid_featured_image")
 		}

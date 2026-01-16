@@ -15,9 +15,12 @@ type Querier interface {
 	CheckBlogSlugExists(ctx context.Context, arg CheckBlogSlugExistsParams) (bool, error)
 	CheckProjectSlugExists(ctx context.Context, arg CheckProjectSlugExistsParams) (bool, error)
 	CheckSlugExists(ctx context.Context, arg CheckSlugExistsParams) (bool, error)
+	CleanupDeletedContacts(ctx context.Context) error
 	CleanupExpiredPasswordResetTokens(ctx context.Context) error
 	CleanupExpiredSessions(ctx context.Context) error
 	CountBlogs(ctx context.Context, arg CountBlogsParams) (int64, error)
+	CountContacts(ctx context.Context) (int64, error)
+	CountContactsByStatus(ctx context.Context, status string) (int64, error)
 	CountMedia(ctx context.Context) (int64, error)
 	CountPages(ctx context.Context, status string) (int64, error)
 	CountProjects(ctx context.Context, status interface{}) (int64, error)
@@ -35,6 +38,7 @@ type Querier interface {
 	// Blogs Queries
 	// ============================================
 	CreateBlog(ctx context.Context, arg CreateBlogParams) (Blogs, error)
+	CreateContact(ctx context.Context, arg CreateContactParams) (Contacts, error)
 	// backend/sql/queries/blocks_feature.sql
 	// ============================================
 	// Feature Block Queries
@@ -96,6 +100,8 @@ type Querier interface {
 	GetBlocksByEntity(ctx context.Context, arg GetBlocksByEntityParams) ([]Blocks, error)
 	GetBlogByID(ctx context.Context, id uuid.UUID) (Blogs, error)
 	GetBlogBySlug(ctx context.Context, slug string) (Blogs, error)
+	GetContactByID(ctx context.Context, id uuid.UUID) (Contacts, error)
+	GetContactsByIPAddress(ctx context.Context, arg GetContactsByIPAddressParams) ([]Contacts, error)
 	GetEntitiesForMedia(ctx context.Context, mediaID uuid.UUID) ([]GetEntitiesForMediaRow, error)
 	GetFeatureBlockByBlockID(ctx context.Context, blockID uuid.UUID) (BlockFeature, error)
 	GetFeatureBlocksByEntity(ctx context.Context, arg GetFeatureBlocksByEntityParams) ([]BlockFeature, error)
@@ -117,12 +123,16 @@ type Querier interface {
 	GetRichtextBlocksByEntity(ctx context.Context, arg GetRichtextBlocksByEntityParams) ([]BlockRichtext, error)
 	GetSEO(ctx context.Context, arg GetSEOParams) (Seo, error)
 	GetSessionByToken(ctx context.Context, token string) (GetSessionByTokenRow, error)
+	GetUnsentEmails(ctx context.Context, limitCount int32) ([]Contacts, error)
 	GetUserByEmail(ctx context.Context, email string) (Users, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (Users, error)
+	HardDeleteContact(ctx context.Context, id uuid.UUID) error
 	HardDeleteMedia(ctx context.Context, id uuid.UUID) error
 	// Media Relations Queries
 	LinkMediaToEntity(ctx context.Context, arg LinkMediaToEntityParams) (MediaRelations, error)
 	ListBlogs(ctx context.Context, arg ListBlogsParams) ([]Blogs, error)
+	ListContacts(ctx context.Context, arg ListContactsParams) ([]Contacts, error)
+	ListContactsByStatus(ctx context.Context, arg ListContactsByStatusParams) ([]Contacts, error)
 	ListMedia(ctx context.Context, arg ListMediaParams) ([]Media, error)
 	ListMediaByUser(ctx context.Context, uploadedBy uuid.UUID) ([]Media, error)
 	ListPages(ctx context.Context, arg ListPagesParams) ([]Pages, error)
@@ -131,9 +141,12 @@ type Querier interface {
 	ListPublishedPages(ctx context.Context, arg ListPublishedPagesParams) ([]Pages, error)
 	ListPublishedProjects(ctx context.Context, arg ListPublishedProjectsParams) ([]Projects, error)
 	ListUsers(ctx context.Context) ([]Users, error)
+	MarkEmailFailed(ctx context.Context, arg MarkEmailFailedParams) error
+	MarkEmailSent(ctx context.Context, id uuid.UUID) error
 	PurgeOldDeletedPages(ctx context.Context, cutoffDate pgtype.Timestamptz) (int64, error)
 	SearchMedia(ctx context.Context, arg SearchMediaParams) ([]Media, error)
 	SoftDeleteBlog(ctx context.Context, id uuid.UUID) error
+	SoftDeleteContact(ctx context.Context, id uuid.UUID) error
 	SoftDeleteMedia(ctx context.Context, id uuid.UUID) error
 	SoftDeletePage(ctx context.Context, id uuid.UUID) error
 	SoftDeleteProject(ctx context.Context, id uuid.UUID) error
@@ -141,6 +154,7 @@ type Querier interface {
 	UpdateBlockOrder(ctx context.Context, arg UpdateBlockOrderParams) error
 	UpdateBlog(ctx context.Context, arg UpdateBlogParams) (Blogs, error)
 	UpdateBlogStatus(ctx context.Context, arg UpdateBlogStatusParams) (Blogs, error)
+	UpdateContactStatus(ctx context.Context, arg UpdateContactStatusParams) (Contacts, error)
 	UpdateFeatureBlock(ctx context.Context, arg UpdateFeatureBlockParams) (BlockFeature, error)
 	UpdateGalleryBlock(ctx context.Context, arg UpdateGalleryBlockParams) (BlockGallery, error)
 	UpdateHeaderBlock(ctx context.Context, arg UpdateHeaderBlockParams) (BlockHeader, error)

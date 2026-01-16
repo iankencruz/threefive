@@ -6,6 +6,7 @@
 	import SEOFields from '$components/admin/shared/SEOField.svelte';
 	import { toast } from 'svelte-sonner';
 	import type { SEOData } from '$types/seo';
+	import { capitalize } from '$src/lib/utilities';
 
 	let formData = $state<{
 		title: string;
@@ -74,18 +75,22 @@
 				body: JSON.stringify(payload)
 			});
 
+			const result = await response.json();
+
 			if (!response.ok) {
-				const errorData = await response.json();
-				if (errorData.errors) {
-					errors = errorData.errors;
-					toast.error('Please fix the validation errors');
+				if (result.errors && Array.isArray(result.errors)) {
+					const newErrors: Record<string, string> = {};
+					// Validation errors
+					result.errors.forEach((err: { field: string; message: string }) => {
+						newErrors[err.field] = err.message;
+						toast.error(`${capitalize(err.field)}: ${err.message}`);
+					});
+					errors = newErrors;
 				} else {
-					toast.error(errorData.message || 'Failed to create page');
+					toast.error('Failed to create page');
 				}
-				return;
 			}
 
-			const result = await response.json();
 			toast.success('Page created successfully!');
 
 			// Redirect to pages list

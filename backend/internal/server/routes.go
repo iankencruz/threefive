@@ -10,6 +10,7 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/iankencruz/threefive/internal/auth"
 	"github.com/iankencruz/threefive/internal/blogs"
+	"github.com/iankencruz/threefive/internal/contacts"
 	"github.com/iankencruz/threefive/internal/media"
 	"github.com/iankencruz/threefive/internal/pages"
 	"github.com/iankencruz/threefive/internal/projects"
@@ -47,6 +48,7 @@ func (s *Server) setupRouter() http.Handler {
 		pages.RegisterRoutes(r, s.PageHandler, s.SessionManager)
 		projects.RegisterRoutes(r, s.ProjectHandler, s.SessionManager)
 		blogs.RegisterRoutes(r, s.BlogHandler, s.SessionManager)
+		contacts.RegisterRoutes(r, s.ContactHandler, s.SessionManager)
 		// user.RegisterRoutes(r, s.userHandler)
 		// project.RegisterRoutes(r, s.projectHandler)
 	})
