@@ -1,33 +1,40 @@
 package main
 
 import (
-	mw "github.com/iankencruz/threefive/internal/middleware"
-	"github.com/labstack/echo/v5"
-)
+	"fmt"
+	"os"
+	"time"
 
-// ANSI Color Codes
-const (
-	cReset  = "\033[0m"
-	cGray   = "\033[38;5;245m"
-	cYellow = "\033[1;33m"
-	cOrange = "\033[38;5;208m"
-	cBlue   = "\033[94m"
-	cGreen  = "\033[32m"
-	cWhite  = "\033[37m"
+	"github.com/iankencruz/threefive/internal/server"
+	"github.com/joho/godotenv"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 func main() {
 
-	e := echo.New()
+	err := godotenv.Load()
+	if err != nil {
+		log.Info().Msg("No .env file found, proceeding with environment variables")
+	}
 
-	e.Use(mw.CustomRequestLogger())
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	if os.Getenv("ENV") != "production" {
+		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339})
+	}
 
-	e.GET("/", func(c *echo.Context) error {
-		return c.String(200, "Hello, World!")
-	})
+	s := server.New()
 
-	if err := e.Start(":8080"); err != nil {
-		e.Logger.Error("Failed to start server", "Error", err)
+	// Get port from environment
+	port := fmt.Sprintf(":%s", os.Getenv("PORT"))
+	if port == "" {
+		port = ":8080" // fallback
+	}
+
+	log.Info().Msgf("Starting %s server on port %s", os.Getenv("APP_NAME"), port)
+
+	if err := s.Start(port); err != nil {
+
 	}
 
 }
