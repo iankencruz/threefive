@@ -4,14 +4,9 @@ version: "3"
 dotenv: [".env", ".env.local"]
 
 vars:
-  BACKEND_DIR: ./backend
-  FRONTEND_DIR: ./frontend
   BUILD_DIR: ./bin
   BINARY_NAME: api
-  GO_FILES: ./backend/cmd/api/main.go
-
-  GO_GROUP: " GO"
-  BUN_GROUP: "  BUN"
+  GO_FILES: ./cmd/api/main.go
 
   EXE: main{{exeExt}}
 
@@ -29,96 +24,15 @@ tasks:
     cmds:
       - task --list
 
-  init:
-    desc: "Initial project setup"
-    cmds:
-      - task: go:tidy
-      - task: db:reset
-      - task: db:up
-      - task: sqlc
-
-  # =====================================
-  # Database tasks (Goose)
-  # =====================================
-
-  db:create:
-    desc: "Create new migration (use: task db:create -- migration_name)"
-    cmds:
-      - goose {{.GOOSE_FLAGS}} -dir {{.GOOSE_MIGRATION_DIR}} create {{.CLI_ARGS}} sql
-    requires:
-      vars: [GOOSE_MIGRATION_DIR]
-
-  db:up:
-    desc: "Applies database migrations. Use `task db:up` to apply all pending migrations or `task db:up -- <version>` to migrate to a specific version."
-    cmds:
-      - |
-        {{if .CLI_ARGS}}
-        goose up-to {{.CLI_ARGS}}
-        {{else}}
-        goose up
-        {{end}}
-
-  db:down:
-    desc: "Rollback the last migration"
-    cmds:
-      - |
-        {{if .CLI_ARGS}}
-        goose down-to {{.CLI_ARGS}}
-        {{else}}
-        goose down
-        {{end}}
-
-  db:status:
-    desc: "Show migration status"
-    cmds:
-      - goose status
-
-  db:reset:
-    aliases: [db:res]
-    desc: "Reset database (rollback all migrations)"
-    prompt: "This will rollback all migrations. Are you sure?"
-    cmds:
-      - goose  reset
-      - goose  up
-
-  db:version:
-    aliases: [db-v]
-    desc: "Show current migration version"
-    cmds:
-      - goose version
-
-  db:fix:
-    desc: "Fix sequential numbering of migration files"
-    cmds:
-      - goose fix
-
-  # =====================================
-  # SQLC tasks
-  # =====================================
-
-  sqlc:
-    desc: "Generate Go code from SQL"
-    dir: "{{.BACKEND_DIR}}"
-    silent: true
-    cmds:
-      - sqlc generate
-      - echo "sqlc generate completed."
-
-  # =====================================
-  # Backend tasks
-  # =====================================
-
   go:tidy:
     desc: "Tidy Go modules"
-    dir: "{{.BACKEND_DIR}}"
     cmds:
       - go mod tidy
 
   go:build:
     desc: "Build Go binary"
-    dir: "{{.BACKEND_DIR}}"
     cmds:
-      - go build -o {{.BUILD_DIR}}/{{.EXE}} ./cmd/api/main.go
+      - go build -o {{.BUILD_DIR}}/{{.EXE}} ./cmd/web/main.go
       - printf "\n✅ Go build - {{.BUILD_DIR}}/{{.EXE}} \n\n"
     sources:
       - "**/*.go"
@@ -129,98 +43,19 @@ tasks:
 
   go:
     desc: "Run binary"
-    dir: "{{.BACKEND_DIR}}"
     silent: true
     cmds:
       - defer: { task: clean }
       - air
 
-  bun:
-    desc: "Run frontend development server"
-    dir: "{{.FRONTEND_DIR}}"
-    silent: true
-    cmds:
-      - bun --bun run dev --clearScreen false
-
-  bun:install:
-    desc: "Install frontend dependencies (use -- <package> to install specific)"
-    dir: "{{.FRONTEND_DIR}}"
-    cmds:
-      - |
-        if [ "{{.CLI_ARGS}}" != "<no value>" ]; then
-          bun add {{.CLI_ARGS}}
-        else
-          bun install
-        fi
-
-  bun:build:
-    desc: "Build frontend for production"
-    dir: "{{.FRONTEND_DIR}}"
-    cmds:
-      - bun --bun run build
-
-  bun:preview:
-    desc: "Preview production build"
-    dir: "{{.FRONTEND_DIR}}"
-    deps: [bun:build]
-    cmds:
-      - bun --bun run preview
-
-  bun:check:
-    desc: "Run Biome check (lint + format)"
-    dir: "{{.FRONTEND_DIR}}"
-    cmds:
-      - bunx biome check ./src
-
-  bun:fix:
-    desc: "Fix all issues (lint + format)"
-    dir: "{{.FRONTEND_DIR}}"
-    cmds:
-      - bunx biome check --write ./src
-
-  dev:
-    desc: "Starts the Go backend  and starts the Bun frontend, with all logs visible."
-    deps:
-      - task: podman:up
-    cmds:
-      - task --parallel go bun
-
-  # =====================================
-  # Testing
-  # test:
-  #   desc: "Run all tests"
-  #   cmds:
-  #     - task: _test:backend
-  #     - task: _test:frontend
-
-  # =====================================
-  # Utilities
-  # =====================================
-
-  podman:up:
-    desc: "Run compose file"
-    internal: true
-    cmds:
-      - podman compose up -d
-
-  podman:down:
-    desc: "Stop compose containers"
-    internal: true
-    silent: true
-    cmds:
-      - printf '\n*=== Stopping compose containers===**\n\n'
-      - podman compose down
-      - printf '\n*=== Containers Removed ===*\n\n'
-
   clean:
     desc: "Clean build artifacts"
-    dir: "{{.BACKEND_DIR}}"
     silent: true
     cmds:
       - printf "\n*=== Running Cleanup Process ===*\n"
       - rm -rf bin
       - task: go:tidy
-      - task: podman:down
+      # - task: podman:down
 
   health:
     desc: "Check if backend is running"
