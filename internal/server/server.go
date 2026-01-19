@@ -11,14 +11,16 @@ import (
 
 	"github.com/iankencruz/threefive/database"
 	"github.com/iankencruz/threefive/internal/middleware"
+	"github.com/iankencruz/threefive/internal/services"
 	"github.com/labstack/echo/v5"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
 type Server struct {
-	Echo *echo.Echo
-	DB   database.Service
+	Echo        *echo.Echo
+	DB          database.Service
+	UserService *services.UserService
 }
 
 func NewServer() *Server {

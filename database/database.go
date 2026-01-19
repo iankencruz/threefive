@@ -16,8 +16,7 @@ type Service interface {
 }
 
 type service struct {
-	db      *pgxpool.Pool
-	queries *pgxpool.Pool
+	db *pgxpool.Pool
 }
 
 func New() Service {
@@ -30,6 +29,7 @@ func New() Service {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
+	// Configure the database connection pool
 	config, err := pgxpool.ParseConfig(dbURL)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to parse database config")
@@ -39,6 +39,7 @@ func New() Service {
 	config.MinConns = 2
 	config.MaxConnIdleTime = 5 * time.Minute
 
+	// Create the connection pool
 	dbPool, err := pgxpool.NewWithConfig(ctx, config)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to create database connection pool")
