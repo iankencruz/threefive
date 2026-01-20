@@ -33,12 +33,12 @@ type SessionManager struct {
 }
 
 type sessionData struct {
-	Values map[string]interface{}
+	Values map[string]any
 }
 
 func init() {
 	// Register types for gob encoding
-	gob.Register(map[string]interface{}{})
+	gob.Register(map[string]any{})
 }
 
 func NewManager(store Store, lifetime time.Duration, logger *slog.Logger) *SessionManager {
@@ -50,16 +50,16 @@ func NewManager(store Store, lifetime time.Duration, logger *slog.Logger) *Sessi
 }
 
 // Load retrieves the session data for the given request.
-func (s *SessionManager) Load(ctx context.Context, c *echo.Context) (map[string]interface{}, error) {
+func (s *SessionManager) Load(ctx context.Context, c *echo.Context) (map[string]any, error) {
 	// Get session token from cookie
 	cookie, err := c.Request().Cookie(sessionCookieName)
 	if err != nil {
-		return make(map[string]interface{}), nil
+		return make(map[string]any), nil
 	}
 
 	token := cookie.Value
 	if token == "" {
-		return make(map[string]interface{}), nil
+		return make(map[string]any), nil
 	}
 
 	// Load session data from store
@@ -69,11 +69,11 @@ func (s *SessionManager) Load(ctx context.Context, c *echo.Context) (map[string]
 			"error", err,
 			"token", token[:10]+"...",
 		)
-		return make(map[string]interface{}), err
+		return make(map[string]any), err
 	}
 
 	if !exists {
-		return make(map[string]interface{}), nil
+		return make(map[string]any), nil
 	}
 
 	// Decode session data
@@ -82,7 +82,7 @@ func (s *SessionManager) Load(ctx context.Context, c *echo.Context) (map[string]
 		s.logger.Error("failed to decode session data",
 			"error", err,
 		)
-		return make(map[string]interface{}), err
+		return make(map[string]any), err
 	}
 
 	s.logger.Debug("session loaded",
@@ -93,7 +93,7 @@ func (s *SessionManager) Load(ctx context.Context, c *echo.Context) (map[string]
 }
 
 // Save persists the session data and writes the session cookie.
-func (s *SessionManager) Save(ctx context.Context, c *echo.Context, values map[string]interface{}) error {
+func (s *SessionManager) Save(ctx context.Context, c *echo.Context, values map[string]any) error {
 	// Get existing token or generate new one
 	token, err := s.getToken(c)
 	if err != nil {

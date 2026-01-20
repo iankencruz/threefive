@@ -36,7 +36,7 @@ func (m *SessionMiddleware) Session(next echo.HandlerFunc) echo.HandlerFunc {
 			m.logger.Error("failed to load session",
 				"error", err,
 			)
-			sessionData = make(map[string]interface{})
+			sessionData = make(map[string]any)
 		}
 
 		// Store session data in context
@@ -68,21 +68,21 @@ func (m *SessionMiddleware) RequireAuth(next echo.HandlerFunc) echo.HandlerFunc 
 
 // Helper functions to work with session data
 
-func GetSessionData(c *echo.Context) map[string]interface{} {
+func GetSessionData(c *echo.Context) map[string]any {
 	data := c.Get(sessionContextKey)
 	if data == nil {
-		return make(map[string]interface{})
+		return make(map[string]any)
 	}
-	return data.(map[string]interface{})
+	return data.(map[string]any)
 }
 
-func PutSessionData(c *echo.Context, key string, value interface{}) {
+func PutSessionData(c *echo.Context, key string, value any) {
 	sessionData := GetSessionData(c)
 	sessionData[key] = value
 	c.Set(sessionContextKey, sessionData)
 }
 
-func GetSessionValue(c *echo.Context, key string) (interface{}, bool) {
+func GetSessionValue(c *echo.Context, key string) (any, bool) {
 	sessionData := GetSessionData(c)
 	value, exists := sessionData[key]
 	return value, exists

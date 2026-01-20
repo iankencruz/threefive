@@ -29,6 +29,6 @@ func main() {
 
 	// Start the server
 	if err := s.Start(ctx, port); err == nil {
-		s.Log.Error("Failed to start server", err)
+		s.Log.Error("Failed to start server", "error", err)
 	}
 }
