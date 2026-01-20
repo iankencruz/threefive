@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 
+	"github.com/iankencruz/threefive/components/toast"
 	"github.com/iankencruz/threefive/templates/pages"
 	"github.com/labstack/echo/v5"
 )
@@ -32,5 +33,13 @@ func (h *AuthHandler) ShowLoginPage(c *echo.Context) error {
 func (h *AuthHandler) HandleLogin(c *echo.Context) error {
 	// TODO: Implement authentication logic
 	// For now, just return a placeholder
+
+	toast.Toast(toast.Props{
+		Title:       "Hello from Login Handler - to be implemented",
+		Variant:     "success",
+		Description: "This is a placeholder toast message.",
+		Icon:        true,
+		Position:    "top-right",
+	}).Render(c.Request().Context(), c.Response())
 	return c.String(http.StatusOK, "Login handler - to be implemented")
 }

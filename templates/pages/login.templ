@@ -7,92 +7,86 @@ import "github.com/iankencruz/threefive/components/label"
 import "github.com/iankencruz/threefive/templates/layouts"
 
 type LoginPageProps struct {
-Email string
-Error string
+	Email string
+	Error string
 }
 
 templ LoginPage(props LoginPageProps) {
-@layouts.Base("Login - ThreeFive") {
-<div class="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-  <div class="w-full max-w-md">
-    <div class="bg-white rounded-lg shadow-lg p-8">
-      <!-- Logo/Brand -->
-      <div class="text-center mb-8">
-        <h1 class="text-3xl font-bold text-gray-900">ThreeFive</h1>
-        <p class="text-gray-600 mt-2">Sign in to your account</p>
-      </div>
-
-      <!-- Error Message -->
-      if props.Error != "" {
-      <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-        <p class="text-sm text-red-800">{ props.Error }</p>
-      </div>
-      }
-
-      <!-- Login Form -->
-      <form id="login-form" hx-post="/login" hx-target="#login-form" hx-swap="outerHTML" class="space-y-6">
-        <!-- Email Field -->
-        <div class="space-y-2">
-          @label.Label(label.Props{
-          For: "email",
-          }) {
-          Email
-          }
-          @input.Input(input.Props{
-          ID: "email",
-          Name: "email",
-          Type: "email",
-          Placeholder: "you@example.com",
-          Value: props.Email,
-          })
-        </div>
-
-        <!-- Password Field -->
-        <div class="space-y-2">
-          @label.Label(label.Props{
-          For: "password",
-          }) {
-          Password
-          }
-          @input.Input(input.Props{
-          ID: "password",
-          Name: "password",
-          Type: "password",
-          Placeholder: "••••••••",
-          })
-        </div>
-
-        <!-- Remember Me & Forgot Password -->
-        <div class="flex items-center justify-between text-sm">
-          <label class="flex items-center">
-            <input type="checkbox" name="remember" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-            <span class="ml-2 text-gray-700">Remember me</span>
-          </label>
-          <a href="/forgot-password" class="text-blue-600 hover:text-blue-700">
-            Forgot password?
-          </a>
-        </div>
-
-        <!-- Submit Button -->
-        <div>
-          @button.Button(button.Props{
-          Type: "submit",
-          Variant: "default",
-          }) {
-          Sign In
-          }
-        </div>
-      </form>
-    </div>
-
-    <!-- Footer -->
-    <p class="text-center text-sm text-gray-600 mt-6">
-      Don't have an account?
-      <a href="/register" class="text-blue-600 hover:text-blue-700 font-medium">
-        Sign up
-      </a>
-    </p>
-  </div>
-</div>
-}
+	@layouts.Base("Login - ThreeFive") {
+		<div class="min-h-screen bg-black/80 flex items-center justify-center p-4">
+			<div class="w-full max-w-md">
+				<div class="bg-white rounded-lg shadow-lg p-8">
+					<!-- Logo/Brand -->
+					<div class="text-center mb-8">
+						<h1 class="text-3xl font-bold text-gray-900">ThreeFive</h1>
+						<p class="text-gray-600 mt-2">Sign in to your account</p>
+					</div>
+					<!-- Error Message -->
+					if props.Error != "" {
+						<div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+							<p class="text-sm text-red-800">{ props.Error }</p>
+						</div>
+					}
+					<!-- Login Form -->
+					<form id="login-form" hx-post="/login" hx-target="#login-form" hx-swap="outerHTML" class="space-y-6">
+						<!-- Email Field -->
+						<div class="space-y-2">
+							@label.Label(label.Props{
+								For: "email",
+							}) {
+								Email
+							}
+							@input.Input(input.Props{
+								ID:          "email",
+								Name:        "email",
+								Type:        "email",
+								Placeholder: "you@example.com",
+								Value:       props.Email,
+							})
+						</div>
+						<!-- Password Field -->
+						<div class="space-y-2">
+							@label.Label(label.Props{
+								For: "password",
+							}) {
+								Password
+							}
+							@input.Input(input.Props{
+								ID:          "password",
+								Name:        "password",
+								Type:        "password",
+								Placeholder: "••••••••",
+							})
+						</div>
+						<!-- Remember Me & Forgot Password -->
+						<div class="flex items-center justify-between text-sm">
+							<label class="flex items-center">
+								<input type="checkbox" name="remember" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"/>
+								<span class="ml-2 text-gray-700">Remember me</span>
+							</label>
+							<a href="/forgot-password" class="text-blue-600 hover:text-blue-700">
+								Forgot password?
+							</a>
+						</div>
+						<!-- Submit Button -->
+						<div>
+							@button.Button(button.Props{
+								Type:    "submit",
+								Variant: "default",
+							}) {
+								Sign In
+							}
+						</div>
+					</form>
+				</div>
+				<!-- Footer -->
+				<p class="text-center text-sm text-gray-600 mt-6">
+					Don't have an account?
+					<a href="/register" class="text-blue-600 hover:text-blue-700 font-medium">
+						Sign up
+					</a>
+				</p>
+			</div>
+		</div>
+	}
 }
