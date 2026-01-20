@@ -5,8 +5,16 @@
 package generated
 
 import (
+	"time"
+
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+type Session struct {
+	Token  string
+	Data   []byte
+	Expiry time.Time
+}
 
 type User struct {
 	ID           pgtype.UUID
@@ -14,6 +22,6 @@ type User struct {
 	LastName     string
 	Email        string
 	PasswordHash string
-	CreatedAt    pgtype.Timestamptz
-	UpdatedAt    pgtype.Timestamptz
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }

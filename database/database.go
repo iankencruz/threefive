@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"log/slog"
 	"os"
 	"time"
 
@@ -16,14 +17,14 @@ type Service interface {
 }
 
 type service struct {
-	db *pgxpool.Pool
+	db     *pgxpool.Pool
+	logger *slog.Logger
 }
 
-func New() Service {
-
+func New(logger *slog.Logger) Service {
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
-		log.Fatal().Msg("DATABASE_URL environment variable is not set")
+		logger.Info("DATABASE_URL environment variable is not set")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -32,7 +33,7 @@ func New() Service {
 	// Configure the database connection pool
 	config, err := pgxpool.ParseConfig(dbURL)
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed to parse database config")
+		logger.Error("failed to parse database config")
 	}
 
 	config.MaxConns = 10
@@ -42,18 +43,17 @@ func New() Service {
 	// Create the connection pool
 	dbPool, err := pgxpool.NewWithConfig(ctx, config)
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed to create database connection pool")
+		logger.Error("failed to create database connection pool")
 	}
 
 	// Verify the connection
 	if err := dbPool.Ping(ctx); err != nil {
-		log.Fatal().Err(err).Msg("failed to ping database")
+		logger.Error("failed to ping database")
 	}
 
-	log.Info().Msg("Connected to PostgreSQL successfully")
+	logger.Info("Connected to PostgreSQL successfully")
 
-	return &service{db: dbPool}
-
+	return &service{db: dbPool, logger: logger}
 }
 
 func (s *service) Health() map[string]string {

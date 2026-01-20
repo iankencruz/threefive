@@ -8,6 +8,8 @@ SELECT * FROM users
 WHERE email = @email
 LIMIT 1;
 
+
+
 -- name: CreateUser :one
 INSERT INTO users (
   first_name,
@@ -50,3 +52,4 @@ SELECT EXISTS(
   SELECT 1 FROM users
   WHERE email = @email
 );
+
