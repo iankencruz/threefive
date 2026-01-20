@@ -5,10 +5,13 @@ dotenv: [".env", ".env.local"]
 
 vars:
   BUILD_DIR: ./bin
-  BINARY_NAME: api
+  BINARY_NAME: web
   GO_FILES: ./cmd/api/main.go
 
   EXE: main{{exeExt}}
+
+  TAILWIND_CMD:
+    sh: command -v tailwindcss >/dev/null 2>&1 && echo "tailwindcss" || echo "bunx @tailwindcss/cli"
 
   # Database variables
 
@@ -36,21 +39,28 @@ tasks:
       - go.mod
       - go.sum
     generates:
-      - "{{.BUILD_DIR}}/{{.BINARY_NAME}}"
+      - "{{.BUILD_DIR}}/{{.EXE}}"
 
-  go:
-    desc: "Run binary"
+  templ:
+    desc: Run templ with integrated server and hot reload
+    cmds:
+      - templ generate --watch --proxy="http://localhost:8090" --cmd="go run ./cmd/web/main.go" --open-browser=false
+
+  tailwind:
+    desc: Watch Tailwind CSS changes
+    cmds:
+      - "{{.TAILWIND_CMD}} -i ./assets/css/input.css -o ./assets/css/output.css --watch"
+
+  dev:
+    desc: "Start Development watch mode"
     silent: true
     cmds:
       - defer: { task: clean }
-      - air
+      - task --parallel tailwind templ
 
   clean:
     desc: "Clean build artifacts"
-    silent: true
     cmds:
-      - printf "\n*=== Running Cleanup Process ===*\n"
-      - rm -rf bin
       - task: go:tidy
       # - task: podman:down
 

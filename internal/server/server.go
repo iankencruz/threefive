@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/iankencruz/threefive/database"
+	"github.com/iankencruz/threefive/database/generated"
 	"github.com/iankencruz/threefive/internal/middleware"
 	"github.com/iankencruz/threefive/internal/services"
 	"github.com/labstack/echo/v5"
@@ -20,11 +21,11 @@ import (
 type Server struct {
 	Echo        *echo.Echo
 	DB          database.Service
+	Queries     *generated.Queries
 	UserService *services.UserService
 }
 
 func NewServer() *Server {
-
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	if os.Getenv("ENV") != "production" {
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339})
@@ -35,22 +36,26 @@ func NewServer() *Server {
 		Logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
 	})
 
+	// Middlewares here
 	e.Use(middleware.CustomRequestLogger())
 
+	db := database.New()
+
+	queries := generated.New(db.Pool())
+
 	s := &Server{
-		Echo: e,
-		DB:   database.New(),
+		Echo:    e,
+		DB:      db,
+		Queries: queries,
 	}
 
 	s.RegisterRoutes()
 
 	return s
-
 }
 
 // Start runs the Echo server on a specific address
 func (s *Server) Start(ctx context.Context, address string) error {
-
 	if address == "" {
 		address = ":8080" // fallback
 	}

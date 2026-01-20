@@ -1,0 +1,141 @@
+package pages
+
+import (
+"github.com/iankencruz/threefive/internal/templates/layouts"
+"github.com/iankencruz/threefive/components/button"
+"github.com/iankencruz/threefive/components/card"
+"github.com/iankencruz/threefive/components/input"
+"github.com/iankencruz/threefive/components/label"
+"github.com/iankencruz/threefive/components/checkbox"
+"github.com/iankencruz/threefive/components/alert"
+)
+
+type LoginPageProps struct {
+Error string
+Email string
+}
+
+templ LoginPage(props LoginPageProps) {
+@layouts.Base("Login - ThreeFive") {
+<div class="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
+  <div class="w-full max-w-md space-y-8">
+    <!-- Logo/Header -->
+    <div class="text-center space-y-2">
+      <h1 class="text-4xl font-bold tracking-tight text-gray-900">ThreeFive</h1>
+      <p class="text-sm text-gray-600">Sign in to your account</p>
+    </div>
+
+    <!-- Login Card -->
+    @card.Card(card.CardProps{}) {
+    @card.CardHeader(card.CardHeaderProps{}) {
+    @card.CardTitle(card.CardTitleProps{}) {
+    Welcome back
+    }
+    @card.CardDescription(card.CardDescriptionProps{}) {
+    Enter your credentials to access your account
+    }
+    }
+
+    @card.CardContent(card.CardContentProps{}) {
+    <!-- Error Alert -->
+    if props.Error != "" {
+    <div class="mb-6">
+      @alert.Alert(alert.AlertProps{
+      Variant: alert.VariantDestructive,
+      }) {
+      @alert.AlertTitle(alert.AlertTitleProps{}) {
+      Error
+      }
+      @alert.AlertDescription(alert.AlertDescriptionProps{}) {
+      { props.Error }
+      }
+      }
+    </div>
+    }
+
+    <!-- Login Form -->
+    <form action="/login" method="POST" class="space-y-4">
+      <!-- Email Field -->
+      <div class="space-y-2">
+        @label.Label(label.LabelProps{
+        For: "email",
+        }) {
+        Email address
+        }
+        @input.Input(input.InputProps{
+        Type: "email",
+        ID: "email",
+        Name: "email",
+        Placeholder: "you@example.com",
+        Required: true,
+        Autocomplete: "email",
+        Value: props.Email,
+        })
+      </div>
+
+      <!-- Password Field -->
+      <div class="space-y-2">
+        @label.Label(label.LabelProps{
+        For: "password",
+        }) {
+        Password
+        }
+        @input.Input(input.InputProps{
+        Type: "password",
+        ID: "password",
+        Name: "password",
+        Placeholder: "••••••••",
+        Required: true,
+        Autocomplete: "current-password",
+        })
+      </div>
+
+      <!-- Remember Me & Forgot Password -->
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          @checkbox.Checkbox(checkbox.CheckboxProps{
+          ID: "remember",
+          Name: "remember",
+          })
+          @label.Label(label.LabelProps{
+          For: "remember",
+          Class: "text-sm font-normal cursor-pointer",
+          }) {
+          Remember me
+          }
+        </div>
+
+        <a href="/forgot-password" class="text-sm font-medium text-primary hover:underline">
+          Forgot password?
+        </a>
+      </div>
+
+      <!-- Submit Button -->
+      <div class="pt-2">
+        @button.Button(button.ButtonProps{
+        Type: "submit",
+        Variant: button.VariantDefault,
+        Size: button.SizeLg,
+        Class: "w-full",
+        }) {
+        Sign in
+        }
+      </div>
+    </form>
+    }
+
+    @card.CardFooter(card.CardFooterProps{
+    Class: "flex justify-center",
+    }) {
+    <p class="text-sm text-muted-foreground">
+      Don't have an account?
+      <a href="/register" class="font-medium text-primary hover:underline ml-1">
+        Sign up
+      </a>
+    </p>
+    }
+    }
+  </div>
+</div>
+}
+}

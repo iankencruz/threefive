@@ -1,36 +1,24 @@
 package server
 
 import (
-	"os"
-	"syscall"
-	"time"
-
-	handlers "github.com/iankencruz/threefive/internal/handler/admin"
-	"github.com/labstack/echo/v5"
-	"github.com/rs/zerolog/log"
+	"github.com/iankencruz/threefive/internal/handler"
 )
 
 // RegisterRoutes defines the API endpoints
 func (s *Server) RegisterRoutes() {
-	h := handlers.NewHandler()
+	h := handler.NewAuthHandler()
 
-	s.echo.GET("/", h.HealthCheckHandler)
-	s.echo.GET("/hello", h.HelloWorldHandler)
+	// handlers
+	// s.Echo.GET("/", h.HealthCheckHandler)
+	// s.Echo.GET("/hello", h.HelloWorldHandler)
 
-	s.echo.GET("/slow", func(c *echo.Context) error {
-		log.Info().Msg("Slow request started (7s wait)...")
-		time.Sleep(7 * time.Second)
-		log.Info().Msg("Slow request finished!")
-		return c.String(200, "Slow response complete\n")
-	})
+	// Initialize public auth handler
 
-	s.echo.GET("/shutdown", func(c *echo.Context) error {
-		log.Warn().Msg("Shutdown route hit! Sending SIGTERM...")
-		go func() {
-			time.Sleep(500 * time.Millisecond)
-			p, _ := os.FindProcess(os.Getpid())
-			p.Signal(syscall.SIGTERM)
-		}()
-		return c.String(200, "Shutdown signal sent.\n")
-	})
+	// Login routes
+	s.Echo.GET("/login", h.ShowLoginPage)
+	s.Echo.POST("/login", h.HandleLogin)
+
+	// Placeholder admin dashboard
+	// s.Echo.GET("/admin/dashboard", h.ShowDashboard)
+	// s.Echo.GET("/admin", publicAuthHandler.ShowDashboard)
 }

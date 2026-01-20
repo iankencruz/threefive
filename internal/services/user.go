@@ -11,7 +11,7 @@ type UserService struct {
 }
 
 // NewUserService creates a new user service
-func NewUserService(db *pgxpool.Pool, queries *sqlc.Queries) *UserService {
+func NewUserService(db *pgxpool.Pool, queries *generated.Queries) *UserService {
 	return &UserService{
 		db:      db,
 		queries: queries,
