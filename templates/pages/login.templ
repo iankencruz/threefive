@@ -1,140 +1,97 @@
+// templates/pages/login.templ
 package pages
 
-import (
-"github.com/iankencruz/threefive/internal/templates/layouts"
-"github.com/iankencruz/threefive/components/button"
-"github.com/iankencruz/threefive/components/card"
-"github.com/iankencruz/threefive/components/input"
-"github.com/iankencruz/threefive/components/label"
-"github.com/iankencruz/threefive/components/checkbox"
-"github.com/iankencruz/threefive/components/alert"
-)
+import "github.com/iankencruz/threefive/components/input"
+import "github.com/iankencruz/threefive/components/button"
+import "github.com/iankencruz/threefive/components/label"
+import "github.com/iankencruz/threefive/templates/layouts"
 
 type LoginPageProps struct {
-Error string
 Email string
+Error string
 }
 
 templ LoginPage(props LoginPageProps) {
 @layouts.Base("Login - ThreeFive") {
-<div class="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
-  <div class="w-full max-w-md space-y-8">
-    <!-- Logo/Header -->
-    <div class="text-center space-y-2">
-      <h1 class="text-4xl font-bold tracking-tight text-gray-900">ThreeFive</h1>
-      <p class="text-sm text-gray-600">Sign in to your account</p>
-    </div>
-
-    <!-- Login Card -->
-    @card.Card(card.CardProps{}) {
-    @card.CardHeader(card.CardHeaderProps{}) {
-    @card.CardTitle(card.CardTitleProps{}) {
-    Welcome back
-    }
-    @card.CardDescription(card.CardDescriptionProps{}) {
-    Enter your credentials to access your account
-    }
-    }
-
-    @card.CardContent(card.CardContentProps{}) {
-    <!-- Error Alert -->
-    if props.Error != "" {
-    <div class="mb-6">
-      @alert.Alert(alert.AlertProps{
-      Variant: alert.VariantDestructive,
-      }) {
-      @alert.AlertTitle(alert.AlertTitleProps{}) {
-      Error
-      }
-      @alert.AlertDescription(alert.AlertDescriptionProps{}) {
-      { props.Error }
-      }
-      }
-    </div>
-    }
-
-    <!-- Login Form -->
-    <form action="/login" method="POST" class="space-y-4">
-      <!-- Email Field -->
-      <div class="space-y-2">
-        @label.Label(label.LabelProps{
-        For: "email",
-        }) {
-        Email address
-        }
-        @input.Input(input.InputProps{
-        Type: "email",
-        ID: "email",
-        Name: "email",
-        Placeholder: "you@example.com",
-        Required: true,
-        Autocomplete: "email",
-        Value: props.Email,
-        })
+<div class="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+  <div class="w-full max-w-md">
+    <div class="bg-white rounded-lg shadow-lg p-8">
+      <!-- Logo/Brand -->
+      <div class="text-center mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">ThreeFive</h1>
+        <p class="text-gray-600 mt-2">Sign in to your account</p>
       </div>
 
-      <!-- Password Field -->
-      <div class="space-y-2">
-        @label.Label(label.LabelProps{
-        For: "password",
-        }) {
-        Password
-        }
-        @input.Input(input.InputProps{
-        Type: "password",
-        ID: "password",
-        Name: "password",
-        Placeholder: "••••••••",
-        Required: true,
-        Autocomplete: "current-password",
-        })
+      <!-- Error Message -->
+      if props.Error != "" {
+      <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+        <p class="text-sm text-red-800">{ props.Error }</p>
       </div>
+      }
 
-      <!-- Remember Me & Forgot Password -->
-      <div class="flex items-center justify-between">
-        <div class="flex items-center space-x-2">
-          @checkbox.Checkbox(checkbox.CheckboxProps{
-          ID: "remember",
-          Name: "remember",
-          })
-          @label.Label(label.LabelProps{
-          For: "remember",
-          Class: "text-sm font-normal cursor-pointer",
+      <!-- Login Form -->
+      <form id="login-form" hx-post="/login" hx-target="#login-form" hx-swap="outerHTML" class="space-y-6">
+        <!-- Email Field -->
+        <div class="space-y-2">
+          @label.Label(label.Props{
+          For: "email",
           }) {
-          Remember me
+          Email
           }
+          @input.Input(input.Props{
+          ID: "email",
+          Name: "email",
+          Type: "email",
+          Placeholder: "you@example.com",
+          Value: props.Email,
+          })
         </div>
 
-        <a href="/forgot-password" class="text-sm font-medium text-primary hover:underline">
-          Forgot password?
-        </a>
-      </div>
+        <!-- Password Field -->
+        <div class="space-y-2">
+          @label.Label(label.Props{
+          For: "password",
+          }) {
+          Password
+          }
+          @input.Input(input.Props{
+          ID: "password",
+          Name: "password",
+          Type: "password",
+          Placeholder: "••••••••",
+          })
+        </div>
 
-      <!-- Submit Button -->
-      <div class="pt-2">
-        @button.Button(button.ButtonProps{
-        Type: "submit",
-        Variant: button.VariantDefault,
-        Size: button.SizeLg,
-        Class: "w-full",
-        }) {
-        Sign in
-        }
-      </div>
-    </form>
-    }
+        <!-- Remember Me & Forgot Password -->
+        <div class="flex items-center justify-between text-sm">
+          <label class="flex items-center">
+            <input type="checkbox" name="remember" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+            <span class="ml-2 text-gray-700">Remember me</span>
+          </label>
+          <a href="/forgot-password" class="text-blue-600 hover:text-blue-700">
+            Forgot password?
+          </a>
+        </div>
 
-    @card.CardFooter(card.CardFooterProps{
-    Class: "flex justify-center",
-    }) {
-    <p class="text-sm text-muted-foreground">
+        <!-- Submit Button -->
+        <div>
+          @button.Button(button.Props{
+          Type: "submit",
+          Variant: "default",
+          }) {
+          Sign In
+          }
+        </div>
+      </form>
+    </div>
+
+    <!-- Footer -->
+    <p class="text-center text-sm text-gray-600 mt-6">
       Don't have an account?
-      <a href="/register" class="font-medium text-primary hover:underline ml-1">
+      <a href="/register" class="text-blue-600 hover:text-blue-700 font-medium">
         Sign up
       </a>
     </p>
-    }
-    }
   </div>
 </div>
 }

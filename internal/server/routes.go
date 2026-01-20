@@ -8,6 +8,8 @@ import (
 func (s *Server) RegisterRoutes() {
 	h := handler.NewAuthHandler()
 
+	s.Echo.Static("/assets", "assets")
+
 	// handlers
 	// s.Echo.GET("/", h.HealthCheckHandler)
 	// s.Echo.GET("/hello", h.HelloWorldHandler)
