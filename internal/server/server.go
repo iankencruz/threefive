@@ -68,15 +68,13 @@ func NewServer() *Server {
 	db := database.New(slogger)
 	slogger.Info("database connection established")
 
-	// Initialize SQLC queries
-	queries := generated.New(db.Pool())
-
-	// Bootstrap database (ensure admin user exists)
-	ctx := context.Background()
-	if err := database.Bootstrap(ctx, db.Pool(), queries, slogger); err != nil {
-		slogger.Error("database bootstrap failed", "error", err)
+	if err := db.RunMigrations("migrations"); err != nil {
+		slogger.Error("failed to run migrations", "error", err)
 		panic(err)
 	}
+
+	// Initialize SQLC queries
+	queries := generated.New(db.Pool())
 
 	// Initialize services
 	authService := services.NewAuthService(db.Pool(), queries, slogger)
