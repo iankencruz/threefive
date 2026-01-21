@@ -76,6 +76,13 @@ func NewServer() *Server {
 	// Initialize SQLC queries
 	queries := generated.New(db.Pool())
 
+	// Bootstrap database (ensure admin user exists)
+	ctx := context.Background()
+	if err := database.Bootstrap(ctx, queries, slogger); err != nil {
+		slogger.Error("database bootstrap failed", "error", err)
+		panic(err)
+	}
+	//
 	// Initialize services
 	authService := services.NewAuthService(db.Pool(), queries, slogger)
 	slogger.Info("auth service initialized")
