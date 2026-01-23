@@ -33,21 +33,8 @@ type BlogTag struct {
 	CreatedAt time.Time
 }
 
-// Polymorphic relationship between media and entities (projects, blogs, pages)
-type MediaRelation struct {
-	ID         pgtype.UUID
-	MediaID    pgtype.UUID
-	EntityType string
-	EntityID   pgtype.UUID
-	// Type: gallery (gallery images), featured (hero/featured image), content (inline content)
-	RelationType string
-	// Display order for gallery images (0-based index)
-	SortOrder pgtype.Int4
-	CreatedAt time.Time
-}
-
 // Stores all media files (images, videos) with S3 keys for different sizes
-type Medium struct {
+type Media struct {
 	ID pgtype.UUID
 	// Generated filename format: YYYYMMDD-<uuid>.ext
 	Filename         string
@@ -74,6 +61,19 @@ type Medium struct {
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 	DeletedAt    *time.Time
+}
+
+// Polymorphic relationship between media and entities (projects, blogs, pages)
+type MediaRelation struct {
+	ID         pgtype.UUID
+	MediaID    pgtype.UUID
+	EntityType string
+	EntityID   pgtype.UUID
+	// Type: gallery (gallery images), featured (hero/featured image), content (inline content)
+	RelationType string
+	// Display order for gallery images (0-based index)
+	SortOrder pgtype.Int4
+	CreatedAt time.Time
 }
 
 type Project struct {

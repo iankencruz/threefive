@@ -23,11 +23,12 @@ func NewAdminHandler(logger *slog.Logger) *AdminHandler {
 // ShowDashboard renders the admin dashboard
 func (h *AdminHandler) ShowDashboard(c *echo.Context) error {
 	// Get authenticated user
+	// Create a context variable
 	ctx := lib.WithUser(c.Request().Context(), middleware.GetUser(c))
 
 	currentPath := c.Request().URL.Path
 
-	// Create a context variable that inherits from a parent, and sets the value "test".
+	// totalProjects, _ := h.ProjectSer
 
 	// TODO: Get real stats from services
 	// For now, use mock data

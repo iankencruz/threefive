@@ -8,6 +8,8 @@ sql:
         package: "generated"
         out: "database/generated"
         sql_package: "pgx/v5"
+        rename:
+          medium: "Media"
         overrides:
           - db_type: "timestamptz"
             go_type:
@@ -16,3 +18,13 @@ sql:
             nullable: true
             go_type:
               type: "*time.Time"
+          - db_type: "int4"
+            go_type:
+              type: "int32"
+          - db_type: "int4"
+            nullable: true
+            go_type:
+              type: "*int32"
+          - db_type: "integer"
+            go_type:
+              type: "*int32"
