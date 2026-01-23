@@ -5,10 +5,15 @@ import (
 	"github.com/iankencruz/threefive/templates/lib"
 )
 
-templ AdminLayout(title string, path string) {
+type LayoutProps struct {
+	Title string
+	Path  string
+}
+
+templ AdminLayout(props LayoutProps) {
 	<!DOCTYPE html>
 	<html lang="en" class="h-full bg-white dark:bg-gray-900">
-		@lib.Header(title, true)
+		@lib.Header(props.Title, true)
 		<body class="h-full">
 			<el-dialog>
 				<dialog id="sidebar" class="backdrop:bg-transparent lg:hidden">
@@ -45,7 +50,7 @@ templ AdminLayout(title string, path string) {
 														Dashboard
 													</a>
 												</li> -->
-												@lib.NavLinks(path)
+												@lib.NavLinks(props.Path)
 											</ul>
 										</li>
 										<li>
@@ -93,7 +98,7 @@ templ AdminLayout(title string, path string) {
 								<ul role="list" class="flex flex-1 flex-col gap-y-7">
 									<li>
 										<ul role="list" class="-mx-2 space-y-1">
-											@lib.NavLinks(path)
+											@lib.NavLinks(props.Path)
 										</ul>
 									</li>
 									<li>
@@ -126,7 +131,11 @@ templ AdminLayout(title string, path string) {
 								<a href="#" class="flex items-center gap-x-4 px-6 py-3 text-sm/6 font-semibold text-gray-900 hover:bg-gray-50 dark:text-white dark:hover:bg-white/5">
 									@icon.Settings(icon.Props{Size: 18, Class: "shrink-0"})
 									<span class="sr-only">Your profile</span>
-									<span aria-hidden="true">Tom Cook</span>
+									if user := lib.GetUser(ctx); user != nil {
+										<span aria-hidden="true">{ user.Email }</span>
+									} else {
+										<span aria-hidden="true">Admin User</span>
+									}
 								</a>
 							</li>
 						</ul>

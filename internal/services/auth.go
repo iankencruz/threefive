@@ -27,7 +27,7 @@ func NewAuthService(db *pgxpool.Pool, queries *generated.Queries, logger *slog.L
 }
 
 // Authenticate verifies user credentials and returns the user ID
-func (s *AuthService) Authenticate(ctx context.Context, email, password string) (string, error) {
+func (s *AuthService) Authenticate(ctx context.Context, email, password string) (generated.User, error) {
 	s.logger.Debug("attempting to authenticate user",
 		"email", email,
 	)
@@ -38,13 +38,13 @@ func (s *AuthService) Authenticate(ctx context.Context, email, password string) 
 			s.logger.Warn("authentication failed - user not found",
 				"email", email,
 			)
-			return "", errors.Unauthorized("Invalid email or password")
+			return generated.User{}, errors.Unauthorized("Invalid email or password")
 		}
 		s.logger.Error("failed to query user by email",
 			"error", err,
 			"email", email,
 		)
-		return "", errors.Internal("Failed to query user", err)
+		return generated.User{}, errors.Internal("Failed to query user", err)
 	}
 
 	// Verify password
@@ -55,7 +55,7 @@ func (s *AuthService) Authenticate(ctx context.Context, email, password string) 
 			"user_id", user.ID,
 			"bcrypt_error", err.Error(),
 		)
-		return "", errors.Unauthorized("Invalid email or password")
+		return generated.User{}, errors.Unauthorized("Invalid email or password")
 	}
 
 	s.logger.Info("user authenticated successfully",
@@ -63,7 +63,10 @@ func (s *AuthService) Authenticate(ctx context.Context, email, password string) 
 		"user_id", user.ID,
 	)
 
-	return user.ID.String(), nil
+	return generated.User{
+		ID:    user.ID,
+		Email: user.Email,
+	}, nil
 }
 
 // HashPassword hashes a password using bcrypt

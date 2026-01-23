@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/iankencruz/threefive/internal/middleware"
 	"github.com/iankencruz/threefive/internal/services"
 	"github.com/iankencruz/threefive/internal/session"
@@ -71,7 +72,7 @@ func (h *AuthHandler) HandleLogin(c *echo.Context) error {
 	}
 
 	// Authenticate user
-	userID, err := h.authService.Authenticate(ctx, email, password)
+	user, err := h.authService.Authenticate(ctx, email, password)
 	if err != nil {
 		if appErr, ok := err.(*errors.AppError); ok {
 			h.logger.Warn("authentication failed",
@@ -100,14 +101,18 @@ func (h *AuthHandler) HandleLogin(c *echo.Context) error {
 		return responses.RenderWithStatus(ctx, c, http.StatusInternalServerError, component)
 	}
 
+	userIDStr := uuid.UUID(user.ID.Bytes).String()
+
 	// Create new session with user_id
 	sessionData := middleware.GetSessionData(c)
-	sessionData["user_id"] = userID
+
+	sessionData["user_id"] = userIDStr
+	sessionData["user_email"] = user.Email
 
 	err = h.sessionManager.Save(ctx, c, sessionData)
 	if err != nil {
 		h.logger.Error("failed to save session",
-			"user_id", userID,
+			"user_id", userIDStr,
 			"error", err,
 		)
 
@@ -121,7 +126,7 @@ func (h *AuthHandler) HandleLogin(c *echo.Context) error {
 
 	h.logger.Info("user logged in successfully",
 		"email", email,
-		"user_id", userID,
+		"user_id", userIDStr,
 	)
 
 	// Redirect to home/dashboard

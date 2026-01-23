@@ -1,10 +1,11 @@
 package handler
 
 import (
-	"fmt"
 	"log/slog"
 
+	"github.com/iankencruz/threefive/internal/middleware"
 	"github.com/iankencruz/threefive/pkg/responses"
+	"github.com/iankencruz/threefive/templates/lib"
 	"github.com/iankencruz/threefive/templates/pages"
 	"github.com/labstack/echo/v5"
 )
@@ -21,9 +22,12 @@ func NewAdminHandler(logger *slog.Logger) *AdminHandler {
 
 // ShowDashboard renders the admin dashboard
 func (h *AdminHandler) ShowDashboard(c *echo.Context) error {
+	// Get authenticated user
+	ctx := lib.WithUser(c.Request().Context(), middleware.GetUser(c))
+
 	currentPath := c.Request().URL.Path
 
-	fmt.Printf("Rendering dashboard page, path: %s\n", currentPath)
+	// Create a context variable that inherits from a parent, and sets the value "test".
 
 	// TODO: Get real stats from services
 	// For now, use mock data
@@ -39,14 +43,14 @@ func (h *AdminHandler) ShowDashboard(c *echo.Context) error {
 	}
 
 	component := pages.Dashboard(stats, currentPath)
-	return responses.Render(c.Request().Context(), c, component)
+	return responses.Render(ctx, c, component)
 }
 
 // ShowDashboard renders the admin dashboard
 func (h *AdminHandler) ShowProjects(c *echo.Context) error {
 	currentPath := c.Request().URL.Path
 
-	h.logger.Info("Rendering projects page", "path", currentPath)
+	ctx := lib.WithUser(c.Request().Context(), middleware.GetUser(c))
 
 	// TODO: Get real stats from services
 	// For now, use mock data
@@ -62,5 +66,5 @@ func (h *AdminHandler) ShowProjects(c *echo.Context) error {
 	}
 
 	component := pages.Projects(stats, currentPath)
-	return responses.Render(c.Request().Context(), c, component)
+	return responses.Render(ctx, c, component)
 }

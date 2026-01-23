@@ -1,6 +1,6 @@
 -- name: GetUserByID :one
 SELECT * FROM users
-WHERE id = @id AND deleted_at IS NULL
+WHERE id = @id 
 LIMIT 1;
 
 -- name: GetUserByEmail :one

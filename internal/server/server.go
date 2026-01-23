@@ -96,7 +96,7 @@ func NewServer() *Server {
 	slogger.Info("session manager initialized")
 
 	// Initialize middleware
-	sessionMiddleware := middleware.NewSessionMiddleware(sessionManager, slogger)
+	sessionMiddleware := middleware.NewSessionMiddleware(sessionManager, queries, slogger)
 	slogger.Info("session middleware initialized")
 
 	// Initialize Echo with the config that uses the silent logger

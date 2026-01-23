@@ -27,10 +27,10 @@ func Bootstrap(ctx context.Context, queries *generated.Queries, logger *slog.Log
 // ensureAdminUser creates the default admin user if it doesn't exist
 func ensureAdminUser(ctx context.Context, queries *generated.Queries, logger *slog.Logger) error {
 	// Get admin credentials from environment with defaults
-	adminEmail := getEnv("ADMIN_EMAIL", "admin@example.com")
+	adminEmail := getEnv("ADMIN_EMAIL", "john@example.com")
 	adminPassword := getEnv("ADMIN_PASSWORD", "Password!123")
-	adminFirstName := getEnv("ADMIN_FIRST_NAME", "Admin")
-	adminLastName := getEnv("ADMIN_LAST_NAME", "User")
+	adminFirstName := getEnv("ADMIN_FIRST_NAME", "John")
+	adminLastName := getEnv("ADMIN_LAST_NAME", "Doe")
 
 	// Check if admin user already exists
 	_, err := queries.GetUserByEmail(ctx, adminEmail)

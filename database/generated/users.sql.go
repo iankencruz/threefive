@@ -101,7 +101,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 
 const getUserByID = `-- name: GetUserByID :one
 SELECT id, first_name, last_name, email, password_hash, created_at, updated_at FROM users
-WHERE id = $1 AND deleted_at IS NULL
+WHERE id = $1 
 LIMIT 1
 `
 

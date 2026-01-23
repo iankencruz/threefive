@@ -10,10 +10,109 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Blog struct {
+	ID              pgtype.UUID
+	Title           string
+	Slug            string
+	Excerpt         pgtype.Text
+	Status          pgtype.Text
+	ReadingTime     pgtype.Int4
+	IsFeatured      pgtype.Bool
+	CategoryID      pgtype.UUID
+	FeaturedImageID pgtype.UUID
+	AuthorID        pgtype.UUID
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
+	PublishedAt     *time.Time
+	DeletedAt       *time.Time
+}
+
+type BlogTag struct {
+	BlogID    pgtype.UUID
+	TagID     pgtype.UUID
+	CreatedAt time.Time
+}
+
+// Polymorphic relationship between media and entities (projects, blogs, pages)
+type MediaRelation struct {
+	ID         pgtype.UUID
+	MediaID    pgtype.UUID
+	EntityType string
+	EntityID   pgtype.UUID
+	// Type: gallery (gallery images), featured (hero/featured image), content (inline content)
+	RelationType string
+	// Display order for gallery images (0-based index)
+	SortOrder pgtype.Int4
+	CreatedAt time.Time
+}
+
+// Stores all media files (images, videos) with S3 keys for different sizes
+type Medium struct {
+	ID pgtype.UUID
+	// Generated filename format: YYYYMMDD-<uuid>.ext
+	Filename         string
+	OriginalFilename string
+	MimeType         string
+	FileSize         int64
+	Width            pgtype.Int4
+	Height           pgtype.Int4
+	// Video duration in seconds (NULL for images)
+	Duration    pgtype.Int4
+	StorageType string
+	S3Bucket    pgtype.Text
+	S3Region    pgtype.Text
+	// S3 key pattern: media/original/<year>/<filename>
+	OriginalKey pgtype.Text
+	// S3 key for large version (1920px width)
+	LargeKey pgtype.Text
+	// S3 key for medium version (1024px width)
+	MediumKey pgtype.Text
+	// S3 key for thumbnail (300px width) or video thumbnail from FFmpeg
+	ThumbnailKey pgtype.Text
+	AltText      pgtype.Text
+	UploadedBy   pgtype.UUID
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+	DeletedAt    *time.Time
+}
+
+type Project struct {
+	ID              pgtype.UUID
+	Title           string
+	Slug            string
+	Description     pgtype.Text
+	ProjectDate     pgtype.Date
+	Status          pgtype.Text
+	ClientName      pgtype.Text
+	ProjectYear     pgtype.Int4
+	ProjectUrl      pgtype.Text
+	ProjectStatus   pgtype.Text
+	FeaturedImageID pgtype.UUID
+	AuthorID        pgtype.UUID
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
+	PublishedAt     *time.Time
+	DeletedAt       *time.Time
+}
+
+type ProjectTag struct {
+	ProjectID pgtype.UUID
+	TagID     pgtype.UUID
+	CreatedAt time.Time
+}
+
 type Session struct {
 	Token  string
 	Data   []byte
 	Expiry time.Time
+}
+
+type Tag struct {
+	ID        pgtype.UUID
+	Name      string
+	Slug      string
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 type User struct {

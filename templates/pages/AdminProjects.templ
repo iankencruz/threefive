@@ -15,11 +15,14 @@ type ProjectProps struct {
 }
 
 templ Projects(stats ProjectProps, path string) {
-	@layouts.AdminLayout("Projects", path) {
+	@layouts.AdminLayout(layouts.LayoutProps{
+		Title: "Projects",
+		Path:  path,
+	}) {
 		<!-- Page Header -->
 		<div class="mb-8">
 			<h1 class="text-3xl font-bold text-gray-900">Projects</h1>
-			<p class="text-gray-600 mt-2">Welcome back! Here's an overview of your content.</p>
+			<p class="text-gray-600 mt-2">Welcome back ! Here's an overview of your content.</p>
 		</div>
 	}
 }

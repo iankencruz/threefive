@@ -5,22 +5,34 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/iankencruz/threefive/database/generated"
 	"github.com/iankencruz/threefive/internal/session"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/labstack/echo/v5"
 )
 
 const (
-	sessionContextKey = "session_data"
+	SessionContextKey = "session_data"
+	UserContextKey    = "user"
 )
+
+type AuthUser struct {
+	ID    string
+	Email string
+}
 
 type SessionMiddleware struct {
 	manager *session.SessionManager
+
+	queries *generated.Queries
 	logger  *slog.Logger
 }
 
-func NewSessionMiddleware(manager *session.SessionManager, logger *slog.Logger) *SessionMiddleware {
+func NewSessionMiddleware(manager *session.SessionManager, queries *generated.Queries, logger *slog.Logger) *SessionMiddleware {
 	return &SessionMiddleware{
 		manager: manager,
+
+		queries: queries,
 		logger:  logger.With("component", "session_middleware"),
 	}
 }
@@ -40,11 +52,13 @@ func (m *SessionMiddleware) Session(next echo.HandlerFunc) echo.HandlerFunc {
 		}
 
 		// Store session data in context
-		c.Set(sessionContextKey, sessionData)
+		c.Set(SessionContextKey, sessionData)
 
 		return next(c)
 	}
 }
+
+// RequireAuth ensures the user is authenticated
 
 // RequireAuth ensures the user is authenticated
 func (m *SessionMiddleware) RequireAuth(next echo.HandlerFunc) echo.HandlerFunc {
@@ -59,17 +73,55 @@ func (m *SessionMiddleware) RequireAuth(next echo.HandlerFunc) echo.HandlerFunc 
 			return c.Redirect(http.StatusFound, "/login")
 		}
 
-		// Store user_id in context for easy access
-		c.Set("user_id", userID)
+		// Convert string to pgtype.UUID
+		userIDStr, ok := userID.(string)
+		if !ok {
+			m.logger.Error("invalid user_id type in session",
+				"user_id", userID,
+			)
+			return c.Redirect(http.StatusFound, "/login")
+		}
+
+		var pgUserID pgtype.UUID
+		err := pgUserID.Scan(userIDStr)
+		if err != nil {
+			m.logger.Error("failed to parse user_id",
+				"error", err,
+				"user_id", userIDStr,
+			)
+			return c.Redirect(http.StatusFound, "/login")
+		}
+
+		// Fetch the full user from database
+		user, err := m.queries.GetUserByID(c.Request().Context(), pgUserID)
+		if err != nil {
+			m.logger.Error("failed to fetch user",
+				"error", err,
+				"user_id", userIDStr,
+			)
+			return c.Redirect(http.StatusFound, "/login")
+		}
+
+		// Store the full SQLC User struct in context
+		c.Set(UserContextKey, &user)
 
 		return next(c)
 	}
 }
 
+// GetUser retrieves the authenticated user from context
+func GetUser(c *echo.Context) *generated.User {
+	user := c.Get(UserContextKey)
+	if user == nil {
+		return nil
+	}
+	return user.(*generated.User)
+}
+
 // Helper functions to work with session data
 
 func GetSessionData(c *echo.Context) map[string]any {
-	data := c.Get(sessionContextKey)
+	data := c.Get(SessionContextKey)
 	if data == nil {
 		return make(map[string]any)
 	}
@@ -79,7 +131,7 @@ func GetSessionData(c *echo.Context) map[string]any {
 func PutSessionData(c *echo.Context, key string, value any) {
 	sessionData := GetSessionData(c)
 	sessionData[key] = value
-	c.Set(sessionContextKey, sessionData)
+	c.Set(SessionContextKey, sessionData)
 }
 
 func GetSessionValue(c *echo.Context, key string) (any, bool) {
@@ -91,5 +143,5 @@ func GetSessionValue(c *echo.Context, key string) (any, bool) {
 func RemoveSessionValue(c *echo.Context, key string) {
 	sessionData := GetSessionData(c)
 	delete(sessionData, key)
-	c.Set(sessionContextKey, sessionData)
+	c.Set(SessionContextKey, sessionData)
 }
