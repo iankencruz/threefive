@@ -1,0 +1,62 @@
+package lib
+
+import "github.com/iankencruz/threefive/components/icon"
+
+type NavItem struct {
+	Title string
+	Href  string
+	Icon  templ.Component
+}
+
+var adminNavItems = []NavItem{
+	{
+		Title: "Dashboard",
+		Href:  "/admin/dashboard",
+		Icon:  icon.LayoutDashboard(icon.Props{Size: 18, Class: "shrink-0"}),
+	},
+	{
+		Title: "Projects",
+		Href:  "/admin/projects",
+		Icon:  icon.FolderOpen(icon.Props{Size: 18, Class: "shrink-0"}),
+	},
+	{
+		Title: "Blogs",
+		Href:  "/admin/blogs",
+		Icon:  icon.BookOpen(icon.Props{Size: 18, Class: "shrink-0"}),
+	},
+	{
+		Title: "Pages",
+		Href:  "/admin/Pages",
+
+		Icon: icon.Files(icon.Props{Size: 18, Class: "shrink-0"}),
+	},
+	{
+		Title: "Media",
+		Href:  "/admin/media",
+		Icon:  icon.Image(icon.Props{Size: 18, Class: "shrink-0"}),
+	},
+	{
+		Title: "Tags",
+		Href:  "/admin/tags",
+		Icon:  icon.Tags(icon.Props{Size: 18, Class: "shrink-0"}),
+	},
+}
+
+templ NavLinks(currentPath string) {
+	<ul role="list" class="-mx-2 space-y-1">
+		for _, item := range adminNavItems {
+			<li>
+				<a
+					href={ item.Href }
+					class={ templ.KV("current", currentPath == item.Href), 
+          "group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-700 hover:bg-gray-50 hover:text-primary dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-white items-center" }
+				>
+					if item.Icon != nil {
+						@item.Icon
+					}
+					{ item.Title }
+				</a>
+			</li>
+		}
+	</ul>
+}

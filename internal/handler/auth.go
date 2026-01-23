@@ -34,7 +34,7 @@ func (h *AuthHandler) ShowLoginPage(c *echo.Context) error {
 	sessionData := middleware.GetSessionData(c)
 	if _, exists := sessionData["user_id"]; exists {
 		h.logger.Debug("user already authenticated, redirecting")
-		return responses.Redirect(c, "/")
+		return responses.Redirect(c, "/admin")
 	}
 
 	props := pages.LoginPageProps{
@@ -125,7 +125,7 @@ func (h *AuthHandler) HandleLogin(c *echo.Context) error {
 	)
 
 	// Redirect to home/dashboard
-	return responses.HTMXRedirect(c, "/")
+	return responses.HTMXRedirect(c, "/admin")
 }
 
 // HandleLogout destroys the session and redirects to login

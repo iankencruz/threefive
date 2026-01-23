@@ -30,7 +30,7 @@ func New(logger *slog.Logger) Service {
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
 		logger.Error("DATABASE_URL environment variable is not set")
-		panic("DATABASE_URL is required")
+		// panic("DATABASE_URL is required")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -15,14 +16,15 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	err := godotenv.Load()
+	if err != nil {
+		log.Printf("No .env file found, proceeding with environment variables")
+	}
+
 	// Create server instance
 	s := server.NewServer()
 
 	// Load environment variables from .env file if it exists
-	err := godotenv.Load()
-	if err != nil {
-		s.Log.Info("No .env file found, proceeding with environment variables")
-	}
 
 	// Get port from environment
 	port := fmt.Sprintf(":%s", os.Getenv("PORT"))

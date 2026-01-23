@@ -7,8 +7,8 @@ import (
 	"os"
 
 	"github.com/iankencruz/threefive/database/generated"
-	"github.com/iankencruz/threefive/internal/services"
 	"github.com/jackc/pgx/v5"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // Bootstrap ensures required data exists in the database
@@ -55,7 +55,7 @@ func ensureAdminUser(ctx context.Context, queries *generated.Queries, logger *sl
 	)
 
 	// Hash the password
-	passwordHash, err := services.HashPassword(adminPassword)
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(adminPassword), bcrypt.DefaultCost)
 	if err != nil {
 		logger.Error("failed to hash admin password",
 			"error", err,
@@ -68,7 +68,7 @@ func ensureAdminUser(ctx context.Context, queries *generated.Queries, logger *sl
 		FirstName:    adminFirstName,
 		LastName:     adminLastName,
 		Email:        adminEmail,
-		PasswordHash: passwordHash,
+		PasswordHash: string(passwordHash),
 	})
 	if err != nil {
 		logger.Error("failed to create admin user",

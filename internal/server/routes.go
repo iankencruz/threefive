@@ -3,6 +3,7 @@ package server
 import (
 	"github.com/iankencruz/threefive/internal/handler"
 	"github.com/labstack/echo/v5"
+	"github.com/labstack/echo/v5/middleware"
 )
 
 // RegisterRoutes defines the API endpoints
@@ -11,6 +12,7 @@ func (s *Server) RegisterRoutes() {
 
 	// Initialize handlers
 	authHandler := handler.NewAuthHandler(s.AuthService, s.SessionManager, s.Log)
+	adminHandler := handler.NewAdminHandler(s.Log)
 
 	// Static assets
 	s.Echo.Static("/assets", "assets")
@@ -18,21 +20,28 @@ func (s *Server) RegisterRoutes() {
 	// Session Middleware
 	s.Echo.Use(s.SessionMiddleware.Session)
 
+	s.Echo.Pre(middleware.RemoveTrailingSlash())
+
 	// handlers
-	// s.Echo.GET("/", h.HealthCheckHandler)
-	// s.Echo.GET("/hello", h.HelloWorldHandler)
+	s.Echo.GET("/health", s.healthCheckHandler)
 
 	// Public routes (no auth required)
 	s.Echo.GET("/login", authHandler.ShowLoginPage)
 	s.Echo.POST("/login", authHandler.HandleLogin)
 	s.Echo.POST("/logout", authHandler.HandleLogout)
 
-	// Protected routes (require authentication)
-	protected := s.Echo.Group("")
-	protected.Use(s.SessionMiddleware.RequireAuth)
+	// admin routes (require authentication)
+	admin := s.Echo.Group("/admin")
+	admin.Use(s.SessionMiddleware.RequireAuth)
 
-	protected.GET("/", s.healthCheckHandler)
-	protected.GET("/hello", s.helloWorldHandler)
+	// redirect admin to dashboard
+	admin.GET("", func(c *echo.Context) error {
+		return c.Redirect(302, "/admin/dashboard")
+	})
+
+	admin.GET("/dashboard", adminHandler.ShowDashboard)
+
+	admin.GET("/projects", adminHandler.ShowProjects)
 
 	s.Log.Info("routes registered successfully")
 }
@@ -42,8 +51,4 @@ func (s *Server) healthCheckHandler(c *echo.Context) error {
 	return c.JSON(200, map[string]string{
 		"status": "ok",
 	})
-}
-
-func (s *Server) helloWorldHandler(c *echo.Context) error {
-	return c.String(200, "Hello, World!\n")
 }

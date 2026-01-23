@@ -48,15 +48,6 @@ func (s *AuthService) Authenticate(ctx context.Context, email, password string) 
 	}
 
 	// Verify password
-	s.logger.Info("password comparison details",
-		"email", email,
-		"stored_hash_length", len(user.PasswordHash),
-		"stored_hash_preview", user.PasswordHash[:20]+"...",
-		"input_password_length", len(password),
-		"input_password", password, // Remove this after debugging!
-	)
-
-	// Verify password
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
 	if err != nil {
 		s.logger.Warn("authentication failed - invalid password",
