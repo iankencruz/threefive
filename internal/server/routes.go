@@ -13,6 +13,7 @@ func (s *Server) RegisterRoutes() {
 	// Initialize handlers
 	authHandler := handler.NewAuthHandler(s.AuthService, s.SessionManager, s.Log)
 	adminHandler := handler.NewAdminHandler(s.Log)
+	mediaHandler := handler.NewMediaHandler(s.MediaService, s.Log)
 
 	// Static assets
 	s.Echo.Static("/assets", "assets")
@@ -42,6 +43,11 @@ func (s *Server) RegisterRoutes() {
 	admin.GET("/dashboard", adminHandler.ShowDashboard)
 
 	admin.GET("/projects", adminHandler.ShowProjects)
+
+	media := admin.Group("/media")
+	media.GET("", mediaHandler.ShowMediaList)
+	media.POST("/upload", mediaHandler.UploadMedia)
+	media.DELETE("/:mediaID", mediaHandler.DeleteMedia)
 
 	s.Log.Info("routes registered successfully")
 }

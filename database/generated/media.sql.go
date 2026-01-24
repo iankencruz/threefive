@@ -253,8 +253,8 @@ OFFSET $1
 `
 
 type GetDeletedMediaParams struct {
-	OffsetVal *int32
-	LimitVal  *int32
+	OffsetVal int32
+	LimitVal  int32
 }
 
 func (q *Queries) GetDeletedMedia(ctx context.Context, arg GetDeletedMediaParams) ([]Media, error) {
@@ -575,7 +575,7 @@ type GetMediaUsageByEntityRow struct {
 	MediaCount int64
 }
 
-func (q *Queries) GetMediaUsageByEntity(ctx context.Context, limitVal *int32) ([]GetMediaUsageByEntityRow, error) {
+func (q *Queries) GetMediaUsageByEntity(ctx context.Context, limitVal int32) ([]GetMediaUsageByEntityRow, error) {
 	rows, err := q.db.Query(ctx, getMediaUsageByEntity, limitVal)
 	if err != nil {
 		return nil, err
@@ -664,8 +664,8 @@ OFFSET $1
 `
 
 type ListMediaParams struct {
-	OffsetVal *int32
-	LimitVal  *int32
+	OffsetVal int32
+	LimitVal  int32
 }
 
 func (q *Queries) ListMedia(ctx context.Context, arg ListMediaParams) ([]Media, error) {
@@ -720,8 +720,8 @@ OFFSET $2
 
 type ListMediaByTypeParams struct {
 	MimeTypePattern string
-	OffsetVal       *int32
-	LimitVal        *int32
+	OffsetVal       int32
+	LimitVal        int32
 }
 
 func (q *Queries) ListMediaByType(ctx context.Context, arg ListMediaByTypeParams) ([]Media, error) {
@@ -776,8 +776,8 @@ OFFSET $2
 
 type ListMediaByUploaderParams struct {
 	UploadedBy pgtype.UUID
-	OffsetVal  *int32
-	LimitVal   *int32
+	OffsetVal  int32
+	LimitVal   int32
 }
 
 func (q *Queries) ListMediaByUploader(ctx context.Context, arg ListMediaByUploaderParams) ([]Media, error) {

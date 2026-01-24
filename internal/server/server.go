@@ -23,6 +23,7 @@ type Server struct {
 	DB                database.Service
 	Queries           *generated.Queries
 	AuthService       *services.AuthService
+	MediaService      *services.MediaService
 	SessionManager    *session.SessionManager
 	SessionMiddleware *middleware.SessionMiddleware
 	Log               *slog.Logger
@@ -49,19 +50,6 @@ func NewServer() *Server {
 
 	slogger := slog.New(handler)
 
-	// Define custom time format
-	// logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
-	// 	ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
-	// 		if a.Key == slog.TimeKey {
-	// 			t := a.Value.Time()
-	// 			// Format the time as "YYYY-MM-DD HH:MM:SS"
-	// 			a.Value = slog.StringValue(t.Format("2006-01-02 15:04:05"))
-	// 		}
-	// 		return a
-	// 	},
-	// }),
-	// )
-
 	slogger.Info("Initializing server...")
 
 	// Initialize database
@@ -73,6 +61,40 @@ func NewServer() *Server {
 		panic(err)
 	}
 
+	var storage services.StorageProvider
+	storageProvider := os.Getenv("STORAGE_PROVIDER")
+
+	if storageProvider == "s3" {
+		// Initialize S3 storage (Vultr Object Storage or AWS S3)
+		slogger.Info("Initializing S3 storage")
+		s3Storage, err := services.NewS3Storage(context.Background(), services.S3Config{
+			Bucket:          os.Getenv("S3_BUCKET"),
+			Region:          os.Getenv("S3_REGION"),
+			Endpoint:        os.Getenv("S3_ENDPOINT"), // For Vultr or other S3-compatible services
+			AccessKeyID:     os.Getenv("S3_ACCESS_KEY_ID"),
+			SecretAccessKey: os.Getenv("S3_SECRET_ACCESS_KEY"),
+			BaseURL:         os.Getenv("S3_BASE_URL"), // Optional CDN URL
+		})
+		if err != nil {
+			slogger.Error("failed to initialize S3 storage", "error", err)
+			panic(err)
+		}
+		storage = s3Storage
+		slogger.Info("S3 storage initialized", "bucket", os.Getenv("S3_BUCKET"), "region", os.Getenv("S3_REGION"))
+	} else {
+		// Initialize local storage (default for development)
+		uploadDir := os.Getenv("LOCAL_UPLOAD_DIR")
+		if uploadDir == "" {
+			uploadDir = "./uploads"
+		}
+		baseURL := os.Getenv("LOCAL_BASE_URL")
+		if baseURL == "" {
+			baseURL = "/uploads"
+		}
+		storage = services.NewLocalStorage(uploadDir, baseURL)
+		slogger.Info("Local storage initialized", "upload_dir", uploadDir, "base_url", baseURL)
+	}
+
 	// Initialize SQLC queries
 	queries := generated.New(db.Pool())
 
@@ -82,12 +104,30 @@ func NewServer() *Server {
 		slogger.Error("database bootstrap failed", "error", err)
 		panic(err)
 	}
+
 	//
 	// Initialize services
 	authService := services.NewAuthService(db.Pool(), queries, slogger)
 	slogger.Info("auth service initialized")
 
-	// Initialize session store
+	// Initialize media service
+	mediaService := services.NewMediaService(
+		db.Pool(),
+		queries,
+		storage,
+		services.MediaConfig{
+			MaxFileSize: 50 * 1024 * 1024, // 50MB
+			AllowedTypes: []string{
+				"image/jpeg",
+				"image/png",
+				"image/gif",
+				"image/webp",
+				"video/mp4",
+				"video/quicktime",
+				"application/pdf",
+			},
+		},
+	)
 	sessionStore := session.NewPostgresStore(db.Pool(), queries, slogger)
 	slogger.Info("session store initialized")
 
@@ -112,6 +152,7 @@ func NewServer() *Server {
 		DB:                db,
 		Queries:           queries,
 		AuthService:       authService,
+		MediaService:      mediaService,
 		SessionManager:    sessionManager,
 		SessionMiddleware: sessionMiddleware,
 		Log:               slogger,

@@ -4,11 +4,9 @@ package services
 import (
 	"context"
 	"fmt"
-	"io"
-	"log/slog"
 	"mime/multipart"
-	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -21,40 +19,32 @@ import (
 type MediaService struct {
 	db      *pgxpool.Pool
 	queries *generated.Queries
+	storage StorageProvider
 	config  MediaConfig
-	logger  *slog.Logger
 }
 
 type MediaConfig struct {
-	UploadDir    string // Local upload directory
-	MaxFileSize  int64  // Max file size in bytes
+	MaxFileSize  int64
 	AllowedTypes []string
-	S3Bucket     string // For future S3 support
-	S3Region     string
-	BaseURL      string // Base URL for serving files
 }
 
-func NewMediaService(db *pgxpool.Pool, queries *generated.Queries, config MediaConfig) *MediaService {
+func NewMediaService(db *pgxpool.Pool, queries *generated.Queries, storage StorageProvider, config MediaConfig) *MediaService {
 	// Set defaults
-	if config.UploadDir == "" {
-		config.UploadDir = "./uploads"
-	}
 	if config.MaxFileSize == 0 {
-		config.MaxFileSize = 50 * 1024 * 1024 // 50MB default
+		config.MaxFileSize = 50 * 1024 * 1024 // 50MB
 	}
 	if len(config.AllowedTypes) == 0 {
-		config.AllowedTypes = []string{"image/jpeg", "image/png", "image/gif", "image/webp", "video/mp4", "application/pdf"}
+		config.AllowedTypes = []string{
+			"image/jpeg", "image/png", "image/gif", "image/webp",
+			"video/mp4", "video/quicktime",
+			"application/pdf",
+		}
 	}
-	if config.BaseURL == "" {
-		config.BaseURL = "/uploads"
-	}
-
-	// Ensure upload directory exists
-	os.MkdirAll(config.UploadDir, 0o755)
 
 	return &MediaService{
 		db:      db,
 		queries: queries,
+		storage: storage,
 		config:  config,
 	}
 }
@@ -72,68 +62,75 @@ func (s *MediaService) UploadMedia(ctx context.Context, file *multipart.FileHead
 		return nil, fmt.Errorf("file type %s is not allowed", mimeType)
 	}
 
-	// Generate unique filename
-	ext := filepath.Ext(file.Filename)
-	timestamp := time.Now().Format("20060102")
-	uniqueID := uuid.New().String()[:8]
-	filename := fmt.Sprintf("%s-%s%s", timestamp, uniqueID, ext)
+	// Generate unique storage key
+	storageKey := GenerateStorageKey(file.Filename)
 
-	// Create upload path
-	uploadPath := filepath.Join(s.config.UploadDir, filename)
-
-	// Open uploaded file
-	src, err := file.Open()
+	// Upload file using storage provider
+	uploadedKey, err := s.storage.Upload(ctx, file, storageKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open uploaded file: %w", err)
-	}
-	defer src.Close()
-
-	// Create destination file
-	dst, err := os.Create(uploadPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create destination file: %w", err)
-	}
-	defer dst.Close()
-
-	// Copy file
-	_, err = io.Copy(dst, src)
-	if err != nil {
-		return nil, fmt.Errorf("failed to save file: %w", err)
+		return nil, fmt.Errorf("failed to upload file: %w", err)
 	}
 
 	// Get image dimensions if it's an image
-	var width, height *int32
+	var width, height pgtype.Int4
 	if strings.HasPrefix(mimeType, "image/") {
-		// TODO: Implement image dimension detection
-		// You can use image.DecodeConfig for this
+		// TODO: Implement image dimension detection using image.DecodeConfig
+	}
+
+	// Determine storage type
+	var storageType string
+	switch s.storage.(type) {
+	case *S3Storage:
+		storageType = "s3"
+	case *LocalStorage:
+		storageType = "local"
+	default:
+		storageType = "unknown"
+	}
+
+	// Get S3 details if applicable
+	var s3Bucket, s3Region pgtype.Text
+	if s3Storage, ok := s.storage.(*S3Storage); ok {
+		s3Bucket = pgtype.Text{String: s3Storage.bucket, Valid: true}
+		s3Region = pgtype.Text{String: s3Storage.region, Valid: true}
 	}
 
 	// Create media record in database
 	mediaID := uuid.New()
 	var pgMediaID pgtype.UUID
-	pgMediaID.Scan(mediaID.String())
+	if err := pgMediaID.Scan(mediaID.String()); err != nil {
+		return nil, fmt.Errorf("failed to convert media ID: %w", err)
+	}
 
+	// Prepare optional fields
 	var pgAltText pgtype.Text
 	if altText != "" {
-		pgAltText.Scan(altText)
+		pgAltText = pgtype.Text{String: altText, Valid: true}
 	}
+
+	var pgOriginalKey pgtype.Text
+	pgOriginalKey = pgtype.Text{String: uploadedKey, Valid: true}
+
+	filename := filepath.Base(uploadedKey)
 
 	media, err := s.queries.CreateMedia(ctx, generated.CreateMediaParams{
 		ID:               pgMediaID,
-		Filename:         &filename,
-		OriginalFilename: &file.Filename,
-		MimeType:         &mimeType,
+		Filename:         filename,
+		OriginalFilename: file.Filename,
+		MimeType:         mimeType,
 		FileSize:         file.Size,
 		Width:            width,
-		Height:           &height,
-		StorageType:      pgtype.Text{String: "local", Valid: true},
-		OriginalKey:      pgtype.Text{String: filename, Valid: true},
+		Height:           height,
+		StorageType:      storageType, // Fixed: SQLC expects string for NOT NULL TEXT
+		S3Bucket:         s3Bucket,
+		S3Region:         s3Region,
+		OriginalKey:      pgOriginalKey,
 		AltText:          pgAltText,
 		UploadedBy:       uploadedBy,
 	})
 	if err != nil {
-		// Clean up file if database insert fails
-		os.Remove(uploadPath)
+		// Clean up uploaded file if database insert fails
+		s.storage.Delete(ctx, uploadedKey)
 		return nil, fmt.Errorf("failed to create media record: %w", err)
 	}
 
@@ -205,7 +202,9 @@ func (s *MediaService) ListMediaByUploader(ctx context.Context, uploadedBy pgtyp
 // UpdateMediaAltText updates the alt text for a media file
 func (s *MediaService) UpdateMediaAltText(ctx context.Context, id pgtype.UUID, altText string) (*generated.Media, error) {
 	var pgAltText pgtype.Text
-	pgAltText.Scan(altText)
+	if altText != "" {
+		pgAltText = pgtype.Text{String: altText, Valid: true}
+	}
 
 	media, err := s.queries.UpdateMediaAltText(ctx, generated.UpdateMediaAltTextParams{
 		ID:      id,
@@ -224,10 +223,6 @@ func (s *MediaService) DeleteMedia(ctx context.Context, id pgtype.UUID) error {
 	if err != nil {
 		return fmt.Errorf("failed to delete media: %w", err)
 	}
-
-	// Note: We keep the physical file for recovery
-	// Use PurgeOldDeletedMedia to permanently delete old files
-
 	return nil
 }
 
@@ -240,10 +235,10 @@ func (s *MediaService) RestoreMedia(ctx context.Context, id pgtype.UUID) error {
 	return nil
 }
 
-// HardDeleteMedia permanently deletes a media file and removes the physical file
+// HardDeleteMedia permanently deletes a media file and removes from storage
 func (s *MediaService) HardDeleteMedia(ctx context.Context, id pgtype.UUID) error {
-	// Get media to find filename
-	media, err := s.queries.GetMediaByID(ctx, id)
+	// Get media to find storage key
+	media, err := s.GetMediaByID(ctx, id)
 	if err != nil {
 		return fmt.Errorf("failed to get media: %w", err)
 	}
@@ -254,11 +249,11 @@ func (s *MediaService) HardDeleteMedia(ctx context.Context, id pgtype.UUID) erro
 		return fmt.Errorf("failed to delete media from database: %w", err)
 	}
 
-	// Delete physical file
-	filePath := filepath.Join(s.config.UploadDir, media.Filename)
-	if err := os.Remove(filePath); err != nil && !os.IsNotExist(err) {
-		// Log error but don't fail - database record is already deleted
-		fmt.Printf("Warning: failed to delete physical file %s: %v\n", filePath, err)
+	// Delete from storage
+	if media.OriginalKey.Valid {
+		if err := s.storage.Delete(ctx, media.OriginalKey.String); err != nil {
+			fmt.Printf("Warning: failed to delete file from storage: %v\n", err)
+		}
 	}
 
 	return nil
@@ -275,11 +270,14 @@ func (s *MediaService) PurgeOldDeletedMedia(ctx context.Context) error {
 		return fmt.Errorf("failed to get deleted media: %w", err)
 	}
 
-	// Delete physical files
+	// Delete physical files older than 30 days
+	thirtyDaysAgo := time.Now().Add(-30 * 24 * time.Hour)
 	for _, media := range deletedMedia {
-		if media.DeletedAt.Valid && time.Since(media.DeletedAt.Time) > 30*24*time.Hour {
-			filePath := filepath.Join(s.config.UploadDir, media.Filename)
-			os.Remove(filePath) // Ignore errors
+		// Fixed: DeletedAt is a *time.Time pointer, not pgtype.Timestamp
+		if media.DeletedAt != nil && media.DeletedAt.Before(thirtyDaysAgo) {
+			if media.OriginalKey.Valid {
+				s.storage.Delete(ctx, media.OriginalKey.String) // Ignore errors
+			}
 		}
 	}
 
@@ -298,18 +296,20 @@ func (s *MediaService) PurgeOldDeletedMedia(ctx context.Context) error {
 func (s *MediaService) LinkMediaToEntity(ctx context.Context, mediaID pgtype.UUID, entityType string, entityID pgtype.UUID, relationType string, sortOrder int32) error {
 	relationID := uuid.New()
 	var pgRelationID pgtype.UUID
-	pgRelationID.Scan(relationID.String())
+	if err := pgRelationID.Scan(relationID.String()); err != nil {
+		return fmt.Errorf("failed to convert relation ID: %w", err)
+	}
 
-	var pgEntityID pgtype.UUID
-	pgEntityID.Scan(entityID)
+	var pgSortOrder pgtype.Int4
+	pgSortOrder = pgtype.Int4{Int32: sortOrder, Valid: true}
 
 	_, err := s.queries.CreateMediaRelation(ctx, generated.CreateMediaRelationParams{
 		ID:           pgRelationID,
 		MediaID:      mediaID,
 		EntityType:   entityType,
-		EntityID:     pgEntityID,
-		RelationType: pgtype.Text{String: relationType, Valid: true},
-		SortOrder:    pgtype.Int4{Int32: sortOrder, Valid: true},
+		EntityID:     entityID,
+		RelationType: relationType, // Fixed: SQLC expects string for NOT NULL TEXT
+		SortOrder:    pgSortOrder,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to link media to entity: %w", err)
@@ -393,19 +393,13 @@ func (s *MediaService) CountMedia(ctx context.Context) (int64, error) {
 // Helper methods
 
 func (s *MediaService) isAllowedType(mimeType string) bool {
-	for _, allowed := range s.config.AllowedTypes {
-		if allowed == mimeType {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(s.config.AllowedTypes, mimeType)
 }
 
 // GetMediaURL returns the public URL for a media file
 func (s *MediaService) GetMediaURL(media *generated.Media) string {
-	if media.StorageType.String == "s3" {
-		// TODO: Construct S3 URL
+	if !media.OriginalKey.Valid {
 		return ""
 	}
-	return fmt.Sprintf("%s/%s", s.config.BaseURL, media.Filename)
+	return s.storage.GetURL(media.OriginalKey.String)
 }
