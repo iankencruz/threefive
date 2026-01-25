@@ -4,7 +4,7 @@ version: "3.8"
 services:
   # Your existing PostgreSQL service
   postgres:
-    image: docker.io/library/postgres:18-alpine
+    image: postgres:17-alpine
     container_name: threefive-postgres
     environment:
       POSTGRES_USER: user
@@ -27,7 +27,7 @@ services:
 
   # MinIO - S3 Compatible Storage
   minio:
-    image: docker.io/minio/minio:latest
+    image: minio/minio:latest
     container_name: threefive-minio
     command: server /data --console-address ":9001"
     environment:
@@ -49,22 +49,22 @@ services:
       retries: 3
 
   # MinIO Client - Auto-create bucket on startup
-  minio-setup:
-    image: docker.io/minio/mc:latest
-    container_name: threefive-minio-setup
-    depends_on:
-      minio:
-        condition: service_healthy
-    entrypoint: >
-      /bin/sh -c "
-      echo 'Waiting for MinIO to be ready...';
-      sleep 5;
-      /usr/bin/mc alias set myminio http://minio:9000 minioadmin minioadmin123;
-      /usr/bin/mc mb myminio/threefive-media --ignore-existing;
-      /usr/bin/mc anonymous set download myminio/threefive-media;
-      echo 'MinIO bucket created successfully!';
-      exit 0;
-      "
+  # minio-setup:
+  #   image: minio/mc:latest
+  #   container_name: threefive-minio-setup
+  #   depends_on:
+  #     minio:
+  #       condition: service_healthy
+  #   entrypoint: >
+  #     /bin/sh -c "
+  #     echo 'Waiting for MinIO to be ready...';
+  #     sleep 5;
+  #     /usr/bin/mc alias set myminio http://minio:9000 minioadmin minioadmin123;
+  #     /usr/bin/mc mb myminio/threefive-media --ignore-existing;
+  #     /usr/bin/mc anonymous set download myminio/threefive-media;
+  #     echo 'MinIO bucket created successfully!';
+  #     exit 0;
+  #     "
 
 volumes:
   postgres_data:
