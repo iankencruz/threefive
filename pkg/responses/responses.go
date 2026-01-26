@@ -23,7 +23,7 @@ func RenderWithStatus(ctx context.Context, c *echo.Context, status int, componen
 
 // RenderWithToast renders a component with a toast notification
 func RenderWithToast(ctx context.Context, c *echo.Context, component templ.Component, message string, variant toast.Variant) error {
-	// Render main component
+	// id main component
 	if err := component.Render(ctx, c.Response()); err != nil {
 		return err
 	}

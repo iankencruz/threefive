@@ -22,11 +22,12 @@ templ MediaUploadModal() {
 			</div>
 			<div class="px-6 py-4">
 				<form
+					id="upload-form"
 					hx-post="/admin/media/upload"
 					hx-encoding="multipart/form-data"
 					hx-target="#media-grid"
 					hx-swap="afterbegin"
-					hx-on::after-request="if(event.detail.successful) { document.getElementById('upload-modal').close(); this.reset(); }"
+					hx-on::after-request="if(event.detail.successful) { this.reset(); document.getElementById('upload-modal').close(); }"
 					class="space-y-4"
 				>
 					<div>
