@@ -2,6 +2,7 @@
 package handler
 
 import (
+	"fmt"
 	"log/slog"
 	"strconv"
 
@@ -135,17 +136,16 @@ func (h *MediaHandler) ShowMediaList(c *echo.Context) error {
 // UploadMedia handles file upload (returns HTMX-compatible HTML)
 func (h *MediaHandler) UploadMedia(c *echo.Context) error {
 	user := middleware.GetUser(c)
+	if user == nil {
+		h.logger.Error("user not found in context")
+		return responses.ErrorToast(c.Request().Context(), c, "Authentication required")
+	}
 
 	// Get uploaded file
 	file, err := c.FormFile("file")
 	if err != nil {
 		h.logger.Error("failed to get uploaded file", "error", err)
-		// Return error toast
-		component := toast.Toast(toast.Props{
-			Title:       "File Upload Failed",
-			Description: "No file was uploaded.",
-		})
-		return responses.Render(c.Request().Context(), c, component)
+		return responses.ErrorToast(c.Request().Context(), c, "No file uploaded")
 	}
 
 	// Get optional alt text
@@ -155,22 +155,19 @@ func (h *MediaHandler) UploadMedia(c *echo.Context) error {
 	var uploadedBy pgtype.UUID
 	if err := uploadedBy.Scan(user.ID.String()); err != nil {
 		h.logger.Error("failed to convert user ID", "error", err)
-		component := toast.Toast(toast.Props{
-			Title:       "Internal server error",
-			Description: "Could not process user information.",
-		})
-		return responses.Render(c.Request().Context(), c, component)
+		return responses.ErrorToast(c.Request().Context(), c, "Internal server error")
 	}
 
 	// Upload media
 	media, err := h.mediaService.UploadMedia(c.Request().Context(), file, altText, uploadedBy)
 	if err != nil {
 		h.logger.Error("failed to upload media", "error", err)
-		component := toast.Toast(toast.Props{
-			Title:       "File Upload Failed",
-			Description: err.Error(),
-		})
-		return responses.Render(c.Request().Context(), c, component)
+		return responses.ErrorToast(c.Request().Context(), c, err.Error())
+	}
+
+	if media == nil {
+		h.logger.Error("media service returned nil media")
+		return responses.ErrorToast(c.Request().Context(), c, "Failed to process upload")
 	}
 
 	h.logger.Info("media uploaded successfully",
@@ -179,48 +176,103 @@ func (h *MediaHandler) UploadMedia(c *echo.Context) error {
 		"user_id", user.ID,
 	)
 
-	mediaResponse := h.mediaService.ToMediaResponse(media)
+	// Get total count BEFORE this upload to determine if grid exists
+	totalCount, err := h.mediaService.CountMedia(c.Request().Context())
+	if err != nil {
+		h.logger.Error("failed to count media", "error", err)
+		totalCount = 1
+	}
 
-	// Return success - render the new media card component
-	component := lib.MediaCard(mediaResponse)
-	return responses.RenderSuccess(c.Request().Context(), c, component, "File uploaded successfully")
+	// Convert pgtype.Text to string
+	var altTextStr string
+	if media.AltText.Valid {
+		altTextStr = media.AltText.String
+	}
+
+	mediaResponse := services.MediaResponse{
+		ID:               media.ID,
+		Filename:         media.Filename,
+		OriginalFilename: media.OriginalFilename,
+		MimeType:         media.MimeType,
+		FileSize:         media.FileSize,
+		Width:            media.Width,
+		Height:           media.Height,
+		URL:              h.mediaService.GetMediaURL(media),
+		AltText:          altTextStr,
+		CreatedAt:        media.CreatedAt,
+		UpdatedAt:        media.UpdatedAt,
+	}
+
+	h.logger.Debug("converted media response",
+		"url", mediaResponse.URL,
+		"filename", media.Filename,
+		"total_count", totalCount,
+	)
+
+	// Check if grid already exists (has ID #media-grid)
+	// If totalCount == 1, grid doesn't exist yet (empty state showing)
+	// If totalCount > 1, grid already exists (just append card)
+
+	if totalCount == 1 {
+		// First upload - replace empty state with grid container + first card
+		h.logger.Debug("first media upload, creating grid")
+		component := lib.MediaGridStart([]services.MediaResponse{mediaResponse})
+		c.Response().Header().Set("HX-Reswap", "outerHTML") // Override to replace empty state
+		return responses.RenderSuccess(c.Request().Context(), c, component, "File uploaded successfully")
+	} else {
+		// Subsequent uploads - just return the card (will be appended via beforeend)
+		h.logger.Debug("appending new media card", "total_count", totalCount)
+		component := lib.MediaCard(mediaResponse)
+		return responses.RenderSuccess(c.Request().Context(), c, component, "File uploaded successfully")
+	}
 }
 
-// DeleteMedia handles media deletion
 func (h *MediaHandler) DeleteMedia(c *echo.Context) error {
 	// Get media ID from URL parameter
 	idParam := c.Param("id")
-	mediaUUID, err := uuid.Parse(idParam)
-	if err != nil {
-		component := toast.Toast(toast.Props{
-			Title:       "Invalid Media ID",
-			Description: "The provided media ID is not valid.",
-		})
+
+	h.logger.Debug("Delete media request", "id_param", idParam)
+
+	if idParam == "" {
+		h.logger.Error("missing media ID parameter")
+		component := lib.ErrorMessage("Media ID is required")
 		return responses.Render(c.Request().Context(), c, component)
 	}
 
-	var mediaID pgtype.UUID
-	if err := mediaID.Scan(mediaUUID.String()); err != nil {
-		component := toast.Toast(toast.Props{
-			Title:       "Internal server error",
-			Description: "Could not process media ID.",
-		})
+	// Parse UUID
+	mediaUUID, err := uuid.Parse(idParam)
+	if err != nil {
+		h.logger.Error("invalid media ID format", "id_param", idParam, "error", err)
+		component := lib.ErrorMessage(fmt.Sprintf("Invalid media ID format: %s", idParam))
 		return responses.Render(c.Request().Context(), c, component)
 	}
+
+	// Convert to pgtype.UUID
+	var mediaID pgtype.UUID
+	if err := mediaID.Scan(mediaUUID.String()); err != nil {
+		h.logger.Error("failed to convert UUID", "error", err)
+		component := lib.ErrorMessage("Failed to process media ID")
+		return responses.Render(c.Request().Context(), c, component)
+	}
+
+	h.logger.Info("Attempting to delete media", "media_id", mediaUUID)
 
 	// Soft delete media
 	err = h.mediaService.DeleteMedia(c.Request().Context(), mediaID)
 	if err != nil {
 		h.logger.Error("failed to delete media", "error", err, "media_id", mediaUUID)
-		component := toast.Toast(toast.Props{
-			Title:       "Failed to Delete Media",
-			Description: err.Error(),
-		})
+		component := lib.ErrorMessage("Failed to delete media")
 		return responses.Render(c.Request().Context(), c, component)
 	}
 
-	h.logger.Info("media deleted", "media_id", mediaUUID)
+	h.logger.Info("Media deleted successfully", "media_id", mediaUUID)
 
-	// Return success toast (HTMX will remove the element via hx-swap="outerHTML")
-	return responses.SuccessToast(c.Request().Context(), c, "Media deleted successfully")
+	toast := toast.Toast(toast.Props{
+		Title:       "Media Deleted",
+		Description: "The media file has been deleted successfully.",
+		Variant:     toast.VariantSuccess,
+	})
+
+	// Return success toast (HTMX will remove the element via hx-swap="outerHTML" or hx-swap="delete")
+	return responses.Render(c.Request().Context(), c, toast)
 }

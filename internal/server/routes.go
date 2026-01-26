@@ -47,7 +47,7 @@ func (s *Server) RegisterRoutes() {
 	media := admin.Group("/media")
 	media.GET("", mediaHandler.ShowMediaList)
 	media.POST("/upload", mediaHandler.UploadMedia)
-	media.DELETE("/:mediaID", mediaHandler.DeleteMedia)
+	media.DELETE("/:id", mediaHandler.DeleteMedia)
 
 	s.Log.Info("routes registered successfully")
 }

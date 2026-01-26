@@ -101,56 +101,66 @@ type S3Config struct {
 	BaseURL         string // Optional - custom CDN URL
 }
 
-func NewS3Storage(ctx context.Context, cfg S3Config) (*S3Storage, error) {
-	var awsCfg aws.Config
-	var err error
+// internal/services/storage.go
 
-	if cfg.Endpoint != "" {
-		// S3-compatible service (e.g., Vultr Object Storage)
-		awsCfg, err = config.LoadDefaultConfig(ctx,
-			config.WithRegion(cfg.Region),
-			config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
-				cfg.AccessKeyID,
-				cfg.SecretAccessKey,
-				"",
-			)),
-		)
-	} else {
-		// AWS S3
-		awsCfg, err = config.LoadDefaultConfig(ctx,
-			config.WithRegion(cfg.Region),
-			config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
-				cfg.AccessKeyID,
-				cfg.SecretAccessKey,
-				"",
-			)),
-		)
+func NewS3Storage(ctx context.Context, cfg S3Config) (*S3Storage, error) {
+	// Validate required fields
+	if cfg.Bucket == "" {
+		return nil, fmt.Errorf("S3 bucket is required")
+	}
+	if cfg.Region == "" {
+		return nil, fmt.Errorf("S3 region is required")
+	}
+	if cfg.AccessKeyID == "" {
+		return nil, fmt.Errorf("S3 access key ID is required")
+	}
+	if cfg.SecretAccessKey == "" {
+		return nil, fmt.Errorf("S3 secret access key is required")
 	}
 
+	// Create static credentials provider
+	credsProvider := credentials.NewStaticCredentialsProvider(
+		cfg.AccessKeyID,
+		cfg.SecretAccessKey,
+		"", // Session token (empty for MinIO/Vultr)
+	)
+
+	// Load AWS config with credentials
+	awsCfg, err := config.LoadDefaultConfig(ctx,
+		config.WithRegion(cfg.Region),
+		config.WithCredentialsProvider(credsProvider),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load AWS config: %w", err)
 	}
 
-	// Create S3 client
-	client := s3.NewFromConfig(awsCfg, func(o *s3.Options) {
-		if cfg.Endpoint != "" {
+	// Create S3 client with custom options for S3-compatible services (MinIO, Vultr, etc.)
+	var s3Client *s3.Client
+	if cfg.Endpoint != "" {
+		// S3-compatible service (MinIO, Vultr Object Storage, etc.)
+		s3Client = s3.NewFromConfig(awsCfg, func(o *s3.Options) {
 			o.BaseEndpoint = aws.String(cfg.Endpoint)
-			o.UsePathStyle = true // Required for some S3-compatible services
-		}
-	})
+			o.UsePathStyle = true // Required for MinIO and some S3-compatible services
+		})
+	} else {
+		// AWS S3
+		s3Client = s3.NewFromConfig(awsCfg)
+	}
 
-	// Determine base URL
+	// Determine base URL for accessing files
 	baseURL := cfg.BaseURL
 	if baseURL == "" {
 		if cfg.Endpoint != "" {
+			// For MinIO/S3-compatible services
 			baseURL = fmt.Sprintf("%s/%s", cfg.Endpoint, cfg.Bucket)
 		} else {
+			// For AWS S3
 			baseURL = fmt.Sprintf("https://%s.s3.%s.amazonaws.com", cfg.Bucket, cfg.Region)
 		}
 	}
 
 	return &S3Storage{
-		client:   client,
+		client:   s3Client,
 		bucket:   cfg.Bucket,
 		region:   cfg.Region,
 		endpoint: cfg.Endpoint,
@@ -172,14 +182,13 @@ func (s *S3Storage) Upload(ctx context.Context, file *multipart.FileHeader, key 
 		contentType = "application/octet-stream"
 	}
 
-	// Upload to S3
+	// Upload to S3/MinIO with public-read ACL
 	_, err = s.client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket:      aws.String(s.bucket),
 		Key:         aws.String(key),
 		Body:        src,
 		ContentType: aws.String(contentType),
-		// Make publicly readable (optional - adjust based on your needs)
-		ACL: "public-read",
+		ACL:         "public-read", // Make file publicly accessible
 	})
 	if err != nil {
 		return "", fmt.Errorf("failed to upload to S3: %w", err)

@@ -3,8 +3,9 @@ package lib
 
 import (
 	"fmt"
-	"strings"
 	"github.com/iankencruz/threefive/internal/services"
+	"github.com/jackc/pgtype"
+	"strings"
 )
 
 templ MediaCard(media services.MediaResponse) {
@@ -50,8 +51,8 @@ templ MediaCard(media services.MediaResponse) {
 					</button>
 					<button
 						type="button"
-						hx-delete={ fmt.Sprintf("/admin/media/%s", media.ID.String()) }
-						hx-target={ fmt.Sprintf("#media-%s", media.ID.String()) }
+						hx-delete={ fmt.Sprintf("/admin/media/%s", GetUUIDString(media.ID)) }
+						hx-target={ fmt.Sprintf("#media-%s", GetUUIDString(media.ID)) }
 						hx-swap="outerHTML swap:0.3s"
 						hx-confirm="Are you sure you want to delete this media?"
 						class="rounded bg-red-500/80 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-600/80 backdrop-blur-sm"
@@ -64,6 +65,41 @@ templ MediaCard(media services.MediaResponse) {
 	</div>
 }
 
+// formatUUID handles the actual string formatting from the byte array.
+func formatUUID(b [16]byte) string {
+	return fmt.Sprintf("%08x-%04x-%04x-%04x-%012x",
+		b[0:4], b[4:6], b[6:8], b[8:10], b[10:16])
+}
+
+// GetUUIDString correctly accesses the Bytes field of the pgtype.UUID struct.
+func GetUUIDString(id interface{}) string {
+	switch v := id.(type) {
+	case pgtype.UUID:
+		// In pgx v4, UUID is a struct: {Bytes: [16]byte, Status: Status}
+		if v.Status != pgtype.Present {
+			return ""
+		}
+		return formatUUID(v.Bytes)
+
+	case *pgtype.UUID:
+		if v == nil || v.Status != pgtype.Present {
+			return ""
+		}
+		return formatUUID(v.Bytes)
+
+	case [16]byte:
+		if v == [16]byte{} {
+			return ""
+		}
+		return formatUUID(v)
+
+	case string:
+		return v
+
+	default:
+		return fmt.Sprintf("%v", id)
+	}
+}
 func formatFileSize(bytes int64) string {
 	const (
 		KB = 1024
