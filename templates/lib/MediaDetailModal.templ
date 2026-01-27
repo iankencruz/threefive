@@ -1,176 +1,196 @@
-// templates/lib/MediaDetailModal.templ
 package lib
 
 import (
 	"fmt"
+	"github.com/iankencruz/threefive/components/button"
+	"github.com/iankencruz/threefive/components/dialog"
 	"github.com/iankencruz/threefive/internal/services"
 	"strings"
 )
 
+// Define the script for closing the dialog.
+// Templ automatically handles the string interpolation and type conversion.
+
+script handleAfterRequest(id string) {
+    if (event.detail.successful) {
+        window.tui.dialog.close('media-detail-' + id);
+    }
+}
+
+// Define the script for copying to clipboard.
+// Using templ.JSExpression("this") or event.target allows access to the element.
+
+script copyToClipboard(id string) {
+    const input = document.getElementById('media-url-' + id);
+    if (input) {
+        navigator.clipboard.writeText(input.value);
+        
+        // 'this' doesn't always work in arrow functions or specific contexts, 
+        // so we use event.target to reference the clicked button.
+        const btn = event.target;
+        const originalText = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => {
+            btn.textContent = originalText;
+        }, 2000);
+    }
+}
+
 templ MediaDetailModal(media services.MediaResponse) {
-	<dialog id="detail-modal" class="rounded-lg shadow-xl backdrop:bg-gray-900/50 p-0 w-full max-w-2xl" open>
-		<div class="bg-white rounded-lg">
-			<!-- Modal Header -->
-			<div class="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-				<h3 class="text-lg font-semibold text-gray-900">Media Details</h3>
-				<button
-					type="button"
-					onclick="this.closest('dialog').remove()"
-					class="text-gray-400 hover:text-gray-500"
-				>
-					<span class="sr-only">Close</span>
-					<svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-					</svg>
-				</button>
-			</div>
-			<!-- Modal Body -->
-			<div class="px-6 py-4">
-				<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-					<!-- Media Preview -->
-					<div>
-						if strings.HasPrefix(media.MimeType, "image/") {
-							<img
-								src={ media.URL }
-								alt={ media.AltText }
-								class="w-full rounded-lg border border-gray-200"
-							/>
-						} else if strings.HasPrefix(media.MimeType, "video/") {
-							<video controls class="w-full rounded-lg border border-gray-200">
-								<source src={ media.URL } type={ media.MimeType }/>
-								Your browser does not support the video tag.
-							</video>
-						} else {
-							<div class="flex aspect-video w-full items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50">
-								<div class="text-center">
-									<svg class="mx-auto h-16 w-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-									</svg>
-									<p class="mt-2 text-sm font-medium text-gray-900">{ media.OriginalFilename }</p>
-								</div>
-							</div>
-						}
-						<!-- Quick Copy URL -->
-						<div class="mt-4">
-							<label class="block text-sm font-medium text-gray-700 mb-2">
-								File URL
-							</label>
-							<div class="flex gap-2">
-								<input
-									type="text"
-									id="media-url"
-									value={ media.URL }
-									readonly
-									class="block flex-1 rounded-md border-gray-300 bg-gray-50 text-sm"
-								/>
-								<button
-									type="button"
-									onclick="navigator.clipboard.writeText(document.getElementById('media-url').value); this.textContent = 'Copied!'; setTimeout(() => this.textContent = 'Copy', 2000);"
-									class="rounded-md bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
-								>
-									Copy
-								</button>
-							</div>
+	@dialog.Content(dialog.ContentProps{
+		ID:    fmt.Sprintf("media-detail-%s", media.ID.String()),
+		Open:  true,
+		Class: "max-w-2xl",
+	}) {
+		@dialog.Header() {
+			@dialog.Title() {
+				Media Details
+			}
+		}
+		<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+			<!-- Media Preview -->
+			<div>
+				if strings.HasPrefix(media.MimeType, "image/") {
+					<img
+						src={ media.URL }
+						alt={ media.AltText }
+						class="w-full rounded-lg border border-gray-200"
+					/>
+				} else if strings.HasPrefix(media.MimeType, "video/") {
+					<video controls class="w-full rounded-lg border border-gray-200">
+						<source src={ media.URL } type={ media.MimeType }/>
+						Your browser does not support the video tag.
+					</video>
+				} else {
+					<div class="flex aspect-video w-full items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50">
+						<div class="text-center">
+							<svg class="mx-auto h-16 w-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+							</svg>
+							<p class="mt-2 text-sm font-medium text-gray-900">{ media.OriginalFilename }</p>
 						</div>
 					</div>
-					<!-- Media Info & Edit Form -->
-					<div class="space-y-6">
-						<!-- File Info -->
-						<div>
-							<h4 class="text-sm font-medium text-gray-900 mb-3">File Information</h4>
-							<dl class="space-y-2 text-sm">
-								<div class="flex justify-between">
-									<dt class="font-medium text-gray-500">Filename:</dt>
-									<dd class="text-gray-900">{ media.Filename }</dd>
-								</div>
-								<div class="flex justify-between">
-									<dt class="font-medium text-gray-500">Original:</dt>
-									<dd class="text-gray-900 truncate max-w-xs" title={ media.OriginalFilename }>
-										{ media.OriginalFilename }
-									</dd>
-								</div>
-								<div class="flex justify-between">
-									<dt class="font-medium text-gray-500">Type:</dt>
-									<dd class="text-gray-900">{ media.MimeType }</dd>
-								</div>
-								<div class="flex justify-between">
-									<dt class="font-medium text-gray-500">Size:</dt>
-									<dd class="text-gray-900">{ formatFileSize(media.FileSize) }</dd>
-								</div>
-								// FIX: Check if pgtype.Int4 is Valid, then access Int32 field
-								if media.Width.Valid && media.Height.Valid {
-									<div class="flex justify-between">
-										<dt class="font-medium text-gray-500">Dimensions:</dt>
-										<dd class="text-gray-900">
-											{ fmt.Sprintf("%dx%d", media.Width.Int32, media.Height.Int32) }
-										</dd>
-									</div>
-								}
-								<div class="flex justify-between">
-									<dt class="font-medium text-gray-500">Storage:</dt>
-									<dd class="text-gray-900 capitalize">{ media.StorageType }</dd>
-								</div>
-								<div class="flex justify-between">
-									<dt class="font-medium text-gray-500">Uploaded:</dt>
-									<dd class="text-gray-900">
-										{ media.CreatedAt.Format("Jan 2, 2006") }
-									</dd>
-								</div>
-							</dl>
-						</div>
-						<!-- Edit Alt Text Form -->
-						<form
-							hx-put={ fmt.Sprintf("/admin/media/%s/alt-text", media.ID.String()) }
-							hx-target={ fmt.Sprintf("#media-%s", media.ID.String()) }
-							hx-swap="outerHTML"
-							class="space-y-4"
+				}
+				<!-- Quick Copy URL -->
+				<div class="mt-4">
+					<label class="block text-sm font-medium text-gray-700 mb-2">
+						File URL
+					</label>
+					<div class="flex gap-2">
+						<input
+							type="text"
+							id={ fmt.Sprintf("media-url-%s", media.ID.String()) }
+							value={ media.URL }
+							readonly
+							class="block flex-1 rounded-md border-gray-300 bg-gray-50 text-sm"
+						/>
+						<button
+							type="button"
+							onclick={ copyToClipboard(media.ID.String()) }
+							class="rounded-md bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
 						>
-							<div>
-								<label for="alt-text-edit" class="block text-sm font-medium text-gray-700 mb-2">
-									Alt Text
-								</label>
-								<textarea
-									id="alt-text-edit"
-									name="alt_text"
-									rows="3"
-									placeholder="Describe the image for accessibility"
-									class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-								>{ media.AltText }</textarea>
-								<p class="mt-1 text-xs text-gray-500">
-									Helps with SEO and accessibility for screen readers
-								</p>
-							</div>
-							<button
-								type="submit"
-								class="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-							>
-								Save Changes
-							</button>
-						</form>
+							Copy
+						</button>
 					</div>
 				</div>
 			</div>
-			<!-- Modal Footer -->
-			<div class="border-t border-gray-200 px-6 py-4 flex justify-between">
-				<button
-					type="button"
-					hx-delete={ fmt.Sprintf("/admin/media/%s", media.ID.String()) }
+			<!-- Media Info & Edit Form -->
+			<div class="space-y-6">
+				<!-- File Info -->
+				<div>
+					<h4 class="text-sm font-medium text-gray-900 mb-3">File Information</h4>
+					<dl class="space-y-2 text-sm">
+						<div class="flex justify-between">
+							<dt class="font-medium text-gray-500">Filename:</dt>
+							<dd class="text-gray-900">{ media.Filename }</dd>
+						</div>
+						<div class="flex justify-between">
+							<dt class="font-medium text-gray-500">Original:</dt>
+							<dd class="text-gray-900 truncate max-w-xs" title={ media.OriginalFilename }>
+								{ media.OriginalFilename }
+							</dd>
+						</div>
+						<div class="flex justify-between">
+							<dt class="font-medium text-gray-500">Type:</dt>
+							<dd class="text-gray-900">{ media.MimeType }</dd>
+						</div>
+						<div class="flex justify-between">
+							<dt class="font-medium text-gray-500">Size:</dt>
+							<dd class="text-gray-900">{ formatFileSize(media.FileSize) }</dd>
+						</div>
+						if media.Width.Valid && media.Height.Valid {
+							<div class="flex justify-between">
+								<dt class="font-medium text-gray-500">Dimensions:</dt>
+								<dd class="text-gray-900">
+									{ fmt.Sprintf("%dx%d", media.Width.Int32, media.Height.Int32) }
+								</dd>
+							</div>
+						}
+						<div class="flex justify-between">
+							<dt class="font-medium text-gray-500">Storage:</dt>
+							<dd class="text-gray-900 capitalize">{ media.StorageType }</dd>
+						</div>
+						<div class="flex justify-between">
+							<dt class="font-medium text-gray-500">Uploaded:</dt>
+							<dd class="text-gray-900">
+								{ media.CreatedAt.Format("Jan 2, 2006") }
+							</dd>
+						</div>
+					</dl>
+				</div>
+				<!-- Edit Alt Text Form -->
+				<form
+					id={ fmt.Sprintf("alt-text-form-%s", media.ID.String()) }
+					hx-put={ fmt.Sprintf("/admin/media/%s/alt-text", media.ID.String()) }
 					hx-target={ fmt.Sprintf("#media-%s", media.ID.String()) }
-					hx-swap="outerHTML swap:0.3s"
-					hx-confirm="Are you sure you want to delete this media? This action cannot be undone."
-					hx-on::after-request="if(event.detail.successful) { this.closest('dialog').remove(); }"
-					class="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+					hx-swap="outerHTML"
+					class="space-y-4"
 				>
-					Delete Media
-				</button>
-				<button
-					type="button"
-					onclick="this.closest('dialog').remove()"
-					class="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-				>
-					Close
-				</button>
+					<div>
+						<label for="alt-text-edit" class="block text-sm font-medium text-gray-700 mb-2">
+							Alt Text
+						</label>
+						<textarea
+							id="alt-text-edit"
+							name="alt_text"
+							rows="3"
+							placeholder="Describe the image for accessibility"
+							class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+						>{ media.AltText }</textarea>
+						<p class="mt-1 text-xs text-gray-500">
+							Helps with SEO and accessibility for screen readers
+						</p>
+					</div>
+					<button
+						type="submit"
+						class="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+					>
+						Save Changes
+					</button>
+				</form>
 			</div>
 		</div>
-	</dialog>
+		@dialog.Footer() {
+			<button
+				type="button"
+				hx-delete={ fmt.Sprintf("/admin/media/%s", media.ID.String()) }
+				hx-target={ fmt.Sprintf("#media-%s", media.ID.String()) }
+				hx-swap="outerHTML swap:0.3s"
+				hx-confirm="Are you sure you want to delete this media? This action cannot be undone."
+				hx-on::after-request={ handleAfterRequest(media.ID.String()) }
+				class="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+			>
+				Delete Media
+			</button>
+			@dialog.Close(dialog.CloseProps{
+				For: fmt.Sprintf("media-detail-%s", media.ID.String()),
+			}) {
+				@button.Button(button.Props{
+					Variant: button.VariantOutline,
+				}) {
+					Close
+				}
+			}
+		}
+	}
 }
