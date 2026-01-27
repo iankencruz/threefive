@@ -27,7 +27,7 @@ templ MediaUploadModal() {
 					hx-encoding="multipart/form-data"
 					hx-target="#media-grid"
 					hx-swap="afterbegin"
-					hx-on::after-request="if(event.detail.successful) { this.reset(); document.getElementById('upload-modal').close(); }"
+					hx-on::after-request="if(event.detail.successful) { console.log('media upload event'); this.reset(); document.getElementById('upload-modal').close(); }"
 					class="space-y-4"
 				>
 					<div>
