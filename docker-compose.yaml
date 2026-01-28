@@ -4,8 +4,8 @@ services:
   postgres:
     image: postgres:17-alpine
     environment:
-      POSTGRES_USER: threefive
-      POSTGRES_PASSWORD: threefive
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
       POSTGRES_DB: threefive
     ports:
       - "5432:5432"

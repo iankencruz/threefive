@@ -30,7 +30,10 @@ func RenderWithToast(ctx context.Context, c *echo.Context, component templ.Compo
 
 	// Render toast (out-of-band swap)
 	toastComponent := toast.Toast(toast.Props{
-		Variant: variant,
+		Variant:       variant,
+		Description:   message,
+		Icon:          true,
+		ShowIndicator: true,
 	})
 
 	return toastComponent.Render(ctx, c.Response())
@@ -59,7 +62,10 @@ func RenderInfo(ctx context.Context, c *echo.Context, component templ.Component,
 // ToastOnly renders only a toast notification
 func ToastOnly(ctx context.Context, c *echo.Context, message string, variant toast.Variant) error {
 	toastComponent := toast.Toast(toast.Props{
-		Variant: variant,
+		Variant:       variant,
+		Description:   message,
+		Icon:          true,
+		ShowIndicator: true,
 	})
 
 	return toastComponent.Render(ctx, c.Response())
@@ -85,7 +91,8 @@ func RedirectWithToast(ctx context.Context, c *echo.Context, url string, message
 	c.Response().Header().Set("HX-Redirect", url)
 
 	toastComponent := toast.Toast(toast.Props{
-		Variant: variant,
+		Variant:     variant,
+		Description: message,
 	})
 
 	return toastComponent.Render(ctx, c.Response())

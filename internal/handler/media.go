@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"github.com/google/uuid"
-	"github.com/iankencruz/threefive/components/toast"
 	"github.com/iankencruz/threefive/database/generated"
 	"github.com/iankencruz/threefive/internal/middleware"
 	"github.com/iankencruz/threefive/internal/services"
@@ -267,12 +266,6 @@ func (h *MediaHandler) DeleteMedia(c *echo.Context) error {
 
 	h.logger.Info("Media deleted successfully", "media_id", mediaUUID)
 
-	toast := toast.Toast(toast.Props{
-		Title:       "Media Deleted",
-		Description: "The media file has been deleted successfully.",
-		Variant:     toast.VariantSuccess,
-	})
-
 	// Return success toast (HTMX will remove the element via hx-swap="outerHTML" or hx-swap="delete")
-	return responses.Render(c.Request().Context(), c, toast)
+	return responses.SuccessToast(c.Request().Context(), c, "Media deleted successfully")
 }
