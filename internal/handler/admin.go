@@ -1,9 +1,11 @@
 package handler
 
 import (
+	"fmt"
 	"log/slog"
 
 	"github.com/iankencruz/threefive/internal/middleware"
+	"github.com/iankencruz/threefive/internal/services"
 	"github.com/iankencruz/threefive/pkg/responses"
 	"github.com/iankencruz/threefive/templates/lib"
 	"github.com/iankencruz/threefive/templates/pages"
@@ -11,12 +13,14 @@ import (
 )
 
 type AdminHandler struct {
-	logger *slog.Logger
+	logger       *slog.Logger
+	mediaService *services.MediaService
 }
 
-func NewAdminHandler(logger *slog.Logger) *AdminHandler {
+func NewAdminHandler(logger *slog.Logger, mediaService *services.MediaService) *AdminHandler {
 	return &AdminHandler{
-		logger: logger,
+		logger:       logger,
+		mediaService: mediaService,
 	}
 }
 
@@ -28,6 +32,16 @@ func (h *AdminHandler) ShowDashboard(c *echo.Context) error {
 
 	currentPath := c.Request().URL.Path
 
+	count, err := h.mediaService.CountMedia(c.Request().Context())
+	if err != nil {
+		h.logger.Error("failed to count media", "error", err)
+		return c.String(500, "Internal Server Error")
+	}
+
+	mediaCount := int(count)
+
+	fmt.Printf("%T", mediaCount)
+
 	// totalProjects, _ := h.ProjectSer
 
 	// TODO: Get real stats from services
@@ -36,7 +50,7 @@ func (h *AdminHandler) ShowDashboard(c *echo.Context) error {
 		TotalProjects:     12,
 		TotalBlogs:        24,
 		TotalPages:        3,
-		TotalMedia:        156,
+		TotalMedia:        mediaCount,
 		PublishedProjects: 8,
 		PublishedBlogs:    18,
 		DraftProjects:     4,

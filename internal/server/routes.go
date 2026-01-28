@@ -12,7 +12,7 @@ func (s *Server) RegisterRoutes() {
 
 	// Initialize handlers
 	authHandler := handler.NewAuthHandler(s.AuthService, s.SessionManager, s.Log)
-	adminHandler := handler.NewAdminHandler(s.Log)
+	adminHandler := handler.NewAdminHandler(s.Log, s.MediaService)
 	mediaHandler := handler.NewMediaHandler(s.MediaService, s.Log)
 
 	// Static assets
