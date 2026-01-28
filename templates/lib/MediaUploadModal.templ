@@ -44,12 +44,6 @@ templ MediaUploadModal() {
 						document.getElementById('file-name').textContent = '';
 					}
 				"
-				hx-on::before-request="
-					const formData = new FormData(event.detail.elt);
-					console.log('📤 Uploading media...');
-					console.log('File:', formData.get('file')?.name || 'No file');
-					console.log('Alt Text:', formData.get('alt_text') || 'None provided');
-				"
 				class="space-y-4"
 			>
 				<!-- File Upload Area -->
