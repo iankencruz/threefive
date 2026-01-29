@@ -403,3 +403,24 @@ func (s *MediaService) GetMediaURL(media *generated.Media) string {
 	}
 	return s.storage.GetURL(media.OriginalKey.String)
 }
+
+// UpdateMedia updates media metadata (alt text)
+func (s *MediaService) UpdateMedia(ctx context.Context, mediaID pgtype.UUID, altText string) (*generated.Media, error) {
+	// Convert altText to pgtype.Text
+	var altTextPg pgtype.Text
+	if altText != "" {
+		altTextPg.String = altText
+		altTextPg.Valid = true
+	}
+
+	// Update media in database
+	media, err := s.queries.UpdateMediaAltText(ctx, generated.UpdateMediaAltTextParams{
+		ID:      mediaID,
+		AltText: altTextPg,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to update media: %w", err)
+	}
+
+	return &media, nil
+}

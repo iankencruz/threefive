@@ -9,6 +9,7 @@ import (
 // RegisterRoutes defines the API endpoints
 func (s *Server) RegisterRoutes() {
 	s.Log.Info("Registering routes...")
+	s.Echo.Static("/assets", "assets")
 
 	// Initialize handlers
 	authHandler := handler.NewAuthHandler(s.AuthService, s.SessionManager, s.Log)
@@ -16,7 +17,6 @@ func (s *Server) RegisterRoutes() {
 	mediaHandler := handler.NewMediaHandler(s.MediaService, s.Log)
 
 	// Static assets
-	s.Echo.Static("/assets", "assets")
 
 	// Session Middleware
 	s.Echo.Use(s.SessionMiddleware.Session)
@@ -47,6 +47,8 @@ func (s *Server) RegisterRoutes() {
 	media := admin.Group("/media")
 	media.GET("", mediaHandler.ShowMediaList)
 	media.POST("/upload", mediaHandler.UploadMedia)
+	media.GET("/:id/detail", mediaHandler.GetMediaDetail) // ADD THIS LINE
+	media.PUT("/:id", mediaHandler.UpdateMedia)
 	media.DELETE("/:id", mediaHandler.DeleteMedia)
 
 	s.Log.Info("routes registered successfully")

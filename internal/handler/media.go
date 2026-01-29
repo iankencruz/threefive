@@ -132,6 +132,64 @@ func (h *MediaHandler) ShowMediaList(c *echo.Context) error {
 	return responses.Render(ctx, c, component)
 }
 
+// GetMediaDetail returns the detail modal for a specific media item
+func (h *MediaHandler) GetMediaDetail(c *echo.Context) error {
+	// Get media ID from URL parameter
+	idParam := c.Param("id")
+
+	h.logger.Debug("Get media detail request", "id_param", idParam)
+
+	if idParam == "" {
+		h.logger.Error("missing media ID parameter")
+		return responses.ErrorToast(c.Request().Context(), c, "Media ID is required")
+	}
+
+	// Parse UUID
+	mediaUUID, err := uuid.Parse(idParam)
+	if err != nil {
+		h.logger.Error("invalid media ID format", "id_param", idParam, "error", err)
+		return responses.ErrorToast(c.Request().Context(), c, "Invalid media ID format")
+	}
+
+	// Convert to pgtype.UUID
+	var mediaID pgtype.UUID
+	if err := mediaID.Scan(mediaUUID.String()); err != nil {
+		h.logger.Error("failed to convert UUID", "error", err)
+		return responses.ErrorToast(c.Request().Context(), c, "Failed to process media ID")
+	}
+
+	h.logger.Info("Fetching media details", "media_id", mediaUUID)
+
+	// Get media from database
+	media, err := h.mediaService.GetMediaByID(c.Request().Context(), mediaID)
+	if err != nil {
+		h.logger.Error("failed to get media", "error", err, "media_id", mediaUUID)
+		return responses.ErrorToast(c.Request().Context(), c, "Media not found")
+	}
+
+	// Convert to response
+	mediaResponse := services.MediaResponse{
+		ID:               media.ID,
+		Filename:         media.Filename,
+		OriginalFilename: media.OriginalFilename,
+		MimeType:         media.MimeType,
+		FileSize:         media.FileSize,
+		Width:            media.Width,
+		Height:           media.Height,
+		URL:              h.mediaService.GetMediaURL(media),
+		AltText:          media.AltText.String,
+		StorageType:      media.StorageType,
+		CreatedAt:        media.CreatedAt,
+		UpdatedAt:        media.UpdatedAt,
+	}
+
+	h.logger.Info("Media details retrieved successfully", "media_id", mediaUUID)
+
+	// Render the detail modal
+	component := lib.MediaDetailModal(mediaResponse)
+	return responses.Render(c.Request().Context(), c, component)
+}
+
 // UploadMedia handles file upload (returns HTMX-compatible HTML)
 func (h *MediaHandler) UploadMedia(c *echo.Context) error {
 	user := middleware.GetUser(c)
@@ -268,4 +326,69 @@ func (h *MediaHandler) DeleteMedia(c *echo.Context) error {
 
 	// Return success toast (HTMX will remove the element via hx-swap="outerHTML" or hx-swap="delete")
 	return responses.SuccessToast(c.Request().Context(), c, "Media deleted successfully")
+}
+
+// UpdateMedia handles updating media metadata (alt text, etc.)
+func (h *MediaHandler) UpdateMedia(c *echo.Context) error {
+	// Get media ID from URL parameter
+	idParam := c.Param("id")
+
+	h.logger.Debug("Update media request", "id_param", idParam)
+
+	if idParam == "" {
+		h.logger.Error("missing media ID parameter")
+		return responses.ErrorToast(c.Request().Context(), c, "Media ID is required")
+	}
+
+	// Parse UUID
+	mediaUUID, err := uuid.Parse(idParam)
+	if err != nil {
+		h.logger.Error("invalid media ID format", "id_param", idParam, "error", err)
+		return responses.ErrorToast(c.Request().Context(), c, "Invalid media ID format")
+	}
+
+	// Convert to pgtype.UUID
+	var mediaID pgtype.UUID
+	if err := mediaID.Scan(mediaUUID.String()); err != nil {
+		h.logger.Error("failed to convert UUID", "error", err)
+		return responses.ErrorToast(c.Request().Context(), c, "Failed to process media ID")
+	}
+
+	// Parse form data
+	if err := c.Request().ParseForm(); err != nil {
+		h.logger.Error("failed to parse form", "error", err)
+		return responses.ErrorToast(c.Request().Context(), c, "Failed to parse form data")
+	}
+
+	altText := c.FormValue("alt_text")
+	h.logger.Info("Updating media", "media_id", mediaUUID, "alt_text", altText)
+
+	// Update media in database
+	updatedMedia, err := h.mediaService.UpdateMedia(c.Request().Context(), mediaID, altText)
+	if err != nil {
+		h.logger.Error("failed to update media", "error", err, "media_id", mediaUUID)
+		return responses.ErrorToast(c.Request().Context(), c, "Failed to update media")
+	}
+
+	h.logger.Info("Media updated successfully", "media_id", mediaUUID)
+
+	// Convert to response
+	mediaResponse := services.MediaResponse{
+		ID:               updatedMedia.ID,
+		Filename:         updatedMedia.Filename,
+		OriginalFilename: updatedMedia.OriginalFilename,
+		MimeType:         updatedMedia.MimeType,
+		FileSize:         updatedMedia.FileSize,
+		Width:            updatedMedia.Width,
+		Height:           updatedMedia.Height,
+		URL:              h.mediaService.GetMediaURL(updatedMedia),
+		AltText:          updatedMedia.AltText.String,
+		StorageType:      updatedMedia.StorageType,
+		CreatedAt:        updatedMedia.CreatedAt,
+		UpdatedAt:        updatedMedia.UpdatedAt,
+	}
+
+	// Return updated media card
+	component := lib.MediaCard(mediaResponse)
+	return responses.RenderSuccess(c.Request().Context(), c, component, "Media updated successfully")
 }
