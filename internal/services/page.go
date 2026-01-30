@@ -3,6 +3,7 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -10,12 +11,20 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type SocialLinks struct {
+	Twitter   string `json:"twitter,omitempty"`
+	LinkedIn  string `json:"linkedin,omitempty"`
+	GitHub    string `json:"github,omitempty"`
+	Instagram string `json:"instagram,omitempty"`
+}
+
 // PageResponse - only used when we need to enrich page data with related entities
 // Similar to how MediaResponse adds URLs to generated.Media
 type PageResponse struct {
 	Page             generated.Page
 	HeroMedia        *MediaResponse
 	ContentImage     *MediaResponse
+	SocialLinks      *SocialLinks
 	FeaturedProjects []FeaturedProjectSummary
 }
 
@@ -129,6 +138,14 @@ func (s *PageService) enrichPageData(ctx context.Context, page *generated.Page) 
 		if err == nil {
 			mediaResp := s.mediaService.ToMediaResponse(contentImg)
 			response.ContentImage = &mediaResp
+		}
+	}
+
+	// Parse social links JSON (for contact page)
+	if len(page.SocialLinks) > 0 {
+		var social SocialLinks
+		if err := json.Unmarshal(page.SocialLinks, &social); err == nil {
+			response.SocialLinks = &social
 		}
 	}
 

@@ -1,0 +1,345 @@
+// templates/pages/AdminEditAboutPage.templ
+package pages
+
+import (
+	"github.com/iankencruz/threefive/internal/services"
+	"github.com/iankencruz/threefive/templates/layouts"
+	"github.com/iankencruz/threefive/templates/lib"
+)
+
+templ AdminAbout(pageResp *services.PageResponse, currentPath string) {
+	@layouts.AdminLayout(layouts.LayoutProps{
+		Title: "Edit About Page",
+		Path:  currentPath,
+	}) {
+		<!-- Page Header -->
+		<div class="mb-8">
+			<div class="flex items-center justify-between">
+				<div>
+					<h1 class="text-3xl font-bold text-gray-900">Edit About Page</h1>
+					<p class="text-gray-600 mt-2">Update your about page content, featured projects, and CTA</p>
+				</div>
+				<a
+					href="/admin/pages"
+					class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
+				>
+					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+					</svg>
+					Back to Pages
+				</a>
+			</div>
+		</div>
+		<!-- Edit Form -->
+		<div class="bg-white rounded-lg border border-gray-200">
+			<form
+				hx-put={ "/admin/pages/" + pageResp.Page.Slug }
+				hx-target="this"
+				hx-swap="outerHTML"
+				class="p-6 space-y-6"
+			>
+				<!-- Title Field -->
+				<div>
+					<label for="title" class="block text-sm font-medium text-gray-700 mb-2">
+						Page Title
+					</label>
+					<input
+						type="text"
+						id="title"
+						name="title"
+						value={ pageResp.Page.Title }
+						class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+						placeholder="Enter page title"
+					/>
+					<p class="text-xs text-gray-500 mt-1">This appears in the browser tab and SEO</p>
+				</div>
+				<!-- Hero Media Selection -->
+				<div>
+					<label class="block text-sm font-medium text-gray-700 mb-2">
+						Hero Image/Video
+					</label>
+					<div class="flex items-start gap-4">
+						if pageResp.HeroMedia != nil {
+							<div class="relative w-48 h-32 rounded-lg border border-gray-200 overflow-hidden">
+								if pageResp.HeroMedia.MimeType[:5] == "image" {
+									<img
+										src={ pageResp.HeroMedia.ThumbnailURL }
+										alt="Hero media"
+										class="w-full h-full object-cover"
+									/>
+								} else if pageResp.HeroMedia.MimeType[:5] == "video" {
+									<video class="w-full h-full object-cover">
+										<source src={ pageResp.HeroMedia.URL }/>
+									</video>
+									<div class="absolute inset-0 flex items-center justify-center bg-black/30">
+										<svg class="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 20 20">
+											<path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"></path>
+										</svg>
+									</div>
+								}
+								<button
+									type="button"
+									onclick="document.getElementById('hero_media_id').value = ''; this.closest('div').remove();"
+									class="absolute top-2 right-2 p-1 bg-red-600 text-white rounded-full hover:bg-red-700"
+								>
+									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+									</svg>
+								</button>
+							</div>
+						} else {
+							<div class="w-48 h-32 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
+								<span class="text-gray-400 text-sm">No hero media</span>
+							</div>
+						}
+						<div class="flex-1">
+							<button
+								type="button"
+								onclick="alert('Media selector modal would open here')"
+								class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+							>
+								<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+								</svg>
+								Select Hero Media
+							</button>
+							<p class="text-xs text-gray-500 mt-2">Choose an image or video for the hero section</p>
+						</div>
+					</div>
+					<input
+						type="hidden"
+						id="hero_media_id"
+						name="hero_media_id"
+						if pageResp.HeroMedia != nil {
+							value={ lib.GetUUIDString(pageResp.HeroMedia.ID) }
+						}
+					/>
+				</div>
+				<!-- Header Field -->
+				<div>
+					<label for="header" class="block text-sm font-medium text-gray-700 mb-2">
+						Header
+					</label>
+					<input
+						type="text"
+						id="header"
+						name="header"
+						if pageResp.Page.Header.Valid {
+							value={ pageResp.Page.Header.String }
+						}
+						class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+						placeholder="About Me"
+					/>
+					<p class="text-xs text-gray-500 mt-1">Main heading text</p>
+				</div>
+				<!-- Sub-Header Field -->
+				<div>
+					<label for="sub_header" class="block text-sm font-medium text-gray-700 mb-2">
+						Sub-Header
+					</label>
+					<input
+						type="text"
+						id="sub_header"
+						name="sub_header"
+						if pageResp.Page.SubHeader.Valid {
+							value={ pageResp.Page.SubHeader.String }
+						}
+						class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+						placeholder="Learn more about my journey"
+					/>
+					<p class="text-xs text-gray-500 mt-1">Supporting text below the main header</p>
+				</div>
+				<!-- Content Field (Rich Text) -->
+				<div>
+					<label for="content" class="block text-sm font-medium text-gray-700 mb-2">
+						Content
+					</label>
+					<textarea
+						id="content"
+						name="content"
+						rows="8"
+						class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+						placeholder="Tell your story here..."
+					>
+						if pageResp.Page.Content.Valid {
+							{ pageResp.Page.Content.String }
+						}
+					</textarea>
+					<p class="text-xs text-gray-500 mt-1">Main content for the about page (supports markdown/HTML)</p>
+				</div>
+				<!-- Content Image Selection -->
+				<div>
+					<label class="block text-sm font-medium text-gray-700 mb-2">
+						Content Image
+					</label>
+					<div class="flex items-start gap-4">
+						if pageResp.ContentImage != nil {
+							<div class="relative w-48 h-32 rounded-lg border border-gray-200 overflow-hidden">
+								<img
+									src={ pageResp.ContentImage.ThumbnailURL }
+									alt="Content image"
+									class="w-full h-full object-cover"
+								/>
+								<button
+									type="button"
+									onclick="document.getElementById('content_image_id').value = ''; this.closest('div').remove();"
+									class="absolute top-2 right-2 p-1 bg-red-600 text-white rounded-full hover:bg-red-700"
+								>
+									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+									</svg>
+								</button>
+							</div>
+						} else {
+							<div class="w-48 h-32 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
+								<span class="text-gray-400 text-sm">No content image</span>
+							</div>
+						}
+						<div class="flex-1">
+							<button
+								type="button"
+								onclick="alert('Media selector modal would open here')"
+								class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+							>
+								<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+								</svg>
+								Select Content Image
+							</button>
+							<p class="text-xs text-gray-500 mt-2">Optional image to accompany your about content</p>
+						</div>
+					</div>
+					<input
+						type="hidden"
+						id="content_image_id"
+						name="content_image_id"
+						if pageResp.ContentImage != nil {
+							value={ lib.GetUUIDString(pageResp.ContentImage.ID) }
+						}
+					/>
+				</div>
+				<!-- CTA Section -->
+				<div class="border-t border-gray-200 pt-6">
+					<h3 class="text-lg font-semibold text-gray-900 mb-4">Call to Action</h3>
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div>
+							<label for="cta_text" class="block text-sm font-medium text-gray-700 mb-2">
+								CTA Button Text
+							</label>
+							<input
+								type="text"
+								id="cta_text"
+								name="cta_text"
+								if pageResp.Page.CtaText.Valid {
+									value={ pageResp.Page.CtaText.String }
+								}
+								class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+								placeholder="View My Work"
+							/>
+						</div>
+						<div>
+							<label for="cta_link" class="block text-sm font-medium text-gray-700 mb-2">
+								CTA Button Link
+							</label>
+							<input
+								type="text"
+								id="cta_link"
+								name="cta_link"
+								if pageResp.Page.CtaLink.Valid {
+									value={ pageResp.Page.CtaLink.String }
+								}
+								class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+								placeholder="/projects"
+							/>
+						</div>
+					</div>
+				</div>
+				<!-- Featured Projects Section -->
+				<div class="border-t border-gray-200 pt-6">
+					<h3 class="text-lg font-semibold text-gray-900 mb-4">Featured Projects (Max 3)</h3>
+					<div class="space-y-4">
+						<!-- Featured Projects List -->
+						if len(pageResp.FeaturedProjects) > 0 {
+							<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+								for i, project := range pageResp.FeaturedProjects {
+									<div class="relative border border-gray-200 rounded-lg p-4">
+										<div class="flex items-start justify-between mb-2">
+											<div class="flex-1">
+												<p class="text-sm font-medium text-gray-900">{ project.Project.Title }</p>
+												<p class="text-xs text-gray-500">Order: { string(rune(i + 1)) }</p>
+											</div>
+											<button
+												type="button"
+												onclick="this.closest('div.relative').remove();"
+												class="text-red-600 hover:text-red-700"
+											>
+												<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+												</svg>
+											</button>
+										</div>
+										if project.FeaturedImage != nil {
+											<img
+												src={ project.FeaturedImage.ThumbnailURL }
+												alt={ project.Project.Title }
+												class="w-full h-24 object-cover rounded"
+											/>
+										}
+										<input
+											type="hidden"
+											name="featured_project_ids[]"
+											value={ lib.GetUUIDString(project.Project.ID) }
+										/>
+									</div>
+								}
+							</div>
+						} else {
+							<p class="text-sm text-gray-500">No featured projects selected</p>
+						}
+						<!-- Add Featured Project Button -->
+						<button
+							type="button"
+							onclick="alert('Project selector modal would open here')"
+							class="inline-flex items-center gap-2 px-4 py-2 border-2 border-dashed border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:border-blue-500 hover:text-blue-600 transition-colors"
+						>
+							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+							</svg>
+							Add Featured Project
+						</button>
+						<p class="text-xs text-gray-500">Select up to 3 projects to feature on the about page</p>
+					</div>
+				</div>
+				<!-- Form Actions -->
+				<div class="flex items-center justify-between pt-6 border-t border-gray-200">
+					<a
+						href="/about"
+						target="_blank"
+						class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
+					>
+						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+						</svg>
+						Preview Page
+					</a>
+					<div class="flex items-center gap-3">
+						<button
+							type="button"
+							onclick="window.location.href='/admin/pages'"
+							class="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
+						>
+							Cancel
+						</button>
+						<button
+							type="submit"
+							class="px-6 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+						>
+							Save Changes
+						</button>
+					</div>
+				</div>
+			</form>
+		</div>
+	}
+}

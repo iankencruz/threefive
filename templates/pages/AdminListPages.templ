@@ -56,7 +56,7 @@ templ PageList(pageResp []generated.Page, currentPath string) {
 								@button.Button(button.Props{
 									Variant: button.VariantOutline,
 									Size:    button.SizeSm,
-									Href:    "/admin/pages/edit/" + page.Slug,
+									Href:    "/admin/pages/" + page.Slug,
 								}) {
 									Edit
 								}

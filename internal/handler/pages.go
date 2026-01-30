@@ -2,6 +2,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"log/slog"
 
 	"github.com/a-h/templ"
@@ -65,11 +66,11 @@ func (h *PageHandler) ShowEditPage(c *echo.Context) error {
 	var component templ.Component
 	switch pageResp.Page.PageType {
 	case "home":
-		component = pages.EditHomePage(pageResp, currentPath)
+		component = pages.AdminHome(pageResp, currentPath)
 	case "about":
-		component = pages.EditAboutPage(pageResp, currentPath)
+		component = pages.AdminAbout(pageResp, currentPath)
 	case "contact":
-		component = pages.EditContactPage(pageResp, currentPath)
+		component = pages.AdminContact(pageResp, currentPath)
 	default:
 		return c.String(400, "Invalid page type")
 	}
@@ -153,30 +154,30 @@ func (h *PageHandler) UpdatePage(c *echo.Context) error {
 
 		// Handle social links JSON
 		// Expected form fields: social_twitter, social_linkedin, social_github, social_instagram
-		// socialLinks := services.SocialLinks{}
-		// hasAny := false
-		//
-		// if twitter := c.FormValue("social_twitter"); twitter != "" {
-		// 	socialLinks.Twitter = twitter
-		// 	hasAny = true
-		// }
-		// if linkedin := c.FormValue("social_linkedin"); linkedin != "" {
-		// 	socialLinks.LinkedIn = linkedin
-		// 	hasAny = true
-		// }
-		// if github := c.FormValue("social_github"); github != "" {
-		// 	socialLinks.GitHub = github
-		// 	hasAny = true
-		// }
-		// if instagram := c.FormValue("social_instagram"); instagram != "" {
-		// 	socialLinks.Instagram = instagram
-		// 	hasAny = true
-		// }
-		//
-		// if hasAny {
-		// 	socialLinksJSON, _ := json.Marshal(socialLinks)
-		// 	params.SocialLinks = socialLinksJSON
-		// }
+		socialLinks := services.SocialLinks{}
+		hasAny := false
+
+		if twitter := c.FormValue("social_twitter"); twitter != "" {
+			socialLinks.Twitter = twitter
+			hasAny = true
+		}
+		if linkedin := c.FormValue("social_linkedin"); linkedin != "" {
+			socialLinks.LinkedIn = linkedin
+			hasAny = true
+		}
+		if github := c.FormValue("social_github"); github != "" {
+			socialLinks.GitHub = github
+			hasAny = true
+		}
+		if instagram := c.FormValue("social_instagram"); instagram != "" {
+			socialLinks.Instagram = instagram
+			hasAny = true
+		}
+
+		if hasAny {
+			socialLinksJSON, _ := json.Marshal(socialLinks)
+			params.SocialLinks = socialLinksJSON
+		}
 	}
 
 	h.logger.Info("Updating page", "slug", slug, "page_type", existing.Page.PageType)
@@ -213,11 +214,11 @@ func (h *PageHandler) UpdatePage(c *echo.Context) error {
 	var component templ.Component
 	switch pageResp.Page.PageType {
 	case "home":
-		component = pages.EditHomePage(pageResp, currentPath)
+		component = pages.AdminHome(pageResp, currentPath)
 	case "about":
-		component = pages.EditAboutPage(pageResp, currentPath)
+		component = pages.AdminAbout(pageResp, currentPath)
 	case "contact":
-		component = pages.EditContactPage(pageResp, currentPath)
+		component = pages.AdminContact(pageResp, currentPath)
 	default:
 		return c.String(400, "Invalid page type")
 	}
