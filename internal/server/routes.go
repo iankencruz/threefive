@@ -15,6 +15,7 @@ func (s *Server) RegisterRoutes() {
 	authHandler := handler.NewAuthHandler(s.AuthService, s.SessionManager, s.Log)
 	adminHandler := handler.NewAdminHandler(s.Log, s.MediaService)
 	mediaHandler := handler.NewMediaHandler(s.MediaService, s.Log)
+	pageHandler := handler.NewPageHandler(s.Log, s.PageService)
 
 	// Static assets
 
@@ -31,25 +32,36 @@ func (s *Server) RegisterRoutes() {
 	s.Echo.POST("/login", authHandler.HandleLogin)
 	s.Echo.POST("/logout", authHandler.HandleLogout)
 
+	// *********
 	// admin routes (require authentication)
+	// *********
 	admin := s.Echo.Group("/admin")
 	admin.Use(s.SessionMiddleware.RequireAuth)
-
 	// redirect admin to dashboard
 	admin.GET("", func(c *echo.Context) error {
 		return c.Redirect(302, "/admin/dashboard")
 	})
 
+	// Dashboard Handler
 	admin.GET("/dashboard", adminHandler.ShowDashboard)
 
+	// Project Management
 	admin.GET("/projects", adminHandler.ShowProjects)
 
+	// Media Management
 	media := admin.Group("/media")
 	media.GET("", mediaHandler.ShowMediaList)
 	media.POST("/upload", mediaHandler.UploadMedia)
 	media.GET("/:id/detail", mediaHandler.GetMediaDetail) // ADD THIS LINE
 	media.PUT("/:id", mediaHandler.UpdateMedia)
 	media.DELETE("/:id", mediaHandler.DeleteMedia)
+
+	// Page management (admin only)
+	pages := admin.Group("/pages")
+
+	pages.GET("", pageHandler.ShowPageList) // List all 3 pages
+	pages.GET("/:slug", pageHandler.ShowEditPage)
+	pages.PUT("/:slug", pageHandler.UpdatePage)
 
 	s.Log.Info("routes registered successfully")
 }

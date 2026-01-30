@@ -1,0 +1,17 @@
+package pages
+
+import (
+	"github.com/iankencruz/threefive/database/generated"
+	"github.com/iankencruz/threefive/templates/layouts"
+)
+
+templ PageList(pageResp []generated.Page, currentPath string) {
+	// Initialize variable here.
+	// template
+	@layouts.AdminLayout(layouts.LayoutProps{
+		Title: "Dashboard",
+		Path:  currentPath,
+	}) {
+		<p>List Pages </p>
+	}
+}

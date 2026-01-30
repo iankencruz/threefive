@@ -24,6 +24,7 @@ type Server struct {
 	Queries           *generated.Queries
 	AuthService       *services.AuthService
 	MediaService      *services.MediaService
+	PageService       *services.PageService
 	SessionManager    *session.SessionManager
 	SessionMiddleware *middleware.SessionMiddleware
 	Log               *slog.Logger
@@ -128,6 +129,10 @@ func NewServer() *Server {
 			},
 		},
 	)
+
+	pageService := services.NewPageService(queries, mediaService)
+	slogger.Info("page service initialized")
+
 	sessionStore := session.NewPostgresStore(db.Pool(), queries, slogger)
 	slogger.Info("session store initialized")
 
@@ -153,6 +158,7 @@ func NewServer() *Server {
 		Queries:           queries,
 		AuthService:       authService,
 		MediaService:      mediaService,
+		PageService:       pageService,
 		SessionManager:    sessionManager,
 		SessionMiddleware: sessionMiddleware,
 		Log:               slogger,

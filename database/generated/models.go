@@ -76,6 +76,32 @@ type MediaRelation struct {
 	CreatedAt time.Time
 }
 
+type Page struct {
+	ID             pgtype.UUID
+	Title          string
+	Slug           string
+	PageType       string
+	HeroMediaID    pgtype.UUID
+	Header         pgtype.Text
+	SubHeader      pgtype.Text
+	Content        pgtype.Text
+	ContentImageID pgtype.UUID
+	CtaText        pgtype.Text
+	CtaLink        pgtype.Text
+	Email          pgtype.Text
+	SocialLinks    []byte
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	DeletedAt      *time.Time
+}
+
+type PageFeaturedProject struct {
+	PageID       pgtype.UUID
+	ProjectID    pgtype.UUID
+	DisplayOrder int32
+	CreatedAt    time.Time
+}
+
 type Project struct {
 	ID              pgtype.UUID
 	Title           string
