@@ -29,7 +29,7 @@ func NewPageHandler(logger *slog.Logger, pageService *services.PageService) *Pag
 	}
 }
 
-func (h *PageHandler) ShowPageList(c *echo.Context) error {
+func (h *PageHandler) ListPages(c *echo.Context) error {
 	h.logger.Debug("Loading page list")
 	// Fetch all pages
 	pagesResp, err := h.pageService.ListPages(c.Request().Context())

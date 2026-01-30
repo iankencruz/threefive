@@ -59,7 +59,7 @@ func (s *Server) RegisterRoutes() {
 	// Page management (admin only)
 	pages := admin.Group("/pages")
 
-	pages.GET("", pageHandler.ShowPageList) // List all 3 pages
+	pages.GET("", pageHandler.ListPages) // List all 3 pages
 	pages.GET("/:slug", pageHandler.ShowEditPage)
 	pages.PUT("/:slug", pageHandler.UpdatePage)
 

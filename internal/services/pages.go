@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 
 	"github.com/google/uuid"
 	"github.com/iankencruz/threefive/database/generated"
@@ -52,6 +53,33 @@ func (s *PageService) ListPages(ctx context.Context) ([]generated.Page, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to list pages: %w", err)
 	}
+
+	// Sort pages in specific order: home, about, contact, then any others
+	pageOrder := map[string]int{
+		"home":    0,
+		"about":   1,
+		"contact": 2,
+	}
+
+	sort.Slice(pages, func(i, j int) bool {
+		orderI, existsI := pageOrder[pages[i].Slug]
+		orderJ, existsJ := pageOrder[pages[j].Slug]
+
+		// If both pages are in the order map, sort by their defined order
+		if existsI && existsJ {
+			return orderI < orderJ
+		}
+		// If only one is in the map, it comes first
+		if existsI {
+			return true
+		}
+		if existsJ {
+			return false
+		}
+		// If neither is in the map, sort alphabetically
+		return pages[i].Slug < pages[j].Slug
+	})
+
 	return pages, nil
 }
 

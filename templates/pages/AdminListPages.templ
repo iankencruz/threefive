@@ -2,6 +2,7 @@ package pages
 
 import (
 	"github.com/iankencruz/threefive/components/button"
+	"github.com/iankencruz/threefive/components/icon"
 	"github.com/iankencruz/threefive/components/table"
 	"github.com/iankencruz/threefive/database/generated"
 	"github.com/iankencruz/threefive/templates/layouts"
@@ -58,7 +59,7 @@ templ PageList(pageResp []generated.Page, currentPath string) {
 									Size:    button.SizeSm,
 									Href:    "/admin/pages/" + page.Slug,
 								}) {
-									Edit
+									@icon.Pencil()
 								}
 							}
 						}
