@@ -93,25 +93,9 @@ func (h *MediaHandler) ShowMediaList(c *echo.Context) error {
 	// Calculate total pages
 	totalPages := int((totalCount + int64(limit) - 1) / int64(limit))
 
-	// Convert generated.Media to services.MediaResponse
-	mediaResponses := make([]services.MediaResponse, len(mediaList))
-	for i, m := range mediaList {
-		mediaResponses[i] = services.MediaResponse{
-			ID:               m.ID,
-			Filename:         m.Filename,
-			OriginalFilename: m.OriginalFilename,
-			MimeType:         m.MimeType,
-			FileSize:         m.FileSize,
-			Width:            m.Width,
-			Height:           m.Height,
-			URL:              h.mediaService.GetMediaURL(&m),
-			AltText:          m.AltText.String,
-			CreatedAt:        m.CreatedAt,
-			UpdatedAt:        m.UpdatedAt,
-		}
-	}
+	mediaResponses := h.mediaService.ToMediaResponses(mediaList)
 
-	h.logger.Info("Media library loaded",
+	h.logger.Debug("Media library loaded",
 		"total_media", len(mediaList),
 		"page", page,
 		"total_pages", totalPages,
@@ -215,7 +199,7 @@ func (h *MediaHandler) UploadMedia(c *echo.Context) error {
 		return responses.ErrorToast(c.Request().Context(), c, "Internal server error")
 	}
 
-	// Upload media
+	// Upload media (this now handles video thumbnail generation)
 	media, err := h.mediaService.UploadMedia(c.Request().Context(), file, altText, uploadedBy)
 	if err != nil {
 		h.logger.Error("failed to upload media", "error", err)
@@ -240,35 +224,14 @@ func (h *MediaHandler) UploadMedia(c *echo.Context) error {
 		totalCount = 1
 	}
 
-	// Convert pgtype.Text to string
-	var altTextStr string
-	if media.AltText.Valid {
-		altTextStr = media.AltText.String
-	}
+	// Use ToMediaResponse helper which includes ThumbnailURL
+	mediaResponse := h.mediaService.ToMediaResponse(media)
 
-	mediaResponse := services.MediaResponse{
-		ID:               media.ID,
-		Filename:         media.Filename,
-		OriginalFilename: media.OriginalFilename,
-		MimeType:         media.MimeType,
-		FileSize:         media.FileSize,
-		Width:            media.Width,
-		Height:           media.Height,
-		URL:              h.mediaService.GetMediaURL(media),
-		AltText:          altTextStr,
-		CreatedAt:        media.CreatedAt,
-		UpdatedAt:        media.UpdatedAt,
-	}
-
-	h.logger.Debug("converted media response",
+	h.logger.Debug("media response details",
+		"mime_type", mediaResponse.MimeType,
 		"url", mediaResponse.URL,
-		"filename", media.Filename,
-		"total_count", totalCount,
+		"thumbnail_url", mediaResponse.ThumbnailURL,
 	)
-
-	// Check if grid already exists (has ID #media-grid)
-	// If totalCount == 1, grid doesn't exist yet (empty state showing)
-	// If totalCount > 1, grid already exists (just append card)
 
 	if totalCount == 1 {
 		// First upload - replace empty state with grid container + first card
@@ -277,7 +240,7 @@ func (h *MediaHandler) UploadMedia(c *echo.Context) error {
 		c.Response().Header().Set("HX-Reswap", "outerHTML") // Override to replace empty state
 		return responses.RenderSuccess(c.Request().Context(), c, component, "File uploaded successfully")
 	} else {
-		// Subsequent uploads - just return the card (will be appended via beforeend)
+		// Subsequent uploads - just return the card (will be appended via afterbegin)
 		h.logger.Debug("appending new media card", "total_count", totalCount)
 		component := lib.MediaCard(mediaResponse)
 		return responses.RenderSuccess(c.Request().Context(), c, component, "File uploaded successfully")

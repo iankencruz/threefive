@@ -116,7 +116,7 @@ func NewServer() *Server {
 		queries,
 		storage,
 		services.MediaConfig{
-			MaxFileSize: 50 * 1024 * 1024, // 50MB
+			MaxFileSize: 250 * 1024 * 1024, // 250MB
 			AllowedTypes: []string{
 				"image/jpeg",
 				"image/png",

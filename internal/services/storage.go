@@ -221,3 +221,18 @@ func GenerateStorageKey(filename string) string {
 
 	return fmt.Sprintf("media/%s/%s%s", timestamp, uniqueID, ext)
 }
+
+// uploadFile uploads a file from an io.Reader (for thumbnail upload)
+func (s *S3Storage) uploadFile(ctx context.Context, file io.Reader, key string, contentType string) error {
+	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{
+		Bucket:      aws.String(s.bucket),
+		Key:         aws.String(key),
+		Body:        file,
+		ContentType: aws.String(contentType),
+		ACL:         "public-read",
+	})
+	if err != nil {
+		return fmt.Errorf("failed to upload to S3: %w", err)
+	}
+	return nil
+}

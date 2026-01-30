@@ -51,9 +51,12 @@ templ MediaLibrary(props MediaLibraryProps, path string) {
 					<a href="/admin/media?type=video" class={ "whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium", templ.KV("border-blue-500 text-blue-600", props.MediaType == "video"), templ.KV("border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700", props.MediaType != "video") }>
 						Videos
 					</a>
+					/* ***************
+					// Document Media's
 					<a href="/admin/media?type=document" class={ "whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium", templ.KV("border-blue-500 text-blue-600", props.MediaType == "document"), templ.KV("border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700", props.MediaType != "document") }>
 						Documents
-					</a>
+					</a> 
+          *************** */
 				</nav>
 			</div>
 		</div>

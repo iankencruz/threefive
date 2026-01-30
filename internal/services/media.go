@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"mime/multipart"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -31,7 +32,7 @@ type MediaConfig struct {
 func NewMediaService(db *pgxpool.Pool, queries *generated.Queries, storage StorageProvider, config MediaConfig) *MediaService {
 	// Set defaults
 	if config.MaxFileSize == 0 {
-		config.MaxFileSize = 50 * 1024 * 1024 // 50MB
+		config.MaxFileSize = 500 * 1024 * 1024 // Default to 500mb if no MaxFileSize is set
 	}
 	if len(config.AllowedTypes) == 0 {
 		config.AllowedTypes = []string{
@@ -75,6 +76,17 @@ func (s *MediaService) UploadMedia(ctx context.Context, file *multipart.FileHead
 	var width, height pgtype.Int4
 	if strings.HasPrefix(mimeType, "image/") {
 		// TODO: Implement image dimension detection using image.DecodeConfig
+	}
+
+	// Process video thumbnail if it's a video
+	var thumbnailKey pgtype.Text
+	if strings.HasPrefix(mimeType, "video/") {
+		if thumbKey, err := s.ProcessVideoThumbnail(ctx, file, uploadedKey); err == nil {
+			thumbnailKey = pgtype.Text{String: thumbKey, Valid: true}
+		} else {
+			// Log warning but don't fail the upload
+			fmt.Printf("Warning: failed to generate video thumbnail: %v\n", err)
+		}
 	}
 
 	// Determine storage type
@@ -121,16 +133,20 @@ func (s *MediaService) UploadMedia(ctx context.Context, file *multipart.FileHead
 		FileSize:         file.Size,
 		Width:            width,
 		Height:           height,
-		StorageType:      storageType, // Fixed: SQLC expects string for NOT NULL TEXT
+		StorageType:      storageType,
 		S3Bucket:         s3Bucket,
 		S3Region:         s3Region,
 		OriginalKey:      pgOriginalKey,
+		ThumbnailKey:     thumbnailKey, // ADD THIS LINE
 		AltText:          pgAltText,
 		UploadedBy:       uploadedBy,
 	})
 	if err != nil {
-		// Clean up uploaded file if database insert fails
+		// Clean up uploaded files if database insert fails
 		s.storage.Delete(ctx, uploadedKey)
+		if thumbnailKey.Valid {
+			s.storage.Delete(ctx, thumbnailKey.String)
+		}
 		return nil, fmt.Errorf("failed to create media record: %w", err)
 	}
 
@@ -423,4 +439,28 @@ func (s *MediaService) UpdateMedia(ctx context.Context, mediaID pgtype.UUID, alt
 	}
 
 	return &media, nil
+}
+
+// GenerateVideoThumbnail generates a thumbnail for a video file
+func (s *MediaService) GenerateVideoThumbnail(ctx context.Context, videoPath string) (string, error) {
+	// Create thumbnail filename
+	thumbnailPath := strings.TrimSuffix(videoPath, filepath.Ext(videoPath)) + "_thumb.jpg"
+
+	// Use FFmpeg to generate thumbnail at 1 second mark
+	cmd := exec.CommandContext(ctx, "ffmpeg",
+		"-i", videoPath, // Input video
+		"-ss", "00:00:01.000", // Seek to 1 second
+		"-vframes", "1", // Extract 1 frame
+		"-vf", "scale=640:-1", // Scale to 640px width, maintain aspect ratio
+		"-y",          // Overwrite output file
+		thumbnailPath, // Output thumbnail
+	)
+
+	// Run FFmpeg command
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("failed to generate video thumbnail: %w (output: %s)", err, string(output))
+	}
+
+	return thumbnailPath, nil
 }

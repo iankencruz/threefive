@@ -2,7 +2,6 @@
 package services
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -77,24 +76,25 @@ func (s *MediaService) ToMediaResponses(mediaList []generated.Media) []MediaResp
 
 // GetThumbnailURL returns the thumbnail URL for a media file
 func (s *MediaService) GetThumbnailURL(media *generated.Media) string {
-	if media.StorageType == "s3" {
-		// Use thumbnail key if available
-		if media.ThumbnailKey.Valid {
-			if media.S3Bucket.Valid && media.S3Region.Valid {
-				// TODO: Adjust for custom endpoints (Vultr, MinIO)
-				return fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s",
-					media.S3Bucket.String,
-					media.S3Region.String,
-					media.ThumbnailKey.String)
-			}
-		}
-		// Fallback to original
+	// If no thumbnail exists, return original URL
+	if !media.ThumbnailKey.Valid || media.ThumbnailKey.String == "" {
 		return s.GetMediaURL(media)
 	}
 
-	// For local storage, check if thumbnail exists
-	// TODO: Implement thumbnail generation for local storage
-	// For now, return original URL
+	// Use the same URL generation logic as GetMediaURL, but with thumbnail key
+	if media.StorageType == "s3" {
+		// For S3-compatible storage, use GetURL from storage provider
+		if storage, ok := s.storage.(*S3Storage); ok {
+			return storage.GetURL(media.ThumbnailKey.String)
+		}
+	} else if media.StorageType == "local" {
+		// For local storage
+		if storage, ok := s.storage.(*LocalStorage); ok {
+			return storage.GetURL(media.ThumbnailKey.String)
+		}
+	}
+
+	// Fallback to original URL
 	return s.GetMediaURL(media)
 }
 
