@@ -1,17 +1,79 @@
 package pages
 
 import (
+	"github.com/iankencruz/threefive/components/button"
+	"github.com/iankencruz/threefive/components/table"
 	"github.com/iankencruz/threefive/database/generated"
 	"github.com/iankencruz/threefive/templates/layouts"
 )
 
 templ PageList(pageResp []generated.Page, currentPath string) {
-	// Initialize variable here.
-	// template
 	@layouts.AdminLayout(layouts.LayoutProps{
 		Title: "Dashboard",
 		Path:  currentPath,
 	}) {
-		<p>List Pages </p>
+		<div class="p-6">
+			<div class="flex justify-between items-center mb-6">
+				<h1 class="text-2xl font-bold">Pages</h1>
+				@button.Button(button.Props{
+					Variant: button.VariantDefault,
+				}) {
+					Add New Page
+				}
+			</div>
+			@table.Table(table.Props{ID: "pages-table"}) {
+				@table.Header(table.HeaderProps{}) {
+					@table.Row(table.RowProps{}) {
+						@table.Head(table.HeadProps{}) {
+							Title 
+						}
+						@table.Head(table.HeadProps{}) {
+							Slug 
+						}
+						@table.Head(table.HeadProps{}) {
+							Updated 
+						}
+						@table.Head(table.HeadProps{Class: "text-right"}) {
+							Actions 
+						}
+					}
+				}
+				@table.Body(table.BodyProps{}) {
+					for _, page := range pageResp {
+						@table.Row(table.RowProps{}) {
+							@table.Cell(table.CellProps{Class: "font-medium"}) {
+								{ page.Title }
+							}
+							@table.Cell(table.CellProps{}) {
+								/{ page.Slug }
+							}
+							@table.Cell(table.CellProps{}) {
+								<span class="">
+									{ page.UpdatedAt.Format("Jan 02, 2006") }
+								</span>
+							}
+							@table.Cell(table.CellProps{Class: "text-right space-x-2"}) {
+								@button.Button(button.Props{
+									Variant: button.VariantOutline,
+									Size:    button.SizeSm,
+									Href:    "/admin/pages/edit/" + page.Slug,
+								}) {
+									Edit
+								}
+							}
+						}
+					}
+					if len(pageResp) == 0 {
+						@table.Row(table.RowProps{}) {
+							@table.Cell(table.CellProps{
+								Class: "text-center py-10 text-gray-500",
+							}) {
+								No pages found.
+							}
+						}
+					}
+				}
+			}
+		</div>
 	}
 }
