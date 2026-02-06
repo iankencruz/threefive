@@ -1,4 +1,5 @@
 // templates/lib/MediaSelectorDialog.templ
+
 package lib
 
 import (
@@ -7,7 +8,6 @@ import (
 	"github.com/iankencruz/threefive/internal/services"
 )
 
-// MediaSelectorDialog - Reusable media selector modal using Templui
 templ MediaSelectorDialog(dialogID string, targetInputID string) {
 	@dialog.Dialog(dialog.Props{
 		ID: dialogID,
@@ -23,12 +23,11 @@ templ MediaSelectorDialog(dialogID string, targetInputID string) {
 					Choose an image or video from your media library
 				}
 			}
-			<!-- Media Grid Container -->
 			<div class="overflow-y-auto max-h-[60vh]">
 				<div
 					id={ dialogID + "-media-grid" }
 					hx-get={ "/admin/media/selector?dialog_id=" + dialogID + "&target_input_id=" + targetInputID }
-					hx-trigger="load"
+					hx-trigger="intersect once"
 					hx-swap="innerHTML"
 					class="min-h-[400px] flex items-center justify-center"
 				>
@@ -54,6 +53,8 @@ templ MediaSelectorDialog(dialogID string, targetInputID string) {
 		}
 	}
 }
+
+// Add this after the MediaSelectorDialog component
 
 // MediaSelectorGrid - The actual grid of media items for selection
 templ MediaSelectorGrid(media []services.MediaResponse, dialogID string, targetInputID string) {
@@ -175,9 +176,19 @@ script selectMedia(mediaID string, thumbnailURL string, mimeType string, targetI
 		previewContainer.insertBefore(wrapper, previewContainer.firstChild);
 	}
 	
-	// Close the dialog using Templui's dialog component
-	const dialogElement = document.getElementById(dialogID);
-	if (dialogElement && dialogElement.close) {
-		dialogElement.close();
+	// Close the dialog
+	// Find the backdrop and content elements for this dialog instance
+	const backdrop = document.querySelector(`[data-tui-dialog-backdrop][data-dialog-instance="${dialogID}"]`);
+	const content = document.querySelector(`[data-tui-dialog-content][data-dialog-instance="${dialogID}"]`);
+	
+	if (backdrop && content) {
+		backdrop.setAttribute('data-tui-dialog-open', 'false');
+		content.setAttribute('data-tui-dialog-open', 'false');
+		
+		setTimeout(() => {
+			backdrop.setAttribute('data-tui-dialog-hidden', 'true');
+			content.setAttribute('data-tui-dialog-hidden', 'true');
+			document.body.style.overflow = '';
+		}, 300);
 	}
 }

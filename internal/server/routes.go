@@ -51,6 +51,7 @@ func (s *Server) RegisterRoutes() {
 	// Media Management
 	media := admin.Group("/media")
 	media.GET("", mediaHandler.ShowMediaList)
+	media.GET("/selector", mediaHandler.ShowMediaSelector) // Add this line
 	media.POST("/upload", mediaHandler.UploadMedia)
 	media.GET("/:id/detail", mediaHandler.GetMediaDetail) // ADD THIS LINE
 	media.PUT("/:id", mediaHandler.UpdateMedia)

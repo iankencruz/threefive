@@ -191,39 +191,12 @@ func (h *PageHandler) UpdatePage(c *echo.Context) error {
 
 	h.logger.Info("Page updated successfully", "slug", slug)
 
-	// If slug changed, redirect to new URL
-	if updated.Slug != slug {
-		return responses.RedirectWithToast(c.Request().Context(), c,
-			"/admin/pages/"+updated.Slug,
-			"Page updated successfully",
-			toast.VariantInfo,
-		)
-	}
-
-	// Re-fetch enriched data for display
-	pageResp, err := h.pageService.GetPageBySlug(c.Request().Context(), updated.Slug)
-	if err != nil {
-		return responses.ErrorToast(c.Request().Context(), c, "Page updated but failed to reload")
-	}
-
-	// Add user to context
-	ctx := lib.WithUser(c.Request().Context(), getUser(c))
-	currentPath := c.Request().URL.Path
-
-	// Render appropriate edit form based on page type
-	var component templ.Component
-	switch pageResp.Page.PageType {
-	case "home":
-		component = pages.AdminHome(pageResp, currentPath)
-	case "about":
-		component = pages.AdminAbout(pageResp, currentPath)
-	case "contact":
-		component = pages.AdminContact(pageResp, currentPath)
-	default:
-		return c.String(400, "Invalid page type")
-	}
-
-	return responses.RenderSuccess(ctx, c, component, "Page updated successfully")
+	// Always redirect to reload the entire page with fresh data
+	return responses.RedirectWithToast(c.Request().Context(), c,
+		"/admin/pages/"+updated.Slug,
+		"Page updated successfully",
+		toast.VariantSuccess,
+	)
 }
 
 // Public page handlers (no auth required)

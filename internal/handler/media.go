@@ -355,3 +355,34 @@ func (h *MediaHandler) UpdateMedia(c *echo.Context) error {
 	component := lib.MediaCard(mediaResponse)
 	return responses.RenderSuccess(c.Request().Context(), c, component, "Media updated successfully")
 }
+
+// ShowMediaSelector returns media grid for selection dialog
+func (h *MediaHandler) ShowMediaSelector(c *echo.Context) error {
+	h.logger.Debug("Loading media selector")
+
+	// Fetch all media (you can add pagination/filtering later)
+	mediaList, err := h.mediaService.ListMedia(c.Request().Context(), 100, 0)
+	if err != nil {
+		h.logger.Error("failed to list media for selector", "error", err)
+		return c.String(500, "Failed to load media")
+	}
+
+	// Convert to MediaResponse format
+	mediaResponses := h.mediaService.ToMediaResponses(mediaList)
+
+	// Get dialog parameters from query string
+	dialogID := c.QueryParam("dialog_id")
+	targetInputID := c.QueryParam("target_input_id")
+
+	// Defaults
+	if dialogID == "" {
+		dialogID = "media-selector"
+	}
+	if targetInputID == "" {
+		targetInputID = "hero_media_id"
+	}
+
+	// Render the media grid
+	component := lib.MediaSelectorGrid(mediaResponses, dialogID, targetInputID)
+	return responses.Render(c.Request().Context(), c, component)
+}
