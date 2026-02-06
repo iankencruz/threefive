@@ -1,4 +1,4 @@
-// templates/lib/MediaSelectorDialog.templ
+// templates/lib/MediaSelectorModal.templ
 
 package lib
 
@@ -8,7 +8,7 @@ import (
 	"github.com/iankencruz/threefive/internal/services"
 )
 
-templ MediaSelectorDialog(dialogID string, targetInputID string) {
+templ MediaSelectorModal(dialogID string, targetInputID string) {
 	@dialog.Dialog(dialog.Props{
 		ID: dialogID,
 	}) {
@@ -41,20 +41,21 @@ templ MediaSelectorDialog(dialogID string, targetInputID string) {
 				</div>
 			</div>
 			@dialog.Footer(dialog.FooterProps{}) {
-				@button.Button(button.Props{
-					Variant: button.VariantOutline,
-					Attributes: templ.Attributes{
-						"command": "close",
-					},
+				@dialog.Close(dialog.CloseProps{
+					For: dialogID,
 				}) {
-					Cancel
+					@button.Button(button.Props{
+						Variant: button.VariantOutline,
+					}) {
+						Cancel
+					}
 				}
 			}
 		}
 	}
 }
 
-// Add this after the MediaSelectorDialog component
+// Add this after the MediaSelectorModal component
 
 // MediaSelectorGrid - The actual grid of media items for selection
 templ MediaSelectorGrid(media []services.MediaResponse, dialogID string, targetInputID string) {

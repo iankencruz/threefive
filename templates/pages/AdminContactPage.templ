@@ -18,7 +18,7 @@ templ AdminContact(pageResp *services.PageResponse, currentPath string) {
 		<div class="mb-8">
 			<a
 				href="/admin/pages"
-				class="inline-flex items-center gap-2  py-2 mb-4  text-gray-700 text-sm font-medium rounded-lg hover:underline transition-colors"
+				class="inline-flex items-center gap-2  py-2 mb-4  text-gray-700 text-sm font-medium rounded hover:underline transition-colors"
 			>
 				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
@@ -33,7 +33,7 @@ templ AdminContact(pageResp *services.PageResponse, currentPath string) {
 			</div>
 		</div>
 		<!-- Edit Form -->
-		<div class="bg-white rounded-lg border border-gray-200">
+		<div class="bg-white rounded border border-gray-200">
 			<form
 				hx-put={ "/admin/pages/" + pageResp.Page.Slug }
 				hx-target="this"
@@ -50,7 +50,7 @@ templ AdminContact(pageResp *services.PageResponse, currentPath string) {
 						id="title"
 						name="title"
 						value={ pageResp.Page.Title }
-						class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+						class="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 						placeholder="Enter page title"
 					/>
 					<p class="text-xs text-gray-500 mt-1">This appears in the browser tab and SEO</p>
@@ -62,7 +62,7 @@ templ AdminContact(pageResp *services.PageResponse, currentPath string) {
 					</label>
 					<div class="flex items-start gap-4" id="hero_media_id_preview">
 						if pageResp.HeroMedia != nil {
-							<div class="relative w-48 h-32 rounded-lg border border-gray-200 overflow-hidden">
+							<div class="relative w-48 h-32 rounded border border-gray-200 overflow-hidden">
 								if pageResp.HeroMedia.MimeType[:5] == "image" {
 									<img
 										src={ pageResp.HeroMedia.ThumbnailURL }
@@ -90,7 +90,7 @@ templ AdminContact(pageResp *services.PageResponse, currentPath string) {
 								</button>
 							</div>
 						} else {
-							<div class="w-48 h-32 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
+							<div class="w-48 h-32 rounded border-2 border-dashed border-gray-300 flex items-center justify-center">
 								<span class="text-gray-400 text-sm">No hero media</span>
 							</div>
 						}
@@ -128,7 +128,7 @@ templ AdminContact(pageResp *services.PageResponse, currentPath string) {
 						if pageResp.Page.Header.Valid {
 							value={ pageResp.Page.Header.String }
 						}
-						class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+						class="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 						placeholder="Get In Touch"
 					/>
 					<p class="text-xs text-gray-500 mt-1">Main heading text</p>
@@ -145,7 +145,7 @@ templ AdminContact(pageResp *services.PageResponse, currentPath string) {
 						if pageResp.Page.SubHeader.Valid {
 							value={ pageResp.Page.SubHeader.String }
 						}
-						class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+						class="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 						placeholder="Let's work together"
 					/>
 					<p class="text-xs text-gray-500 mt-1">Supporting text below the main header</p>
@@ -162,7 +162,7 @@ templ AdminContact(pageResp *services.PageResponse, currentPath string) {
 						if pageResp.Page.Email.Valid {
 							value={ pageResp.Page.Email.String }
 						}
-						class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+						class="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 						placeholder="hello@example.com"
 					/>
 					<p class="text-xs text-gray-500 mt-1">Your primary contact email address</p>
@@ -188,7 +188,7 @@ templ AdminContact(pageResp *services.PageResponse, currentPath string) {
 								if pageResp.SocialLinks != nil {
 									value={ pageResp.SocialLinks.Twitter }
 								}
-								class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+								class="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 								placeholder="https://twitter.com/username"
 							/>
 						</div>
@@ -209,7 +209,7 @@ templ AdminContact(pageResp *services.PageResponse, currentPath string) {
 								if pageResp.SocialLinks != nil {
 									value={ pageResp.SocialLinks.LinkedIn }
 								}
-								class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+								class="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 								placeholder="https://linkedin.com/in/username"
 							/>
 						</div>
@@ -230,7 +230,7 @@ templ AdminContact(pageResp *services.PageResponse, currentPath string) {
 								if pageResp.SocialLinks != nil {
 									value={ pageResp.SocialLinks.GitHub }
 								}
-								class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+								class="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 								placeholder="https://github.com/username"
 							/>
 						</div>
@@ -251,7 +251,7 @@ templ AdminContact(pageResp *services.PageResponse, currentPath string) {
 								if pageResp.SocialLinks != nil {
 									value={ pageResp.SocialLinks.Instagram }
 								}
-								class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+								class="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 								placeholder="https://instagram.com/username"
 							/>
 						</div>
@@ -275,13 +275,13 @@ templ AdminContact(pageResp *services.PageResponse, currentPath string) {
 						<button
 							type="button"
 							onclick="window.location.href='/admin/pages'"
-							class="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
+							class="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded hover:bg-gray-50 transition-colors"
 						>
 							Cancel
 						</button>
 						<button
 							type="submit"
-							class="px-6 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+							class="px-6 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition-colors"
 						>
 							Save Changes
 						</button>
@@ -289,7 +289,7 @@ templ AdminContact(pageResp *services.PageResponse, currentPath string) {
 				</div>
 			</form>
 		</div>
-		<!-- Hero Image Selector Dialog -->
-		@lib.MediaSelectorDialog("contact-hero-media-selector", "hero_media_id")
+		<!-- Hero Image Selector Modal -->
+		@lib.MediaSelectorModal("contact-hero-media-selector", "hero_media_id")
 	}
 }
