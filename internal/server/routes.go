@@ -66,6 +66,9 @@ func (s *Server) RegisterRoutes() {
 	projects := admin.Group("/projects")
 
 	projects.GET("", projectHandler.ShowProjectsList)
+	projects.POST("", projectHandler.CreateProject)
+	projects.GET("/create-modal", projectHandler.ShowCreateModal)
+	projects.GET("/:slug", projectHandler.ShowEditPage)
 
 	s.Log.Info("routes registered successfully")
 }

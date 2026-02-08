@@ -1,0 +1,250 @@
+// templates/lib/ProjectCreateModal.templ
+package lib
+
+import (
+	"github.com/iankencruz/threefive/components/button"
+	"github.com/iankencruz/threefive/components/input"
+	"github.com/iankencruz/threefive/components/label"
+	"github.com/iankencruz/threefive/database/generated"
+)
+
+script initSlugifier() {
+    const setup = () => {
+        const title = document.getElementById("title");
+        const slug = document.getElementById("slug");
+        const toggleBtn = document.getElementById("slug-lock-toggle");
+
+        if (title && slug && !title.dataset.slugBound) {
+            const updateLockUI = () => {
+                if (slug.dataset.manual === "true") {
+                    toggleBtn.innerHTML = `<svg class="w-4 h-4 text-amber-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" /></svg>`;
+                    toggleBtn.title = "Manual Mode (Locked)";
+                } else {
+                    toggleBtn.innerHTML = `<svg class="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 016 0v2h2V7a5 5 0 00-5-5z" /></svg>`;
+                    toggleBtn.title = "Auto Mode (Following Title)";
+                }
+            };
+
+            updateLockUI();
+
+            slug.addEventListener("input", () => {
+                slug.dataset.manual = "true";
+                updateLockUI();
+            });
+
+            toggleBtn.addEventListener("click", (e) => {
+                e.preventDefault(); // Prevent accidental form triggers
+                const isManual = slug.dataset.manual === "true";
+                slug.dataset.manual = isManual ? "false" : "true";
+                updateLockUI();
+                if (slug.dataset.manual === "false") {
+                    title.dispatchEvent(new Event('input'));
+                }
+            });
+
+            title.addEventListener("input", () => {
+                if (slug.dataset.manual === "true") return;
+
+                slug.value = title.value
+                    .toLowerCase()
+                    .trim()
+                    .replace(/\s+/g, '-')
+                    .replace(/[^\w\-]+/g, '')
+                    .replace(/\-\-+/g, '-');
+            });
+            
+            title.dataset.slugBound = "true";
+        }
+    };
+
+    setup();
+    setTimeout(setup, 50);
+
+    const container = document.getElementById("project-create-modal");
+    if (container) {
+        const observer = new MutationObserver(setup);
+        observer.observe(container, { childList: true, subtree: true });
+    }
+}
+
+templ ProjectCreateModal(tags []generated.Tag, errors map[string]string) {
+	<div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" id="project-create-modal">
+		@initSlugifier()
+		<div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+			<div class="flex-none sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
+				<h2 class="text-xl font-semibold text-gray-900">Create New Project</h2>
+				<button
+					type="button"
+					onclick="document.getElementById('modal-container').innerHTML = ''"
+					class="text-gray-400 hover:text-gray-600 transition-colors"
+				>
+					<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+					</svg>
+				</button>
+			</div>
+			<form
+				hx-post="/admin/projects"
+				hx-target="#modal-container"
+				hx-swap="innerHTML"
+				class="flex-1 overflow-y-auto p-6 space-y-6"
+			>
+				if errors != nil && errors["general"] != "" {
+					<div class="rounded-lg bg-red-50 border border-red-200 p-4">
+						<div class="flex">
+							<svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+							</svg>
+							<div class="ml-3">
+								<p class="text-sm text-red-800">{ errors["general"] }</p>
+							</div>
+						</div>
+					</div>
+				}
+				<div class="space-y-2">
+					@label.Label(label.Props{For: "title"}) {
+						Project Title <span class="text-red-500">*</span>
+					}
+					@input.Input(input.Props{
+						ID:          "title",
+						Name:        "title",
+						Placeholder: "My Awesome Project",
+						HasError:    errors != nil && errors["title"] != "",
+					})
+					if errors != nil && errors["title"] != "" {
+						<p class="text-xs text-red-600">{ errors["title"] }</p>
+					}
+				</div>
+				<div class="space-y-2">
+					@label.Label(label.Props{For: "slug"}) {
+						Slug
+					}
+					<div class="relative flex items-center group">
+						@input.Input(input.Props{
+							ID:          "slug",
+							Name:        "slug",
+							Placeholder: "my-awesome-project",
+							HasError:    errors != nil && errors["slug"] != "",
+							Attributes: templ.Attributes{
+								"data-manual": "false",
+							},
+						})
+						<button
+							type="button"
+							id="slug-lock-toggle"
+							class="absolute right-2 p-1.5 hover:bg-gray-100 rounded-md transition-colors z-20"
+							title="Toggle Auto/Manual Slug"
+						></button>
+					</div>
+					if errors != nil && errors["slug"] != "" {
+						<p class="text-xs text-red-600">{ errors["slug"] }</p>
+					}
+					<p class="text-xs text-gray-500">Auto-generates unless you type manually or lock the field.</p>
+				</div>
+				<div class="space-y-2">
+					@label.Label(label.Props{For: "description"}) {
+						Description
+					}
+					<textarea
+						id="description"
+						name="description"
+						rows="4"
+						placeholder="Brief description of your project..."
+						class="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+					></textarea>
+				</div>
+				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+					<div class="space-y-2">
+						@label.Label(label.Props{For: "client_name"}) {
+							Client Name 
+						}
+						@input.Input(input.Props{
+							ID:          "client_name",
+							Name:        "client_name",
+							Placeholder: "Acme Corporation",
+						})
+					</div>
+					<div class="space-y-2">
+						@label.Label(label.Props{For: "project_year"}) {
+							Project Year 
+						}
+						@input.Input(input.Props{
+							ID:          "project_year",
+							Name:        "project_year",
+							Type:        input.TypeNumber,
+							Placeholder: "2026",
+						})
+					</div>
+				</div>
+				<div class="space-y-2">
+					@label.Label(label.Props{For: "project_date"}) {
+						Project Date 
+					}
+					@input.Input(input.Props{
+						ID:   "project_date",
+						Name: "project_date",
+						Type: input.TypeDate,
+					})
+				</div>
+				<div class="space-y-2">
+					@label.Label(label.Props{For: "project_url"}) {
+						Project URL 
+					}
+					@input.Input(input.Props{
+						ID:          "project_url",
+						Name:        "project_url",
+						Type:        input.TypeURL,
+						Placeholder: "https://example.com",
+					})
+				</div>
+				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+					<div class="space-y-2">
+						@label.Label(label.Props{For: "status"}) {
+							Status 
+						}
+						<select
+							id="status"
+							name="status"
+							class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring md:text-sm"
+						>
+							<option value="draft" selected>Draft</option>
+							<option value="published">Published</option>
+							<option value="archived">Archived</option>
+						</select>
+					</div>
+					<div class="space-y-2">
+						@label.Label(label.Props{For: "project_status"}) {
+							Project Status 
+						}
+						<select
+							id="project_status"
+							name="project_status"
+							class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring md:text-sm"
+						>
+							<option value="completed" selected>Completed</option>
+							<option value="in-progress">In Progress</option>
+							<option value="planned">Planned</option>
+						</select>
+					</div>
+				</div>
+				<div class="sticky bottom-0 bg-white flex gap-3 pt-4 pb-2 mt-4 border-t border-gray-200 z-10">
+					@button.Button(button.Props{
+						Type:    "submit",
+						Variant: button.VariantDefault,
+					}) {
+						Create Project
+					}
+					@button.Button(button.Props{
+						Type:    "button",
+						Variant: button.VariantOutline,
+						Attributes: templ.Attributes{
+							"onclick": "document.getElementById('modal-container').innerHTML = ''",
+						},
+					}) {
+						Cancel
+					}
+				</div>
+			</form>
+		</div>
+	</div>
+}

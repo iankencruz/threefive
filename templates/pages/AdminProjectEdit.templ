@@ -1,0 +1,430 @@
+package pages
+
+import (
+	"fmt"
+	"github.com/iankencruz/threefive/components/button"
+	"github.com/iankencruz/threefive/components/input"
+	"github.com/iankencruz/threefive/components/label"
+	"github.com/iankencruz/threefive/database/generated"
+	"github.com/iankencruz/threefive/internal/services"
+	"github.com/iankencruz/threefive/templates/layouts"
+	"github.com/jackc/pgx/v5/pgtype"
+	"strings"
+)
+
+script initSlugifier() {
+    const targetNode = document.body;
+    
+    const setup = () => {
+        const title = document.getElementById("title");
+        const slug = document.getElementById("slug");
+        const toggleBtn = document.getElementById("slug-lock-toggle");
+
+        if (title && slug && !title.dataset.slugBound) {
+            
+            const updateLockUI = () => {
+                if (slug.dataset.manual === "true") {
+                    toggleBtn.innerHTML = `<svg class="w-4 h-4 text-amber-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" /></svg>`;
+                    toggleBtn.title = "Manual Mode (Locked)";
+                } else {
+                    toggleBtn.innerHTML = `<svg class="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 016 0v2h2V7a5 5 0 00-5-5z" /></svg>`;
+                    toggleBtn.title = "Auto Mode (Following Title)";
+                }
+            };
+
+            // Initial UI state
+            updateLockUI();
+
+            slug.addEventListener("input", () => {
+                slug.dataset.manual = "true";
+                updateLockUI();
+            });
+
+            toggleBtn.addEventListener("click", () => {
+                const isManual = slug.dataset.manual === "true";
+                slug.dataset.manual = isManual ? "false" : "true";
+                updateLockUI();
+                // If switching back to auto, trigger a sync immediately
+                if (slug.dataset.manual === "false") {
+                    title.dispatchEvent(new Event('input'));
+                }
+            });
+
+            title.addEventListener("input", () => {
+                if (slug.dataset.manual === "true") return;
+
+                slug.value = title.value
+                    .toLowerCase()
+                    .trim()
+                    .replace(/\s+/g, '-')
+                    .replace(/[^\w\-]+/g, '')
+                    .replace(/\-\-+/g, '-');
+            });
+            
+            title.dataset.slugBound = "true";
+        }
+    };
+
+    setup();
+    setTimeout(setup, 50);
+    const observer = new MutationObserver(setup);
+    observer.observe(targetNode, { childList: true, subtree: true });
+}
+
+templ ProjectEditPage(project *services.ProjectResponse, tags []generated.Tag, currentPath string) {
+	@layouts.AdminLayout(layouts.LayoutProps{
+		Title: "Edit Project",
+		Path:  currentPath,
+	}) {
+		@initSlugifier()
+		<div class="space-y-6">
+			<div class="mb-6">
+				<div class="flex items-center justify-between">
+					<div>
+						<h1 class="text-3xl font-bold text-gray-900">Edit Project</h1>
+						<p class="text-gray-600 mt-2">{ project.Project.Title }</p>
+					</div>
+					<a
+						href="/admin/projects"
+						class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
+					>
+						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+						</svg>
+						Back to Projects
+					</a>
+				</div>
+			</div>
+			<div class="bg-white rounded-lg border border-gray-200">
+				<form
+					hx-put={ "/admin/projects/" + project.Project.Slug }
+					hx-target="this"
+					hx-swap="outerHTML"
+					class="p-6 space-y-6"
+				>
+					<div class="space-y-6">
+						<h2 class="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">Basic Information</h2>
+						<div class="space-y-2">
+							@label.Label(label.Props{
+								For: "title",
+							}) {
+								Project Title <span class="text-red-500">*</span>
+							}
+							@input.Input(input.Props{
+								ID:          "title",
+								Name:        "title",
+								Value:       project.Project.Title,
+								Placeholder: "My Awesome Project",
+							})
+						</div>
+						<div class="space-y-2">
+							@label.Label(label.Props{
+								For: "slug",
+							}) {
+								Slug
+							}
+							<div class="relative flex items-center">
+								@input.Input(input.Props{
+									ID:          "slug",
+									Name:        "slug",
+									Value:       project.Project.Slug,
+									Placeholder: "my-awesome-project",
+									Attributes: templ.Attributes{
+										"data-manual": "true", // Default to manual for existing projects
+									},
+								})
+								<button
+									type="button"
+									id="slug-lock-toggle"
+									class="absolute right-2 p-1.5 hover:bg-gray-100 rounded-md transition-colors"
+									title="Toggle Auto/Manual Slug"
+								></button>
+							</div>
+							<p class="text-xs text-gray-500">Manual edits lock the slug. Click the icon to unlock.</p>
+						</div>
+						<div class="space-y-2">
+							@label.Label(label.Props{
+								For: "description",
+							}) {
+								Description
+							}
+							<textarea
+								id="description"
+								name="description"
+								rows="4"
+								placeholder="Brief description of your project..."
+								class="flex min-h-15 w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+							>
+								if project.Project.Description.Valid {
+									{ project.Project.Description.String }
+								}
+							</textarea>
+						</div>
+					</div>
+					<div class="space-y-6">
+						<h2 class="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">Client & Timeline</h2>
+						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+							<div class="space-y-2">
+								@label.Label(label.Props{
+									For: "client_name",
+								}) {
+									Client Name
+								}
+								@input.Input(input.Props{
+									ID:          "client_name",
+									Name:        "client_name",
+									Value:       getStringValue(project.Project.ClientName),
+									Placeholder: "Acme Corporation",
+								})
+							</div>
+							<div class="space-y-2">
+								@label.Label(label.Props{
+									For: "project_year",
+								}) {
+									Project Year
+								}
+								@input.Input(input.Props{
+									ID:          "project_year",
+									Name:        "project_year",
+									Type:        input.TypeNumber,
+									Value:       getInt32Value(project.Project.ProjectYear),
+									Placeholder: "2026",
+								})
+							</div>
+						</div>
+						<div class="space-y-2">
+							@label.Label(label.Props{
+								For: "project_date",
+							}) {
+								Project Date
+							}
+							@input.Input(input.Props{
+								ID:    "project_date",
+								Name:  "project_date",
+								Type:  input.TypeDate,
+								Value: getDateValue(project.Project.ProjectDate),
+							})
+						</div>
+						<div class="space-y-2">
+							@label.Label(label.Props{
+								For: "project_url",
+							}) {
+								Project URL
+							}
+							@input.Input(input.Props{
+								ID:          "project_url",
+								Name:        "project_url",
+								Type:        input.TypeURL,
+								Value:       getStringValue(project.Project.ProjectUrl),
+								Placeholder: "https://example.com",
+							})
+						</div>
+					</div>
+					<div class="space-y-6">
+						<h2 class="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">Status</h2>
+						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+							<div class="space-y-2">
+								@label.Label(label.Props{
+									For: "status",
+								}) {
+									Publication Status
+								}
+								<select
+									id="status"
+									name="status"
+									class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+								>
+									<option value="draft" selected?={ project.Project.Status.String == "draft" }>Draft</option>
+									<option value="published" selected?={ project.Project.Status.String == "published" }>Published</option>
+									<option value="archived" selected?={ project.Project.Status.String == "archived" }>Archived</option>
+								</select>
+							</div>
+							<div class="space-y-2">
+								@label.Label(label.Props{
+									For: "project_status",
+								}) {
+									Project Status
+								}
+								<select
+									id="project_status"
+									name="project_status"
+									class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+								>
+									<option value="completed" selected?={ project.Project.ProjectStatus.String == "completed" }>Completed</option>
+									<option value="in-progress" selected?={ project.Project.ProjectStatus.String == "in-progress" }>In Progress</option>
+									<option value="planned" selected?={ project.Project.ProjectStatus.String == "planned" }>Planned</option>
+								</select>
+							</div>
+						</div>
+					</div>
+					<div class="space-y-6">
+						<h2 class="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">Featured Image</h2>
+						<div class="flex items-start gap-4">
+							<div id="featured-image-preview" class="w-32 h-32 bg-gray-100 rounded flex items-center justify-center overflow-hidden">
+								if project.FeaturedImage != nil {
+									<img
+										src={ project.FeaturedImage.ThumbnailURL }
+										alt={ project.Project.Title }
+										class="w-full h-full object-cover"
+									/>
+								} else {
+									<svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+									</svg>
+								}
+							</div>
+							<div class="flex-1 space-y-2">
+								<button
+									type="button"
+									onclick="alert('Media selector will be implemented next')"
+									class="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200"
+								>
+									Change Featured Image
+								</button>
+								if project.FeaturedImage != nil {
+									<button
+										type="button"
+										onclick="document.getElementById('featured_image_id').value = ''; document.getElementById('featured-image-preview').innerHTML = '<svg class=\'w-12 h-12 text-gray-400\' fill=\'none\' stroke=\'currentColor\' viewBox=\'0 0 24 24\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z\'></path></svg>'"
+										class="px-4 py-2 bg-red-50 text-red-700 text-sm font-medium rounded-lg hover:bg-red-100"
+									>
+										Remove
+									</button>
+								}
+								<p class="text-xs text-gray-500">This image represents your project in listings</p>
+							</div>
+						</div>
+						<input
+							type="hidden"
+							id="featured_image_id"
+							name="featured_image_id"
+							value={ getFeaturedImageID(project.FeaturedImage) }
+						/>
+					</div>
+					<div class="space-y-6">
+						<div class="flex items-center justify-between border-b border-gray-200 pb-2">
+							<h2 class="text-lg font-semibold text-gray-900">Gallery Images</h2>
+							<span class="text-sm text-gray-600">
+								{ fmt.Sprintf("%d", len(project.GalleryMedia)) } images
+							</span>
+						</div>
+						if len(project.GalleryMedia) > 0 {
+							<div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="gallery-grid">
+								for _, media := range project.GalleryMedia {
+									<div class="relative group">
+										<img
+											src={ media.ThumbnailURL }
+											alt={ media.OriginalFilename }
+											class="w-full h-32 object-cover rounded border border-gray-200"
+										/>
+										<button
+											type="button"
+											onclick="alert('Remove gallery image functionality')"
+											class="absolute top-2 right-2 p-1 bg-red-500 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity"
+										>
+											<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+											</svg>
+										</button>
+									</div>
+								}
+							</div>
+						} else {
+							<div class="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+								<svg class="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+								</svg>
+								<p class="text-gray-600 font-medium">No gallery images</p>
+								<p class="text-sm text-gray-500 mt-1">Add images to showcase your project</p>
+							</div>
+						}
+						<button
+							type="button"
+							onclick="alert('Add gallery images functionality')"
+							class="w-full px-4 py-2 bg-blue-50 text-blue-700 text-sm font-medium rounded-lg hover:bg-blue-100 border border-blue-200"
+						>
+							Add Gallery Images
+						</button>
+					</div>
+					<div class="space-y-6">
+						<h2 class="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">Tags</h2>
+						<div class="space-y-2">
+							@label.Label(label.Props{
+								For: "tags",
+							}) {
+								Project Tags
+							}
+							@input.Input(input.Props{
+								ID:          "tags",
+								Name:        "tags",
+								Value:       getTagsString(project.Tags),
+								Placeholder: "web design, branding, ui/ux",
+							})
+							<p class="text-xs text-gray-500">Comma-separated tags. New tags will be created automatically.</p>
+						</div>
+					</div>
+					<div class="flex gap-3 pt-6 border-t border-gray-200">
+						@button.Button(button.Props{
+							Type:    "submit",
+							Variant: button.VariantDefault,
+						}) {
+							Save Changes
+						}
+						<a
+							href="/admin/projects"
+							class="inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
+						>
+							Cancel
+						</a>
+						<div class="flex-1"></div>
+						<button
+							type="button"
+							hx-delete={ "/admin/projects/" + project.Project.Slug }
+							hx-confirm="Are you sure you want to delete this project? This action cannot be undone."
+							class="inline-flex items-center px-4 py-2 bg-red-50 text-red-700 text-sm font-medium rounded-lg hover:bg-red-100 border border-red-200"
+						>
+							<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+							</svg>
+							Delete Project
+						</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	}
+}
+
+func getStringValue(text pgtype.Text) string {
+	if text.Valid {
+		return text.String
+	}
+	return ""
+}
+func getInt32Value(num pgtype.Int4) string {
+	if num.Valid {
+		return fmt.Sprintf("%d", num.Int32)
+	}
+	return ""
+}
+func getDateValue(date pgtype.Date) string {
+	if date.Valid {
+		return date.Time.Format("2006-01-02")
+	}
+	return ""
+}
+func getFeaturedImageID(image *services.MediaResponse) string {
+	if image != nil {
+		return image.ID.String()
+	}
+	return ""
+}
+func getTagsString(tags []services.TagResponse) string {
+	if len(tags) == 0 {
+		return ""
+	}
+	tagNames := make([]string, len(tags))
+	for i, tag := range tags {
+		tagNames[i] = tag.Tag.Name
+	}
+	return strings.Join(tagNames, ", ")
+}
