@@ -25,6 +25,8 @@ type Server struct {
 	AuthService       *services.AuthService
 	MediaService      *services.MediaService
 	PageService       *services.PageService
+	ProjectService    *services.ProjectService
+	TagService        *services.TagService
 	SessionManager    *session.SessionManager
 	SessionMiddleware *middleware.SessionMiddleware
 	Log               *slog.Logger
@@ -130,8 +132,14 @@ func NewServer() *Server {
 		},
 	)
 
+	tagService := services.NewTagService(queries)
+	slogger.Info("tags service initialized")
+
 	pageService := services.NewPageService(queries, mediaService)
 	slogger.Info("page service initialized")
+
+	projectService := services.NewProjectService(queries, mediaService)
+	slogger.Info("projects service initialized")
 
 	sessionStore := session.NewPostgresStore(db.Pool(), queries, slogger)
 	slogger.Info("session store initialized")
@@ -159,6 +167,8 @@ func NewServer() *Server {
 		AuthService:       authService,
 		MediaService:      mediaService,
 		PageService:       pageService,
+		ProjectService:    projectService,
+		TagService:        tagService,
 		SessionManager:    sessionManager,
 		SessionMiddleware: sessionMiddleware,
 		Log:               slogger,

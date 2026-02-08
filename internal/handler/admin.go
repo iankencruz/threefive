@@ -60,26 +60,3 @@ func (h *AdminHandler) ShowDashboard(c *echo.Context) error {
 	component := pages.Dashboard(stats, currentPath)
 	return responses.Render(ctx, c, component)
 }
-
-// ShowDashboard renders the admin dashboard
-func (h *AdminHandler) ShowProjects(c *echo.Context) error {
-	currentPath := c.Request().URL.Path
-
-	ctx := lib.WithUser(c.Request().Context(), middleware.GetUser(c))
-
-	// TODO: Get real stats from services
-	// For now, use mock data
-	stats := pages.ProjectProps{
-		TotalProjects:     12,
-		TotalBlogs:        24,
-		TotalPages:        3,
-		TotalMedia:        156,
-		PublishedProjects: 8,
-		PublishedBlogs:    18,
-		DraftProjects:     4,
-		DraftBlogs:        6,
-	}
-
-	component := pages.Projects(stats, currentPath)
-	return responses.Render(ctx, c, component)
-}

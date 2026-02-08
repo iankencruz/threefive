@@ -16,6 +16,7 @@ func (s *Server) RegisterRoutes() {
 	adminHandler := handler.NewAdminHandler(s.Log, s.MediaService)
 	mediaHandler := handler.NewMediaHandler(s.MediaService, s.Log)
 	pageHandler := handler.NewPageHandler(s.Log, s.PageService)
+	projectHandler := handler.NewProjectHandler(s.Log, s.ProjectService, s.TagService)
 
 	// Static assets
 
@@ -45,9 +46,6 @@ func (s *Server) RegisterRoutes() {
 	// Dashboard Handler
 	admin.GET("/dashboard", adminHandler.ShowDashboard)
 
-	// Project Management
-	admin.GET("/projects", adminHandler.ShowProjects)
-
 	// Media Management
 	media := admin.Group("/media")
 	media.GET("", mediaHandler.ShowMediaList)
@@ -63,6 +61,11 @@ func (s *Server) RegisterRoutes() {
 	pages.GET("", pageHandler.ListPages) // List all 3 pages
 	pages.GET("/:slug", pageHandler.ShowEditPage)
 	pages.PUT("/:slug", pageHandler.UpdatePage)
+
+	// Project Management
+	projects := admin.Group("/projects")
+
+	projects.GET("", projectHandler.ShowProjectsList)
 
 	s.Log.Info("routes registered successfully")
 }
