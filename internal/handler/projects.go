@@ -317,7 +317,13 @@ func (h *ProjectHandler) DeleteProject(c *echo.Context) error {
 	}
 
 	// Success - return toast and let HTMX handle row removal
-	return responses.SuccessToast(c.Request().Context(), c, "Project deleted successfully")
+	return responses.RedirectWithToast(
+		c.Request().Context(),
+		c,
+		"/admin/projects",
+		"Project deleted successfully",
+		"success",
+	)
 }
 
 // PublishProject publishes a project
