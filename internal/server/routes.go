@@ -16,7 +16,7 @@ func (s *Server) RegisterRoutes() {
 	adminHandler := handler.NewAdminHandler(s.Log, s.MediaService)
 	mediaHandler := handler.NewMediaHandler(s.MediaService, s.Log)
 	pageHandler := handler.NewPageHandler(s.Log, s.PageService)
-	projectHandler := handler.NewProjectHandler(s.Log, s.ProjectService, s.TagService)
+	projectHandler := handler.NewProjectHandler(s.Log, s.ProjectService, s.TagService, s.MediaService)
 
 	// Static assets
 
@@ -49,9 +49,9 @@ func (s *Server) RegisterRoutes() {
 	// Media Management
 	media := admin.Group("/media")
 	media.GET("", mediaHandler.ShowMediaList)
-	media.GET("/selector", mediaHandler.ShowMediaSelector) // Add this line
+	media.GET("/selector", mediaHandler.ShowMediaSelector)
 	media.POST("/upload", mediaHandler.UploadMedia)
-	media.GET("/:id/detail", mediaHandler.GetMediaDetail) // ADD THIS LINE
+	media.GET("/:id/detail", mediaHandler.GetMediaDetail)
 	media.PUT("/:id", mediaHandler.UpdateMedia)
 	media.DELETE("/:id", mediaHandler.DeleteMedia)
 
@@ -68,7 +68,12 @@ func (s *Server) RegisterRoutes() {
 	projects.GET("", projectHandler.ShowProjectsList)
 	projects.POST("", projectHandler.CreateProject)
 	projects.GET("/create-modal", projectHandler.ShowCreateModal)
+	projects.GET("/gallery-selector", projectHandler.ShowGallerySelector)
 	projects.GET("/:slug", projectHandler.ShowEditPage)
+	projects.DELETE("/:slug", projectHandler.DeleteProject)
+	projects.PUT("/:slug", projectHandler.UpdateProject)
+	projects.PUT("/:slug/publish", projectHandler.PublishProject)
+	projects.PUT("/:slug/unpublish", projectHandler.UnpublishProject)
 
 	s.Log.Info("routes registered successfully")
 }

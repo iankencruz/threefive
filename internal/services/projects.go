@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -58,18 +59,18 @@ type CreateProjectRequest struct {
 
 // UpdateProjectRequest represents the data needed to update a project
 type UpdateProjectRequest struct {
-	Title           *string
-	Slug            *string
-	Description     *string
-	ProjectDate     *time.Time
-	ClientName      *string
-	ProjectYear     *int32
-	ProjectURL      *string
-	ProjectStatus   *string
-	Status          *string
-	FeaturedImageID *uuid.UUID
-	GalleryMediaIDs []uuid.UUID // If provided, replaces entire gallery
-	TagNames        []string    // If provided, replaces all tags
+	Title           string
+	Slug            string
+	Description     string
+	ClientName      string
+	ProjectYear     string
+	ProjectDate     string
+	ProjectURL      string
+	Status          string
+	ProjectStatus   string
+	Tags            string // comma-separated tag names
+	FeaturedImageID string // UUID string or empty to clear
+	GalleryMediaIDs string // comma-separated UUID strings
 }
 
 // CreateProject creates a new project with gallery and tags
@@ -209,110 +210,75 @@ func (s *ProjectService) ListPublishedProjects(ctx context.Context, limit, offse
 
 // UpdateProjectBySlug updates a project by slug
 func (s *ProjectService) UpdateProjectBySlug(ctx context.Context, slug string, req *UpdateProjectRequest) (*ProjectResponse, error) {
-	// Get project ID from slug
-	projectIDResult, err := s.queries.GetProjectIDBySlug(ctx, slug)
+	// Get existing project
+	existing, err := s.queries.GetProjectBySlug(ctx, slug)
 	if err != nil {
 		return nil, fmt.Errorf("project not found: %w", err)
 	}
 
-	projectID, err := uuid.FromBytes(projectIDResult.Bytes[:])
-	if err != nil {
-		return nil, fmt.Errorf("invalid project ID: %w", err)
-	}
-
-	// Validate new slug if provided
-	if req.Slug != nil && *req.Slug != slug {
-		if !IsValidSlug(*req.Slug) {
-			return nil, fmt.Errorf("invalid slug format")
-		}
-
-		exists, err := s.queries.CheckProjectSlugExists(ctx, generated.CheckProjectSlugExistsParams{
-			Slug:      *req.Slug,
-			ProjectID: projectIDResult,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to check slug uniqueness: %w", err)
-		}
-		if exists {
-			return nil, fmt.Errorf("slug already exists: %s", *req.Slug)
-		}
-	}
-
 	// Build update params
-	updateParams := generated.UpdateProjectParams{
-		ID: projectIDResult,
+	params := generated.UpdateProjectParams{
+		ID: existing.ID,
 	}
 
-	if req.Title != nil {
-		updateParams.Title = pgtype.Text{String: *req.Title, Valid: true}
+	if req.Title != "" {
+		params.Title = pgtype.Text{String: req.Title, Valid: true}
 	}
-	if req.Slug != nil {
-		updateParams.Slug = pgtype.Text{String: *req.Slug, Valid: true}
+	if req.Slug != "" {
+		params.Slug = pgtype.Text{String: req.Slug, Valid: true}
 	}
-	if req.Description != nil {
-		updateParams.Description = pgtype.Text{String: *req.Description, Valid: true}
+	if req.Description != "" {
+		params.Description = pgtype.Text{String: req.Description, Valid: true}
 	}
-	if req.ProjectDate != nil {
-		updateParams.ProjectDate = pgtype.Date{Time: *req.ProjectDate, Valid: true}
+	if req.ClientName != "" {
+		params.ClientName = pgtype.Text{String: req.ClientName, Valid: true}
 	}
-	if req.ClientName != nil {
-		updateParams.ClientName = pgtype.Text{String: *req.ClientName, Valid: true}
+	if req.ProjectURL != "" {
+		params.ProjectUrl = pgtype.Text{String: req.ProjectURL, Valid: true}
 	}
-	if req.ProjectYear != nil {
-		updateParams.ProjectYear = pgtype.Int4{Int32: *req.ProjectYear, Valid: true}
+	if req.Status != "" {
+		params.Status = pgtype.Text{String: req.Status, Valid: true}
 	}
-	if req.ProjectURL != nil {
-		updateParams.ProjectUrl = pgtype.Text{String: *req.ProjectURL, Valid: true}
+	if req.ProjectStatus != "" {
+		params.ProjectStatus = pgtype.Text{String: req.ProjectStatus, Valid: true}
 	}
-	if req.ProjectStatus != nil {
-		updateParams.ProjectStatus = pgtype.Text{String: *req.ProjectStatus, Valid: true}
+	if req.ProjectYear != "" {
+		if year, err := strconv.Atoi(req.ProjectYear); err == nil {
+			params.ProjectYear = pgtype.Int4{Int32: int32(year), Valid: true}
+		}
 	}
-	if req.Status != nil {
-		updateParams.Status = pgtype.Text{String: *req.Status, Valid: true}
-	}
-	if req.FeaturedImageID != nil {
-		updateParams.FeaturedImageID = pgtype.UUID{Bytes: *req.FeaturedImageID, Valid: true}
+	if req.ProjectDate != "" {
+		if t, err := time.Parse("2006-01-02", req.ProjectDate); err == nil {
+			params.ProjectDate = pgtype.Date{Time: t, Valid: true}
+		}
 	}
 
-	// Update project
-	_, err = s.queries.UpdateProject(ctx, updateParams)
+	// Handle featured image — clear if empty string, set if valid UUID
+	if req.FeaturedImageID != "" {
+		if imgUUID, err := uuid.Parse(req.FeaturedImageID); err == nil {
+			params.FeaturedImageID = pgtype.UUID{Bytes: imgUUID, Valid: true}
+		}
+	} else {
+		params.FeaturedImageID = pgtype.UUID{Valid: false}
+	}
+
+	// Update project core fields
+	updated, err := s.queries.UpdateProject(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update project: %w", err)
 	}
 
-	// Update gallery if provided
-	if req.GalleryMediaIDs != nil {
-		// Clear existing gallery
-		if err := s.queries.DeleteAllMediaRelationsForEntity(ctx, generated.DeleteAllMediaRelationsForEntityParams{
-			EntityType: "project",
-			EntityID:   pgtype.UUID{Bytes: projectID, Valid: true},
-		}); err != nil {
-			return nil, fmt.Errorf("failed to clear gallery: %w", err)
-		}
-		// Add new gallery
-		if len(req.GalleryMediaIDs) > 0 {
-			if err := s.addGalleryMedia(ctx, projectID, req.GalleryMediaIDs); err != nil {
-				return nil, fmt.Errorf("failed to update gallery: %w", err)
-			}
-		}
+	// Sync tags
+	if err := s.syncProjectTags(ctx, updated.ID, req.Tags); err != nil {
+		return nil, fmt.Errorf("failed to sync tags: %w", err)
 	}
 
-	// Update tags if provided
-	if req.TagNames != nil {
-		// Clear existing tags
-		if err := s.queries.ClearProjectTags(ctx, pgtype.UUID{Bytes: projectID, Valid: true}); err != nil {
-			return nil, fmt.Errorf("failed to clear tags: %w", err)
-		}
-		// Add new tags
-		if len(req.TagNames) > 0 {
-			if err := s.addTags(ctx, projectID, req.TagNames); err != nil {
-				return nil, fmt.Errorf("failed to update tags: %w", err)
-			}
-		}
+	// Sync gallery media
+	if err := s.syncGalleryMedia(ctx, updated.ID, req.GalleryMediaIDs); err != nil {
+		return nil, fmt.Errorf("failed to sync gallery: %w", err)
 	}
 
-	// Return updated project
-	return s.GetProjectByID(ctx, projectID)
+	return s.GetProjectBySlug(ctx, updated.Slug)
 }
 
 // DeleteProjectBySlug soft-deletes a project
@@ -497,4 +463,83 @@ func IsValidSlug(slug string) bool {
 	// Must be lowercase, alphanumeric with hyphens only
 	matched, _ := regexp.MatchString("^[a-z0-9]+(?:-[a-z0-9]+)*$", slug)
 	return matched
+}
+
+// syncGalleryMedia replaces all gallery media for a project
+func (s *ProjectService) syncGalleryMedia(ctx context.Context, projectID pgtype.UUID, galleryMediaIDs string) error {
+	// Clear existing gallery relations
+	if err := s.queries.DeleteGalleryMediaForEntity(ctx, generated.DeleteGalleryMediaForEntityParams{
+		EntityType: "project",
+		EntityID:   projectID,
+	}); err != nil {
+		return fmt.Errorf("failed to clear gallery: %w", err)
+	}
+
+	if galleryMediaIDs == "" {
+		return nil
+	}
+
+	ids := strings.Split(galleryMediaIDs, ",")
+	for i, idStr := range ids {
+		idStr = strings.TrimSpace(idStr)
+		if idStr == "" {
+			continue
+		}
+		mediaUUID, err := uuid.Parse(idStr)
+		if err != nil {
+			continue
+		}
+		if err := s.queries.AddGalleryMedia(ctx, generated.AddGalleryMediaParams{
+			MediaID:    pgtype.UUID{Bytes: mediaUUID, Valid: true},
+			EntityType: "project",
+			EntityID:   projectID,
+			SortOrder:  pgtype.Int4{Int32: int32(i), Valid: true},
+		}); err != nil {
+			return fmt.Errorf("failed to add gallery media %s: %w", idStr, err)
+		}
+	}
+
+	return nil
+}
+
+// syncProjectTags replaces all tags for a project
+func (s *ProjectService) syncProjectTags(ctx context.Context, projectID pgtype.UUID, tagsCSV string) error {
+	// Clear existing tags
+	if err := s.queries.ClearProjectTags(ctx, projectID); err != nil {
+		return fmt.Errorf("failed to clear tags: %w", err)
+	}
+
+	if tagsCSV == "" {
+		return nil
+	}
+
+	tagNames := strings.Split(tagsCSV, ",")
+	for _, tagName := range tagNames {
+		tagName = strings.TrimSpace(tagName)
+		if tagName == "" {
+			continue
+		}
+
+		tagSlug := GenerateSlug(tagName)
+		tagID := uuid.New()
+
+		tag, err := s.queries.FindOrCreateTag(ctx, generated.FindOrCreateTagParams{
+			ID:   pgtype.UUID{Bytes: tagID, Valid: true},
+			Name: tagName,
+			Slug: tagSlug,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to find or create tag %q: %w", tagName, err)
+		}
+
+		_, err = s.queries.AddProjectTag(ctx, generated.AddProjectTagParams{
+			ProjectID: projectID,
+			TagID:     tag.ID,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to add tag %q: %w", tagName, err)
+		}
+	}
+
+	return nil
 }

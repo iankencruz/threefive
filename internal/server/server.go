@@ -197,7 +197,7 @@ func (s *Server) Start(ctx context.Context, port string) error {
 	go func() {
 		s.Log.Info("Starting server on %s", "port", port)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			s.Log.Error("Server ListenAndServe failed")
+			s.Log.Error("Server ListenAndServe failed", "error", err)
 		}
 	}()
 

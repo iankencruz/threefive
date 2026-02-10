@@ -192,7 +192,9 @@ func (h *PageHandler) UpdatePage(c *echo.Context) error {
 	h.logger.Info("Page updated successfully", "slug", slug)
 
 	// Always redirect to reload the entire page with fresh data
-	return responses.RedirectWithToast(c.Request().Context(), c,
+	return responses.RedirectWithToast(
+		c.Request().Context(),
+		c,
 		"/admin/pages/"+updated.Slug,
 		"Page updated successfully",
 		toast.VariantSuccess,

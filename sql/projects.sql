@@ -67,18 +67,19 @@ OFFSET @offset_val;
 
 -- name: UpdateProject :one
 UPDATE projects SET
-    title = COALESCE(sqlc.narg('title'), title),
-    slug = COALESCE(sqlc.narg('slug'), slug),
-    description = COALESCE(sqlc.narg('description'), description),
-    project_date = COALESCE(sqlc.narg('project_date'), project_date),
-    status = COALESCE(sqlc.narg('status'), status),
-    client_name = COALESCE(sqlc.narg('client_name'), client_name),
-    project_year = COALESCE(sqlc.narg('project_year'), project_year),
-    project_url = COALESCE(sqlc.narg('project_url'), project_url),
-    project_status = COALESCE(sqlc.narg('project_status'), project_status),
-    featured_image_id = COALESCE(sqlc.narg('featured_image_id'), featured_image_id),
-    updated_at = NOW()
+    title             = COALESCE(sqlc.narg('title'), title),
+    slug              = COALESCE(sqlc.narg('slug'), slug),
+    description       = COALESCE(sqlc.narg('description'), description),
+    project_date      = COALESCE(sqlc.narg('project_date'), project_date),
+    status            = COALESCE(sqlc.narg('status'), status),
+    client_name       = COALESCE(sqlc.narg('client_name'), client_name),
+    project_year      = COALESCE(sqlc.narg('project_year'), project_year),
+    project_url       = COALESCE(sqlc.narg('project_url'), project_url),
+    project_status    = COALESCE(sqlc.narg('project_status'), project_status),
+    featured_image_id = sqlc.narg('featured_image_id'),
+    updated_at        = NOW()
 WHERE id = @id
+  AND deleted_at IS NULL
 RETURNING *;
 
 -- name: PublishProject :one
@@ -151,12 +152,12 @@ JOIN project_tags pt ON t.id = pt.tag_id
 WHERE pt.project_id = @project_id
 ORDER BY t.name ASC;
 
--- name: ClearProjectTags :exec
-DELETE FROM project_tags
-WHERE project_id = @project_id;
-
 -- name: CountProjectTags :one
 SELECT COUNT(*) FROM project_tags
+WHERE project_id = @project_id;
+
+-- name: ClearProjectTags :exec
+DELETE FROM project_tags
 WHERE project_id = @project_id;
 
 -- Project Gallery Operations (via media_relations)
@@ -181,6 +182,18 @@ SELECT COUNT(*) FROM media_relations
 WHERE entity_type = 'project'
   AND entity_id = @project_id
   AND relation_type = 'gallery';
+
+-- name: DeleteGalleryMediaForEntity :exec
+DELETE FROM media_relations
+WHERE entity_type   = @entity_type
+  AND entity_id     = @entity_id
+  AND relation_type = 'gallery';
+
+-- name: AddGalleryMedia :exec
+INSERT INTO media_relations (media_id, entity_type, entity_id, relation_type, sort_order)
+VALUES (@media_id, @entity_type, @entity_id, 'gallery', @sort_order)
+ON CONFLICT (media_id, entity_type, entity_id, relation_type) DO UPDATE
+    SET sort_order = EXCLUDED.sort_order;
 
 -- Search and Filter Operations
 

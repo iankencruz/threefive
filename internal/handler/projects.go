@@ -21,13 +21,15 @@ type ProjectHandler struct {
 	logger         *slog.Logger
 	projectService *services.ProjectService
 	tagService     *services.TagService
+	mediaService   *services.MediaService // ADD THIS
 }
 
-func NewProjectHandler(logger *slog.Logger, projectService *services.ProjectService, tagService *services.TagService) *ProjectHandler {
+func NewProjectHandler(logger *slog.Logger, projectService *services.ProjectService, tagService *services.TagService, mediaService *services.MediaService) *ProjectHandler {
 	return &ProjectHandler{
 		logger:         logger,
 		projectService: projectService,
 		tagService:     tagService,
+		mediaService:   mediaService,
 	}
 }
 
@@ -247,12 +249,13 @@ func (h *ProjectHandler) ShowEditPage(c *echo.Context) error {
 }
 
 // UpdateProject handles project update
+// UpdateProject handles project update
 func (h *ProjectHandler) UpdateProject(c *echo.Context) error {
 	slug := c.Param("slug")
 
 	h.logger.Debug("Update project request", "slug", slug)
 
-	// Get existing project
+	// Get existing project (for error fallback)
 	existing, err := h.projectService.GetProjectBySlug(c.Request().Context(), slug)
 	if err != nil {
 		h.logger.Error("failed to get project", "error", err, "slug", slug)
@@ -265,75 +268,20 @@ func (h *ProjectHandler) UpdateProject(c *echo.Context) error {
 		return responses.ErrorToast(c.Request().Context(), c, "Failed to parse form data")
 	}
 
-	// Build update request
-	req := &services.UpdateProjectRequest{}
-
-	if title := c.FormValue("title"); title != "" {
-		req.Title = &title
-	}
-	if newSlug := c.FormValue("slug"); newSlug != "" && newSlug != slug {
-		req.Slug = &newSlug
-	}
-	if description := c.FormValue("description"); description != "" {
-		req.Description = &description
-	}
-	if clientName := c.FormValue("client_name"); clientName != "" {
-		req.ClientName = &clientName
-	}
-	if projectURL := c.FormValue("project_url"); projectURL != "" {
-		req.ProjectURL = &projectURL
-	}
-	if status := c.FormValue("status"); status != "" {
-		req.Status = &status
-	}
-	if projectStatus := c.FormValue("project_status"); projectStatus != "" {
-		req.ProjectStatus = &projectStatus
-	}
-
-	// Parse project year
-	if yearStr := c.FormValue("project_year"); yearStr != "" {
-		if year, err := strconv.Atoi(yearStr); err == nil {
-			year32 := int32(year)
-			req.ProjectYear = &year32
-		}
-	}
-
-	// Parse project date
-	if dateStr := c.FormValue("project_date"); dateStr != "" {
-		if parsed, err := time.Parse("2006-01-02", dateStr); err == nil {
-			req.ProjectDate = &parsed
-		}
-	}
-
-	// Parse featured image ID
-	if imgIDStr := c.FormValue("featured_image_id"); imgIDStr != "" {
-		if imgUUID, err := uuid.Parse(imgIDStr); err == nil {
-			req.FeaturedImageID = &imgUUID
-		}
-	}
-
-	// Parse gallery media IDs (if provided, replaces entire gallery)
-	c.Request().ParseForm()
-	galleryIDStrs := c.Request().Form["gallery_media_ids[]"]
-	if len(galleryIDStrs) > 0 {
-		var galleryMediaIDs []uuid.UUID
-		for _, idStr := range galleryIDStrs {
-			if idStr != "" {
-				if mediaUUID, err := uuid.Parse(idStr); err == nil {
-					galleryMediaIDs = append(galleryMediaIDs, mediaUUID)
-				}
-			}
-		}
-		req.GalleryMediaIDs = galleryMediaIDs
-	}
-
-	// Parse tags (comma-separated, if provided replaces all tags)
-	if tagsStr := c.FormValue("tags"); tagsStr != "" {
-		tagNames := strings.Split(tagsStr, ",")
-		for i, tag := range tagNames {
-			tagNames[i] = strings.TrimSpace(tag)
-		}
-		req.TagNames = tagNames
+	// Build update request — plain strings, no pointers
+	req := &services.UpdateProjectRequest{
+		Title:           c.FormValue("title"),
+		Slug:            c.FormValue("slug"),
+		Description:     c.FormValue("description"),
+		ClientName:      c.FormValue("client_name"),
+		ProjectURL:      c.FormValue("project_url"),
+		Status:          c.FormValue("status"),
+		ProjectStatus:   c.FormValue("project_status"),
+		ProjectYear:     c.FormValue("project_year"),
+		ProjectDate:     c.FormValue("project_date"),
+		FeaturedImageID: c.FormValue("featured_image_id"),
+		GalleryMediaIDs: c.FormValue("gallery_media_ids"),
+		Tags:            c.FormValue("tags"),
 	}
 
 	// Update project
@@ -342,93 +290,118 @@ func (h *ProjectHandler) UpdateProject(c *echo.Context) error {
 		h.logger.Error("failed to update project", "error", err)
 
 		tags, _ := h.tagService.ListAllTags(c.Request().Context())
+		ctx := lib.WithUser(c.Request().Context(), middleware.GetUser(c))
 		component := pages.ProjectEditPage(existing, tags, c.Request().URL.Path)
-		return responses.RenderError(c.Request().Context(), c, component, err.Error())
+		return responses.RenderError(ctx, c, component, err.Error())
 	}
 
-	// If slug changed, redirect to new URL
-	if updated.Project.Slug != slug {
-		return responses.RedirectWithToast(
-			c.Request().Context(),
-			c,
-			"/admin/projects/"+updated.Project.Slug,
-			"Project updated successfully",
-			"success",
-		)
-	}
-
-	// Success - re-render edit page with success message
-	tags, _ := h.tagService.ListAllTags(c.Request().Context())
-	ctx := lib.WithUser(c.Request().Context(), middleware.GetUser(c))
-	component := pages.ProjectEditPage(updated, tags, c.Request().URL.Path)
-	return responses.RenderSuccess(ctx, c, component, "Project updated successfully")
+	// Always redirect after successful save (full page refresh)
+	return responses.RedirectWithToast(
+		c.Request().Context(),
+		c,
+		"/admin/projects/"+updated.Project.Slug,
+		"Project updated successfully",
+		"success",
+	)
 }
 
 // // DeleteProject soft-deletes a project
-// func (h *ProjectHandler) DeleteProject(c *echo.Context) error {
-// 	slug := c.Param("slug")
-//
-// 	h.logger.Debug("Delete project request", "slug", slug)
-//
-// 	if err := h.projectService.DeleteProjectBySlug(c.Request().Context(), slug); err != nil {
-// 		h.logger.Error("failed to delete project", "error", err)
-// 		return responses.ErrorToast(c.Request().Context(), c, "Failed to delete project")
-// 	}
-//
-// 	// Success - return toast and let HTMX handle row removal
-// 	return responses.SuccessToast(c.Request().Context(), c, "Project deleted successfully")
-// }
-//
-// // PublishProject publishes a project
-// func (h *ProjectHandler) PublishProject(c *echo.Context) error {
-// 	slug := c.Param("slug")
-//
-// 	h.logger.Debug("Publish project request", "slug", slug)
-//
-// 	// Get project ID
-// 	project, err := h.projectService.GetProjectBySlug(c.Request().Context(), slug)
-// 	if err != nil {
-// 		return responses.ErrorToast(c.Request().Context(), c, "Project not found")
-// 	}
-//
-// 	var projectID uuid.UUID
-// 	if err := projectID.Scan(project.Project.ID.Bytes[:]); err != nil {
-// 		return responses.ErrorToast(c.Request().Context(), c, "Invalid project ID")
-// 	}
-//
-// 	// Publish
-// 	_, err = h.projectService.PublishProject(c.Request().Context(), projectID)
-// 	if err != nil {
-// 		h.logger.Error("failed to publish project", "error", err)
-// 		return responses.ErrorToast(c.Request().Context(), c, "Failed to publish project")
-// 	}
-//
-// 	return responses.SuccessToast(c.Request().Context(), c, "Project published successfully")
-// }
-//
+func (h *ProjectHandler) DeleteProject(c *echo.Context) error {
+	slug := c.Param("slug")
+
+	h.logger.Debug("Delete project request", "slug", slug)
+
+	if err := h.projectService.DeleteProjectBySlug(c.Request().Context(), slug); err != nil {
+		h.logger.Error("failed to delete project", "error", err)
+		return responses.ErrorToast(c.Request().Context(), c, "Failed to delete project")
+	}
+
+	// Success - return toast and let HTMX handle row removal
+	return responses.SuccessToast(c.Request().Context(), c, "Project deleted successfully")
+}
+
+// PublishProject publishes a project
+func (h *ProjectHandler) PublishProject(c *echo.Context) error {
+	slug := c.Param("slug")
+
+	h.logger.Debug("Publish project request", "slug", slug)
+
+	// Get project ID
+	project, err := h.projectService.GetProjectBySlug(c.Request().Context(), slug)
+	if err != nil {
+		return responses.ErrorToast(c.Request().Context(), c, "Project not found")
+	}
+
+	var projectID uuid.UUID
+	if err := projectID.Scan(project.Project.ID.Bytes[:]); err != nil {
+		return responses.ErrorToast(c.Request().Context(), c, "Invalid project ID")
+	}
+	// Publish
+	_, err = h.projectService.PublishProject(c.Request().Context(), projectID)
+	if err != nil {
+		h.logger.Error("failed to publish project", "error", err)
+		return responses.ErrorToast(c.Request().Context(), c, "Failed to publish project")
+	}
+
+	return responses.SuccessToast(c.Request().Context(), c, "Project published successfully")
+}
+
 // // UnpublishProject unpublishes a project
-// func (h *ProjectHandler) UnpublishProject(c *echo.Context) error {
-// 	slug := c.Param("slug")
-//
-// 	h.logger.Debug("Unpublish project request", "slug", slug)
-//
-// 	// Get project ID
-// 	project, err := h.projectService.GetProjectBySlug(c.Request().Context(), slug)
-// 	if err != nil {
-// 		return responses.ErrorToast(c.Request().Context(), c, "Project not found")
-// 	}
-//
-// 	var projectID uuid.UUID
-// 	if err := projectID.Scan(project.Project.ID.Bytes[:]); err != nil {
-// 		return responses.ErrorToast(c.Request().Context(), c, "Invalid project ID")
-// 	}
-//
-// 	// Unpublish
-// 	_, err = h.projectService.UnpublishProject(c.Request().Context(), projectID)
-// 	if err != nil {
-// 		h.logger.Error("failed to unpublish project", "error", err)
-// 		return responses.ErrorToast(c.Request().Context(), c, "Failed to unpublish project")
-// 	}
-//
-// 	return responses.SuccessToast(c.Request().Context(), c, "Project unpublished successfully")
-// }
+func (h *ProjectHandler) UnpublishProject(c *echo.Context) error {
+	slug := c.Param("slug")
+
+	h.logger.Debug("Unpublish project request", "slug", slug)
+
+	// Get project ID
+	project, err := h.projectService.GetProjectBySlug(c.Request().Context(), slug)
+	if err != nil {
+		return responses.ErrorToast(c.Request().Context(), c, "Project not found")
+	}
+
+	var projectID uuid.UUID
+	if err := projectID.Scan(project.Project.ID.Bytes[:]); err != nil {
+		return responses.ErrorToast(c.Request().Context(), c, "Invalid project ID")
+	}
+
+	// Unpublish
+	_, err = h.projectService.UnpublishProject(c.Request().Context(), projectID)
+	if err != nil {
+		h.logger.Error("failed to unpublish project", "error", err)
+		return responses.ErrorToast(c.Request().Context(), c, "Failed to unpublish project")
+	}
+
+	return responses.SuccessToast(c.Request().Context(), c, "Project unpublished successfully")
+}
+
+// ShowGallerySelector loads the gallery media selector grid
+func (h *ProjectHandler) ShowGallerySelector(c *echo.Context) error {
+	dialogID := c.QueryParam("dialog_id")
+	galleryContainerID := c.QueryParam("gallery_container_id")
+	galleryInputID := c.QueryParam("gallery_input_id")
+
+	h.logger.Debug("Loading gallery selector", "dialog_id", dialogID)
+
+	// Get all image media (exclude videos for gallery)
+	media, err := h.mediaService.ListMedia(c.Request().Context(), 100, 0)
+	if err != nil {
+		h.logger.Error("failed to list media", "error", err)
+		media = []generated.Media{}
+	}
+
+	// Filter to only images
+	var imageMedia []generated.Media
+	for _, m := range media {
+		if len(m.MimeType) >= 5 && m.MimeType[:5] == "image" {
+			imageMedia = append(imageMedia, m)
+		}
+	}
+
+	// Convert to MediaResponse
+	mediaResponses := make([]services.MediaResponse, len(imageMedia))
+	for i, m := range imageMedia {
+		mediaResponses[i] = h.mediaService.ToMediaResponse(&m)
+	}
+
+	component := lib.GalleryMediaGrid(mediaResponses, dialogID, galleryContainerID, galleryInputID)
+	return responses.Render(c.Request().Context(), c, component)
+}

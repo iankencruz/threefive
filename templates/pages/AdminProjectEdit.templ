@@ -1,83 +1,28 @@
+// templates/pages/AdminProjectEdit.templ
 package pages
 
 import (
 	"fmt"
+	"github.com/iankencruz/threefive/components/badge"
 	"github.com/iankencruz/threefive/components/button"
+	"github.com/iankencruz/threefive/components/dialog"
 	"github.com/iankencruz/threefive/components/input"
 	"github.com/iankencruz/threefive/components/label"
 	"github.com/iankencruz/threefive/database/generated"
 	"github.com/iankencruz/threefive/internal/services"
 	"github.com/iankencruz/threefive/templates/layouts"
+	"github.com/iankencruz/threefive/templates/lib"
 	"github.com/jackc/pgx/v5/pgtype"
 	"strings"
 )
-
-script initSlugifier() {
-    const targetNode = document.body;
-    
-    const setup = () => {
-        const title = document.getElementById("title");
-        const slug = document.getElementById("slug");
-        const toggleBtn = document.getElementById("slug-lock-toggle");
-
-        if (title && slug && !title.dataset.slugBound) {
-            
-            const updateLockUI = () => {
-                if (slug.dataset.manual === "true") {
-                    toggleBtn.innerHTML = `<svg class="w-4 h-4 text-amber-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" /></svg>`;
-                    toggleBtn.title = "Manual Mode (Locked)";
-                } else {
-                    toggleBtn.innerHTML = `<svg class="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 016 0v2h2V7a5 5 0 00-5-5z" /></svg>`;
-                    toggleBtn.title = "Auto Mode (Following Title)";
-                }
-            };
-
-            // Initial UI state
-            updateLockUI();
-
-            slug.addEventListener("input", () => {
-                slug.dataset.manual = "true";
-                updateLockUI();
-            });
-
-            toggleBtn.addEventListener("click", () => {
-                const isManual = slug.dataset.manual === "true";
-                slug.dataset.manual = isManual ? "false" : "true";
-                updateLockUI();
-                // If switching back to auto, trigger a sync immediately
-                if (slug.dataset.manual === "false") {
-                    title.dispatchEvent(new Event('input'));
-                }
-            });
-
-            title.addEventListener("input", () => {
-                if (slug.dataset.manual === "true") return;
-
-                slug.value = title.value
-                    .toLowerCase()
-                    .trim()
-                    .replace(/\s+/g, '-')
-                    .replace(/[^\w\-]+/g, '')
-                    .replace(/\-\-+/g, '-');
-            });
-            
-            title.dataset.slugBound = "true";
-        }
-    };
-
-    setup();
-    setTimeout(setup, 50);
-    const observer = new MutationObserver(setup);
-    observer.observe(targetNode, { childList: true, subtree: true });
-}
 
 templ ProjectEditPage(project *services.ProjectResponse, tags []generated.Tag, currentPath string) {
 	@layouts.AdminLayout(layouts.LayoutProps{
 		Title: "Edit Project",
 		Path:  currentPath,
 	}) {
-		@initSlugifier()
-		<div class="space-y-6">
+		<div class="">
+			<!-- Page Header -->
 			<div class="mb-6">
 				<div class="flex items-center justify-between">
 					<div>
@@ -95,6 +40,7 @@ templ ProjectEditPage(project *services.ProjectResponse, tags []generated.Tag, c
 					</a>
 				</div>
 			</div>
+			<!-- Edit Form -->
 			<div class="bg-white rounded-lg border border-gray-200">
 				<form
 					hx-put={ "/admin/projects/" + project.Project.Slug }
@@ -102,8 +48,10 @@ templ ProjectEditPage(project *services.ProjectResponse, tags []generated.Tag, c
 					hx-swap="outerHTML"
 					class="p-6 space-y-6"
 				>
+					<!-- Basic Information Section -->
 					<div class="space-y-6">
 						<h2 class="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">Basic Information</h2>
+						<!-- Title -->
 						<div class="space-y-2">
 							@label.Label(label.Props{
 								For: "title",
@@ -117,31 +65,22 @@ templ ProjectEditPage(project *services.ProjectResponse, tags []generated.Tag, c
 								Placeholder: "My Awesome Project",
 							})
 						</div>
+						<!-- Slug -->
 						<div class="space-y-2">
 							@label.Label(label.Props{
 								For: "slug",
 							}) {
 								Slug
 							}
-							<div class="relative flex items-center">
-								@input.Input(input.Props{
-									ID:          "slug",
-									Name:        "slug",
-									Value:       project.Project.Slug,
-									Placeholder: "my-awesome-project",
-									Attributes: templ.Attributes{
-										"data-manual": "true", // Default to manual for existing projects
-									},
-								})
-								<button
-									type="button"
-									id="slug-lock-toggle"
-									class="absolute right-2 p-1.5 hover:bg-gray-100 rounded-md transition-colors"
-									title="Toggle Auto/Manual Slug"
-								></button>
-							</div>
-							<p class="text-xs text-gray-500">Manual edits lock the slug. Click the icon to unlock.</p>
+							@input.Input(input.Props{
+								ID:          "slug",
+								Name:        "slug",
+								Value:       project.Project.Slug,
+								Placeholder: "my-awesome-project",
+							})
+							<p class="text-xs text-gray-500">Changing the slug will change the URL</p>
 						</div>
+						<!-- Description -->
 						<div class="space-y-2">
 							@label.Label(label.Props{
 								For: "description",
@@ -153,7 +92,7 @@ templ ProjectEditPage(project *services.ProjectResponse, tags []generated.Tag, c
 								name="description"
 								rows="4"
 								placeholder="Brief description of your project..."
-								class="flex min-h-15 w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+								class="flex min-h-[60px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
 							>
 								if project.Project.Description.Valid {
 									{ project.Project.Description.String }
@@ -161,9 +100,11 @@ templ ProjectEditPage(project *services.ProjectResponse, tags []generated.Tag, c
 							</textarea>
 						</div>
 					</div>
+					<!-- Client & Date Information -->
 					<div class="space-y-6">
 						<h2 class="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">Client & Timeline</h2>
 						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+							<!-- Client Name -->
 							<div class="space-y-2">
 								@label.Label(label.Props{
 									For: "client_name",
@@ -177,6 +118,7 @@ templ ProjectEditPage(project *services.ProjectResponse, tags []generated.Tag, c
 									Placeholder: "Acme Corporation",
 								})
 							</div>
+							<!-- Project Year -->
 							<div class="space-y-2">
 								@label.Label(label.Props{
 									For: "project_year",
@@ -188,10 +130,11 @@ templ ProjectEditPage(project *services.ProjectResponse, tags []generated.Tag, c
 									Name:        "project_year",
 									Type:        input.TypeNumber,
 									Value:       getInt32Value(project.Project.ProjectYear),
-									Placeholder: "2026",
+									Placeholder: "2024",
 								})
 							</div>
 						</div>
+						<!-- Project Date -->
 						<div class="space-y-2">
 							@label.Label(label.Props{
 								For: "project_date",
@@ -205,6 +148,7 @@ templ ProjectEditPage(project *services.ProjectResponse, tags []generated.Tag, c
 								Value: getDateValue(project.Project.ProjectDate),
 							})
 						</div>
+						<!-- Project URL -->
 						<div class="space-y-2">
 							@label.Label(label.Props{
 								For: "project_url",
@@ -220,9 +164,11 @@ templ ProjectEditPage(project *services.ProjectResponse, tags []generated.Tag, c
 							})
 						</div>
 					</div>
+					<!-- Status Section -->
 					<div class="space-y-6">
 						<h2 class="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">Status</h2>
 						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+							<!-- Publication Status -->
 							<div class="space-y-2">
 								@label.Label(label.Props{
 									For: "status",
@@ -239,6 +185,7 @@ templ ProjectEditPage(project *services.ProjectResponse, tags []generated.Tag, c
 									<option value="archived" selected?={ project.Project.Status.String == "archived" }>Archived</option>
 								</select>
 							</div>
+							<!-- Project Status -->
 							<div class="space-y-2">
 								@label.Label(label.Props{
 									For: "project_status",
@@ -257,40 +204,48 @@ templ ProjectEditPage(project *services.ProjectResponse, tags []generated.Tag, c
 							</div>
 						</div>
 					</div>
+					<!-- Featured Image Section -->
 					<div class="space-y-6">
 						<h2 class="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">Featured Image</h2>
 						<div class="flex items-start gap-4">
-							<div id="featured-image-preview" class="w-32 h-32 bg-gray-100 rounded flex items-center justify-center overflow-hidden">
+							<div id="featured_image_id_preview" class="flex items-start gap-4">
 								if project.FeaturedImage != nil {
-									<img
-										src={ project.FeaturedImage.ThumbnailURL }
-										alt={ project.Project.Title }
-										class="w-full h-full object-cover"
-									/>
+									<div class="relative w-48 h-32 rounded-lg border border-gray-200 overflow-hidden">
+										<img
+											src={ project.FeaturedImage.ThumbnailURL }
+											alt={ project.Project.Title }
+											class="w-full h-full object-cover"
+										/>
+										<button
+											type="button"
+											onclick="document.getElementById('featured_image_id').value = ''; this.parentElement.remove();"
+											class="absolute top-2 right-2 p-1 bg-red-600 text-white rounded-full hover:bg-red-700"
+										>
+											<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+											</svg>
+										</button>
+									</div>
 								} else {
-									<svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-									</svg>
+									<div class="w-48 h-32 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
+										<span class="text-gray-400 text-sm">No featured image</span>
+									</div>
 								}
 							</div>
-							<div class="flex-1 space-y-2">
-								<button
-									type="button"
-									onclick="alert('Media selector will be implemented next')"
-									class="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200"
-								>
-									Change Featured Image
-								</button>
-								if project.FeaturedImage != nil {
-									<button
-										type="button"
-										onclick="document.getElementById('featured_image_id').value = ''; document.getElementById('featured-image-preview').innerHTML = '<svg class=\'w-12 h-12 text-gray-400\' fill=\'none\' stroke=\'currentColor\' viewBox=\'0 0 24 24\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z\'></path></svg>'"
-										class="px-4 py-2 bg-red-50 text-red-700 text-sm font-medium rounded-lg hover:bg-red-100"
-									>
-										Remove
-									</button>
+							<div class="flex-1">
+								@dialog.Trigger(dialog.TriggerProps{
+									For: "featured-image-selector",
+								}) {
+									@button.Button(button.Props{
+										Variant: button.VariantDefault,
+									}) {
+										<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+										</svg>
+										Select Featured Image
+									}
 								}
-								<p class="text-xs text-gray-500">This image represents your project in listings</p>
+								<p class="text-xs text-gray-500 mt-2">This image represents your project in listings</p>
 							</div>
 						</div>
 						<input
@@ -300,35 +255,35 @@ templ ProjectEditPage(project *services.ProjectResponse, tags []generated.Tag, c
 							value={ getFeaturedImageID(project.FeaturedImage) }
 						/>
 					</div>
+					<!-- Gallery Section -->
 					<div class="space-y-6">
 						<div class="flex items-center justify-between border-b border-gray-200 pb-2">
 							<h2 class="text-lg font-semibold text-gray-900">Gallery Images</h2>
-							<span class="text-sm text-gray-600">
+							<span class="text-sm text-gray-600" data-gallery-count>
 								{ fmt.Sprintf("%d", len(project.GalleryMedia)) } images
 							</span>
 						</div>
-						if len(project.GalleryMedia) > 0 {
-							<div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="gallery-grid">
-								for _, media := range project.GalleryMedia {
-									<div class="relative group">
-										<img
-											src={ media.ThumbnailURL }
-											alt={ media.OriginalFilename }
-											class="w-full h-32 object-cover rounded border border-gray-200"
-										/>
-										<button
-											type="button"
-											onclick="alert('Remove gallery image functionality')"
-											class="absolute top-2 right-2 p-1 bg-red-500 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity"
-										>
-											<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-											</svg>
-										</button>
-									</div>
-								}
-							</div>
-						} else {
+						<div id="gallery-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+							for _, media := range project.GalleryMedia {
+								<div class="relative group" data-media-id={ lib.GetUUIDString(media.ID) }>
+									<img
+										src={ media.ThumbnailURL }
+										alt={ media.OriginalFilename }
+										class="w-full h-32 object-cover rounded border border-gray-200"
+									/>
+									<button
+										type="button"
+										onclick="removeGalleryImage(this, 'gallery_media_ids')"
+										class="absolute top-2 right-2 p-1 bg-red-500 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity"
+									>
+										<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+										</svg>
+									</button>
+								</div>
+							}
+						</div>
+						if len(project.GalleryMedia) == 0 {
 							<div class="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
 								<svg class="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
@@ -337,14 +292,21 @@ templ ProjectEditPage(project *services.ProjectResponse, tags []generated.Tag, c
 								<p class="text-sm text-gray-500 mt-1">Add images to showcase your project</p>
 							</div>
 						}
-						<button
-							type="button"
-							onclick="alert('Add gallery images functionality')"
-							class="w-full px-4 py-2 bg-blue-50 text-blue-700 text-sm font-medium rounded-lg hover:bg-blue-100 border border-blue-200"
-						>
-							Add Gallery Images
-						</button>
+						<input type="hidden" id="gallery_media_ids" name="gallery_media_ids" value={ getGalleryIDsString(project.GalleryMedia) }/>
+						@dialog.Trigger(dialog.TriggerProps{
+							For: "gallery-media-selector",
+						}) {
+							@button.Button(button.Props{
+								Variant: button.VariantDefault,
+							}) {
+								<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+								</svg>
+								Add Gallery Images
+							}
+						}
 					</div>
+					<!-- Tags Section -->
 					<div class="space-y-6">
 						<h2 class="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">Tags</h2>
 						<div class="space-y-2">
@@ -361,7 +323,38 @@ templ ProjectEditPage(project *services.ProjectResponse, tags []generated.Tag, c
 							})
 							<p class="text-xs text-gray-500">Comma-separated tags. New tags will be created automatically.</p>
 						</div>
+						<!-- Current Tags Display -->
+						if len(project.Tags) > 0 {
+							<div>
+								<p class="text-xs text-gray-600 mb-2">Current tags:</p>
+								<div class="flex flex-wrap gap-2">
+									for _, tag := range project.Tags {
+										@badge.Badge(badge.Props{Variant: badge.VariantOutline}) {
+											{ tag.Tag.Name }
+										}
+									}
+								</div>
+							</div>
+						}
+						<!-- Available Tags -->
+						if len(tags) > 0 {
+							<div>
+								<p class="text-xs text-gray-600 mb-2">Available tags (click to use):</p>
+								<div class="flex flex-wrap gap-2">
+									for _, tag := range tags {
+										<button
+											type="button"
+											onclick={ addTagToInput(tag.Name) }
+											class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+										>
+											{ tag.Name }
+										</button>
+									}
+								</div>
+							</div>
+						}
 					</div>
+					<!-- Form Actions -->
 					<div class="flex gap-3 pt-6 border-t border-gray-200">
 						@button.Button(button.Props{
 							Type:    "submit",
@@ -391,33 +384,44 @@ templ ProjectEditPage(project *services.ProjectResponse, tags []generated.Tag, c
 				</form>
 			</div>
 		</div>
+		<!-- Media Selector Dialog for Featured Image -->
+		@lib.MediaSelectorModal("featured-image-selector", "featured_image_id")
+		<!-- Gallery Media Selector Dialog -->
+		@lib.GalleryMediaSelector("gallery-media-selector", "gallery-grid", "gallery_media_ids")
+		<!-- Dialog Script (required for Templui dialog) -->
+		@dialog.Script()
 	}
 }
 
+// Helper functions
 func getStringValue(text pgtype.Text) string {
 	if text.Valid {
 		return text.String
 	}
 	return ""
 }
+
 func getInt32Value(num pgtype.Int4) string {
 	if num.Valid {
 		return fmt.Sprintf("%d", num.Int32)
 	}
 	return ""
 }
+
 func getDateValue(date pgtype.Date) string {
 	if date.Valid {
 		return date.Time.Format("2006-01-02")
 	}
 	return ""
 }
+
 func getFeaturedImageID(image *services.MediaResponse) string {
 	if image != nil {
-		return image.ID.String()
+		return lib.GetUUIDString(image.ID)
 	}
 	return ""
 }
+
 func getTagsString(tags []services.TagResponse) string {
 	if len(tags) == 0 {
 		return ""
@@ -427,4 +431,47 @@ func getTagsString(tags []services.TagResponse) string {
 		tagNames[i] = tag.Tag.Name
 	}
 	return strings.Join(tagNames, ", ")
+}
+
+func getGalleryIDsString(media []services.MediaResponse) string {
+	if len(media) == 0 {
+		return ""
+	}
+	ids := make([]string, len(media))
+	for i, m := range media {
+		ids[i] = lib.GetUUIDString(m.ID)
+	}
+	return strings.Join(ids, ",")
+}
+
+script removeGalleryImage(mediaID string) {
+	// Remove from DOM
+	const item = document.querySelector(`[data-media-id="${mediaID}"]`);
+	if (item) {
+		item.remove();
+	}
+	
+	// Update hidden input
+	const galleryInput = document.getElementById('gallery_media_ids');
+	if (galleryInput) {
+		let currentIds = galleryInput.value.split(',').filter(id => id && id !== mediaID);
+		galleryInput.value = currentIds.join(',');
+		
+		// Update count
+		const countElement = document.querySelector('[data-gallery-count]');
+		if (countElement) {
+			countElement.textContent = `${currentIds.length} images`;
+		}
+	}
+}
+
+script addTagToInput(tagName string) {
+	const input = document.getElementById('tags');
+	if (input) {
+		const currentTags = input.value.split(',').map(t => t.trim()).filter(t => t);
+		if (!currentTags.includes(tagName)) {
+			currentTags.push(tagName);
+			input.value = currentTags.join(', ');
+		}
+	}
 }

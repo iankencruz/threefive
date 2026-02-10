@@ -11,6 +11,30 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const addGalleryMedia = `-- name: AddGalleryMedia :exec
+INSERT INTO media_relations (media_id, entity_type, entity_id, relation_type, sort_order)
+VALUES ($1, $2, $3, 'gallery', $4)
+ON CONFLICT (media_id, entity_type, entity_id, relation_type) DO UPDATE
+    SET sort_order = EXCLUDED.sort_order
+`
+
+type AddGalleryMediaParams struct {
+	MediaID    pgtype.UUID
+	EntityType string
+	EntityID   pgtype.UUID
+	SortOrder  pgtype.Int4
+}
+
+func (q *Queries) AddGalleryMedia(ctx context.Context, arg AddGalleryMediaParams) error {
+	_, err := q.db.Exec(ctx, addGalleryMedia,
+		arg.MediaID,
+		arg.EntityType,
+		arg.EntityID,
+		arg.SortOrder,
+	)
+	return err
+}
+
 const addProjectTag = `-- name: AddProjectTag :one
 
 INSERT INTO project_tags (project_id, tag_id, created_at)
@@ -202,6 +226,23 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (P
 		&i.DeletedAt,
 	)
 	return i, err
+}
+
+const deleteGalleryMediaForEntity = `-- name: DeleteGalleryMediaForEntity :exec
+DELETE FROM media_relations
+WHERE entity_type   = $1
+  AND entity_id     = $2
+  AND relation_type = 'gallery'
+`
+
+type DeleteGalleryMediaForEntityParams struct {
+	EntityType string
+	EntityID   pgtype.UUID
+}
+
+func (q *Queries) DeleteGalleryMediaForEntity(ctx context.Context, arg DeleteGalleryMediaForEntityParams) error {
+	_, err := q.db.Exec(ctx, deleteGalleryMediaForEntity, arg.EntityType, arg.EntityID)
+	return err
 }
 
 const getProjectByID = `-- name: GetProjectByID :one
@@ -870,18 +911,19 @@ func (q *Queries) UnpublishProject(ctx context.Context, id pgtype.UUID) (Project
 
 const updateProject = `-- name: UpdateProject :one
 UPDATE projects SET
-    title = COALESCE($1, title),
-    slug = COALESCE($2, slug),
-    description = COALESCE($3, description),
-    project_date = COALESCE($4, project_date),
-    status = COALESCE($5, status),
-    client_name = COALESCE($6, client_name),
-    project_year = COALESCE($7, project_year),
-    project_url = COALESCE($8, project_url),
-    project_status = COALESCE($9, project_status),
-    featured_image_id = COALESCE($10, featured_image_id),
-    updated_at = NOW()
+    title             = COALESCE($1, title),
+    slug              = COALESCE($2, slug),
+    description       = COALESCE($3, description),
+    project_date      = COALESCE($4, project_date),
+    status            = COALESCE($5, status),
+    client_name       = COALESCE($6, client_name),
+    project_year      = COALESCE($7, project_year),
+    project_url       = COALESCE($8, project_url),
+    project_status    = COALESCE($9, project_status),
+    featured_image_id = $10,
+    updated_at        = NOW()
 WHERE id = $11
+  AND deleted_at IS NULL
 RETURNING id, title, slug, description, project_date, status, client_name, project_year, project_url, project_status, featured_image_id, author_id, created_at, updated_at, published_at, deleted_at
 `
 

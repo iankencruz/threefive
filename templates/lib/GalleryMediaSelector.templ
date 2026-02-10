@@ -1,0 +1,255 @@
+// templates/lib/GalleryMediaSelector.templ
+package lib
+
+import (
+	"github.com/iankencruz/threefive/components/button"
+	"github.com/iankencruz/threefive/components/dialog"
+	"github.com/iankencruz/threefive/internal/services"
+)
+
+var galleryHandle = templ.NewOnceHandle()
+
+templ GalleryMediaSelector(dialogID string, galleryContainerID string, galleryInputID string) {
+	@galleryHandle.Once() {
+		<script>
+			window.gallerySelection = [];
+
+			function toggleGallerySelection(el, mediaID, thumbnailURL, dialogID) {
+				console.log("toggleGallerySelection Triggered", mediaID, thumbnailURL);
+				const checkbox = el.querySelector(".gallery-checkbox");
+				const isSelected = el.classList.contains("selected");
+
+				if (isSelected) {
+					el.classList.remove("selected", "border-blue-600", "bg-blue-50");
+					checkbox.classList.add("hidden");
+					window.gallerySelection = window.gallerySelection.filter(
+						(m) => m.id !== mediaID,
+					);
+				} else {
+					el.classList.add("selected", "border-blue-600", "bg-blue-50");
+					checkbox.classList.remove("hidden");
+					window.gallerySelection.push({ id: mediaID, url: thumbnailURL });
+				}
+
+				const countElement = document.getElementById(
+					dialogID + "-selected-count",
+				);
+				if (countElement) {
+					countElement.textContent = window.gallerySelection.length;
+				}
+			}
+
+			function addSelectedToGallery(dialogID, containerID, inputID) {
+				console.log("addSelectedToGallery Triggered", window.gallerySelection);
+				if (!window.gallerySelection || window.gallerySelection.length === 0) {
+					alert("Please select at least one image");
+					return;
+				}
+
+				const container = document.getElementById(containerID);
+				const input = document.getElementById(inputID);
+
+				if (!container || !input) {
+					console.error(
+						"Gallery container or input not found",
+						containerID,
+						inputID,
+					);
+					return;
+				}
+
+				// Remove empty state if present
+				const emptyState =
+					container.parentElement.querySelector(".border-dashed");
+				if (emptyState) {
+					emptyState.remove();
+				}
+
+				let currentIds = input.value
+					? input.value.split(",").filter((id) => id)
+					: [];
+
+				window.gallerySelection.forEach((media) => {
+					if (currentIds.includes(media.id)) return;
+
+					currentIds.push(media.id);
+
+					const item = document.createElement("div");
+					item.className = "relative group";
+					item.setAttribute("data-media-id", media.id);
+					item.innerHTML = `
+						<img src="${media.url}" class="w-full h-32 object-cover rounded border border-gray-200" />
+						<button type="button" onclick="removeGalleryImage(this, '${inputID}')" class="absolute top-2 right-2 p-1 bg-red-500 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity">
+							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+							</svg>
+						</button>
+					`;
+					container.appendChild(item);
+				});
+
+				input.value = currentIds.join(",");
+
+				// Update gallery count
+				const countEl = document.querySelector("[data-gallery-count]");
+				if (countEl) {
+					countEl.textContent = currentIds.length + " images";
+				}
+
+				// Reset selection state
+				window.gallerySelection = [];
+				const countElement = document.getElementById(
+					dialogID + "-selected-count",
+				);
+				if (countElement) countElement.textContent = "0";
+
+				// Reset item styles in the grid
+				document
+					.querySelectorAll(".gallery-media-item.selected")
+					.forEach((el) => {
+						el.classList.remove("selected", "border-blue-600", "bg-blue-50");
+						const cb = el.querySelector(".gallery-checkbox");
+						if (cb) cb.classList.add("hidden");
+					});
+
+				// Close dialog
+				const dialogEl = document.getElementById(dialogID);
+				const closeBtn = dialogEl?.querySelector('[command="close"]');
+				if (closeBtn) closeBtn.click();
+			}
+
+			function removeGalleryImage(btn, inputID) {
+				console.log("removeGalleryImage Triggered", btn, inputID);
+				const item = btn.closest("[data-media-id]");
+				const mediaID = item?.dataset.mediaId;
+				if (item) item.remove();
+
+				const input = document.getElementById(inputID);
+				if (input && mediaID) {
+					let currentIds = input.value
+						.split(",")
+						.filter((id) => id && id !== mediaID);
+					input.value = currentIds.join(",");
+
+					const countEl = document.querySelector("[data-gallery-count]");
+					if (countEl) {
+						countEl.textContent = currentIds.length + " images";
+					}
+				}
+			}
+		</script>
+	}
+	@dialog.Dialog(dialog.Props{ID: dialogID}) {
+		@dialog.Content(dialog.ContentProps{Class: "max-w-6xl max-h-[85vh]"}) {
+			@dialog.Header(dialog.HeaderProps{}) {
+				@dialog.Title(dialog.TitleProps{}) {
+					Select Gallery Images
+				}
+				@dialog.Description(dialog.DescriptionProps{}) {
+					Click images to add to your project gallery. You can select multiple.
+				}
+			}
+			<div class="overflow-y-auto max-h-[60vh]">
+				<div
+					id={ dialogID + "-media-grid" }
+					hx-get={ "/admin/projects/gallery-selector?dialog_id=" + dialogID + "&gallery_container_id=" + galleryContainerID + "&gallery_input_id=" + galleryInputID }
+					hx-trigger="load"
+					hx-swap="innerHTML"
+					class="min-h-[400px] flex items-center justify-center"
+				>
+					<div class="text-gray-400 text-sm">Loading media...</div>
+				</div>
+			</div>
+			@dialog.Footer(dialog.FooterProps{}) {
+				<div class="flex items-center justify-between w-full">
+					<div>
+						<span class="text-sm text-gray-600">Selected: </span>
+						<span class="text-sm font-semibold" id={ dialogID + "-selected-count" }>0</span>
+					</div>
+					<div class="flex gap-2">
+						@dialog.Close() {
+							@button.Button(button.Props{
+								Variant:    button.VariantOutline,
+								Attributes: templ.Attributes{"command": "close"},
+							}) {
+								Cancel
+							}
+						}
+						@dialog.Close() {
+							@button.Button(button.Props{
+								Variant: button.VariantDefault,
+								Attributes: templ.Attributes{
+									"onclick": "addSelectedToGallery('" + dialogID + "', '" + galleryContainerID + "', '" + galleryInputID + "')",
+								},
+							}) {
+								Add to Gallery
+							}
+						}
+					</div>
+				</div>
+			}
+		}
+	}
+}
+
+templ GalleryMediaGrid(media []services.MediaResponse, dialogID string, galleryContainerID string, galleryInputID string) {
+	if len(media) == 0 {
+		<div class="text-center py-12">
+			<svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+			</svg>
+			<p class="text-gray-500 mb-2">No media uploaded yet</p>
+			<a href="/admin/media" class="text-blue-600 hover:text-blue-700 text-sm">Go to Media Library</a>
+		</div>
+	} else {
+		<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 p-4">
+			for _, m := range media {
+				@GalleryMediaItem(m, dialogID)
+			}
+		</div>
+	}
+}
+
+templ GalleryMediaItem(media services.MediaResponse, dialogID string) {
+	<div
+		class="relative aspect-square rounded-lg border-2 border-gray-200 hover:border-blue-400 overflow-hidden cursor-pointer transition-all gallery-media-item"
+		data-media-id={ GetUUIDString(media.ID) }
+		data-media-url={ media.ThumbnailURL }
+		{ templ.Attributes{"onclick": "toggleGallerySelection(this, '" + GetUUIDString(media.ID) + "', '" + media.ThumbnailURL + "', '" + dialogID + "')"}... }
+	>
+		if media.MimeType[:5] == "image" {
+			<img
+				src={ media.ThumbnailURL }
+				alt={ media.OriginalFilename }
+				class="w-full h-full object-cover pointer-events-none"
+			/>
+		} else if media.MimeType[:5] == "video" {
+			<div class="relative w-full h-full bg-gray-900 pointer-events-none">
+				<img
+					src={ media.ThumbnailURL }
+					alt={ media.OriginalFilename }
+					class="w-full h-full object-cover"
+				/>
+				<div class="absolute inset-0 flex items-center justify-center">
+					<div class="bg-black/50 rounded-full p-2">
+						<svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+							<path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"></path>
+						</svg>
+					</div>
+				</div>
+			</div>
+		}
+		<!-- Checkbox overlay -->
+		<div class="absolute top-2 left-2 gallery-checkbox hidden pointer-events-none">
+			<div class="bg-blue-600 text-white rounded p-1">
+				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+				</svg>
+			</div>
+		</div>
+		<!-- Media info -->
+		<div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 pointer-events-none">
+			<p class="text-xs text-white truncate">{ media.OriginalFilename }</p>
+		</div>
+	</div>
+}
