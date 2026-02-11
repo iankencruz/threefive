@@ -2,6 +2,7 @@
 package lib
 
 import (
+	"fmt"
 	"github.com/iankencruz/threefive/components/button"
 	"github.com/iankencruz/threefive/components/dialog"
 	"github.com/iankencruz/threefive/internal/services"
@@ -13,6 +14,12 @@ templ GalleryMediaSelector(dialogID string, galleryContainerID string, galleryIn
 	@galleryHandle.Once() {
 		<script>
 			window.gallerySelection = [];
+
+			function closeDialogWithID(id) {
+				console.log("closeDialogWithID function");
+				// Close a dialog
+				window.tui.dialog.close(id);
+			}
 
 			function toggleGallerySelection(el, mediaID, thumbnailURL, dialogID) {
 				console.log("toggleGallerySelection Triggered", mediaID, thumbnailURL);
@@ -113,9 +120,11 @@ templ GalleryMediaSelector(dialogID string, galleryContainerID string, galleryIn
 					});
 
 				// Close dialog
-				const dialogEl = document.getElementById(dialogID);
-				const closeBtn = dialogEl?.querySelector('[command="close"]');
-				if (closeBtn) closeBtn.click();
+				if (window.tui && window.tui.dialog) {
+					window.tui.dialog.close(dialogID);
+				} else {
+					console.warn("templui API not found");
+				}
 			}
 
 			function removeGalleryImage(btn, inputID) {
@@ -179,7 +188,7 @@ templ GalleryMediaSelector(dialogID string, galleryContainerID string, galleryIn
 							@button.Button(button.Props{
 								Variant: button.VariantDefault,
 								Attributes: templ.Attributes{
-									"onclick": "addSelectedToGallery('" + dialogID + "', '" + galleryContainerID + "', '" + galleryInputID + "')",
+									"onclick": fmt.Sprintf("addSelectedToGallery('%s', '%s', '%s')", dialogID, galleryContainerID, galleryInputID),
 								},
 							}) {
 								Add to Gallery
@@ -217,27 +226,28 @@ templ GalleryMediaItem(media services.MediaResponse, dialogID string) {
 		data-media-url={ media.ThumbnailURL }
 		{ templ.Attributes{"onclick": "toggleGallerySelection(this, '" + GetUUIDString(media.ID) + "', '" + media.ThumbnailURL + "', '" + dialogID + "')"}... }
 	>
-		if media.MimeType[:5] == "image" {
-			<img
-				src={ media.ThumbnailURL }
-				alt={ media.OriginalFilename }
-				class="w-full h-full object-cover pointer-events-none"
-			/>
-		} else if media.MimeType[:5] == "video" {
-			<div class="relative w-full h-full bg-gray-900 pointer-events-none">
+		switch media.MimeType[:5] {
+			case "image":
 				<img
 					src={ media.ThumbnailURL }
 					alt={ media.OriginalFilename }
-					class="w-full h-full object-cover"
+					class="w-full h-full object-cover pointer-events-none"
 				/>
-				<div class="absolute inset-0 flex items-center justify-center">
-					<div class="bg-black/50 rounded-full p-2">
-						<svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-							<path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"></path>
-						</svg>
+			case "video":
+				<div class="relative w-full h-full bg-gray-900 pointer-events-none">
+					<img
+						src={ media.ThumbnailURL }
+						alt={ media.OriginalFilename }
+						class="w-full h-full object-cover"
+					/>
+					<div class="absolute inset-0 flex items-center justify-center">
+						<div class="bg-black/50 rounded-full p-2">
+							<svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+								<path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"></path>
+							</svg>
+						</div>
 					</div>
 				</div>
-			</div>
 		}
 		<!-- Checkbox overlay -->
 		<div class="absolute top-2 left-2 gallery-checkbox hidden pointer-events-none">
