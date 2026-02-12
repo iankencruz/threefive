@@ -1,0 +1,63 @@
+// templates/lib/Slugifier.templ
+package lib
+
+templ InitSlugifier() {
+	<script>
+		(function() {
+			const setup = () => {
+				const title = document.getElementById("title");
+				const slug = document.getElementById("slug");
+				const toggleBtn = document.getElementById("slug-lock-toggle");
+
+				if (title && slug && toggleBtn && !title.dataset.slugBound) {
+					const updateLockUI = () => {
+						if (slug.dataset.manual === "true") {
+							toggleBtn.innerHTML = `<svg class="w-4 h-4 text-amber-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" /></svg>`;
+							toggleBtn.title = "Manual Mode (Locked)";
+						} else {
+							toggleBtn.innerHTML = `<svg class="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 016 0v2h2V7a5 5 0 00-5-5z" /></svg>`;
+							toggleBtn.title = "Auto Mode (Following Title)";
+						}
+					};
+
+					updateLockUI();
+
+					slug.addEventListener("input", () => {
+						slug.dataset.manual = "true";
+						updateLockUI();
+					});
+
+					toggleBtn.addEventListener("click", (e) => {
+						e.preventDefault();
+						const isManual = slug.dataset.manual === "true";
+						slug.dataset.manual = isManual ? "false" : "true";
+						updateLockUI();
+						if (slug.dataset.manual === "false") {
+							title.dispatchEvent(new Event('input'));
+						}
+					});
+
+					title.addEventListener("input", () => {
+						if (slug.dataset.manual === "true") return;
+
+						slug.value = title.value
+							.toLowerCase()
+							.trim()
+							.replace(/\s+/g, '-')
+							.replace(/[^\w\-]+/g, '')
+							.replace(/\-\-+/g, '-');
+					});
+					
+					title.dataset.slugBound = "true";
+				}
+			};
+
+			setup();
+			setTimeout(setup, 50);
+
+			// For modals or dynamically loaded content
+			const observer = new MutationObserver(setup);
+			observer.observe(document.body, { childList: true, subtree: true });
+		})();
+	</script>
+}
