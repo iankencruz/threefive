@@ -3,6 +3,7 @@ package responses
 
 import (
 	"context"
+	"io"
 	"net/http"
 
 	"github.com/a-h/templ"
@@ -21,14 +22,14 @@ func RenderWithStatus(ctx context.Context, c *echo.Context, status int, componen
 	return component.Render(ctx, c.Response())
 }
 
-// RenderWithToast renders a component with a toast notification
+// RenderWithToast renders a component with a toast notification using OOB swap
 func RenderWithToast(ctx context.Context, c *echo.Context, component templ.Component, message string, variant toast.Variant) error {
-	// id main component
+	// Render main component first
 	if err := component.Render(ctx, c.Response()); err != nil {
 		return err
 	}
 
-	// Render toast (out-of-band swap)
+	// Create toast component
 	toastComponent := toast.Toast(toast.Props{
 		Variant:       variant,
 		Description:   message,
@@ -36,7 +37,28 @@ func RenderWithToast(ctx context.Context, c *echo.Context, component templ.Compo
 		ShowIndicator: true,
 	})
 
-	return toastComponent.Render(ctx, c.Response())
+	// Wrap toast in OOB div for HTMX to swap into #toast-container
+	oobToast := templ.ComponentFunc(func(ctx context.Context, w io.Writer) error {
+		// Write OOB wrapper opening tag
+		if _, err := w.Write([]byte(`<div hx-swap-oob="afterbegin:#toast-container">`)); err != nil {
+			return err
+		}
+
+		// Render toast component
+		if err := toastComponent.Render(ctx, w); err != nil {
+			return err
+		}
+
+		// Write OOB wrapper closing tag
+		if _, err := w.Write([]byte(`</div>`)); err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	// Render the OOB toast
+	return oobToast.Render(ctx, c.Response())
 }
 
 // RenderSuccess renders with success toast
@@ -59,7 +81,7 @@ func RenderInfo(ctx context.Context, c *echo.Context, component templ.Component,
 	return RenderWithToast(ctx, c, component, message, toast.VariantDefault)
 }
 
-// ToastOnly renders only a toast notification
+// ToastOnly renders only a toast notification with OOB swap
 func ToastOnly(ctx context.Context, c *echo.Context, message string, variant toast.Variant) error {
 	toastComponent := toast.Toast(toast.Props{
 		Variant:       variant,
@@ -68,7 +90,24 @@ func ToastOnly(ctx context.Context, c *echo.Context, message string, variant toa
 		ShowIndicator: true,
 	})
 
-	return toastComponent.Render(ctx, c.Response())
+	// Wrap in OOB div
+	oobToast := templ.ComponentFunc(func(ctx context.Context, w io.Writer) error {
+		if _, err := w.Write([]byte(`<div hx-swap-oob="afterbegin:#toast-container">`)); err != nil {
+			return err
+		}
+
+		if err := toastComponent.Render(ctx, w); err != nil {
+			return err
+		}
+
+		if _, err := w.Write([]byte(`</div>`)); err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return oobToast.Render(ctx, c.Response())
 }
 
 // SuccessToast renders only a success toast
@@ -86,16 +125,36 @@ func Redirect(c *echo.Context, url string) error {
 	return c.Redirect(http.StatusFound, url)
 }
 
-// RedirectWithToast redirects with a toast notification
+// RedirectWithToast redirects with a toast notification using HX-Redirect header
 func RedirectWithToast(ctx context.Context, c *echo.Context, url string, message string, variant toast.Variant) error {
+	// Set HTMX redirect header
 	c.Response().Header().Set("HX-Redirect", url)
 
+	// Render toast with OOB swap (will appear after redirect)
 	toastComponent := toast.Toast(toast.Props{
-		Variant:     variant,
-		Description: message,
+		Variant:       variant,
+		Description:   message,
+		Icon:          true,
+		ShowIndicator: true,
 	})
 
-	return toastComponent.Render(ctx, c.Response())
+	oobToast := templ.ComponentFunc(func(ctx context.Context, w io.Writer) error {
+		if _, err := w.Write([]byte(`<div hx-swap-oob="afterbegin:#toast-container">`)); err != nil {
+			return err
+		}
+
+		if err := toastComponent.Render(ctx, w); err != nil {
+			return err
+		}
+
+		if _, err := w.Write([]byte(`</div>`)); err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return oobToast.Render(ctx, c.Response())
 }
 
 // HTMXRedirect sends an HTMX redirect header

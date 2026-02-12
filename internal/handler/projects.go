@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/iankencruz/threefive/components/toast"
 	"github.com/iankencruz/threefive/database/generated"
 	"github.com/iankencruz/threefive/internal/middleware"
 	"github.com/iankencruz/threefive/internal/services"
@@ -249,10 +250,8 @@ func (h *ProjectHandler) ShowEditPage(c *echo.Context) error {
 }
 
 // UpdateProject handles project update
-// UpdateProject handles project update
 func (h *ProjectHandler) UpdateProject(c *echo.Context) error {
 	slug := c.Param("slug")
-
 	h.logger.Debug("Update project request", "slug", slug)
 
 	// Get existing project (for error fallback)
@@ -268,7 +267,7 @@ func (h *ProjectHandler) UpdateProject(c *echo.Context) error {
 		return responses.ErrorToast(c.Request().Context(), c, "Failed to parse form data")
 	}
 
-	// Build update request — plain strings, no pointers
+	// Build update request
 	req := &services.UpdateProjectRequest{
 		Title:           c.FormValue("title"),
 		Slug:            c.FormValue("slug"),
@@ -284,25 +283,33 @@ func (h *ProjectHandler) UpdateProject(c *echo.Context) error {
 		Tags:            c.FormValue("tags"),
 	}
 
+	// Get fresh data for re-render
+	tags, _ := h.tagService.ListAllTags(c.Request().Context())
+	ctx := lib.WithUser(c.Request().Context(), middleware.GetUser(c))
+
 	// Update project
 	updated, err := h.projectService.UpdateProjectBySlug(c.Request().Context(), slug, req)
 	if err != nil {
 		h.logger.Error("failed to update project", "error", err)
-
-		tags, _ := h.tagService.ListAllTags(c.Request().Context())
 		ctx := lib.WithUser(c.Request().Context(), middleware.GetUser(c))
-		component := pages.ProjectEditPage(existing, tags, c.Request().URL.Path)
+		component := pages.ProjectEditForm(existing, tags) // Return form only
 		return responses.RenderError(ctx, c, component, err.Error())
 	}
 
-	// Always redirect after successful save (full page refresh)
-	return responses.RedirectWithToast(
-		c.Request().Context(),
-		c,
-		"/admin/projects/"+updated.Project.Slug,
-		"Project updated successfully",
-		"success",
-	)
+	// If slug changed, redirect to new URL
+	if updated.Project.Slug != slug {
+		return responses.RedirectWithToast(
+			c.Request().Context(),
+			c,
+			"/admin/projects/"+updated.Project.Slug,
+			"Project updated successfully",
+			toast.VariantSuccess,
+		)
+	}
+
+	// Render just the form (not the full page)
+	component := pages.ProjectEditForm(updated, tags)
+	return responses.RenderSuccess(ctx, c, component, "Project updated successfully")
 }
 
 // // DeleteProject soft-deletes a project
