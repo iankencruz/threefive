@@ -10,13 +10,14 @@ import (
 	"github.com/iankencruz/threefive/components/label"
 	"github.com/iankencruz/threefive/database/generated"
 	"github.com/iankencruz/threefive/internal/services"
+	"github.com/iankencruz/threefive/pkg/validation"
 	"github.com/iankencruz/threefive/templates/layouts"
 	"github.com/iankencruz/threefive/templates/lib"
 	"github.com/jackc/pgx/v5/pgtype"
 	"strings"
 )
 
-templ ProjectEditPage(project *services.ProjectResponse, tags []generated.Tag, currentPath string) {
+templ ProjectEditPage(project *services.ProjectResponse, tags []generated.Tag, currentPath string, errors validation.FieldErrors) {
 	@layouts.AdminLayout(layouts.LayoutProps{
 		Title: "Edit Project",
 		Path:  currentPath,
@@ -25,7 +26,7 @@ templ ProjectEditPage(project *services.ProjectResponse, tags []generated.Tag, c
 			<!-- Page Header -->
 			<!-- Edit Form -->
 			<div id="project-edit-container">
-				@ProjectEditForm(project, tags)
+				@ProjectEditForm(project, tags, errors)
 			</div>
 		</div>
 		<!-- Media Selector Dialog for Featured Image -->
@@ -38,7 +39,7 @@ templ ProjectEditPage(project *services.ProjectResponse, tags []generated.Tag, c
 }
 
 // Just the form (for HTMX updates)
-templ ProjectEditForm(project *services.ProjectResponse, tags []generated.Tag) {
+templ ProjectEditForm(project *services.ProjectResponse, tags []generated.Tag, errors validation.FieldErrors) {
 	<div class="">
 		<!-- ADD THIS LINE -->
 		<!-- Page Header -->
@@ -82,6 +83,7 @@ templ ProjectEditForm(project *services.ProjectResponse, tags []generated.Tag) {
 							Value:       project.Project.Title,
 							Placeholder: "My Awesome Project",
 						})
+						@lib.FieldError("title", errors)
 					</div>
 					<!-- Slug with Lock Toggle (same as modal) -->
 					<div class="space-y-2">
@@ -106,6 +108,7 @@ templ ProjectEditForm(project *services.ProjectResponse, tags []generated.Tag) {
 								title="Toggle Auto/Manual Slug"
 							></button>
 						</div>
+						@lib.FieldError("slug", errors)
 						<p class="text-xs text-gray-500">Auto-generates unless you type manually or lock the field.</p>
 					</div>
 					<!-- Description -->
@@ -126,6 +129,7 @@ templ ProjectEditForm(project *services.ProjectResponse, tags []generated.Tag) {
 								{ project.Project.Description.String }
 							}
 						</textarea>
+						@lib.FieldError("description", errors)
 					</div>
 				</div>
 				<!-- Client & Date Information -->
@@ -145,6 +149,7 @@ templ ProjectEditForm(project *services.ProjectResponse, tags []generated.Tag) {
 								Value:       getStringValue(project.Project.ClientName),
 								Placeholder: "Acme Corporation",
 							})
+							@lib.FieldError("client_name", errors)
 						</div>
 						<!-- Project Year -->
 						<div class="space-y-2">
@@ -160,6 +165,7 @@ templ ProjectEditForm(project *services.ProjectResponse, tags []generated.Tag) {
 								Value:       getInt32Value(project.Project.ProjectYear),
 								Placeholder: "2024",
 							})
+							@lib.FieldError("project_year", errors)
 						</div>
 					</div>
 					<!-- Project Date -->
@@ -175,6 +181,7 @@ templ ProjectEditForm(project *services.ProjectResponse, tags []generated.Tag) {
 							Type:  input.TypeDate,
 							Value: getDateValue(project.Project.ProjectDate),
 						})
+						@lib.FieldError("project_date", errors)
 					</div>
 					<!-- Project URL -->
 					<div class="space-y-2">
@@ -190,6 +197,7 @@ templ ProjectEditForm(project *services.ProjectResponse, tags []generated.Tag) {
 							Value:       getStringValue(project.Project.ProjectUrl),
 							Placeholder: "https://example.com",
 						})
+						@lib.FieldError("project_url", errors)
 					</div>
 				</div>
 				<!-- Status Section -->
@@ -212,6 +220,7 @@ templ ProjectEditForm(project *services.ProjectResponse, tags []generated.Tag) {
 								<option value="published" selected?={ project.Project.Status.String == "published" }>Published</option>
 								<option value="archived" selected?={ project.Project.Status.String == "archived" }>Archived</option>
 							</select>
+							@lib.FieldError("status", errors)
 						</div>
 						<!-- Project Status -->
 						<div class="space-y-2">
@@ -229,6 +238,7 @@ templ ProjectEditForm(project *services.ProjectResponse, tags []generated.Tag) {
 								<option value="in-progress" selected?={ project.Project.ProjectStatus.String == "in-progress" }>In Progress</option>
 								<option value="planned" selected?={ project.Project.ProjectStatus.String == "planned" }>Planned</option>
 							</select>
+							@lib.FieldError("project_status", errors)
 						</div>
 					</div>
 				</div>

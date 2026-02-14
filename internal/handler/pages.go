@@ -2,18 +2,16 @@
 package handler
 
 import (
-	"encoding/json"
+	"fmt"
 	"log/slog"
 
 	"github.com/a-h/templ"
-	"github.com/google/uuid"
-	"github.com/iankencruz/threefive/components/toast"
 	"github.com/iankencruz/threefive/database/generated"
 	"github.com/iankencruz/threefive/internal/services"
 	"github.com/iankencruz/threefive/pkg/responses"
+	"github.com/iankencruz/threefive/pkg/validation"
 	"github.com/iankencruz/threefive/templates/lib"
 	"github.com/iankencruz/threefive/templates/pages"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/labstack/echo/v5"
 )
 
@@ -97,111 +95,99 @@ func (h *PageHandler) UpdatePage(c *echo.Context) error {
 		return responses.ErrorToast(c.Request().Context(), c, "Failed to parse form data")
 	}
 
-	// Build update params based on form values
-	params := generated.UpdatePageParams{
-		ID: existing.Page.ID,
+	// Build update request
+	req := &services.UpdatePageRequest{
+		Title:       c.FormValue("title"),
+		Header:      c.FormValue("header"),
+		SubHeader:   c.FormValue("sub_header"),
+		HeroMediaID: c.FormValue("hero_media_id"),
 	}
 
-	// Common fields for all page types
-	if title := c.FormValue("title"); title != "" {
-		params.Title = pgtype.Text{String: title, Valid: true}
-	}
-	if header := c.FormValue("header"); header != "" {
-		params.Header = pgtype.Text{String: header, Valid: true}
-	}
-	if subHeader := c.FormValue("sub_header"); subHeader != "" {
-		params.SubHeader = pgtype.Text{String: subHeader, Valid: true}
-	}
-	if heroMediaID := c.FormValue("hero_media_id"); heroMediaID != "" {
-		if mediaUUID, err := uuid.Parse(heroMediaID); err == nil {
-			params.HeroMediaID = pgtype.UUID{Bytes: mediaUUID, Valid: true}
-		}
-	}
-
-	// About page specific fields
+	// Add page-specific fields
 	if existing.Page.PageType == "about" {
-		if content := c.FormValue("content"); content != "" {
-			params.Content = pgtype.Text{String: content, Valid: true}
-		}
-		if contentImageID := c.FormValue("content_image_id"); contentImageID != "" {
-			if imgUUID, err := uuid.Parse(contentImageID); err == nil {
-				params.ContentImageID = pgtype.UUID{Bytes: imgUUID, Valid: true}
-			}
-		}
-		if ctaText := c.FormValue("cta_text"); ctaText != "" {
-			params.CtaText = pgtype.Text{String: ctaText, Valid: true}
-		}
-		if ctaLink := c.FormValue("cta_link"); ctaLink != "" {
-			params.CtaLink = pgtype.Text{String: ctaLink, Valid: true}
-		}
+		req.Content = c.FormValue("content")
+		req.ContentImageID = c.FormValue("content_image_id")
+		req.CtaText = c.FormValue("cta_text")
+		req.CtaLink = c.FormValue("cta_link")
 
-		// Handle featured projects (up to 3)
+		// Get featured project IDs
 		c.Request().ParseForm()
-		featuredProjectIDs := c.Request().Form["featured_project_ids[]"]
-		if len(featuredProjectIDs) > 0 {
-			if err := h.pageService.UpdateFeaturedProjects(c.Request().Context(), existing.Page.ID, featuredProjectIDs); err != nil {
-				h.logger.Error("failed to update featured projects", "error", err)
-				return responses.ErrorToast(c.Request().Context(), c, "Failed to update featured projects")
-			}
-		}
+		req.FeaturedProjectIDs = c.Request().Form["featured_project_ids[]"]
 	}
 
-	// Contact page specific fields
 	if existing.Page.PageType == "contact" {
-		if email := c.FormValue("email"); email != "" {
-			params.Email = pgtype.Text{String: email, Valid: true}
-		}
-
-		// Handle social links JSON
-		// Expected form fields: social_twitter, social_linkedin, social_github, social_instagram
-		socialLinks := services.SocialLinks{}
-		hasAny := false
-
-		if twitter := c.FormValue("social_twitter"); twitter != "" {
-			socialLinks.Twitter = twitter
-			hasAny = true
-		}
-		if linkedin := c.FormValue("social_linkedin"); linkedin != "" {
-			socialLinks.LinkedIn = linkedin
-			hasAny = true
-		}
-		if github := c.FormValue("social_github"); github != "" {
-			socialLinks.GitHub = github
-			hasAny = true
-		}
-		if instagram := c.FormValue("social_instagram"); instagram != "" {
-			socialLinks.Instagram = instagram
-			hasAny = true
-		}
-
-		if hasAny {
-			socialLinksJSON, _ := json.Marshal(socialLinks)
-			params.SocialLinks = socialLinksJSON
-		}
+		req.Email = c.FormValue("email")
+		req.SocialTwitter = c.FormValue("social_twitter")
+		req.SocialLinkedIn = c.FormValue("social_linkedin")
+		req.SocialGitHub = c.FormValue("social_github")
+		req.SocialInstagram = c.FormValue("social_instagram")
 	}
 
-	h.logger.Info("Updating page", "slug", slug, "page_type", existing.Page.PageType)
+	// ✅ VALIDATE
+	fieldErrors, err := req.Validate(existing.Page.PageType)
+	if err != nil {
+		h.logger.Warn("validation failed", "errors", fieldErrors)
+
+		ctx := lib.WithUser(c.Request().Context(), getUser(c))
+
+		// Create error message with count
+		errorCount := len(fieldErrors)
+		toastMessage := fmt.Sprintf("Please fix %d validation error(s)", errorCount)
+
+		// Render appropriate form based on page type with errors
+		var component templ.Component
+		switch existing.Page.PageType {
+		case "home":
+			component = pages.AdminHomeForm(existing, fieldErrors)
+		case "about":
+			component = pages.AdminAboutForm(existing, fieldErrors)
+		case "contact":
+			component = pages.AdminContactForm(existing, fieldErrors)
+		}
+
+		return responses.RenderError(ctx, c, component, toastMessage)
+	}
 
 	// Update page
-	updated, err := h.pageService.UpdatePageBySlug(c.Request().Context(), slug, params)
+	updated, err := h.pageService.UpdatePageBySlug(c.Request().Context(), slug, req)
 	if err != nil {
 		h.logger.Error("failed to update page", "error", err, "slug", slug)
-		return responses.ErrorToast(c.Request().Context(), c, "Failed to update page")
+
+		ctx := lib.WithUser(c.Request().Context(), getUser(c))
+
+		// Database error
+		dbErrors := validation.FieldErrors{"general": err.Error()}
+
+		var component templ.Component
+		switch existing.Page.PageType {
+		case "home":
+			component = pages.AdminHomeForm(updated, dbErrors)
+		case "about":
+			component = pages.AdminAboutForm(updated, dbErrors)
+		case "contact":
+			component = pages.AdminContactForm(updated, dbErrors)
+		}
+
+		return responses.RenderError(ctx, c, component, err.Error())
 	}
 
 	h.logger.Info("Page updated successfully", "slug", slug)
 
-	// Always redirect to reload the entire page with fresh data
-	return responses.RedirectWithToast(
-		c.Request().Context(),
-		c,
-		"/admin/pages/"+updated.Slug,
-		"Page updated successfully",
-		toast.VariantSuccess,
-	)
-}
+	// Success - render form with success toast
+	ctx := lib.WithUser(c.Request().Context(), getUser(c))
 
-// Public page handlers (no auth required)
+	var component templ.Component
+	switch updated.Page.PageType {
+	case "home":
+		component = pages.AdminHomeForm(updated, nil)
+	case "about":
+		component = pages.AdminAboutForm(updated, nil)
+	case "contact":
+		component = pages.AdminContactForm(updated, nil)
+	}
+
+	return responses.RenderSuccess(ctx, c, component, "Page updated successfully")
+} // Public page handlers (no auth required)
 
 // ShowHomePage displays the home page to visitors
 // func (h *PageHandler) ShowHomePage(c *echo.Context) error {

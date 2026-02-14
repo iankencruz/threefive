@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/iankencruz/threefive/database/generated"
+	"github.com/iankencruz/threefive/pkg/validation"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -57,20 +58,63 @@ type CreateProjectRequest struct {
 	TagNames        []string    // Tag names (will be created if they don't exist)
 }
 
-// UpdateProjectRequest represents the data needed to update a project
-type UpdateProjectRequest struct {
-	Title           string
-	Slug            string
-	Description     string
-	ClientName      string
-	ProjectYear     string
-	ProjectDate     string
-	ProjectURL      string
-	Status          string
-	ProjectStatus   string
-	Tags            string // comma-separated tag names
-	FeaturedImageID string // UUID string or empty to clear
-	GalleryMediaIDs string // comma-separated UUID strings
+// Add Validate method to CreateProjectRequest
+func (r *CreateProjectRequest) Validate() (validation.FieldErrors, error) {
+	fields := []validation.Field{
+		{
+			Name:  "title",
+			Value: r.Title,
+			Rules: []validation.ValidationRule{
+				validation.Required("Title is required"),
+				validation.MinLength(3, "Title must be at least 3 characters"),
+				validation.MaxLength(200, "Title must be at most 200 characters"),
+			},
+		},
+		{
+			Name:  "slug",
+			Value: r.Slug,
+			Rules: []validation.ValidationRule{
+				validation.Required("Slug is required"),
+				validation.IsSlug(""),
+				validation.MaxLength(200, "Slug must be at most 200 characters"),
+			},
+		},
+		{
+			Name:  "description",
+			Value: r.Description,
+			Rules: []validation.ValidationRule{
+				validation.MaxLength(1000, "Description must be at most 1000 characters"),
+			},
+		},
+		{
+			Name:  "project_url",
+			Value: r.ProjectURL,
+			Rules: []validation.ValidationRule{
+				validation.IsURL(""),
+			},
+		},
+		{
+			Name:  "status",
+			Value: r.Status,
+			Rules: []validation.ValidationRule{
+				validation.OneOf([]string{"draft", "published", "archived"}, ""),
+			},
+		},
+		{
+			Name:  "project_status",
+			Value: r.ProjectStatus,
+			Rules: []validation.ValidationRule{
+				validation.OneOf([]string{"completed", "in-progress", "planned"}, ""),
+			},
+		},
+	}
+
+	errors := validation.ValidateFields(fields)
+	if errors.HasErrors() {
+		return errors, fmt.Errorf("validation failed")
+	}
+
+	return nil, nil
 }
 
 // CreateProject creates a new project with gallery and tags
@@ -78,10 +122,6 @@ func (s *ProjectService) CreateProject(ctx context.Context, req *CreateProjectRe
 	// Validate slug
 	if req.Slug == "" {
 		req.Slug = GenerateSlug(req.Title)
-	}
-
-	if !IsValidSlug(req.Slug) {
-		return nil, fmt.Errorf("invalid slug format: must be lowercase, alphanumeric with hyphens only")
 	}
 
 	// Check slug uniqueness
@@ -159,53 +199,122 @@ func (s *ProjectService) CreateProject(ctx context.Context, req *CreateProjectRe
 	return s.GetProjectByID(ctx, projectID)
 }
 
-// GetProjectByID retrieves a project by ID with all related data
-func (s *ProjectService) GetProjectByID(ctx context.Context, projectID uuid.UUID) (*ProjectResponse, error) {
-	project, err := s.queries.GetProjectByID(ctx, pgtype.UUID{
-		Bytes: projectID,
-		Valid: true,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("project not found: %w", err)
-	}
-
-	return s.buildProjectResponse(ctx, &project)
+// UpdateProjectRequest represents the data needed to update a project
+type UpdateProjectRequest struct {
+	Title           string
+	Slug            string
+	Description     string
+	ClientName      string
+	ProjectYear     string
+	ProjectDate     string
+	ProjectURL      string
+	Status          string
+	ProjectStatus   string
+	Tags            string
+	FeaturedImageID string
+	GalleryMediaIDs string
 }
 
-// GetProjectBySlug retrieves a project by slug with all related data
-func (s *ProjectService) GetProjectBySlug(ctx context.Context, slug string) (*ProjectResponse, error) {
-	project, err := s.queries.GetProjectBySlug(ctx, slug)
-	if err != nil {
-		return nil, fmt.Errorf("project not found: %w", err)
+// Add Validate method to UpdateProjectRequest
+func (r *UpdateProjectRequest) Validate() (validation.FieldErrors, error) {
+	fields := []validation.Field{
+		{
+			Name:  "title",
+			Value: r.Title,
+			Rules: []validation.ValidationRule{
+				validation.Required("Title is required"),
+				validation.MinLength(3, "Title must be at least 3 characters"),
+				validation.MaxLength(200, "Title must be at most 200 characters"),
+			},
+		},
+		{
+			Name:  "slug",
+			Value: r.Slug,
+			Rules: []validation.ValidationRule{
+				validation.Required("Slug is required"),
+				validation.IsSlug(""),
+				validation.MaxLength(200, "Slug must be at most 200 characters"),
+			},
+		},
+		{
+			Name:  "description",
+			Value: r.Description,
+			Rules: []validation.ValidationRule{
+				validation.MaxLength(1000, "Description must be at most 1000 characters"),
+			},
+		},
+		{
+			Name:  "client_name",
+			Value: r.ClientName,
+			Rules: []validation.ValidationRule{
+				validation.MaxLength(200, "Client name must be at most 200 characters"),
+			},
+		},
+		{
+			Name:  "project_url",
+			Value: r.ProjectURL,
+			Rules: []validation.ValidationRule{
+				validation.IsURL(""),
+			},
+		},
+		{
+			Name:  "project_year",
+			Value: r.ProjectYear,
+			Rules: []validation.ValidationRule{
+				validation.IsYear(""),
+			},
+		},
+		{
+			Name:  "project_date",
+			Value: r.ProjectDate,
+			Rules: []validation.ValidationRule{
+				validation.IsDate(""),
+			},
+		},
+		{
+			Name:  "status",
+			Value: r.Status,
+			Rules: []validation.ValidationRule{
+				validation.OneOf([]string{"draft", "published", "archived"}, ""),
+			},
+		},
+		{
+			Name:  "project_status",
+			Value: r.ProjectStatus,
+			Rules: []validation.ValidationRule{
+				validation.OneOf([]string{"completed", "in-progress", "planned"}, ""),
+			},
+		},
 	}
 
-	return s.buildProjectResponse(ctx, &project)
-}
-
-// ListProjects retrieves a paginated list of projects
-func (s *ProjectService) ListProjects(ctx context.Context, limit, offset int32) ([]ProjectResponse, error) {
-	projects, err := s.queries.ListProjects(ctx, generated.ListProjectsParams{
-		LimitVal:  limit,
-		OffsetVal: offset,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to list projects: %w", err)
+	// Validate featured image ID format if provided
+	if r.FeaturedImageID != "" {
+		if _, err := uuid.Parse(r.FeaturedImageID); err != nil {
+			errors := validation.FieldErrors{"featured_image_id": "Invalid image ID format"}
+			return errors, fmt.Errorf("validation failed")
+		}
 	}
 
-	return s.buildProjectResponses(ctx, projects)
-}
-
-// ListPublishedProjects retrieves published projects only
-func (s *ProjectService) ListPublishedProjects(ctx context.Context, limit, offset int32) ([]ProjectResponse, error) {
-	projects, err := s.queries.ListPublishedProjects(ctx, generated.ListPublishedProjectsParams{
-		LimitVal:  limit,
-		OffsetVal: offset,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to list published projects: %w", err)
+	// Validate gallery media IDs format if provided
+	if r.GalleryMediaIDs != "" {
+		ids := strings.Split(r.GalleryMediaIDs, ",")
+		for _, idStr := range ids {
+			idStr = strings.TrimSpace(idStr)
+			if idStr != "" {
+				if _, err := uuid.Parse(idStr); err != nil {
+					errors := validation.FieldErrors{"gallery_media_ids": "Invalid gallery media ID format"}
+					return errors, fmt.Errorf("validation failed")
+				}
+			}
+		}
 	}
 
-	return s.buildProjectResponses(ctx, projects)
+	errors := validation.ValidateFields(fields)
+	if errors.HasErrors() {
+		return errors, fmt.Errorf("validation failed")
+	}
+
+	return nil, nil
 }
 
 // UpdateProjectBySlug updates a project by slug
@@ -214,6 +323,19 @@ func (s *ProjectService) UpdateProjectBySlug(ctx context.Context, slug string, r
 	existing, err := s.queries.GetProjectBySlug(ctx, slug)
 	if err != nil {
 		return nil, fmt.Errorf("project not found: %w", err)
+	}
+
+	if req.Slug != "" && req.Slug != slug {
+		exists, err := s.queries.CheckProjectSlugExists(ctx, generated.CheckProjectSlugExistsParams{
+			Slug:      req.Slug,
+			ProjectID: existing.ID, // Exclude current project
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to check slug uniqueness: %w", err)
+		}
+		if exists {
+			return nil, fmt.Errorf("slug already exists: %s", req.Slug)
+		}
 	}
 
 	// Build update params
@@ -279,6 +401,55 @@ func (s *ProjectService) UpdateProjectBySlug(ctx context.Context, slug string, r
 	}
 
 	return s.GetProjectBySlug(ctx, updated.Slug)
+}
+
+// ListProjects retrieves a paginated list of projects
+func (s *ProjectService) ListProjects(ctx context.Context, limit, offset int32) ([]ProjectResponse, error) {
+	projects, err := s.queries.ListProjects(ctx, generated.ListProjectsParams{
+		LimitVal:  limit,
+		OffsetVal: offset,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list projects: %w", err)
+	}
+
+	return s.buildProjectResponses(ctx, projects)
+}
+
+// GetProjectByID retrieves a project by ID with all related data
+func (s *ProjectService) GetProjectByID(ctx context.Context, projectID uuid.UUID) (*ProjectResponse, error) {
+	project, err := s.queries.GetProjectByID(ctx, pgtype.UUID{
+		Bytes: projectID,
+		Valid: true,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("project not found: %w", err)
+	}
+
+	return s.buildProjectResponse(ctx, &project)
+}
+
+// GetProjectBySlug retrieves a project by slug with all related data
+func (s *ProjectService) GetProjectBySlug(ctx context.Context, slug string) (*ProjectResponse, error) {
+	project, err := s.queries.GetProjectBySlug(ctx, slug)
+	if err != nil {
+		return nil, fmt.Errorf("project not found: %w", err)
+	}
+
+	return s.buildProjectResponse(ctx, &project)
+}
+
+// ListPublishedProjects retrieves published projects only
+func (s *ProjectService) ListPublishedProjects(ctx context.Context, limit, offset int32) ([]ProjectResponse, error) {
+	projects, err := s.queries.ListPublishedProjects(ctx, generated.ListPublishedProjectsParams{
+		LimitVal:  limit,
+		OffsetVal: offset,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list published projects: %w", err)
+	}
+
+	return s.buildProjectResponses(ctx, projects)
 }
 
 // DeleteProjectBySlug soft-deletes a project

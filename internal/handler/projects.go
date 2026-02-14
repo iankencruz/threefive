@@ -2,17 +2,18 @@
 package handler
 
 import (
+	"fmt"
 	"log/slog"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/iankencruz/threefive/components/toast"
 	"github.com/iankencruz/threefive/database/generated"
 	"github.com/iankencruz/threefive/internal/middleware"
 	"github.com/iankencruz/threefive/internal/services"
 	"github.com/iankencruz/threefive/pkg/responses"
+	"github.com/iankencruz/threefive/pkg/validation"
 	"github.com/iankencruz/threefive/templates/lib"
 	"github.com/iankencruz/threefive/templates/pages"
 	"github.com/labstack/echo/v5"
@@ -200,6 +201,15 @@ func (h *ProjectHandler) CreateProject(c *echo.Context) error {
 		TagNames:        tagNames,
 	}
 
+	// Validate request
+	fieldErrors, err := req.Validate()
+	if err != nil {
+		h.logger.Warn("validation failed", "errors", fieldErrors)
+		tags, _ := h.tagService.ListAllTags(c.Request().Context())
+		component := lib.ProjectCreateModal(tags, fieldErrors)
+		return responses.RenderError(c.Request().Context(), c, component, "Please fix the validation errors")
+	}
+
 	project, err := h.projectService.CreateProject(c.Request().Context(), req)
 	if err != nil {
 		h.logger.Error("failed to create project", "error", err)
@@ -245,7 +255,7 @@ func (h *ProjectHandler) ShowEditPage(c *echo.Context) error {
 	ctx := lib.WithUser(c.Request().Context(), middleware.GetUser(c))
 	currentPath := c.Request().URL.Path
 
-	component := pages.ProjectEditPage(project, tags, currentPath)
+	component := pages.ProjectEditPage(project, tags, currentPath, nil)
 	return responses.Render(ctx, c, component)
 }
 
@@ -283,32 +293,58 @@ func (h *ProjectHandler) UpdateProject(c *echo.Context) error {
 		Tags:            c.FormValue("tags"),
 	}
 
-	// Get fresh data for re-render
-	tags, _ := h.tagService.ListAllTags(c.Request().Context())
-	ctx := lib.WithUser(c.Request().Context(), middleware.GetUser(c))
+	fieldErrors, err := req.Validate()
+	if err != nil {
+		tags, _ := h.tagService.ListAllTags(c.Request().Context())
+		ctx := lib.WithUser(c.Request().Context(), middleware.GetUser(c))
 
-	// Update project
+		// Create a user-friendly error summary
+		errorCount := len(fieldErrors)
+		toastMessage := fmt.Sprintf("Please fix %d validation error(s)", errorCount)
+
+		component := pages.ProjectEditForm(existing, tags, fieldErrors)
+		return responses.RenderError(ctx, c, component, toastMessage)
+	}
+
+	/// Update project
 	updated, err := h.projectService.UpdateProjectBySlug(c.Request().Context(), slug, req)
 	if err != nil {
 		h.logger.Error("failed to update project", "error", err)
+
+		// Get fresh tags for re-render
+		tags, _ := h.tagService.ListAllTags(c.Request().Context())
 		ctx := lib.WithUser(c.Request().Context(), middleware.GetUser(c))
-		component := pages.ProjectEditForm(existing, tags) // Return form only
+
+		// Check if it's a slug uniqueness error
+		if strings.Contains(err.Error(), "slug already exists") {
+			fieldErrors := validation.FieldErrors{"slug": err.Error()}
+			component := pages.ProjectEditForm(existing, tags, fieldErrors)
+			return responses.RenderError(ctx, c, component, err.Error())
+		}
+
+		// Generic database error
+		dbErrors := validation.FieldErrors{"general": err.Error()}
+		component := pages.ProjectEditForm(existing, tags, dbErrors)
 		return responses.RenderError(ctx, c, component, err.Error())
 	}
 
-	// If slug changed, redirect to new URL
+	// SUCCESS - Check if slug changed
 	if updated.Project.Slug != slug {
+		// Slug changed - MUST redirect to new URL
 		return responses.RedirectWithToast(
 			c.Request().Context(),
 			c,
 			"/admin/projects/"+updated.Project.Slug,
-			"Project updated successfully",
-			toast.VariantSuccess,
+			"Project updated successfully (URL changed)",
+			"success",
 		)
 	}
 
-	// Render just the form (not the full page)
-	component := pages.ProjectEditForm(updated, tags)
+	// Slug didn't change - Stay on page with success toast
+	tags, _ := h.tagService.ListAllTags(c.Request().Context())
+	ctx := lib.WithUser(c.Request().Context(), middleware.GetUser(c))
+
+	component := pages.ProjectEditForm(updated, tags, nil)
 	return responses.RenderSuccess(ctx, c, component, "Project updated successfully")
 }
 
