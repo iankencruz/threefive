@@ -17,6 +17,7 @@ func (s *Server) RegisterRoutes() {
 	mediaHandler := handler.NewMediaHandler(s.MediaService, s.Log)
 	pageHandler := handler.NewPageHandler(s.Log, s.PageService)
 	projectHandler := handler.NewProjectHandler(s.Log, s.ProjectService, s.TagService, s.MediaService)
+	tagHandler := handler.NewTagHandler(s.Log, s.TagService)
 
 	// Static assets
 
@@ -74,6 +75,18 @@ func (s *Server) RegisterRoutes() {
 	projects.PUT("/:slug", projectHandler.UpdateProject)
 	projects.PUT("/:slug/publish", projectHandler.PublishProject)
 	projects.PUT("/:slug/unpublish", projectHandler.UnpublishProject)
+
+	// Tag Management
+	tags := admin.Group("/tags")
+
+	tags.GET("", tagHandler.ShowTagsList)
+	tags.POST("", tagHandler.CreateTag)
+	tags.GET("/create-modal", tagHandler.ShowCreateModal)
+	tags.GET("/unused", tagHandler.ShowUnusedTags)
+	tags.DELETE("/bulk/unused", tagHandler.DeleteUnusedTags)
+	tags.GET("/:slug", tagHandler.ShowEditPage)
+	tags.PUT("/:slug", tagHandler.UpdateTag)
+	tags.DELETE("/:slug", tagHandler.DeleteTag)
 
 	s.Log.Info("routes registered successfully")
 }
