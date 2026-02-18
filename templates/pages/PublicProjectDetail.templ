@@ -10,19 +10,36 @@ import (
 
 templ PublicProjectDetail(project *services.ProjectResponse) {
 	@layouts.BaseLayout(project.Project.Title) {
-		<div class="min-h-screen bg-[#f0ede8] text-[#1a1a1a]">
+		<div class="min-h-screen bg-background text-foreground">
 			<!-- Nav -->
-			<nav class="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 py-5 bg-[#f0ede8]/90 backdrop-blur-sm border-b border-black/5">
-				<a href="/" class="text-sm font-semibold tracking-[0.15em] uppercase hover:opacity-60 transition-opacity">
+			<nav
+				class="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 py-5 bg-background/90 backdrop-blur-sm border-b border-border"
+			>
+				<a href="/" class="text-sm font-semibold tracking-[0.15em] uppercase hover:text-primary transition-colors">
 					ThreeFive
 				</a>
 				<div class="hidden md:flex items-center gap-8">
-					<a href="/projects" class="text-xs tracking-[0.12em] uppercase text-[#1a1a1a] border-b border-current pb-0.5">Work</a>
-					<a href="/about" class="text-xs tracking-[0.12em] uppercase text-[#666] hover:text-[#1a1a1a] transition-colors">About</a>
-					<a href="/blog" class="text-xs tracking-[0.12em] uppercase text-[#666] hover:text-[#1a1a1a] transition-colors">Blog</a>
-					<a href="/contact" class="text-xs tracking-[0.12em] uppercase text-[#666] hover:text-[#1a1a1a] transition-colors">Contact</a>
+					<a
+						href="/projects"
+						class="text-xs tracking-[0.12em] uppercase text-primary border-b border-primary pb-0.5"
+					>Work</a>
+					<a
+						href="/about"
+						class="text-xs tracking-[0.12em] uppercase text-foreground/60 hover:text-accent transition-colors"
+					>About</a>
+					<a
+						href="/blog"
+						class="text-xs tracking-[0.12em] uppercase text-foreground/60 hover:text-accent transition-colors"
+					>Blog</a>
+					<a
+						href="/contact"
+						class="text-xs tracking-[0.12em] uppercase text-foreground/60 hover:text-accent transition-colors"
+					>Contact</a>
 				</div>
-				<a href="/projects" class="flex items-center gap-2 text-xs tracking-[0.12em] uppercase text-[#666] hover:text-[#1a1a1a] transition-colors">
+				<a
+					href="/projects"
+					class="flex items-center gap-2 text-xs tracking-[0.12em] uppercase text-foreground/60 hover:text-accent transition-colors"
+				>
 					<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
 					</svg>
@@ -34,7 +51,7 @@ templ PublicProjectDetail(project *services.ProjectResponse) {
 				<!-- ── LEFT: Carousel ── -->
 				<div
 					id="project-carousel"
-					class="relative lg:w-[60%] lg:sticky lg:top-[72px] lg:h-[calc(100vh-72px)] overflow-hidden bg-[#e2ddd7]"
+					class="relative lg:w-[60%] lg:sticky lg:top-[72px] lg:h-[calc(100vh-72px)] bg-card overflow-hidden"
 				>
 					<!-- Track -->
 					<div
@@ -43,31 +60,20 @@ templ PublicProjectDetail(project *services.ProjectResponse) {
 						style="transform: translateX(0); transition: transform 0.7s cubic-bezier(0.76, 0, 0.24, 1)"
 					>
 						if project.FeaturedImage != nil {
-							<div class="carousel-slide min-w-full h-full shrink-0">
+							<div class="w-full h-full shrink-0 flex items-center justify-center overflow-hidden" style="min-width: 100%;">
 								<img
 									src={ project.FeaturedImage.URL }
 									alt={ project.FeaturedImage.AltText }
-									class="w-full h-full object-cover"
+									class="max-w-full max-h-full object-cover"
 								/>
 							</div>
 						}
 						for _, media := range project.GalleryMedia {
-							<div class="carousel-slide min-w-full h-full shrink-0">
+							<div class="w-full h-full shrink-0 flex items-center justify-center overflow-hidden" style="min-width: 100%;">
 								if strings.HasPrefix(media.MimeType, "video/") {
-									<video
-										src={ media.URL }
-										class="w-full h-full object-cover"
-										autoplay
-										loop
-										muted
-										playsinline
-									></video>
+									<video src={ media.URL } class="max-w-full max-h-full object-contain" autoplay loop muted playsinline></video>
 								} else {
-									<img
-										src={ media.URL }
-										alt={ media.AltText }
-										class="w-full h-full object-cover"
-									/>
+									<img src={ media.URL } alt={ media.AltText } class="max-w-full max-h-full object-cover"/>
 								}
 							</div>
 						}
@@ -78,9 +84,14 @@ templ PublicProjectDetail(project *services.ProjectResponse) {
 							id="carousel-prev"
 							onclick="carouselPrev()"
 							aria-label="Previous"
-							class="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm shadow flex items-center justify-center opacity-0 transition-opacity duration-200 hover:bg-white"
+							class="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-card/80 backdrop-blur-sm shadow-lg flex items-center justify-center opacity-0 transition-all duration-200 hover:bg-primary z-10 group"
 						>
-							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<svg
+								class="w-4 h-4 text-foreground group-hover:text-white"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 19l-7-7 7-7"></path>
 							</svg>
 						</button>
@@ -89,42 +100,51 @@ templ PublicProjectDetail(project *services.ProjectResponse) {
 							id="carousel-next"
 							onclick="carouselNext()"
 							aria-label="Next"
-							class="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm shadow flex items-center justify-center opacity-0 transition-opacity duration-200 hover:bg-white"
+							class="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-card/80 backdrop-blur-sm shadow-lg flex items-center justify-center opacity-0 transition-all duration-200 hover:bg-primary z-10 group"
 						>
-							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<svg
+								class="w-4 h-4 text-foreground group-hover:text-white"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5l7 7-7 7"></path>
 							</svg>
 						</button>
 						<!-- Dots -->
-						<div class="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-1.5">
+						<div class="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
 							if project.FeaturedImage != nil {
-								<button onclick="carouselGoTo(0)" data-dot="0" class="carousel-dot w-1.5 h-1.5 rounded-full transition-all duration-300 bg-white scale-100"></button>
+								<button
+									onclick="carouselGoTo(0)"
+									data-dot="0"
+									class="carousel-dot w-1.5 h-1.5 rounded-full transition-all duration-300 bg-primary scale-100"
+								></button>
 							}
 							for i := range project.GalleryMedia {
 								<button
 									onclick={ templ.ComponentScript{Call: fmt.Sprintf("carouselGoTo(%d)", dotIndex(project, i))} }
 									data-dot={ fmt.Sprintf("%d", dotIndex(project, i)) }
-									class="carousel-dot w-1.5 h-1.5 rounded-full transition-all duration-300 bg-white/40 scale-75"
+									class="carousel-dot w-1.5 h-1.5 rounded-full transition-all duration-300 bg-foreground/30 scale-75"
 								></button>
 							}
 						</div>
 						<!-- Counter -->
-						<div class="absolute bottom-5 right-5 text-xs text-white/60 tabular-nums tracking-widest">
+						<div class="absolute bottom-5 right-5 text-xs text-muted-foreground tabular-nums tracking-widest z-10">
 							<span id="carousel-current">1</span>/<span>{ fmt.Sprintf("%d", totalSlides(project)) }</span>
 						</div>
 					}
 				</div>
 				<!-- ── RIGHT: Info panel ── -->
-				<div class="lg:w-[40%] lg:h-[calc(100vh-72px)] lg:overflow-y-auto flex flex-col">
+				<div class="lg:w-[40%] lg:h-[calc(100vh-72px)] lg:overflow-y-auto flex flex-col bg-background">
 					<div class="flex-1 p-8 lg:p-12">
 						<!-- Title block -->
-						<div class="mb-8 pb-8 border-b border-black/8">
-							<p class="text-[10px] tracking-[0.2em] uppercase text-[#aaa] mb-3">Selected Work</p>
-							<h1 class="text-3xl lg:text-[2.5rem] font-light leading-tight tracking-tight text-[#1a1a1a]">
+						<div class="mb-8 pb-8 border-b border-border">
+							<p class="text-[10px] tracking-[0.2em] uppercase text-accent mb-3">Selected Work</p>
+							<h1 class="text-3xl lg:text-[2.5rem] font-light leading-tight tracking-tight">
 								{ project.Project.Title }
 							</h1>
 							if project.Project.Description.Valid && project.Project.Description.String != "" {
-								<p class="mt-4 text-sm leading-relaxed text-[#666] font-light">
+								<p class="mt-4 text-sm leading-relaxed text-muted-foreground font-light">
 									{ project.Project.Description.String }
 								</p>
 							}
@@ -132,29 +152,34 @@ templ PublicProjectDetail(project *services.ProjectResponse) {
 						<!-- Meta rows -->
 						<dl class="mb-10">
 							if project.Project.ProjectYear.Valid {
-								<div class="flex justify-between items-center py-3 border-b border-black/6">
-									<dt class="text-[10px] tracking-[0.15em] uppercase text-[#aaa]">Year</dt>
-									<dd class="text-sm text-[#1a1a1a]">{ fmt.Sprintf("%d", project.Project.ProjectYear.Int32) }</dd>
+								<div class="flex justify-between items-center py-3 border-b border-border/50">
+									<dt class="text-[10px] tracking-[0.15em] uppercase text-foreground/50">Year</dt>
+									<dd class="text-sm">{ fmt.Sprintf("%d", project.Project.ProjectYear.Int32) }</dd>
 								</div>
 							}
 							if project.Project.ClientName.Valid && project.Project.ClientName.String != "" {
-								<div class="flex justify-between items-center py-3 border-b border-black/6">
-									<dt class="text-[10px] tracking-[0.15em] uppercase text-[#aaa]">Client</dt>
-									<dd class="text-sm text-[#1a1a1a]">{ project.Project.ClientName.String }</dd>
+								<div class="flex justify-between items-center py-3 border-b border-border/50">
+									<dt class="text-[10px] tracking-[0.15em] uppercase text-foreground/50">Client</dt>
+									<dd class="text-sm">{ project.Project.ClientName.String }</dd>
 								</div>
 							}
 							if project.Project.ProjectStatus.Valid && project.Project.ProjectStatus.String != "" {
-								<div class="flex justify-between items-center py-3 border-b border-black/6">
-									<dt class="text-[10px] tracking-[0.15em] uppercase text-[#aaa]">Service</dt>
-									<dd class="text-sm text-[#1a1a1a] capitalize">{ project.Project.ProjectStatus.String }</dd>
+								<div class="flex justify-between items-center py-3 border-b border-border/50">
+									<dt class="text-[10px] tracking-[0.15em] uppercase text-foreground/50">Status</dt>
+									<dd class="text-sm capitalize">{ project.Project.ProjectStatus.String }</dd>
 								</div>
 							}
 							if len(project.Tags) > 0 {
-								<div class="flex justify-between items-start py-3 border-b border-black/6">
-									<dt class="text-[10px] tracking-[0.15em] uppercase text-[#aaa] pt-0.5">Medium</dt>
+								<div class="flex justify-between items-start py-3 border-b border-border/50">
+									<dt class="text-[10px] tracking-[0.15em] uppercase text-foreground/50 pt-0.5">Tags</dt>
 									<dd class="flex flex-wrap gap-1.5 justify-end max-w-[60%]">
 										for _, tag := range project.Tags {
-											<span class="text-xs px-2.5 py-1 bg-black/5 rounded-sm text-[#555] tracking-wide">{ tag.Tag.Name }</span>
+											<span
+												class="text-xs px-2.5 py-1 bg-card text-muted-foreground rounded-sm tracking-wide border border-border"
+											>
+												{ 
+                tag.Tag.Name }
+											</span>
 										}
 									</dd>
 								</div>
@@ -166,24 +191,30 @@ templ PublicProjectDetail(project *services.ProjectResponse) {
 								href={ templ.SafeURL(project.Project.ProjectUrl.String) }
 								target="_blank"
 								rel="noopener noreferrer"
-								class="inline-flex items-center gap-3 px-6 py-3 bg-[#1a1a1a] text-white text-[10px] tracking-[0.15em] uppercase rounded-sm hover:bg-[#333] transition-colors"
+								class="inline-flex items-center gap-3 px-6 py-3 bg-primary text-primary-foreground text-[10px] tracking-[0.15em]
+        uppercase rounded-sm hover:bg-accent transition-colors shadow-lg shadow-primary/20"
 							>
 								View Project
 								<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="1.5"
+										d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+									></path>
 								</svg>
 							</a>
 						}
 						<!-- Thumbnail strip -->
 						if totalSlides(project) > 1 {
-							<div class="mt-10 pt-8 border-t border-black/8">
-								<p class="text-[10px] tracking-[0.2em] uppercase text-[#aaa] mb-4">Images</p>
+							<div class="mt-10 pt-8 border-t border-border">
+								<p class="text-[10px] tracking-[0.2em] uppercase text-foreground/50 mb-4">Images</p>
 								<div class="flex gap-2 overflow-x-auto pb-1">
 									if project.FeaturedImage != nil {
 										<button
 											onclick="carouselGoTo(0)"
 											data-thumb="0"
-											class="thumb-btn shrink-0 w-16 h-16 overflow-hidden rounded-sm border-2 border-[#1a1a1a] transition-all"
+											class="thumb-btn shrink-0 w-16 h-16 overflow-hidden rounded-sm border-2 border-primary transition-all"
 										>
 											<img src={ project.FeaturedImage.ThumbnailURL } alt="" class="w-full h-full object-cover"/>
 										</button>
@@ -192,7 +223,7 @@ templ PublicProjectDetail(project *services.ProjectResponse) {
 										<button
 											onclick={ templ.ComponentScript{Call: fmt.Sprintf("carouselGoTo(%d)", dotIndex(project, i))} }
 											data-thumb={ fmt.Sprintf("%d", dotIndex(project, i)) }
-											class="thumb-btn shrink-0 w-16 h-16 overflow-hidden rounded-sm border-2 border-transparent hover:border-[#1a1a1a] transition-all"
+											class="thumb-btn shrink-0 w-16 h-16 overflow-hidden rounded-sm border-2 border-border hover:border-accent transition-all"
 										>
 											<img src={ media.ThumbnailURL } alt="" class="w-full h-full object-cover"/>
 										</button>
@@ -202,110 +233,107 @@ templ PublicProjectDetail(project *services.ProjectResponse) {
 						}
 					</div>
 					<!-- Bottom bar -->
-					<div class="px-8 lg:px-12 py-5 border-t border-black/6 flex justify-between items-center">
-						<a href="/projects" class="flex items-center gap-2 text-[10px] tracking-[0.15em] uppercase text-[#aaa] hover:text-[#1a1a1a] transition-colors">
+					<div class="px-8 lg:px-12 py-5 border-t border-border flex justify-between items-center">
+						<a
+							href="/projects"
+							class="flex items-center gap-2 text-[10px] tracking-[0.15em] uppercase text-foreground/50 hover:text-accent transition-colors"
+						>
 							<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
 							</svg>
 							Back to Work
 						</a>
 						if project.Project.ProjectDate.Valid {
-							<span class="text-[10px] text-[#ccc] tabular-nums">{ project.Project.ProjectDate.Time.Format("Jan 2006") }</span>
+							<span class="text-[10px] text-foreground/30 tabular-nums">
+								{ project.Project.ProjectDate.Time.Format("Jan 2006") }
+							</span>
 						}
 					</div>
 				</div>
 			</main>
 		</div>
 		<script>
-			(function () {
-				var current = 0;
-				var total = document.querySelectorAll(".carousel-slide").length;
+  (function () {
+    var current = 0;
+    var slides = document.querySelectorAll('#carousel-track > div');
+    var total = slides.length;
 
-				function sync() {
-					// Move track
-					document.getElementById("carousel-track").style.transform =
-						"translateX(-" + current * 100 + "%)";
+    function sync() {
+      var track = document.getElementById('carousel-track');
+      if (track) {
+        track.style.transform = 'translateX(-' + (current * 100) + '%)';
+      }
 
-					// Dots
-					document.querySelectorAll(".carousel-dot").forEach(function (el, i) {
-						var active = i === current;
-						el.style.backgroundColor = active
-							? "#fff"
-							: "rgba(255,255,255,0.4)";
-						el.style.transform = active ? "scale(1)" : "scale(0.75)";
-					});
+      document.querySelectorAll('.carousel-dot').forEach(function (el) {
+        var dotIndex = parseInt(el.getAttribute('data-dot'), 10);
+        var active = dotIndex === current;
+        el.style.backgroundColor = active ? 'var(--color-primary)' : 'rgba(255, 244, 230, 0.3)';
+        el.style.transform = active ? 'scale(1)' : 'scale(0.75)';
+      });
 
-					// Thumbnails
-					document.querySelectorAll(".thumb-btn").forEach(function (el) {
-						var match = parseInt(el.dataset.thumb, 10) === current;
-						el.style.borderColor = match ? "#1a1a1a" : "transparent";
-					});
+      document.querySelectorAll('.thumb-btn').forEach(function (el) {
+        var thumbIndex = parseInt(el.getAttribute('data-thumb'), 10);
+        el.style.borderColor = thumbIndex === current ? 'var(--color-primary)' : 'var(--color-border)';
+      });
 
-					// Counter
-					var c = document.getElementById("carousel-current");
-					if (c) c.textContent = current + 1;
-				}
+      var counter = document.getElementById('carousel-current');
+      if (counter) counter.textContent = current + 1;
+    }
 
-				window.carouselNext = function () {
-					current = (current + 1) % total;
-					sync();
-				};
-				window.carouselPrev = function () {
-					current = (current - 1 + total) % total;
-					sync();
-				};
-				window.carouselGoTo = function (n) {
-					current = n;
-					sync();
-				};
+    window.carouselNext = function () {
+      if (total === 0) return;
+      current = (current + 1) % total;
+      sync();
+    };
 
-				// Arrow visibility on hover
-				var wrap = document.getElementById("project-carousel");
-				var prev = document.getElementById("carousel-prev");
-				var next = document.getElementById("carousel-next");
-				if (wrap && prev && next) {
-					wrap.addEventListener("mouseenter", function () {
-						prev.style.opacity = "1";
-						next.style.opacity = "1";
-					});
-					wrap.addEventListener("mouseleave", function () {
-						prev.style.opacity = "0";
-						next.style.opacity = "0";
-					});
-				}
+    window.carouselPrev = function () {
+      if (total === 0) return;
+      current = (current - 1 + total) % total;
+      sync();
+    };
 
-				// Keyboard
-				document.addEventListener("keydown", function (e) {
-					if (e.key === "ArrowRight") window.carouselNext();
-					if (e.key === "ArrowLeft") window.carouselPrev();
-				});
+    window.carouselGoTo = function (n) {
+      if (total === 0) return;
+      current = n;
+      sync();
+    };
 
-				// Touch swipe
-				var sx = 0;
-				if (wrap) {
-					wrap.addEventListener(
-						"touchstart",
-						function (e) {
-							sx = e.touches[0].clientX;
-						},
-						{ passive: true },
-					);
-					wrap.addEventListener(
-						"touchend",
-						function (e) {
-							var d = sx - e.changedTouches[0].clientX;
-							if (Math.abs(d) > 50) {
-								if (d > 0) window.carouselNext();
-								else window.carouselPrev();
-							}
-						},
-						{ passive: true },
-					);
-				}
+    var wrap = document.getElementById('project-carousel');
+    var prev = document.getElementById('carousel-prev');
+    var next = document.getElementById('carousel-next');
+    if (wrap && prev && next) {
+      wrap.addEventListener('mouseenter', function () {
+        prev.style.opacity = '1';
+        next.style.opacity = '1';
+      });
+      wrap.addEventListener('mouseleave', function () {
+        prev.style.opacity = '0';
+        next.style.opacity = '0';
+      });
+    }
 
-				sync();
-			})();
-		</script>
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowRight') window.carouselNext();
+      if (e.key === 'ArrowLeft') window.carouselPrev();
+    });
+
+    var startX = 0;
+    if (wrap) {
+      wrap.addEventListener('touchstart', function (e) {
+        startX = e.touches[0].clientX;
+      }, {passive: true});
+      wrap.addEventListener('touchend', function (e) {
+        var diff = startX - e.changedTouches[0].clientX;
+        if (Math.abs(diff) > 50) {
+          if (diff > 0) window.carouselNext();
+          else window.carouselPrev();
+        }
+      }, {passive: true});
+    }
+
+    sync();
+  })();
+</script>
 	}
 }
 

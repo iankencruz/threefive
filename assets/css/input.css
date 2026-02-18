@@ -6,7 +6,6 @@
 /* 2. Include any other Go files if you have classes in your Go code */
 @source "/cmd/**/*.go";
 
-
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme inline {
@@ -38,45 +37,57 @@
 
 :root {
   --radius: 0.65rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+
+  /* Cinematic Dark Palette */
+  --background: #0C0C0C;
+  /* Background (Dark) */
+  --foreground: #FFF4E6;
+  /* Text (Light) - warm white */
+  --card: #1A1A1A;
+  /* Surface (Neutral) */
+  --card-foreground: #FFF4E6;
+  --popover: #1A1A1A;
+  --popover-foreground: #FFF4E6;
+  --primary: #FF4B1F;
+  /* Primary - brand orange-red */
+  --primary-foreground: #FFFFFF;
+  --secondary: #1A1A1A;
+  /* Surface (Neutral) */
+  --secondary-foreground: #FFF4E6;
+  --muted: #1A1A1A;
+  /* Surface (Neutral) */
+  --muted-foreground: #FFF4E6B3;
+  /* 70% opacity warm white */
+  --accent: #FF6A3D;
+  /* Accent - hover states */
+  --accent-foreground: #FFFFFF;
+  --destructive: #EF4444;
+  --border: #FFFFFF1A;
+  /* white/10 */
+  --input: #FFFFFF1A;
+  --ring: #FF4B1F;
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  /* Keep same values for dark mode since base is already dark */
+  --background: #0C0C0C;
+  --foreground: #FFF4E6;
+  --card: #1A1A1A;
+  --card-foreground: #FFF4E6;
+  --popover: #1A1A1A;
+  --popover-foreground: #FFF4E6;
+  --primary: #FF4B1F;
+  --primary-foreground: #FFFFFF;
+  --secondary: #1A1A1A;
+  --secondary-foreground: #FFF4E6;
+  --muted: #1A1A1A;
+  --muted-foreground: #FFF4E6B3;
+  --accent: #FF6A3D;
+  --accent-foreground: #FFFFFF;
+  --destructive: #EF4444;
+  --border: #FFFFFF1A;
+  --input: #FFFFFF1A;
+  --ring: #FF4B1F;
 }
 
 @layer base {
@@ -105,7 +116,6 @@
   }
 }
 
-
 nav .current {
-  @apply bg-gray-50 dark:bg-white/5 text-indigo-600 dark:text-white
+  @apply bg-card text-primary;
 }
