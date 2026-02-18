@@ -696,7 +696,6 @@ const listPublishedProjects = `-- name: ListPublishedProjects :many
 SELECT id, title, slug, description, project_date, status, client_name, project_year, project_url, project_status, featured_image_id, author_id, created_at, updated_at, published_at, deleted_at FROM projects
 WHERE status = 'published' 
   AND deleted_at IS NULL
-  AND published_at IS NOT NULL
 ORDER BY published_at DESC
 LIMIT $2
 OFFSET $1

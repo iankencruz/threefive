@@ -34,6 +34,9 @@ func (s *Server) RegisterRoutes() {
 	s.Echo.POST("/login", authHandler.HandleLogin)
 	s.Echo.POST("/logout", authHandler.HandleLogout)
 
+	s.Echo.GET("/projects", projectHandler.ShowPublicProjectsList)
+	s.Echo.GET("/projects/:slug", projectHandler.ShowPublicProject)
+
 	// *********
 	// admin routes (require authentication)
 	// *********

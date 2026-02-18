@@ -454,3 +454,37 @@ func (h *ProjectHandler) ShowGallerySelector(c *echo.Context) error {
 	component := lib.GalleryMediaGrid(mediaResponses, dialogID, galleryContainerID, galleryInputID)
 	return responses.Render(c.Request().Context(), c, component)
 }
+
+// Public Handlers
+
+// ShowPublicProjectsList renders the public projects listing
+func (h *ProjectHandler) ShowPublicProjectsList(c *echo.Context) error {
+	projects, err := h.projectService.ListPublishedProjects(c.Request().Context(), 100, 0)
+	if err != nil {
+		h.logger.Error("failed to list published projects", "error", err)
+		return c.String(500, "Failed to load projects")
+	}
+
+	fmt.Printf("projects: %+v\n", projects)
+
+	component := pages.PublicProjectsList(projects)
+	return responses.Render(c.Request().Context(), c, component)
+}
+
+// ShowPublicProject renders a single public project detail page
+func (h *ProjectHandler) ShowPublicProject(c *echo.Context) error {
+	slug := c.Param("slug")
+
+	project, err := h.projectService.GetProjectBySlug(c.Request().Context(), slug)
+	if err != nil {
+		h.logger.Error("failed to get project", "error", err, "slug", slug)
+		return c.String(404, "Project not found")
+	}
+
+	if project.Project.Status.Valid && project.Project.Status.String != "published" {
+		return c.String(404, "Project not found")
+	}
+
+	component := pages.PublicProjectDetail(project)
+	return responses.Render(c.Request().Context(), c, component)
+}

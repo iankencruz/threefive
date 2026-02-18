@@ -60,7 +60,6 @@ OFFSET @offset_val;
 SELECT * FROM projects
 WHERE status = 'published' 
   AND deleted_at IS NULL
-  AND published_at IS NOT NULL
 ORDER BY published_at DESC
 LIMIT @limit_val
 OFFSET @offset_val;
@@ -237,3 +236,5 @@ SELECT * FROM projects
 WHERE deleted_at IS NULL
 ORDER BY created_at DESC
 LIMIT @limit_val;
+
+
