@@ -465,8 +465,6 @@ func (h *ProjectHandler) ShowPublicProjectsList(c *echo.Context) error {
 		return c.String(500, "Failed to load projects")
 	}
 
-	fmt.Printf("projects: %+v\n", projects)
-
 	component := pages.PublicProjectsList(projects)
 	return responses.Render(c.Request().Context(), c, component)
 }
