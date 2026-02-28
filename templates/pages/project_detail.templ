@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-templ PublicProjectDetail(project *services.ProjectResponse) {
+templ ProjectDetails(project *services.ProjectResponse) {
 	@layouts.BaseLayout(project.Project.Title) {
 		<div class="min-h-screen bg-background text-foreground">
 			<!-- Nav -->

@@ -5,11 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"sort"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/iankencruz/threefive/database/generated"
-	"github.com/iankencruz/threefive/pkg/validation"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -60,106 +61,52 @@ type UpdatePageRequest struct {
 }
 
 // Validate validates the update request based on page type
-func (r *UpdatePageRequest) Validate(pageType string) (validation.FieldErrors, error) {
-	fields := []validation.Field{
-		{
-			Name:  "title",
-			Value: r.Title,
-			Rules: []validation.ValidationRule{
-				validation.Required("Title is required"),
-				validation.MaxLength(200, "Title must be at most 200 characters"),
-			},
-		},
-		{
-			Name:  "header",
-			Value: r.Header,
-			Rules: []validation.ValidationRule{
-				validation.MaxLength(500, "Header must be at most 500 characters"),
-			},
-		},
-		{
-			Name:  "sub_header",
-			Value: r.SubHeader,
-			Rules: []validation.ValidationRule{
-				validation.MaxLength(500, "Sub-header must be at most 500 characters"),
-			},
-		},
+func (r *UpdatePageRequest) Validate(pageType string) (map[string]string, error) {
+	errors := make(map[string]string)
+
+	// Title is only required for contact and about pages (not home)
+	if pageType != "home" && strings.TrimSpace(r.Title) == "" {
+		errors["title"] = "Title is required"
+	}
+
+	// Header validation (optional, but if provided must not be empty)
+	if strings.TrimSpace(r.Header) != "" && len(r.Header) > 500 {
+		errors["header"] = "Header must be less than 500 characters"
+	}
+
+	// Sub-header validation (optional)
+	if strings.TrimSpace(r.SubHeader) != "" && len(r.SubHeader) > 1000 {
+		errors["sub_header"] = "Sub-header must be less than 1000 characters"
 	}
 
 	// Page-specific validation
 	switch pageType {
-	case "about":
-		fields = append(fields,
-			validation.Field{
-				Name:  "content",
-				Value: r.Content,
-				Rules: []validation.ValidationRule{
-					validation.MaxLength(10000, "Content must be at most 10,000 characters"),
-				},
-			},
-			validation.Field{
-				Name:  "cta_text",
-				Value: r.CtaText,
-				Rules: []validation.ValidationRule{
-					validation.MaxLength(100, "CTA text must be at most 100 characters"),
-				},
-			},
-			validation.Field{
-				Name:  "cta_link",
-				Value: r.CtaLink,
-				Rules: []validation.ValidationRule{
-					validation.IsURL(""),
-				},
-			},
-		)
-
 	case "contact":
-		fields = append(fields,
-			validation.Field{
-				Name:  "email",
-				Value: r.Email,
-				Rules: []validation.ValidationRule{
-					validation.Required("Email is required for contact page"),
-					validation.IsEmail(""),
-				},
-			},
-			validation.Field{
-				Name:  "social_twitter",
-				Value: r.SocialTwitter,
-				Rules: []validation.ValidationRule{
-					validation.IsURL(""),
-				},
-			},
-			validation.Field{
-				Name:  "social_linkedin",
-				Value: r.SocialLinkedIn,
-				Rules: []validation.ValidationRule{
-					validation.IsURL(""),
-				},
-			},
-			validation.Field{
-				Name:  "social_github",
-				Value: r.SocialGitHub,
-				Rules: []validation.ValidationRule{
-					validation.IsURL(""),
-				},
-			},
-			validation.Field{
-				Name:  "social_instagram",
-				Value: r.SocialInstagram,
-				Rules: []validation.ValidationRule{
-					validation.IsURL(""),
-				},
-			},
-		)
+		if strings.TrimSpace(r.Email) == "" {
+			errors["email"] = "Email is required for contact page"
+		} else if !isValidEmail(r.Email) {
+			errors["email"] = "Invalid email format"
+		}
+
+	case "about":
+		// Content is optional but has max length
+		if len(r.Content) > 5000 {
+			errors["content"] = "Content must be less than 5000 characters"
+		}
 	}
 
-	errors := validation.ValidateFields(fields)
-	if errors.HasErrors() {
+	if len(errors) > 0 {
 		return errors, fmt.Errorf("validation failed")
 	}
 
 	return nil, nil
+}
+
+// Helper function for email validation
+func isValidEmail(email string) bool {
+	// Simple email regex
+	re := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
+	return re.MatchString(email)
 }
 
 type PageService struct {
@@ -220,20 +167,20 @@ func (s *PageService) GetPageBySlug(ctx context.Context, slug string) (*PageResp
 	return s.enrichPageData(ctx, &page)
 }
 
-// UpdatePageBySlug updates a page using the new request struct
+// UpdatePageBySlug updates a page using the UpdatePageRequest
 func (s *PageService) UpdatePageBySlug(ctx context.Context, slug string, req *UpdatePageRequest) (*PageResponse, error) {
-	// Get existing page
+	// Get existing page to get its ID
 	existing, err := s.queries.GetPageBySlug(ctx, slug)
 	if err != nil {
 		return nil, fmt.Errorf("page not found: %w", err)
 	}
 
-	// Build update params
+	// Build SQLC params
 	params := generated.UpdatePageParams{
 		ID: existing.ID,
 	}
 
-	// Common fields (all pages)
+	// Set fields from request
 	if req.Title != "" {
 		params.Title = pgtype.Text{String: req.Title, Valid: true}
 	}
@@ -244,55 +191,28 @@ func (s *PageService) UpdatePageBySlug(ctx context.Context, slug string, req *Up
 		params.SubHeader = pgtype.Text{String: req.SubHeader, Valid: true}
 	}
 	if req.HeroMediaID != "" {
-		if mediaUUID, err := uuid.Parse(req.HeroMediaID); err == nil {
-			params.HeroMediaID = pgtype.UUID{Bytes: mediaUUID, Valid: true}
+		heroUUID, err := uuid.Parse(req.HeroMediaID)
+		if err == nil {
+			params.HeroMediaID = pgtype.UUID{Bytes: heroUUID, Valid: true}
 		}
 	}
-
-	// About page specific
-	if existing.PageType == "about" {
-		if req.Content != "" {
-			params.Content = pgtype.Text{String: req.Content, Valid: true}
-		}
-		if req.ContentImageID != "" {
-			if imgUUID, err := uuid.Parse(req.ContentImageID); err == nil {
-				params.ContentImageID = pgtype.UUID{Bytes: imgUUID, Valid: true}
-			}
-		}
-		if req.CtaText != "" {
-			params.CtaText = pgtype.Text{String: req.CtaText, Valid: true}
-		}
-		if req.CtaLink != "" {
-			params.CtaLink = pgtype.Text{String: req.CtaLink, Valid: true}
-		}
-
-		// Update featured projects
-		if len(req.FeaturedProjectIDs) > 0 {
-			if err := s.UpdateFeaturedProjects(ctx, existing.ID, req.FeaturedProjectIDs); err != nil {
-				return nil, fmt.Errorf("failed to update featured projects: %w", err)
-			}
+	if req.Content != "" {
+		params.Content = pgtype.Text{String: req.Content, Valid: true}
+	}
+	if req.ContentImageID != "" {
+		contentUUID, err := uuid.Parse(req.ContentImageID)
+		if err == nil {
+			params.ContentImageID = pgtype.UUID{Bytes: contentUUID, Valid: true}
 		}
 	}
-
-	// Contact page specific
-	if existing.PageType == "contact" {
-		if req.Email != "" {
-			params.Email = pgtype.Text{String: req.Email, Valid: true}
-		}
-
-		// Handle social links JSON
-		socialLinks := SocialLinks{
-			Twitter:   req.SocialTwitter,
-			LinkedIn:  req.SocialLinkedIn,
-			GitHub:    req.SocialGitHub,
-			Instagram: req.SocialInstagram,
-		}
-
-		// Only set if at least one link exists
-		if socialLinks.Twitter != "" || socialLinks.LinkedIn != "" || socialLinks.GitHub != "" || socialLinks.Instagram != "" {
-			socialLinksJSON, _ := json.Marshal(socialLinks)
-			params.SocialLinks = socialLinksJSON
-		}
+	if req.CtaText != "" {
+		params.CtaText = pgtype.Text{String: req.CtaText, Valid: true}
+	}
+	if req.CtaLink != "" {
+		params.CtaLink = pgtype.Text{String: req.CtaLink, Valid: true}
+	}
+	if req.Email != "" {
+		params.Email = pgtype.Text{String: req.Email, Valid: true}
 	}
 
 	// Update page
@@ -301,7 +221,23 @@ func (s *PageService) UpdatePageBySlug(ctx context.Context, slug string, req *Up
 		return nil, fmt.Errorf("failed to update page: %w", err)
 	}
 
-	// Return enriched response
+	// ✅ UPDATE FEATURED PROJECTS (for both home and about pages)
+	if len(req.FeaturedProjectIDs) >= 0 { // Allow clearing by passing empty array
+		maxProjects := 6 // Home page allows 6
+		if existing.PageType == "about" {
+			maxProjects = 3 // About page allows 3
+		}
+
+		if len(req.FeaturedProjectIDs) > maxProjects {
+			return nil, fmt.Errorf("maximum %d featured projects allowed", maxProjects)
+		}
+
+		if err := s.UpdateFeaturedProjects(ctx, existing.ID, req.FeaturedProjectIDs); err != nil {
+			return nil, fmt.Errorf("failed to update featured projects: %w", err)
+		}
+	}
+
+	// Return enriched page data
 	return s.enrichPageData(ctx, &updated)
 }
 

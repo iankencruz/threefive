@@ -1,0 +1,208 @@
+// templates/pages/PublicHome.templ
+package pages
+
+import (
+	"github.com/iankencruz/threefive/internal/services"
+	"github.com/iankencruz/threefive/templates/layouts"
+)
+
+templ Home(page *services.PageResponse) {
+	@layouts.BaseLayout("ThreeFive") {
+		<div class="min-h-screen bg-background text-foreground">
+			<!-- Nav -->
+			<nav class="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 py-5 bg-background/90 backdrop-blur-sm border-b border-border">
+				<a href="/" class="text-sm font-semibold tracking-[0.15em] uppercase text-primary">
+					ThreeFive
+				</a>
+				<div class="hidden md:flex items-center gap-8">
+					<a href="/projects" class="text-xs tracking-[0.12em] uppercase text-foreground/60 hover:text-accent transition-colors">Work</a>
+					<a href="/about" class="text-xs tracking-[0.12em] uppercase text-foreground/60 hover:text-accent transition-colors">About</a>
+					<a href="/blog" class="text-xs tracking-[0.12em] uppercase text-foreground/60 hover:text-accent transition-colors">Blog</a>
+					<a href="/contact" class="text-xs tracking-[0.12em] uppercase text-foreground/60 hover:text-accent transition-colors">Contact</a>
+				</div>
+				<div class="w-24"></div>
+			</nav>
+			<!-- Hero Section -->
+			<section class="relative h-screen overflow-hidden">
+				<!-- Hero Image/Video -->
+				<div class="absolute inset-0">
+					if page.HeroMedia != nil {
+						if page.HeroMedia.MimeType[:5] == "video" {
+							<video
+								src={ page.HeroMedia.URL }
+								class="w-full h-full object-cover"
+								autoplay
+								loop
+								muted
+								playsinline
+							></video>
+						} else {
+							<img
+								src={ page.HeroMedia.URL }
+								alt={ page.HeroMedia.AltText }
+								class="w-full h-full object-cover"
+							/>
+						}
+					} else {
+						<div class="w-full h-full bg-gradient-to-br from-card to-background"></div>
+					}
+					<div class="absolute inset-0 bg-gradient-to-b from-background/40 via-background/20 to-background/90"></div>
+				</div>
+				<!-- Hero Content -->
+				<div class="relative h-full flex flex-col justify-between px-8 lg:px-16 pt-24 pb-16">
+					<div class="flex-1 flex items-center">
+						<h1 class="text-[15vw] lg:text-[12vw] font-bold leading-[0.85] tracking-tight text-primary uppercase">
+							ThreeFive
+						</h1>
+					</div>
+					<div class="flex flex-col md:flex-row md:items-end md:justify-between gap-8">
+						<div class="max-w-lg">
+							if page.Page.Header.Valid && page.Page.Header.String != "" {
+								<p class="text-lg md:text-xl font-light text-foreground leading-relaxed mb-6">
+									{ page.Page.Header.String }
+								</p>
+							}
+							if page.Page.SubHeader.Valid && page.Page.SubHeader.String != "" {
+								<p class="text-sm text-muted-foreground leading-relaxed">
+									{ page.Page.SubHeader.String }
+								</p>
+							}
+						</div>
+						<div class="flex gap-4">
+							<a
+								href="/projects"
+								class="inline-flex items-center gap-3 px-8 py-4 bg-primary text-primary-foreground text-xs tracking-[0.15em] uppercase rounded-sm hover:bg-accent transition-colors shadow-lg shadow-primary/20"
+							>
+								View Work
+								<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+								</svg>
+							</a>
+						</div>
+					</div>
+				</div>
+				<div class="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
+					<svg class="w-6 h-6 text-foreground/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+					</svg>
+				</div>
+			</section>
+			<!-- Featured Projects Grid -->
+			if len(page.FeaturedProjects) > 0 {
+				<section class="relative px-8 lg:px-16 py-24 bg-background">
+					<!-- Section Header -->
+					<div class="mb-12 flex items-end justify-between">
+						<div>
+							<p class="text-[10px] tracking-[0.2em] uppercase text-accent mb-3">Portfolio</p>
+							<h2 class="text-4xl lg:text-5xl font-light tracking-tight">Featured Work</h2>
+						</div>
+						<a
+							href="/projects"
+							class="hidden md:inline-flex items-center gap-2 text-xs tracking-[0.12em] uppercase text-foreground/60 hover:text-primary transition-colors group"
+						>
+							View All
+							<svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+							</svg>
+						</a>
+					</div>
+					<!-- Masonry/Bento Grid -->
+					<div class="grid grid-cols-2 md:grid-cols-4 gap-4 auto-rows-[200px]">
+						for i, project := range page.FeaturedProjects {
+							<!-- Varying sizes for visual interest -->
+							if i == 0 {
+								<!-- Large featured item -->
+								<a
+									href={ templ.SafeURL("/projects/" + project.Project.Slug) }
+									class="group relative overflow-hidden rounded-sm col-span-2 row-span-2 bg-card"
+								>
+									if project.FeaturedImage != nil {
+										<img
+											src={ project.FeaturedImage.URL }
+											alt={ project.Project.Title }
+											class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+										/>
+									}
+									<div class="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+										<div class="absolute bottom-0 left-0 right-0 p-6">
+											<h3 class="text-lg font-light text-foreground">{ project.Project.Title }</h3>
+										</div>
+									</div>
+								</a>
+							} else if i == 1 {
+								<!-- Tall item -->
+								<a
+									href={ templ.SafeURL("/projects/" + project.Project.Slug) }
+									class="group relative overflow-hidden rounded-sm row-span-2 bg-card"
+								>
+									if project.FeaturedImage != nil {
+										<img
+											src={ project.FeaturedImage.URL }
+											alt={ project.Project.Title }
+											class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+										/>
+									}
+									<div class="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+										<div class="absolute bottom-0 left-0 right-0 p-4">
+											<h3 class="text-sm font-light text-foreground">{ project.Project.Title }</h3>
+										</div>
+									</div>
+								</a>
+							} else if i == 2 {
+								<!-- Wide item -->
+								<a
+									href={ templ.SafeURL("/projects/" + project.Project.Slug) }
+									class="group relative overflow-hidden rounded-sm col-span-2 bg-card"
+								>
+									if project.FeaturedImage != nil {
+										<img
+											src={ project.FeaturedImage.URL }
+											alt={ project.Project.Title }
+											class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+										/>
+									}
+									<div class="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+										<div class="absolute bottom-0 left-0 right-0 p-4">
+											<h3 class="text-sm font-light text-foreground">{ project.Project.Title }</h3>
+										</div>
+									</div>
+								</a>
+							} else {
+								<!-- Regular item -->
+								<a
+									href={ templ.SafeURL("/projects/" + project.Project.Slug) }
+									class="group relative overflow-hidden rounded-sm bg-card"
+								>
+									if project.FeaturedImage != nil {
+										<img
+											src={ project.FeaturedImage.URL }
+											alt={ project.Project.Title }
+											class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+										/>
+									}
+									<div class="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+										<div class="absolute bottom-0 left-0 right-0 p-4">
+											<h3 class="text-sm font-light text-foreground">{ project.Project.Title }</h3>
+										</div>
+									</div>
+								</a>
+							}
+						}
+					</div>
+					<!-- Mobile CTA -->
+					<div class="mt-12 text-center md:hidden">
+						<a
+							href="/projects"
+							class="inline-flex items-center gap-3 px-8 py-4 bg-card border border-border text-foreground text-xs tracking-[0.15em] uppercase rounded-sm hover:border-primary transition-colors"
+						>
+							View All Projects
+							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+							</svg>
+						</a>
+					</div>
+				</section>
+			}
+		</div>
+	}
+}

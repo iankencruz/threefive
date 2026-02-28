@@ -15,7 +15,7 @@ func (s *Server) RegisterRoutes() {
 	authHandler := handler.NewAuthHandler(s.AuthService, s.SessionManager, s.Log)
 	adminHandler := handler.NewAdminHandler(s.Log, s.MediaService)
 	mediaHandler := handler.NewMediaHandler(s.MediaService, s.Log)
-	pageHandler := handler.NewPageHandler(s.Log, s.PageService)
+	pageHandler := handler.NewPageHandler(s.Log, s.PageService, s.ProjectService)
 	projectHandler := handler.NewProjectHandler(s.Log, s.ProjectService, s.TagService, s.MediaService)
 	tagHandler := handler.NewTagHandler(s.Log, s.TagService)
 
@@ -34,6 +34,8 @@ func (s *Server) RegisterRoutes() {
 	s.Echo.POST("/login", authHandler.HandleLogin)
 	s.Echo.POST("/logout", authHandler.HandleLogout)
 
+	s.Echo.GET("/", pageHandler.ShowPublicHome)
+	s.Echo.GET("/about", pageHandler.ShowPublicAbout)
 	s.Echo.GET("/projects", projectHandler.ShowPublicProjectsList)
 	s.Echo.GET("/projects/:slug", projectHandler.ShowPublicProject)
 

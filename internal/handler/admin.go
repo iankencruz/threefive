@@ -8,7 +8,7 @@ import (
 	"github.com/iankencruz/threefive/internal/services"
 	"github.com/iankencruz/threefive/pkg/responses"
 	"github.com/iankencruz/threefive/templates/lib"
-	"github.com/iankencruz/threefive/templates/pages"
+	"github.com/iankencruz/threefive/templates/pages/admin"
 	"github.com/labstack/echo/v5"
 )
 
@@ -46,7 +46,7 @@ func (h *AdminHandler) ShowDashboard(c *echo.Context) error {
 
 	// TODO: Get real stats from services
 	// For now, use mock data
-	stats := pages.DashboardStats{
+	stats := admin.DashboardStats{
 		TotalProjects:     12,
 		TotalBlogs:        24,
 		TotalPages:        3,
@@ -57,6 +57,6 @@ func (h *AdminHandler) ShowDashboard(c *echo.Context) error {
 		DraftBlogs:        6,
 	}
 
-	component := pages.Dashboard(stats, currentPath)
+	component := admin.Dashboard(stats, currentPath)
 	return responses.Render(ctx, c, component)
 }

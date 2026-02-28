@@ -11,7 +11,7 @@ import (
 	"github.com/iankencruz/threefive/internal/services"
 	"github.com/iankencruz/threefive/pkg/responses"
 	"github.com/iankencruz/threefive/templates/lib"
-	"github.com/iankencruz/threefive/templates/pages"
+	"github.com/iankencruz/threefive/templates/pages/admin"
 	"github.com/labstack/echo/v5"
 )
 
@@ -75,7 +75,7 @@ func (h *TagHandler) ShowTagsList(c *echo.Context) error {
 	currentPath := c.Request().URL.Path
 
 	// Render tags list page
-	component := pages.TagsList(pages.TagsListProps{
+	component := admin.TagsList(admin.TagsListProps{
 		Tags:        tagsWithUsage,
 		TotalCount:  int(totalCount),
 		CurrentPage: page,
@@ -154,7 +154,7 @@ func (h *TagHandler) ShowEditPage(c *echo.Context) error {
 	ctx := lib.WithUser(c.Request().Context(), middleware.GetUser(c))
 	currentPath := c.Request().URL.Path
 
-	component := pages.TagEdit(tagWithUsage, nil, currentPath)
+	component := admin.TagEdit(tagWithUsage, nil, currentPath)
 	return responses.Render(ctx, c, component)
 }
 
@@ -186,7 +186,7 @@ func (h *TagHandler) UpdateTag(c *echo.Context) error {
 		h.logger.Warn("Tag validation failed", "errors", errs)
 		ctx := lib.WithUser(c.Request().Context(), middleware.GetUser(c))
 		currentPath := c.Request().URL.Path
-		component := pages.TagEdit(existing, errs, currentPath)
+		component := admin.TagEdit(existing, errs, currentPath)
 		return responses.RenderError(ctx, c, component, "Please fix the errors")
 	}
 
@@ -196,7 +196,7 @@ func (h *TagHandler) UpdateTag(c *echo.Context) error {
 		h.logger.Error("failed to update tag", "error", err)
 		ctx := lib.WithUser(c.Request().Context(), middleware.GetUser(c))
 		currentPath := c.Request().URL.Path
-		component := pages.TagEdit(existing, map[string]string{
+		component := admin.TagEdit(existing, map[string]string{
 			"general": err.Error(),
 		}, currentPath)
 		return responses.RenderError(ctx, c, component, err.Error())
@@ -220,7 +220,7 @@ func (h *TagHandler) UpdateTag(c *echo.Context) error {
 	updatedWithUsage, _ := h.tagService.GetTagBySlugWithUsage(c.Request().Context(), updated.Slug)
 	ctx := lib.WithUser(c.Request().Context(), middleware.GetUser(c))
 	currentPath := c.Request().URL.Path
-	component := pages.TagEdit(updatedWithUsage, nil, currentPath)
+	component := admin.TagEdit(updatedWithUsage, nil, currentPath)
 	return responses.RenderSuccess(ctx, c, component, "Tag updated successfully")
 }
 

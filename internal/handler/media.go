@@ -12,7 +12,7 @@ import (
 	"github.com/iankencruz/threefive/internal/services"
 	"github.com/iankencruz/threefive/pkg/responses"
 	"github.com/iankencruz/threefive/templates/lib"
-	"github.com/iankencruz/threefive/templates/pages"
+	"github.com/iankencruz/threefive/templates/pages/admin"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/labstack/echo/v5"
 )
@@ -106,7 +106,7 @@ func (h *MediaHandler) ShowMediaList(c *echo.Context) error {
 	ctx := lib.WithUser(c.Request().Context(), user)
 
 	// Render the media library page
-	component := pages.MediaLibrary(pages.MediaLibraryProps{
+	component := admin.MediaLibrary(admin.MediaLibraryProps{
 		Media:       mediaResponses,
 		CurrentPage: page,
 		TotalPages:  totalPages,

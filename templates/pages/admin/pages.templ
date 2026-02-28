@@ -1,4 +1,4 @@
-package pages
+package admin
 
 import (
 	"github.com/iankencruz/threefive/components/button"
@@ -15,7 +15,7 @@ templ PageList(pageResp []generated.Page, currentPath string) {
 	}) {
 		<div class="">
 			<div class="flex justify-between items-center mb-6">
-				<h1 class="text-3xl font-bold text-gray-900">Pages</h1>
+				<h1 class="text-3xl font-bold text-foreground">Pages</h1>
 				@button.Button(button.Props{
 					Variant: button.VariantDefault,
 				}) {

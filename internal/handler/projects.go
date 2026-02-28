@@ -16,6 +16,7 @@ import (
 	"github.com/iankencruz/threefive/pkg/validation"
 	"github.com/iankencruz/threefive/templates/lib"
 	"github.com/iankencruz/threefive/templates/pages"
+	"github.com/iankencruz/threefive/templates/pages/admin"
 	"github.com/labstack/echo/v5"
 )
 
@@ -72,7 +73,7 @@ func (h *ProjectHandler) ShowProjectsList(c *echo.Context) error {
 	currentPath := c.Request().URL.Path
 
 	// Render project list page
-	component := pages.ProjectsList(pages.ProjectsListProps{
+	component := admin.ProjectsList(admin.ProjectsListProps{
 		Projects:    projects,
 		CurrentPage: page,
 		TotalPages:  totalPages,
@@ -255,7 +256,7 @@ func (h *ProjectHandler) ShowEditPage(c *echo.Context) error {
 	ctx := lib.WithUser(c.Request().Context(), middleware.GetUser(c))
 	currentPath := c.Request().URL.Path
 
-	component := pages.ProjectEditPage(project, tags, currentPath, nil)
+	component := admin.ProjectEditPage(project, tags, currentPath, nil)
 	return responses.Render(ctx, c, component)
 }
 
@@ -302,7 +303,7 @@ func (h *ProjectHandler) UpdateProject(c *echo.Context) error {
 		errorCount := len(fieldErrors)
 		toastMessage := fmt.Sprintf("Please fix %d validation error(s)", errorCount)
 
-		component := pages.ProjectEditForm(existing, tags, fieldErrors)
+		component := admin.ProjectEditForm(existing, tags, fieldErrors)
 		return responses.RenderError(ctx, c, component, toastMessage)
 	}
 
@@ -318,13 +319,13 @@ func (h *ProjectHandler) UpdateProject(c *echo.Context) error {
 		// Check if it's a slug uniqueness error
 		if strings.Contains(err.Error(), "slug already exists") {
 			fieldErrors := validation.FieldErrors{"slug": err.Error()}
-			component := pages.ProjectEditForm(existing, tags, fieldErrors)
+			component := admin.ProjectEditForm(existing, tags, fieldErrors)
 			return responses.RenderError(ctx, c, component, err.Error())
 		}
 
 		// Generic database error
 		dbErrors := validation.FieldErrors{"general": err.Error()}
-		component := pages.ProjectEditForm(existing, tags, dbErrors)
+		component := admin.ProjectEditForm(existing, tags, dbErrors)
 		return responses.RenderError(ctx, c, component, err.Error())
 	}
 
@@ -344,7 +345,7 @@ func (h *ProjectHandler) UpdateProject(c *echo.Context) error {
 	tags, _ := h.tagService.ListAllTags(c.Request().Context())
 	ctx := lib.WithUser(c.Request().Context(), middleware.GetUser(c))
 
-	component := pages.ProjectEditForm(updated, tags, nil)
+	component := admin.ProjectEditForm(updated, tags, nil)
 	return responses.RenderSuccess(ctx, c, component, "Project updated successfully")
 }
 
@@ -465,7 +466,7 @@ func (h *ProjectHandler) ShowPublicProjectsList(c *echo.Context) error {
 		return c.String(500, "Failed to load projects")
 	}
 
-	component := pages.PublicProjectsList(projects)
+	component := pages.Projects(projects)
 	return responses.Render(c.Request().Context(), c, component)
 }
 
@@ -483,6 +484,6 @@ func (h *ProjectHandler) ShowPublicProject(c *echo.Context) error {
 		return c.String(404, "Project not found")
 	}
 
-	component := pages.PublicProjectDetail(project)
+	component := pages.ProjectDetails(project)
 	return responses.Render(c.Request().Context(), c, component)
 }

@@ -1,5 +1,5 @@
 // templates/pages/AdminAboutPage.templ
-package pages
+package admin
 
 import (
 	"github.com/iankencruz/threefive/components/button"
@@ -41,7 +41,7 @@ templ AdminAboutForm(pageResp *services.PageResponse, errors validation.FieldErr
 		</a>
 		<div class="flex items-center justify-between">
 			<div>
-				<h1 class="text-3xl font-bold text-gray-900">Edit About Page</h1>
+				<h1 class="text-3xl font-bold text-foreground">Edit About Page</h1>
 				<p class="text-gray-600 mt-2">Update your about page content, featured projects, and CTA</p>
 			</div>
 		</div>
@@ -212,7 +212,7 @@ templ AdminAboutForm(pageResp *services.PageResponse, errors validation.FieldErr
 			</div>
 			<!-- CTA Section -->
 			<div class="border-t border-gray-200 pt-6">
-				<h3 class="text-lg font-semibold text-gray-900 mb-4">Call to Action</h3>
+				<h3 class="text-lg font-semibold text-foreground mb-4">Call to Action</h3>
 				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 					<div class="space-y-2">
 						<label for="cta_text" class="block text-sm font-medium text-gray-700">CTA Text</label>

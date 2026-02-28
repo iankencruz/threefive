@@ -15,10 +15,10 @@ templ LoginPage(props LoginPageProps) {
 	@layouts.BaseLayout("Login") {
 		<div class="min-h-screen bg-black/80 flex items-center justify-center p-4">
 			<div class="w-full max-w-md">
-				<div class="bg-white rounded-lg shadow-lg p-8">
+				<div class="bg-card rounded-lg shadow-lg p-8">
 					<!-- Logo/Brand -->
 					<div class="text-center mb-8">
-						<h1 class="text-3xl font-bold text-gray-900">ThreeFive</h1>
+						<h1 class="text-3xl font-bold text-foreground">ThreeFive</h1>
 						<p class="text-gray-600 mt-2">Sign in to your account</p>
 					</div>
 					<!-- Error Message -->
@@ -61,10 +61,10 @@ templ LoginPage(props LoginPageProps) {
 						<!-- Remember Me & Forgot Password -->
 						<div class="flex items-center justify-between text-sm">
 							<label class="flex items-center">
-								<input type="checkbox" name="remember" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"/>
+								<input type="checkbox" name="remember" class="rounded border-gray-300 text-primary focus:ring-primary"/>
 								<span class="ml-2 text-gray-700">Remember me</span>
 							</label>
-							<a href="/forgot-password" class="text-blue-600 hover:text-blue-700">
+							<a href="/forgot-password" class="text-primary hover:text-primary">
 								Forgot password?
 							</a>
 						</div>
@@ -82,7 +82,7 @@ templ LoginPage(props LoginPageProps) {
 				<!-- Footer -->
 				<p class="text-center text-sm text-gray-600 mt-6">
 					Don't have an account?
-					<a href="/register" class="text-blue-600 hover:text-blue-700 font-medium">
+					<a href="/register" class="text-primary hover:text-primary font-medium">
 						Sign up
 					</a>
 				</p>

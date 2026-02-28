@@ -12,18 +12,21 @@ import (
 	"github.com/iankencruz/threefive/pkg/validation"
 	"github.com/iankencruz/threefive/templates/lib"
 	"github.com/iankencruz/threefive/templates/pages"
+	"github.com/iankencruz/threefive/templates/pages/admin"
 	"github.com/labstack/echo/v5"
 )
 
 type PageHandler struct {
-	logger      *slog.Logger
-	pageService *services.PageService
+	logger         *slog.Logger
+	pageService    *services.PageService
+	projectService *services.ProjectService
 }
 
-func NewPageHandler(logger *slog.Logger, pageService *services.PageService) *PageHandler {
+func NewPageHandler(logger *slog.Logger, pageService *services.PageService, projectService *services.ProjectService) *PageHandler {
 	return &PageHandler{
-		logger:      logger,
-		pageService: pageService,
+		logger:         logger,
+		pageService:    pageService,
+		projectService: projectService,
 	}
 }
 
@@ -39,7 +42,7 @@ func (h *PageHandler) ListPages(c *echo.Context) error {
 	ctx := lib.WithUser(c.Request().Context(), getUser(c))
 	currentPath := c.Request().URL.Path
 	// Render page list component
-	component := pages.PageList(pagesResp, currentPath)
+	component := admin.PageList(pagesResp, currentPath)
 	return responses.Render(ctx, c, component)
 }
 
@@ -64,11 +67,17 @@ func (h *PageHandler) ShowEditPage(c *echo.Context) error {
 	var component templ.Component
 	switch pageResp.Page.PageType {
 	case "home":
-		component = pages.AdminHome(pageResp, currentPath)
+		// Get all published projects for the home page selector
+		availableProjects, err := h.projectService.ListPublishedProjects(c.Request().Context(), 100, 0)
+		if err != nil {
+			h.logger.Error("failed to list projects", "error", err)
+			availableProjects = []services.ProjectResponse{}
+		}
+		component = admin.AdminHome(pageResp, availableProjects, currentPath)
 	case "about":
-		component = pages.AdminAbout(pageResp, currentPath)
+		component = admin.AdminAbout(pageResp, currentPath)
 	case "contact":
-		component = pages.AdminContact(pageResp, currentPath)
+		component = admin.AdminContact(pageResp, currentPath)
 	default:
 		return c.String(400, "Invalid page type")
 	}
@@ -95,6 +104,9 @@ func (h *PageHandler) UpdatePage(c *echo.Context) error {
 		return responses.ErrorToast(c.Request().Context(), c, "Failed to parse form data")
 	}
 
+	// DEBUG: Log all form values
+	h.logger.Debug("Form data", "form", c.Request().Form)
+
 	// Build update request
 	req := &services.UpdatePageRequest{
 		Title:       c.FormValue("title"),
@@ -104,6 +116,17 @@ func (h *PageHandler) UpdatePage(c *echo.Context) error {
 	}
 
 	// Add page-specific fields
+	if existing.Page.PageType == "home" {
+		// Get featured project IDs for home page
+		req.FeaturedProjectIDs = c.Request().Form["featured_project_ids[]"]
+		h.logger.Debug("Home page featured projects", "ids", req.FeaturedProjectIDs, "count", len(req.FeaturedProjectIDs))
+
+		if err := h.pageService.UpdateFeaturedProjects(c.Request().Context(), existing.Page.ID, req.FeaturedProjectIDs); err != nil {
+			h.logger.Error("failed to update featured projects", "error", err)
+			return responses.ErrorToast(c.Request().Context(), c, "Failed to update featured projects")
+		}
+	}
+
 	if existing.Page.PageType == "about" {
 		req.Content = c.FormValue("content")
 		req.ContentImageID = c.FormValue("content_image_id")
@@ -112,7 +135,11 @@ func (h *PageHandler) UpdatePage(c *echo.Context) error {
 
 		// Get featured project IDs
 		c.Request().ParseForm()
-		req.FeaturedProjectIDs = c.Request().Form["featured_project_ids[]"]
+		featuredProjectIDs := c.Request().Form["featured_project_ids[]"]
+		if err := h.pageService.UpdateFeaturedProjects(c.Request().Context(), existing.Page.ID, featuredProjectIDs); err != nil {
+			h.logger.Error("failed to update featured projects", "error", err)
+			return responses.ErrorToast(c.Request().Context(), c, "Failed to update featured projects")
+		}
 	}
 
 	if existing.Page.PageType == "contact" {
@@ -134,15 +161,21 @@ func (h *PageHandler) UpdatePage(c *echo.Context) error {
 		errorCount := len(fieldErrors)
 		toastMessage := fmt.Sprintf("Please fix %d validation error(s)", errorCount)
 
+		// Get available projects for forms that need them
+		var availableProjects []services.ProjectResponse
+		if existing.Page.PageType == "home" || existing.Page.PageType == "about" {
+			availableProjects, _ = h.projectService.ListPublishedProjects(c.Request().Context(), 100, 0)
+		}
+
 		// Render appropriate form based on page type with errors
 		var component templ.Component
 		switch existing.Page.PageType {
 		case "home":
-			component = pages.AdminHomeForm(existing, fieldErrors)
+			component = admin.AdminHomeForm(existing, availableProjects, fieldErrors)
 		case "about":
-			component = pages.AdminAboutForm(existing, fieldErrors)
+			component = admin.AdminAboutForm(existing, fieldErrors)
 		case "contact":
-			component = pages.AdminContactForm(existing, fieldErrors)
+			component = admin.AdminContactForm(existing, fieldErrors)
 		}
 
 		return responses.RenderError(ctx, c, component, toastMessage)
@@ -158,14 +191,20 @@ func (h *PageHandler) UpdatePage(c *echo.Context) error {
 		// Database error
 		dbErrors := validation.FieldErrors{"general": err.Error()}
 
+		// Get available projects for forms that need them
+		var availableProjects []services.ProjectResponse
+		if existing.Page.PageType == "home" || existing.Page.PageType == "about" {
+			availableProjects, _ = h.projectService.ListPublishedProjects(c.Request().Context(), 100, 0)
+		}
+
 		var component templ.Component
 		switch existing.Page.PageType {
 		case "home":
-			component = pages.AdminHomeForm(updated, dbErrors)
+			component = admin.AdminHomeForm(updated, availableProjects, dbErrors)
 		case "about":
-			component = pages.AdminAboutForm(updated, dbErrors)
+			component = admin.AdminAboutForm(updated, dbErrors)
 		case "contact":
-			component = pages.AdminContactForm(updated, dbErrors)
+			component = admin.AdminContactForm(updated, dbErrors)
 		}
 
 		return responses.RenderError(ctx, c, component, err.Error())
@@ -176,60 +215,50 @@ func (h *PageHandler) UpdatePage(c *echo.Context) error {
 	// Success - render form with success toast
 	ctx := lib.WithUser(c.Request().Context(), getUser(c))
 
+	// Get available projects for forms that need them
+	var availableProjects []services.ProjectResponse
+	if updated.Page.PageType == "home" || updated.Page.PageType == "about" {
+		availableProjects, _ = h.projectService.ListPublishedProjects(c.Request().Context(), 100, 0)
+	}
+
 	var component templ.Component
 	switch updated.Page.PageType {
 	case "home":
-		component = pages.AdminHomeForm(updated, nil)
+		component = admin.AdminHomeForm(updated, availableProjects, nil)
 	case "about":
-		component = pages.AdminAboutForm(updated, nil)
+		component = admin.AdminAboutForm(updated, nil)
 	case "contact":
-		component = pages.AdminContactForm(updated, nil)
+		component = admin.AdminContactForm(updated, nil)
 	}
 
 	return responses.RenderSuccess(ctx, c, component, "Page updated successfully")
-} // Public page handlers (no auth required)
+}
 
-// ShowHomePage displays the home page to visitors
-// func (h *PageHandler) ShowHomePage(c *echo.Context) error {
-// 	h.logger.Debug("Loading home page")
-//
-// 	pageResp, err := h.pageService.GetPageBySlug(c.Request().Context(), "home")
-// 	if err != nil {
-// 		h.logger.Error("failed to get home page", "error", err)
-// 		return c.String(500, "Failed to load page")
-// 	}
-//
-// 	component := pages.HomePage(pageResp)
-// 	return responses.Render(c.Request().Context(), c, component)
-// }
-//
-// // ShowAboutPage displays the about page with featured projects
-// func (h *PageHandler) ShowAboutPage(c *echo.Context) error {
-// 	h.logger.Debug("Loading about page")
-//
-// 	pageResp, err := h.pageService.GetPageBySlug(c.Request().Context(), "about")
-// 	if err != nil {
-// 		h.logger.Error("failed to get about page", "error", err)
-// 		return c.String(500, "Failed to load page")
-// 	}
-//
-// 	component := pages.AboutPage(pageResp)
-// 	return responses.Render(c.Request().Context(), c, component)
-// }
-//
-// // ShowContactPage displays the contact page
-// func (h *PageHandler) ShowContactPage(c *echo.Context) error {
-// 	h.logger.Debug("Loading contact page")
-//
-// 	pageResp, err := h.pageService.GetPageBySlug(c.Request().Context(), "contact")
-// 	if err != nil {
-// 		h.logger.Error("failed to get contact page", "error", err)
-// 		return c.String(500, "Failed to load page")
-// 	}
-//
-// 	component := pages.ContactPage(pageResp)
-// 	return responses.Render(c.Request().Context(), c, component)
-// }
+// Public page handlers (no auth required)
+
+// ShowPublicHome renders the public home page
+func (h *PageHandler) ShowPublicHome(c *echo.Context) error {
+	page, err := h.pageService.GetPageBySlug(c.Request().Context(), "home")
+	if err != nil {
+		h.logger.Error("failed to get home page", "error", err)
+		return c.String(500, "Failed to load home page")
+	}
+
+	component := pages.Home(page)
+	return responses.Render(c.Request().Context(), c, component)
+}
+
+// ShowPublicAbout renders the public about page
+func (h *PageHandler) ShowPublicAbout(c *echo.Context) error {
+	page, err := h.pageService.GetPageBySlug(c.Request().Context(), "about")
+	if err != nil {
+		h.logger.Error("failed to get about page", "error", err)
+		return c.String(500, "Failed to load about page")
+	}
+
+	component := pages.About(page)
+	return responses.Render(c.Request().Context(), c, component)
+}
 
 // Helper function to get user from echo context
 func getUser(c *echo.Context) *generated.User {

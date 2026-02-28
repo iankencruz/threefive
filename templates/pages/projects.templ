@@ -6,7 +6,7 @@ import (
 	"github.com/iankencruz/threefive/templates/layouts"
 )
 
-templ PublicProjectsList(projects []services.ProjectResponse) {
+templ Projects(projects []services.ProjectResponse) {
 	@layouts.BaseLayout("Work") {
 		<div class="min-h-screen bg-background text-foreground">
 			<nav
