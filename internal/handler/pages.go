@@ -2,17 +2,19 @@
 package handler
 
 import (
-	"fmt"
+	"encoding/json"
 	"log/slog"
 
 	"github.com/a-h/templ"
+	"github.com/google/uuid"
+	"github.com/iankencruz/threefive/components/toast"
 	"github.com/iankencruz/threefive/database/generated"
 	"github.com/iankencruz/threefive/internal/services"
 	"github.com/iankencruz/threefive/pkg/responses"
-	"github.com/iankencruz/threefive/pkg/validation"
 	"github.com/iankencruz/threefive/templates/lib"
 	"github.com/iankencruz/threefive/templates/pages"
 	"github.com/iankencruz/threefive/templates/pages/admin"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/labstack/echo/v5"
 )
 
@@ -32,16 +34,15 @@ func NewPageHandler(logger *slog.Logger, pageService *services.PageService, proj
 
 func (h *PageHandler) ListPages(c *echo.Context) error {
 	h.logger.Debug("Loading page list")
-	// Fetch all pages
+
 	pagesResp, err := h.pageService.ListPages(c.Request().Context())
 	if err != nil {
 		h.logger.Error("failed to list pages", "error", err)
 		return c.String(500, "Failed to load pages")
 	}
-	// Add user to context for template
+
 	ctx := lib.WithUser(c.Request().Context(), getUser(c))
 	currentPath := c.Request().URL.Path
-	// Render page list component
 	component := admin.PageList(pagesResp, currentPath)
 	return responses.Render(ctx, c, component)
 }
@@ -49,25 +50,20 @@ func (h *PageHandler) ListPages(c *echo.Context) error {
 // ShowEditPage renders the edit form for a page (admin only)
 func (h *PageHandler) ShowEditPage(c *echo.Context) error {
 	slug := c.Param("slug")
-
 	h.logger.Debug("Loading page edit form", "slug", slug)
 
-	// Get page with enriched data
 	pageResp, err := h.pageService.GetPageBySlug(c.Request().Context(), slug)
 	if err != nil {
 		h.logger.Error("failed to get page", "error", err, "slug", slug)
 		return c.String(404, "Page not found")
 	}
 
-	// Add user to context for template
 	ctx := lib.WithUser(c.Request().Context(), getUser(c))
 	currentPath := c.Request().URL.Path
 
-	// Render appropriate edit form based on page type
 	var component templ.Component
 	switch pageResp.Page.PageType {
 	case "home":
-		// Get all published projects for the home page selector
 		availableProjects, err := h.projectService.ListPublishedProjects(c.Request().Context(), 100, 0)
 		if err != nil {
 			h.logger.Error("failed to list projects", "error", err)
@@ -88,7 +84,6 @@ func (h *PageHandler) ShowEditPage(c *echo.Context) error {
 // UpdatePage handles page update form submission
 func (h *PageHandler) UpdatePage(c *echo.Context) error {
 	slug := c.Param("slug")
-
 	h.logger.Debug("Update page request", "slug", slug)
 
 	// Get existing page to determine type
@@ -98,43 +93,61 @@ func (h *PageHandler) UpdatePage(c *echo.Context) error {
 		return responses.ErrorToast(c.Request().Context(), c, "Page not found")
 	}
 
-	// Parse form data
 	if err := c.Request().ParseForm(); err != nil {
 		h.logger.Error("failed to parse form", "error", err)
 		return responses.ErrorToast(c.Request().Context(), c, "Failed to parse form data")
 	}
 
-	// DEBUG: Log all form values
-	h.logger.Debug("Form data", "form", c.Request().Form)
+	h.logger.Debug("Form data received", "form", c.Request().Form)
 
-	// Build update request
-	req := &services.UpdatePageRequest{
-		Title:       c.FormValue("title"),
-		Header:      c.FormValue("header"),
-		SubHeader:   c.FormValue("sub_header"),
-		HeroMediaID: c.FormValue("hero_media_id"),
+	// Build common update params
+	params := generated.UpdatePageParams{
+		ID: existing.Page.ID,
 	}
 
-	// Add page-specific fields
-	if existing.Page.PageType == "home" {
-		// Get featured project IDs for home page
-		req.FeaturedProjectIDs = c.Request().Form["featured_project_ids[]"]
-		h.logger.Debug("Home page featured projects", "ids", req.FeaturedProjectIDs, "count", len(req.FeaturedProjectIDs))
+	if title := c.FormValue("title"); title != "" {
+		params.Title = pgtype.Text{String: title, Valid: true}
+	}
+	if header := c.FormValue("header"); header != "" {
+		params.Header = pgtype.Text{String: header, Valid: true}
+	}
+	if subHeader := c.FormValue("sub_header"); subHeader != "" {
+		params.SubHeader = pgtype.Text{String: subHeader, Valid: true}
+	}
+	if heroMediaID := c.FormValue("hero_media_id"); heroMediaID != "" {
+		if mediaUUID, err := uuid.Parse(heroMediaID); err == nil {
+			params.HeroMediaID = pgtype.UUID{Bytes: mediaUUID, Valid: true}
+		}
+	}
 
-		if err := h.pageService.UpdateFeaturedProjects(c.Request().Context(), existing.Page.ID, req.FeaturedProjectIDs); err != nil {
+	// Home page: update featured projects
+	if existing.Page.PageType == "home" {
+		featuredProjectIDs := c.Request().Form["featured_project_ids[]"]
+		h.logger.Debug("Home page featured project IDs", "ids", featuredProjectIDs, "count", len(featuredProjectIDs))
+
+		if err := h.pageService.UpdateFeaturedProjects(c.Request().Context(), existing.Page.ID, featuredProjectIDs); err != nil {
 			h.logger.Error("failed to update featured projects", "error", err)
 			return responses.ErrorToast(c.Request().Context(), c, "Failed to update featured projects")
 		}
 	}
 
+	// About page specific fields + featured projects
 	if existing.Page.PageType == "about" {
-		req.Content = c.FormValue("content")
-		req.ContentImageID = c.FormValue("content_image_id")
-		req.CtaText = c.FormValue("cta_text")
-		req.CtaLink = c.FormValue("cta_link")
+		if content := c.FormValue("content"); content != "" {
+			params.Content = pgtype.Text{String: content, Valid: true}
+		}
+		if contentImageID := c.FormValue("content_image_id"); contentImageID != "" {
+			if imgUUID, err := uuid.Parse(contentImageID); err == nil {
+				params.ContentImageID = pgtype.UUID{Bytes: imgUUID, Valid: true}
+			}
+		}
+		if ctaText := c.FormValue("cta_text"); ctaText != "" {
+			params.CtaText = pgtype.Text{String: ctaText, Valid: true}
+		}
+		if ctaLink := c.FormValue("cta_link"); ctaLink != "" {
+			params.CtaLink = pgtype.Text{String: ctaLink, Valid: true}
+		}
 
-		// Get featured project IDs
-		c.Request().ParseForm()
 		featuredProjectIDs := c.Request().Form["featured_project_ids[]"]
 		if err := h.pageService.UpdateFeaturedProjects(c.Request().Context(), existing.Page.ID, featuredProjectIDs); err != nil {
 			h.logger.Error("failed to update featured projects", "error", err)
@@ -142,99 +155,65 @@ func (h *PageHandler) UpdatePage(c *echo.Context) error {
 		}
 	}
 
+	// Contact page specific fields
 	if existing.Page.PageType == "contact" {
-		req.Email = c.FormValue("email")
-		req.SocialTwitter = c.FormValue("social_twitter")
-		req.SocialLinkedIn = c.FormValue("social_linkedin")
-		req.SocialGitHub = c.FormValue("social_github")
-		req.SocialInstagram = c.FormValue("social_instagram")
-	}
-
-	// ✅ VALIDATE
-	fieldErrors, err := req.Validate(existing.Page.PageType)
-	if err != nil {
-		h.logger.Warn("validation failed", "errors", fieldErrors)
-
-		ctx := lib.WithUser(c.Request().Context(), getUser(c))
-
-		// Create error message with count
-		errorCount := len(fieldErrors)
-		toastMessage := fmt.Sprintf("Please fix %d validation error(s)", errorCount)
-
-		// Get available projects for forms that need them
-		var availableProjects []services.ProjectResponse
-		if existing.Page.PageType == "home" || existing.Page.PageType == "about" {
-			availableProjects, _ = h.projectService.ListPublishedProjects(c.Request().Context(), 100, 0)
+		if email := c.FormValue("email"); email != "" {
+			params.Email = pgtype.Text{String: email, Valid: true}
 		}
 
-		// Render appropriate form based on page type with errors
-		var component templ.Component
-		switch existing.Page.PageType {
-		case "home":
-			component = admin.AdminHomeForm(existing, availableProjects, fieldErrors)
-		case "about":
-			component = admin.AdminAboutForm(existing, fieldErrors)
-		case "contact":
-			component = admin.AdminContactForm(existing, fieldErrors)
+		socialLinks := services.SocialLinks{}
+		hasAny := false
+		if twitter := c.FormValue("social_twitter"); twitter != "" {
+			socialLinks.Twitter = twitter
+			hasAny = true
 		}
-
-		return responses.RenderError(ctx, c, component, toastMessage)
+		if linkedin := c.FormValue("social_linkedin"); linkedin != "" {
+			socialLinks.LinkedIn = linkedin
+			hasAny = true
+		}
+		if github := c.FormValue("social_github"); github != "" {
+			socialLinks.GitHub = github
+			hasAny = true
+		}
+		if instagram := c.FormValue("social_instagram"); instagram != "" {
+			socialLinks.Instagram = instagram
+			hasAny = true
+		}
+		if hasAny {
+			socialLinksJSON, _ := json.Marshal(socialLinks)
+			params.SocialLinks = socialLinksJSON
+		}
 	}
 
-	// Update page
-	updated, err := h.pageService.UpdatePageBySlug(c.Request().Context(), slug, req)
+	h.logger.Info("Updating page", "slug", slug, "page_type", existing.Page.PageType)
+
+	// UpdatePageBySlug now returns a full *PageResponse (enriched)
+	updated, err := h.pageService.UpdatePageBySlug(c.Request().Context(), slug, params)
 	if err != nil {
 		h.logger.Error("failed to update page", "error", err, "slug", slug)
-
-		ctx := lib.WithUser(c.Request().Context(), getUser(c))
-
-		// Database error
-		dbErrors := validation.FieldErrors{"general": err.Error()}
-
-		// Get available projects for forms that need them
-		var availableProjects []services.ProjectResponse
-		if existing.Page.PageType == "home" || existing.Page.PageType == "about" {
-			availableProjects, _ = h.projectService.ListPublishedProjects(c.Request().Context(), 100, 0)
-		}
-
-		var component templ.Component
-		switch existing.Page.PageType {
-		case "home":
-			component = admin.AdminHomeForm(updated, availableProjects, dbErrors)
-		case "about":
-			component = admin.AdminAboutForm(updated, dbErrors)
-		case "contact":
-			component = admin.AdminContactForm(updated, dbErrors)
-		}
-
-		return responses.RenderError(ctx, c, component, err.Error())
+		return responses.ErrorToast(c.Request().Context(), c, "Failed to update page")
 	}
 
 	h.logger.Info("Page updated successfully", "slug", slug)
 
-	// Success - render form with success toast
 	ctx := lib.WithUser(c.Request().Context(), getUser(c))
 
-	// Get available projects for forms that need them
-	var availableProjects []services.ProjectResponse
-	if updated.Page.PageType == "home" || updated.Page.PageType == "about" {
-		availableProjects, _ = h.projectService.ListPublishedProjects(c.Request().Context(), 100, 0)
-	}
-
+	// Build the success response component with fresh enriched data
 	var component templ.Component
 	switch updated.Page.PageType {
 	case "home":
+		availableProjects, _ := h.projectService.ListPublishedProjects(c.Request().Context(), 100, 0)
 		component = admin.AdminHomeForm(updated, availableProjects, nil)
 	case "about":
 		component = admin.AdminAboutForm(updated, nil)
 	case "contact":
-		component = admin.AdminContactForm(updated, nil)
+		component = admin.AdminContact(updated, c.Request().URL.Path)
+	default:
+		return responses.ErrorToast(c.Request().Context(), c, "Unknown page type")
 	}
 
 	return responses.RenderSuccess(ctx, c, component, "Page updated successfully")
 }
-
-// Public page handlers (no auth required)
 
 // ShowPublicHome renders the public home page
 func (h *PageHandler) ShowPublicHome(c *echo.Context) error {
@@ -243,7 +222,6 @@ func (h *PageHandler) ShowPublicHome(c *echo.Context) error {
 		h.logger.Error("failed to get home page", "error", err)
 		return c.String(500, "Failed to load home page")
 	}
-
 	component := pages.Home(page)
 	return responses.Render(c.Request().Context(), c, component)
 }
@@ -255,7 +233,6 @@ func (h *PageHandler) ShowPublicAbout(c *echo.Context) error {
 		h.logger.Error("failed to get about page", "error", err)
 		return c.String(500, "Failed to load about page")
 	}
-
 	component := pages.About(page)
 	return responses.Render(c.Request().Context(), c, component)
 }
@@ -268,3 +245,6 @@ func getUser(c *echo.Context) *generated.User {
 	}
 	return user
 }
+
+// toastVariant is a helper alias so we don't need to import toast everywhere
+var _ = toast.VariantSuccess
