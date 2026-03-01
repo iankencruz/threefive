@@ -32,7 +32,7 @@ templ AdminAboutForm(pageResp *services.PageResponse, errors validation.FieldErr
 	<div class="mb-8">
 		<a
 			href="/admin/pages"
-			class="inline-flex items-center gap-2 py-2 mb-4 text-gray-700 text-sm font-medium rounded hover:underline transition-colors"
+			class="inline-flex items-center gap-2 py-2 mb-4 text-foreground text-sm font-medium rounded hover:underline transition-colors"
 		>
 			<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
@@ -42,12 +42,12 @@ templ AdminAboutForm(pageResp *services.PageResponse, errors validation.FieldErr
 		<div class="flex items-center justify-between">
 			<div>
 				<h1 class="text-3xl font-bold text-foreground">Edit About Page</h1>
-				<p class="text-gray-600 mt-2">Update your about page content, featured projects, and CTA</p>
+				<p class="text-foreground mt-2">Update your about page content, featured projects, and CTA</p>
 			</div>
 		</div>
 	</div>
 	<!-- Edit Form -->
-	<div class="bg-white rounded border border-gray-200">
+	<div class="bg-card rounded border border-border">
 		<form
 			hx-put={ "/admin/pages/" + pageResp.Page.Slug }
 			hx-target="#page-edit-container"
@@ -58,7 +58,7 @@ templ AdminAboutForm(pageResp *services.PageResponse, errors validation.FieldErr
 			@lib.GeneralError(errors["general"])
 			<!-- Title Field -->
 			<div class="space-y-2">
-				<label for="title" class="block text-sm font-medium text-gray-700">
+				<label for="title" class="block text-sm font-medium text-foreground">
 					Page Title <span class="text-red-500">*</span>
 				</label>
 				<input
@@ -67,7 +67,7 @@ templ AdminAboutForm(pageResp *services.PageResponse, errors validation.FieldErr
 					name="title"
 					value={ pageResp.Page.Title }
 					class={
-						"w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+						"w-full px-4 py-2 border  rounded focus:ring-2 focus:ring-primary focus:border-primary",
 						templ.KV("border-red-500 focus:border-red-500", lib.HasError("title", errors)),
 					}
 					placeholder="Enter page title"
@@ -76,10 +76,10 @@ templ AdminAboutForm(pageResp *services.PageResponse, errors validation.FieldErr
 			</div>
 			<!-- Hero Media -->
 			<div class="space-y-2">
-				<label class="block text-sm font-medium text-gray-700">Hero Image/Video</label>
+				<label class="block text-sm font-medium text-foreground">Hero Image/Video</label>
 				<div class="flex items-start gap-4" id="hero_media_id_preview">
 					if pageResp.HeroMedia != nil {
-						<div class="relative w-48 h-32 rounded border border-gray-200 overflow-hidden">
+						<div class="relative w-48 h-32 rounded border border-border overflow-hidden">
 							if pageResp.HeroMedia.MimeType[:5] == "image" {
 								<img src={ pageResp.HeroMedia.ThumbnailURL } alt="Hero" class="w-full h-full object-cover"/>
 							} else {
@@ -96,7 +96,7 @@ templ AdminAboutForm(pageResp *services.PageResponse, errors validation.FieldErr
 							</button>
 						</div>
 					} else {
-						<div class="w-48 h-32 rounded border-2 border-dashed border-gray-300 flex items-center justify-center">
+						<div class="w-48 h-32 rounded border-2 border-dashed  flex items-center justify-center">
 							<span class="text-gray-400 text-sm">No hero media</span>
 						</div>
 					}
@@ -119,7 +119,7 @@ templ AdminAboutForm(pageResp *services.PageResponse, errors validation.FieldErr
 			</div>
 			<!-- Header & Sub-Header -->
 			<div class="space-y-2">
-				<label for="header" class="block text-sm font-medium text-gray-700">Header</label>
+				<label for="header" class="block text-sm font-medium text-foreground">Header</label>
 				<input
 					type="text"
 					id="header"
@@ -128,7 +128,7 @@ templ AdminAboutForm(pageResp *services.PageResponse, errors validation.FieldErr
 						value={ pageResp.Page.Header.String }
 					}
 					class={
-						"w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+						"w-full px-4 py-2 border  rounded focus:ring-2 focus:ring-primary focus:border-primary",
 						templ.KV("border-red-500 focus:border-red-500", lib.HasError("header", errors)),
 					}
 					placeholder="About Me"
@@ -136,7 +136,7 @@ templ AdminAboutForm(pageResp *services.PageResponse, errors validation.FieldErr
 				@lib.FieldError("header", errors)
 			</div>
 			<div class="space-y-2">
-				<label for="sub_header" class="block text-sm font-medium text-gray-700">Sub-Header</label>
+				<label for="sub_header" class="block text-sm font-medium text-foreground">Sub-Header</label>
 				<input
 					type="text"
 					id="sub_header"
@@ -145,7 +145,7 @@ templ AdminAboutForm(pageResp *services.PageResponse, errors validation.FieldErr
 						value={ pageResp.Page.SubHeader.String }
 					}
 					class={
-						"w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+						"w-full px-4 py-2 border  rounded focus:ring-2 focus:ring-primary focus:border-primary",
 						templ.KV("border-red-500 focus:border-red-500", lib.HasError("sub_header", errors)),
 					}
 					placeholder="Learn more about my journey"
@@ -154,13 +154,13 @@ templ AdminAboutForm(pageResp *services.PageResponse, errors validation.FieldErr
 			</div>
 			<!-- Content -->
 			<div class="space-y-2">
-				<label for="content" class="block text-sm font-medium text-gray-700">Content</label>
+				<label for="content" class="block text-sm font-medium text-foreground">Content</label>
 				<textarea
 					id="content"
 					name="content"
 					rows="8"
 					class={
-						"w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+						"w-full px-4 py-2 border  rounded focus:ring-2 focus:ring-primary focus:border-primary",
 						templ.KV("border-red-500 focus:border-red-500", lib.HasError("content", errors)),
 					}
 					placeholder="Tell your story..."
@@ -173,10 +173,10 @@ templ AdminAboutForm(pageResp *services.PageResponse, errors validation.FieldErr
 			</div>
 			<!-- Content Image -->
 			<div class="space-y-2">
-				<label class="block text-sm font-medium text-gray-700">Content Image</label>
+				<label class="block text-sm font-medium text-foreground">Content Image</label>
 				<div class="flex items-start gap-4" id="content_image_id_preview">
 					if pageResp.ContentImage != nil {
-						<div class="relative w-48 h-32 rounded border border-gray-200 overflow-hidden">
+						<div class="relative w-48 h-32 rounded border border-border overflow-hidden">
 							<img src={ pageResp.ContentImage.ThumbnailURL } alt="Content" class="w-full h-full object-cover"/>
 							<button
 								type="button"
@@ -189,7 +189,7 @@ templ AdminAboutForm(pageResp *services.PageResponse, errors validation.FieldErr
 							</button>
 						</div>
 					} else {
-						<div class="w-48 h-32 rounded border-2 border-dashed border-gray-300 flex items-center justify-center">
+						<div class="w-48 h-32 rounded border-2 border-dashed  flex items-center justify-center">
 							<span class="text-gray-400 text-sm">No content image</span>
 						</div>
 					}
@@ -211,11 +211,11 @@ templ AdminAboutForm(pageResp *services.PageResponse, errors validation.FieldErr
 				/>
 			</div>
 			<!-- CTA Section -->
-			<div class="border-t border-gray-200 pt-6">
+			<div class="border-t border-border pt-6">
 				<h3 class="text-lg font-semibold text-foreground mb-4">Call to Action</h3>
 				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 					<div class="space-y-2">
-						<label for="cta_text" class="block text-sm font-medium text-gray-700">CTA Text</label>
+						<label for="cta_text" class="block text-sm font-medium text-foreground">CTA Text</label>
 						<input
 							type="text"
 							id="cta_text"
@@ -224,7 +224,7 @@ templ AdminAboutForm(pageResp *services.PageResponse, errors validation.FieldErr
 								value={ pageResp.Page.CtaText.String }
 							}
 							class={
-								"w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+								"w-full px-4 py-2 border  rounded focus:ring-2 focus:ring-primary focus:border-primary",
 								templ.KV("border-red-500 focus:border-red-500", lib.HasError("cta_text", errors)),
 							}
 							placeholder="View My Work"
@@ -232,7 +232,7 @@ templ AdminAboutForm(pageResp *services.PageResponse, errors validation.FieldErr
 						@lib.FieldError("cta_text", errors)
 					</div>
 					<div class="space-y-2">
-						<label for="cta_link" class="block text-sm font-medium text-gray-700">CTA Link</label>
+						<label for="cta_link" class="block text-sm font-medium text-foreground">CTA Link</label>
 						<input
 							type="url"
 							id="cta_link"
@@ -241,7 +241,7 @@ templ AdminAboutForm(pageResp *services.PageResponse, errors validation.FieldErr
 								value={ pageResp.Page.CtaLink.String }
 							}
 							class={
-								"w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+								"w-full px-4 py-2 border  rounded focus:ring-2 focus:ring-primary focus:border-primary",
 								templ.KV("border-red-500 focus:border-red-500", lib.HasError("cta_link", errors)),
 							}
 							placeholder="/projects"
@@ -251,11 +251,11 @@ templ AdminAboutForm(pageResp *services.PageResponse, errors validation.FieldErr
 				</div>
 			</div>
 			<!-- Form Actions -->
-			<div class="flex gap-3 pt-6 border-t border-gray-200">
+			<div class="flex gap-3 pt-6 border-t border-border">
 				@button.Button(button.Props{Type: "submit", Variant: button.VariantDefault}) {
 					Save Changes
 				}
-				<a href="/admin/pages" class="inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors">
+				<a href="/admin/pages" class="inline-flex items-center justify-center px-4 py-2 border  text-foreground text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors">
 					Cancel
 				</a>
 			</div>

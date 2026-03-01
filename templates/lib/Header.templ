@@ -3,6 +3,7 @@ package lib
 import (
 	"github.com/iankencruz/threefive/components/dialog"
 	"github.com/iankencruz/threefive/components/toast"
+	"github.com/iankencruz/threefive/components/popover"
 )
 
 templ Header(title string, isAdmin bool) {
@@ -21,6 +22,7 @@ templ Header(title string, isAdmin bool) {
 		<link rel="stylesheet" href="/assets/css/output.css"/>
 		<script src="/assets/js/htmx.min.js"></script>
 		@dialog.Script()
+		@popover.Script()
 		@toast.Script()
 	</head>
 }

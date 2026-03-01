@@ -171,7 +171,7 @@ templ ProjectDetails(project *services.ProjectResponse) {
 						if totalSlides(project) > 1 {
 							<div class="mt-10 pt-8 border-t border-border">
 								<p class="text-[10px] tracking-[0.2em] uppercase text-foreground/50 mb-4">Images</p>
-								<div class="flex gap-2 overflow-x-auto pb-1">
+								<div class="flex gap-2 pb-1 flex-wrap h-64 overflow-y-auto">
 									if project.FeaturedImage != nil {
 										<button
 											onclick="carouselGoTo(0)"
