@@ -4,24 +4,13 @@ package pages
 import (
 	"github.com/iankencruz/threefive/internal/services"
 	"github.com/iankencruz/threefive/templates/layouts"
+	"github.com/iankencruz/threefive/templates/lib"
 )
 
 templ Home(page *services.PageResponse) {
 	@layouts.BaseLayout("ThreeFive") {
 		<div class="min-h-screen bg-background text-foreground">
-			<!-- Nav -->
-			<nav class="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 py-5 bg-background/90 backdrop-blur-sm border-b border-border">
-				<a href="/" class="text-sm font-semibold tracking-[0.15em] uppercase text-primary">
-					ThreeFive
-				</a>
-				<div class="hidden md:flex items-center gap-8">
-					<a href="/projects" class="text-xs tracking-[0.12em] uppercase text-foreground/60 hover:text-accent transition-colors">Work</a>
-					<a href="/about" class="text-xs tracking-[0.12em] uppercase text-foreground/60 hover:text-accent transition-colors">About</a>
-					<a href="/blog" class="text-xs tracking-[0.12em] uppercase text-foreground/60 hover:text-accent transition-colors">Blog</a>
-					<a href="/contact" class="text-xs tracking-[0.12em] uppercase text-foreground/60 hover:text-accent transition-colors">Contact</a>
-				</div>
-				<div class="w-24"></div>
-			</nav>
+			@lib.NavigationBar()
 			<!-- Hero Section -->
 			<section class="relative h-screen overflow-hidden">
 				<!-- Hero Image/Video -->

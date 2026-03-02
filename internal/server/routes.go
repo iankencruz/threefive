@@ -38,6 +38,7 @@ func (s *Server) RegisterRoutes() {
 	s.Echo.GET("/about", pageHandler.ShowPublicAbout)
 	s.Echo.GET("/projects", projectHandler.ShowPublicProjectsList)
 	s.Echo.GET("/projects/:slug", projectHandler.ShowPublicProject)
+	// s.Echo.GET("/contact", pageHandler.ShowPublicContact)
 
 	// *********
 	// admin routes (require authentication)

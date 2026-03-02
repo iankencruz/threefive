@@ -4,24 +4,13 @@ package pages
 import (
 	"github.com/iankencruz/threefive/internal/services"
 	"github.com/iankencruz/threefive/templates/layouts"
+	"github.com/iankencruz/threefive/templates/lib"
 )
 
 templ About(page *services.PageResponse) {
 	@layouts.BaseLayout("About") {
 		<div class="min-h-screen bg-background text-foreground">
-			<!-- Nav -->
-			<nav class="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 py-5 bg-background/90 backdrop-blur-sm border-b border-border">
-				<a href="/" class="text-sm font-semibold tracking-[0.15em] uppercase hover:text-primary transition-colors">
-					ThreeFive
-				</a>
-				<div class="hidden md:flex items-center gap-8">
-					<a href="/projects" class="text-xs tracking-[0.12em] uppercase text-foreground/60 hover:text-accent transition-colors">Work</a>
-					<a href="/about" class="text-xs tracking-[0.12em] uppercase text-primary border-b border-primary pb-0.5">About</a>
-					<a href="/blog" class="text-xs tracking-[0.12em] uppercase text-foreground/60 hover:text-accent transition-colors">Blog</a>
-					<a href="/contact" class="text-xs tracking-[0.12em] uppercase text-foreground/60 hover:text-accent transition-colors">Contact</a>
-				</div>
-				<div class="w-24"></div>
-			</nav>
+			@lib.NavigationBar()
 			<main class="pt-18">
 				<!-- Hero Section -->
 				<section class="relative min-h-[60vh] flex items-center overflow-hidden">
@@ -113,25 +102,6 @@ templ About(page *services.PageResponse) {
 									/>
 								</div>
 							}
-							<!-- Optional: Skills/Services Grid -->
-							<div class="grid grid-cols-2 gap-4">
-								<div class="p-6 bg-card border border-border rounded-sm">
-									<div class="text-3xl font-light text-primary mb-2">5+</div>
-									<div class="text-xs tracking-wide text-muted-foreground uppercase">Years Experience</div>
-								</div>
-								<div class="p-6 bg-card border border-border rounded-sm">
-									<div class="text-3xl font-light text-primary mb-2">50+</div>
-									<div class="text-xs tracking-wide text-muted-foreground uppercase">Projects Completed</div>
-								</div>
-								<div class="p-6 bg-card border border-border rounded-sm">
-									<div class="text-3xl font-light text-primary mb-2">30+</div>
-									<div class="text-xs tracking-wide text-muted-foreground uppercase">Happy Clients</div>
-								</div>
-								<div class="p-6 bg-card border border-border rounded-sm">
-									<div class="text-3xl font-light text-primary mb-2">10+</div>
-									<div class="text-xs tracking-wide text-muted-foreground uppercase">Awards Won</div>
-								</div>
-							</div>
 						</div>
 					</div>
 				</section>

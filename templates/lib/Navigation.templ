@@ -1,0 +1,35 @@
+package lib
+
+type Navigation struct {
+	Title string
+	Href  string
+}
+
+templ NavigationBar() {
+	<nav
+		class="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 py-5 bg-background/90 backdrop-blur-sm border-b border-border"
+	>
+		<a href="/" class="text-sm font-semibold tracking-[0.15em] uppercase hover:text-primary transition-colors">
+			ThreeFive
+		</a>
+		<div class="hidden md:flex items-center gap-8">
+			<a
+				href="/projects"
+				class="text-xs tracking-[0.12em] uppercase text-primary border-b border-primary pb-0.5"
+			>Work</a>
+			<a
+				href="/about"
+				class="text-xs tracking-[0.12em] uppercase text-muted-foreground hover:text-foreground transition-colors"
+			>About</a>
+			<a
+				href="/blog"
+				class="text-xs tracking-[0.12em] uppercase text-muted-foreground hover:text-foreground transition-colors"
+			>Blog</a>
+			<a
+				href="/contact"
+				class="text-xs tracking-[0.12em] uppercase text-muted-foreground hover:text-foreground transition-colors"
+			>Contact</a>
+		</div>
+		<div class="w-24"></div>
+	</nav>
+}

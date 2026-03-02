@@ -4,37 +4,13 @@ import (
 	"fmt"
 	"github.com/iankencruz/threefive/internal/services"
 	"github.com/iankencruz/threefive/templates/layouts"
+	"github.com/iankencruz/threefive/templates/lib"
 )
 
 templ Projects(projects []services.ProjectResponse) {
 	@layouts.BaseLayout("Work") {
 		<div class="min-h-screen bg-background text-foreground">
-			<nav
-				class="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 py-5 bg-background/90 backdrop-blur-sm border-b border-border"
-			>
-				<a href="/" class="text-sm font-semibold tracking-[0.15em] uppercase hover:text-primary transition-colors">
-					ThreeFive
-				</a>
-				<div class="hidden md:flex items-center gap-8">
-					<a
-						href="/projects"
-						class="text-xs tracking-[0.12em] uppercase text-primary border-b border-primary pb-0.5"
-					>Work</a>
-					<a
-						href="/about"
-						class="text-xs tracking-[0.12em] uppercase text-muted-foreground hover:text-foreground transition-colors"
-					>About</a>
-					<a
-						href="/blog"
-						class="text-xs tracking-[0.12em] uppercase text-muted-foreground hover:text-foreground transition-colors"
-					>Blog</a>
-					<a
-						href="/contact"
-						class="text-xs tracking-[0.12em] uppercase text-muted-foreground hover:text-foreground transition-colors"
-					>Contact</a>
-				</div>
-				<div class="w-24"></div>
-			</nav>
+			@lib.NavigationBar()
 			<main class="pt-18">
 				<div class="px-8 lg:px-16 pt-16 pb-12 border-b border-border">
 					<p class="text-[10px] tracking-[0.2em] uppercase text-accent mb-3">Portfolio</p>
