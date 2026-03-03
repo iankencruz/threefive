@@ -135,6 +135,7 @@ func NewServer() *Server {
 
 	contactService := services.NewContactService(
 		queries,
+		slogger,
 		os.Getenv("SMTP_HOST"),
 		os.Getenv("SMTP_PORT"),
 		os.Getenv("SMTP_USER"),
@@ -200,6 +201,7 @@ func (s *Server) Start(ctx context.Context, port string) error {
 
 	// Start session cleanup
 	go s.sessionCleanupWorker(ctx)
+	go s.contactEmailRetryWorker(ctx)
 
 	srv := &http.Server{
 		Addr:    port,
@@ -252,6 +254,26 @@ func (s *Server) sessionCleanupWorker(ctx context.Context) {
 			} else {
 				s.Log.Debug("cleaned up expired sessions")
 			}
+		}
+	}
+}
+
+func (s *Server) contactEmailRetryWorker(ctx context.Context) {
+	ticker := time.NewTicker(5 * time.Minute)
+	defer ticker.Stop()
+
+	s.Log.Info("contact email retry worker started")
+
+	// Attempt any leftover unsent submissions immediately on startup
+	s.ContactService.RetryUnsent(ctx)
+
+	for {
+		select {
+		case <-ctx.Done():
+			s.Log.Info("contact email retry worker stopped")
+			return
+		case <-ticker.C:
+			s.ContactService.RetryUnsent(ctx)
 		}
 	}
 }

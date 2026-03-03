@@ -3,14 +3,18 @@ package services
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/smtp"
 	"strings"
 
 	"github.com/iankencruz/threefive/database/generated"
 	"github.com/iankencruz/threefive/pkg/validation"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
-// ── Request ──────────────────────────────────────────────────────────────────
+const maxEmailAttempts = 5
+
+// ── Request ───────────────────────────────────────────────────────────────────
 
 type ContactFormRequest struct {
 	FirstName string
@@ -75,6 +79,7 @@ func (r *ContactFormRequest) Validate() (validation.FieldErrors, error) {
 
 type ContactService struct {
 	queries   *generated.Queries
+	logger    *slog.Logger
 	smtpHost  string
 	smtpPort  string
 	smtpUser  string
@@ -85,10 +90,12 @@ type ContactService struct {
 
 func NewContactService(
 	queries *generated.Queries,
+	logger *slog.Logger,
 	smtpHost, smtpPort, smtpUser, smtpPass, fromEmail, toEmail string,
 ) *ContactService {
 	return &ContactService{
 		queries:   queries,
+		logger:    logger,
 		smtpHost:  smtpHost,
 		smtpPort:  smtpPort,
 		smtpUser:  smtpUser,
@@ -98,7 +105,10 @@ func NewContactService(
 	}
 }
 
+// Submit saves the submission then attempts to send the email immediately.
+// The user always gets a success response as long as the DB save worked.
 func (s *ContactService) Submit(ctx context.Context, req *ContactFormRequest) (*generated.ContactSubmission, error) {
+	// 1. Save to DB
 	submission, err := s.queries.CreateContactSubmission(ctx, generated.CreateContactSubmissionParams{
 		FirstName: strings.TrimSpace(req.FirstName),
 		LastName:  strings.TrimSpace(req.LastName),
@@ -110,16 +120,72 @@ func (s *ContactService) Submit(ctx context.Context, req *ContactFormRequest) (*
 		return nil, fmt.Errorf("failed to save contact submission: %w", err)
 	}
 
-	go func() {
-		_ = s.sendEmail(req)
-	}()
+	// 2. Attempt email immediately
+	if sendErr := s.sendEmail(req); sendErr != nil {
+		s.logger.Warn("initial email send failed, will retry later",
+			"submission_id", submission.ID,
+			"error", sendErr,
+		)
+		// Record the failed attempt
+		_ = s.queries.MarkEmailFailed(ctx, generated.MarkEmailFailedParams{
+			ID:         submission.ID,
+			EmailError: pgtype.Text{String: sendErr.Error(), Valid: true},
+		})
+	} else {
+		// Mark as sent immediately
+		_ = s.queries.MarkEmailSent(ctx, submission.ID)
+		s.logger.Info("contact email sent successfully", "submission_id", submission.ID)
+	}
 
 	return &submission, nil
 }
 
+// RetryUnsent is called by the background worker to retry failed emails.
+func (s *ContactService) RetryUnsent(ctx context.Context) {
+	unsent, err := s.queries.GetUnsentSubmissions(ctx, maxEmailAttempts)
+	if err != nil {
+		s.logger.Error("failed to fetch unsent contact submissions", "error", err)
+		return
+	}
+
+	if len(unsent) == 0 {
+		return
+	}
+
+	s.logger.Info("retrying unsent contact emails", "count", len(unsent))
+
+	for _, sub := range unsent {
+		req := &ContactFormRequest{
+			FirstName: sub.FirstName,
+			LastName:  sub.LastName,
+			Email:     sub.Email,
+			Subject:   sub.Subject,
+			Message:   sub.Message,
+		}
+
+		if sendErr := s.sendEmail(req); sendErr != nil {
+			s.logger.Warn("retry email send failed",
+				"submission_id", sub.ID,
+				"attempts", sub.EmailAttempts+1,
+				"error", sendErr,
+			)
+			_ = s.queries.MarkEmailFailed(ctx, generated.MarkEmailFailedParams{
+				ID:         sub.ID,
+				EmailError: pgtype.Text{String: sendErr.Error(), Valid: true},
+			})
+		} else {
+			_ = s.queries.MarkEmailSent(ctx, sub.ID)
+			s.logger.Info("retry email sent successfully",
+				"submission_id", sub.ID,
+				"attempts", sub.EmailAttempts+1,
+			)
+		}
+	}
+}
+
 func (s *ContactService) sendEmail(req *ContactFormRequest) error {
 	if s.smtpHost == "" || s.toEmail == "" {
-		return nil
+		return nil // SMTP not configured, skip
 	}
 
 	subject := fmt.Sprintf("[Contact] %s", req.Subject)

@@ -14,7 +14,7 @@ import (
 const createContactSubmission = `-- name: CreateContactSubmission :one
 INSERT INTO contact_submissions (first_name, last_name, email, subject, message)
 VALUES ($1, $2, $3, $4, $5)
-RETURNING id, first_name, last_name, email, subject, message, read_at, created_at, deleted_at
+RETURNING id, first_name, last_name, email, subject, message, email_sent, email_attempts, email_last_attempted_at, email_error, read_at, created_at, deleted_at
 `
 
 type CreateContactSubmissionParams struct {
@@ -41,6 +41,10 @@ func (q *Queries) CreateContactSubmission(ctx context.Context, arg CreateContact
 		&i.Email,
 		&i.Subject,
 		&i.Message,
+		&i.EmailSent,
+		&i.EmailAttempts,
+		&i.EmailLastAttemptedAt,
+		&i.EmailError,
 		&i.ReadAt,
 		&i.CreatedAt,
 		&i.DeletedAt,
@@ -59,30 +63,50 @@ func (q *Queries) DeleteContactSubmission(ctx context.Context, id pgtype.UUID) e
 	return err
 }
 
-const getContactSubmission = `-- name: GetContactSubmission :one
-SELECT id, first_name, last_name, email, subject, message, read_at, created_at, deleted_at FROM contact_submissions
-WHERE id = $1 AND deleted_at IS NULL
+const getUnsentSubmissions = `-- name: GetUnsentSubmissions :many
+SELECT id, first_name, last_name, email, subject, message, email_sent, email_attempts, email_last_attempted_at, email_error, read_at, created_at, deleted_at FROM contact_submissions
+WHERE email_sent = FALSE
+  AND email_attempts < $1
+  AND deleted_at IS NULL
+ORDER BY created_at ASC
 `
 
-func (q *Queries) GetContactSubmission(ctx context.Context, id pgtype.UUID) (ContactSubmission, error) {
-	row := q.db.QueryRow(ctx, getContactSubmission, id)
-	var i ContactSubmission
-	err := row.Scan(
-		&i.ID,
-		&i.FirstName,
-		&i.LastName,
-		&i.Email,
-		&i.Subject,
-		&i.Message,
-		&i.ReadAt,
-		&i.CreatedAt,
-		&i.DeletedAt,
-	)
-	return i, err
+func (q *Queries) GetUnsentSubmissions(ctx context.Context, emailAttempts int32) ([]ContactSubmission, error) {
+	rows, err := q.db.Query(ctx, getUnsentSubmissions, emailAttempts)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ContactSubmission
+	for rows.Next() {
+		var i ContactSubmission
+		if err := rows.Scan(
+			&i.ID,
+			&i.FirstName,
+			&i.LastName,
+			&i.Email,
+			&i.Subject,
+			&i.Message,
+			&i.EmailSent,
+			&i.EmailAttempts,
+			&i.EmailLastAttemptedAt,
+			&i.EmailError,
+			&i.ReadAt,
+			&i.CreatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listContactSubmissions = `-- name: ListContactSubmissions :many
-SELECT id, first_name, last_name, email, subject, message, read_at, created_at, deleted_at FROM contact_submissions
+SELECT id, first_name, last_name, email, subject, message, email_sent, email_attempts, email_last_attempted_at, email_error, read_at, created_at, deleted_at FROM contact_submissions
 WHERE deleted_at IS NULL
 ORDER BY created_at DESC
 LIMIT $1 OFFSET $2
@@ -109,6 +133,10 @@ func (q *Queries) ListContactSubmissions(ctx context.Context, arg ListContactSub
 			&i.Email,
 			&i.Subject,
 			&i.Message,
+			&i.EmailSent,
+			&i.EmailAttempts,
+			&i.EmailLastAttemptedAt,
+			&i.EmailError,
 			&i.ReadAt,
 			&i.CreatedAt,
 			&i.DeletedAt,
@@ -123,26 +151,45 @@ func (q *Queries) ListContactSubmissions(ctx context.Context, arg ListContactSub
 	return items, nil
 }
 
-const markContactSubmissionRead = `-- name: MarkContactSubmissionRead :one
+const markContactSubmissionRead = `-- name: MarkContactSubmissionRead :exec
 UPDATE contact_submissions
 SET read_at = NOW()
 WHERE id = $1
-RETURNING id, first_name, last_name, email, subject, message, read_at, created_at, deleted_at
 `
 
-func (q *Queries) MarkContactSubmissionRead(ctx context.Context, id pgtype.UUID) (ContactSubmission, error) {
-	row := q.db.QueryRow(ctx, markContactSubmissionRead, id)
-	var i ContactSubmission
-	err := row.Scan(
-		&i.ID,
-		&i.FirstName,
-		&i.LastName,
-		&i.Email,
-		&i.Subject,
-		&i.Message,
-		&i.ReadAt,
-		&i.CreatedAt,
-		&i.DeletedAt,
-	)
-	return i, err
+func (q *Queries) MarkContactSubmissionRead(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, markContactSubmissionRead, id)
+	return err
+}
+
+const markEmailFailed = `-- name: MarkEmailFailed :exec
+UPDATE contact_submissions
+SET email_attempts = email_attempts + 1,
+    email_last_attempted_at = NOW(),
+    email_error = $2
+WHERE id = $1
+`
+
+type MarkEmailFailedParams struct {
+	ID         pgtype.UUID
+	EmailError pgtype.Text
+}
+
+func (q *Queries) MarkEmailFailed(ctx context.Context, arg MarkEmailFailedParams) error {
+	_, err := q.db.Exec(ctx, markEmailFailed, arg.ID, arg.EmailError)
+	return err
+}
+
+const markEmailSent = `-- name: MarkEmailSent :exec
+UPDATE contact_submissions
+SET email_sent = TRUE,
+    email_attempts = email_attempts + 1,
+    email_last_attempted_at = NOW(),
+    email_error = NULL
+WHERE id = $1
+`
+
+func (q *Queries) MarkEmailSent(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, markEmailSent, id)
+	return err
 }

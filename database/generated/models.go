@@ -34,15 +34,19 @@ type BlogTag struct {
 }
 
 type ContactSubmission struct {
-	ID        pgtype.UUID
-	FirstName string
-	LastName  string
-	Email     string
-	Subject   string
-	Message   string
-	ReadAt    *time.Time
-	CreatedAt time.Time
-	DeletedAt *time.Time
+	ID                   pgtype.UUID
+	FirstName            string
+	LastName             string
+	Email                string
+	Subject              string
+	Message              string
+	EmailSent            bool
+	EmailAttempts        int32
+	EmailLastAttemptedAt *time.Time
+	EmailError           pgtype.Text
+	ReadAt               *time.Time
+	CreatedAt            time.Time
+	DeletedAt            *time.Time
 }
 
 // Stores all media files (images, videos) with S3 keys for different sizes
