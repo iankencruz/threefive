@@ -18,6 +18,7 @@ func (s *Server) RegisterRoutes() {
 	pageHandler := handler.NewPageHandler(s.Log, s.PageService, s.ProjectService)
 	projectHandler := handler.NewProjectHandler(s.Log, s.ProjectService, s.TagService, s.MediaService)
 	tagHandler := handler.NewTagHandler(s.Log, s.TagService)
+	contactHandler := handler.NewContactHandler(s.Log, s.ContactService)
 
 	// Static assets
 
@@ -38,7 +39,8 @@ func (s *Server) RegisterRoutes() {
 	s.Echo.GET("/about", pageHandler.ShowPublicAbout)
 	s.Echo.GET("/projects", projectHandler.ShowPublicProjectsList)
 	s.Echo.GET("/projects/:slug", projectHandler.ShowPublicProject)
-	// s.Echo.GET("/contact", pageHandler.ShowPublicContact)
+	s.Echo.GET("/contact", pageHandler.ShowPublicContact)
+	s.Echo.POST("/contact", contactHandler.HandleSubmit)
 
 	// *********
 	// admin routes (require authentication)

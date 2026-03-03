@@ -26,6 +26,7 @@ type Server struct {
 	MediaService      *services.MediaService
 	PageService       *services.PageService
 	ProjectService    *services.ProjectService
+	ContactService    *services.ContactService
 	TagService        *services.TagService
 	SessionManager    *session.SessionManager
 	SessionMiddleware *middleware.SessionMiddleware
@@ -132,6 +133,17 @@ func NewServer() *Server {
 		},
 	)
 
+	contactService := services.NewContactService(
+		queries,
+		os.Getenv("SMTP_HOST"),
+		os.Getenv("SMTP_PORT"),
+		os.Getenv("SMTP_USER"),
+		os.Getenv("SMTP_PASS"),
+		os.Getenv("SMTP_FROM"),
+		os.Getenv("CONTACT_EMAIL"),
+	)
+	slogger.Info("contact service initialized")
+
 	tagService := services.NewTagService(queries)
 	slogger.Info("tags service initialized")
 
@@ -169,6 +181,7 @@ func NewServer() *Server {
 		PageService:       pageService,
 		ProjectService:    projectService,
 		TagService:        tagService,
+		ContactService:    contactService,
 		SessionManager:    sessionManager,
 		SessionMiddleware: sessionMiddleware,
 		Log:               slogger,

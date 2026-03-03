@@ -237,6 +237,17 @@ func (h *PageHandler) ShowPublicAbout(c *echo.Context) error {
 	return responses.Render(c.Request().Context(), c, component)
 }
 
+// ShowPublicContact renders the public contact page
+func (h *PageHandler) ShowPublicContact(c *echo.Context) error {
+	page, err := h.pageService.GetPageBySlug(c.Request().Context(), "contact")
+	if err != nil {
+		h.logger.Error("failed to get contact page", "error", err)
+		return c.String(500, "Failed to load contact page")
+	}
+	component := pages.Contact(page)
+	return responses.Render(c.Request().Context(), c, component)
+}
+
 // Helper function to get user from echo context
 func getUser(c *echo.Context) *generated.User {
 	user, ok := c.Get("user").(*generated.User)
