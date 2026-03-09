@@ -22,6 +22,7 @@ func NewContactHandler(logger *slog.Logger, contactService *services.ContactServ
 }
 
 func (h *ContactHandler) HandleSubmit(c *echo.Context) error {
+	ctx := c.Request().Context()
 	req := &services.ContactFormRequest{
 		FirstName: c.FormValue("first_name"),
 		LastName:  c.FormValue("last_name"),
@@ -30,20 +31,23 @@ func (h *ContactHandler) HandleSubmit(c *echo.Context) error {
 		Message:   c.FormValue("message"),
 	}
 
+	// Validate
 	fieldErrors, err := req.Validate()
 	if err != nil {
 		component := pages.ContactForm(req, fieldErrors)
 		return responses.RenderError(c.Request().Context(), c, component, "Please fix the errors below")
 	}
 
-	_, err = h.contactService.Submit(c.Request().Context(), req)
-	if err != nil {
+	// Submit
+	if _, err := h.contactService.Submit(ctx, req); err != nil {
 		h.logger.Error("failed to submit contact form", "error", err)
-		component := pages.ContactForm(req, map[string]string{
+		return responses.Render(ctx, c, pages.ContactForm(req, map[string]string{
 			"general": "Something went wrong. Please try again.",
-		})
-		return responses.RenderError(c.Request().Context(), c, component, "Submission failed")
+		}))
 	}
 
-	return responses.Render(c.Request().Context(), c, pages.ContactSuccess())
+	// Tell HTMX to update the browser URL to /contact
+	c.Response().Header().Set("HX-Push-Url", "/contact")
+
+	return responses.Render(ctx, c, pages.ContactSuccess())
 }

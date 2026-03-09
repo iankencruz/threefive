@@ -10,7 +10,7 @@ import (
 templ Projects(projects []services.ProjectResponse) {
 	@layouts.BaseLayout("Work") {
 		<div class="min-h-screen bg-background text-foreground">
-			@lib.NavigationBar()
+			@lib.NavigationBar("/projects")
 			<main class="pt-18">
 				<div class="px-8 lg:px-16 pt-16 pb-12 border-b border-border">
 					<p class="text-[10px] tracking-[0.2em] uppercase text-accent mb-3">Portfolio</p>

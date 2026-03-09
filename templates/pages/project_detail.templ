@@ -12,7 +12,7 @@ import (
 templ ProjectDetails(project *services.ProjectResponse) {
 	@layouts.BaseLayout(project.Project.Title) {
 		<div class="min-h-screen bg-background text-foreground">
-			@lib.NavigationBar()
+			@lib.NavigationBar("/projects")
 			<!-- Split layout -->
 			<main class="pt-[72px] flex flex-col lg:flex-row min-h-screen">
 				<!-- ── LEFT: Carousel ── -->

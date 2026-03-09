@@ -10,7 +10,7 @@ import (
 templ Home(page *services.PageResponse) {
 	@layouts.BaseLayout("ThreeFive") {
 		<div class="min-h-screen bg-background text-foreground">
-			@lib.NavigationBar()
+			@lib.NavigationBar("/")
 			<!-- Hero Section -->
 			<section class="relative h-screen overflow-hidden">
 				<!-- Hero Image/Video -->

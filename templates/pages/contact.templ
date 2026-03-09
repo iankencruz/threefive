@@ -9,7 +9,7 @@ import (
 templ Contact(page *services.PageResponse) {
 	@layouts.BaseLayout("Contact") {
 		<div class="min-h-screen bg-background text-foreground">
-			@lib.NavigationBar()
+			@lib.NavigationBar("/contact")
 			<main class="pt-18">
 				<!-- Hero Section -->
 				<section class="relative min-h-[50vh] flex items-center overflow-hidden">
