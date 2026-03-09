@@ -1,8 +1,15 @@
 package lib
 
-type Navigation struct {
+type NavLink struct {
 	Title string
 	Href  string
+}
+
+var navLinks = []NavLink{
+	{Title: "Work", Href: "/projects"},
+	{Title: "About", Href: "/about"},
+	// {Title: "Blog", Href: "/blog"},
+	{Title: "Contact", Href: "/contact"},
 }
 
 templ NavigationBar(currentPath string) {
@@ -13,38 +20,16 @@ templ NavigationBar(currentPath string) {
 			ThreeFive
 		</a>
 		<div class="hidden md:flex items-center gap-8">
-			<a
-				href="/projects"
-				class={
-					"text-xs tracking-[0.12em] uppercase transition-colors",
-					templ.KV("text-primary border-b border-primary pb-0.5", currentPath == "/projects"),
-					templ.KV("text-muted-foreground hover:text-foreground", currentPath != "/projects"),
-				}
-			>Work</a>
-			<a
-				href="/about"
-				class={
-					"text-xs tracking-[0.12em] uppercase transition-colors",
-					templ.KV("text-primary border-b border-primary pb-0.5", currentPath == "/about"),
-					templ.KV("text-muted-foreground hover:text-foreground", currentPath != "/about"),
-				}
-			>About</a>
-			<a
-				href="/blog"
-				class={
-					"text-xs tracking-[0.12em] uppercase transition-colors",
-					templ.KV("text-primary border-b border-primary pb-0.5", currentPath == "/blog"),
-					templ.KV("text-muted-foreground hover:text-foreground", currentPath != "/blog"),
-				}
-			>Blog</a>
-			<a
-				href="/contact"
-				class={
-					"text-xs tracking-[0.12em] uppercase transition-colors",
-					templ.KV("text-primary border-b border-primary pb-0.5", currentPath == "/contact"),
-					templ.KV("text-muted-foreground hover:text-foreground", currentPath != "/contact"),
-				}
-			>Contact</a>
+			for _, link := range navLinks {
+				<a
+					href={ templ.SafeURL(link.Href) }
+					class={
+						"text-xs tracking-[0.12em] uppercase transition-colors",
+						templ.KV("text-primary border-b border-primary pb-0.5", currentPath == link.Href),
+						templ.KV("text-muted-foreground hover:text-foreground", currentPath != link.Href),
+					}
+				>{ link.Title }</a>
+			}
 		</div>
 		<div class="w-24"></div>
 	</nav>

@@ -2,8 +2,10 @@ package server
 
 import (
 	"github.com/iankencruz/threefive/internal/handler"
+	mw "github.com/iankencruz/threefive/internal/middleware"
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
+	"golang.org/x/time/rate"
 )
 
 // RegisterRoutes defines the API endpoints
@@ -30,17 +32,25 @@ func (s *Server) RegisterRoutes() {
 	// handlers
 	s.Echo.GET("/health", s.healthCheckHandler)
 
-	// Public routes (no auth required)
+	// ── Auth (stricter: 5 attempts per minute) ──────────────────────────────
+	// rate.Limit(5.0/60) = 5 tokens per 60 seconds, burst of 5
+	loginLimiter := mw.RateLimit(rate.Limit(5.0/60), 5)
 	s.Echo.GET("/login", authHandler.ShowLoginPage)
-	s.Echo.POST("/login", authHandler.HandleLogin)
+	s.Echo.POST("/login", authHandler.HandleLogin, loginLimiter)
 	s.Echo.POST("/logout", authHandler.HandleLogout)
 
+	// Public routes (no auth required)
 	s.Echo.GET("/", pageHandler.ShowPublicHome)
 	s.Echo.GET("/about", pageHandler.ShowPublicAbout)
 	s.Echo.GET("/projects", projectHandler.ShowPublicProjectsList)
 	s.Echo.GET("/projects/:slug", projectHandler.ShowPublicProject)
+
+	// ── Contact (10 submissions per hour per IP) ──────────────────────────
+	// rate.Limit(10.0/3600) = 10 tokens per hour, burst of 3
+
+	contactLimiter := mw.RateLimit(rate.Limit(10.0/3600), 3)
 	s.Echo.GET("/contact", pageHandler.ShowPublicContact)
-	s.Echo.POST("/contact", contactHandler.HandleSubmit)
+	s.Echo.POST("/contact", contactHandler.HandleSubmit, contactLimiter)
 
 	// *********
 	// admin routes (require authentication)
