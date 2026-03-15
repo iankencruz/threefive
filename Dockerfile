@@ -64,7 +64,6 @@ COPY --from=builder /app/bin/main ./bin/main
 
 # Copy static assets (JS, CSS, images etc.)
 COPY --from=builder /app/assets ./assets
-COPY --from=builder /app/static ./static
 
 # Copy migrations (Goose runs at startup if configured)
 COPY --from=builder /app/migrations ./migrations
