@@ -5,14 +5,15 @@ import "github.com/iankencruz/threefive/components/input"
 import "github.com/iankencruz/threefive/components/button"
 import "github.com/iankencruz/threefive/components/label"
 import "github.com/iankencruz/threefive/templates/layouts"
+import "github.com/iankencruz/threefive/internal/services"
 
 type LoginPageProps struct {
 	Email string
 	Error string
 }
 
-templ LoginPage(props LoginPageProps) {
-	@layouts.BaseLayout("Login") {
+templ LoginPage(props LoginPageProps, seo *services.SEOData) {
+	@layouts.BaseLayout("Login", seo) {
 		<div class="min-h-screen bg-black/80 flex items-center justify-center p-4">
 			<div class="w-full max-w-md">
 				<div class="bg-card rounded-lg shadow-lg p-8">

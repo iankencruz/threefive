@@ -12,7 +12,7 @@ type LayoutProps struct {
 templ AdminLayout(props LayoutProps) {
 	<!DOCTYPE html>
 	<html lang="en" class="h-full bg-background">
-		@lib.Header(props.Title, true)
+		@lib.Header(props.Title, true, nil)
 		<body class="h-full">
 			<el-dialog>
 				<dialog id="sidebar" class="backdrop:bg-transparent lg:hidden">

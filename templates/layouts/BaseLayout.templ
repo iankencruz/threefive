@@ -1,11 +1,12 @@
 package layouts
 
 import "github.com/iankencruz/threefive/templates/lib"
+import "github.com/iankencruz/threefive/internal/services"
 
-templ BaseLayout(title string) {
+templ BaseLayout(title string, seo *services.SEOData) {
 	<!DOCTYPE html>
 	<html lang="en">
-		@lib.Header(title, false)
+		@lib.Header(title, false, seo)
 		<body class="antialiased">
 			<!-- Toast Container for notifications -->
 			<div id="toast-container"></div>

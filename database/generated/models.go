@@ -143,6 +143,22 @@ type ProjectTag struct {
 	CreatedAt time.Time
 }
 
+type Seo struct {
+	ID             pgtype.UUID
+	EntityType     string
+	EntityID       pgtype.UUID
+	SeoTitle       pgtype.Text
+	SeoDescription pgtype.Text
+	OgTitle        pgtype.Text
+	OgDescription  pgtype.Text
+	OgImageID      pgtype.UUID
+	CanonicalUrl   pgtype.Text
+	RobotsIndex    bool
+	RobotsFollow   bool
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+}
+
 type Session struct {
 	Token  string
 	Data   []byte

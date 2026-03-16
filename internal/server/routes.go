@@ -17,8 +17,8 @@ func (s *Server) RegisterRoutes() {
 	authHandler := handler.NewAuthHandler(s.AuthService, s.SessionManager, s.Log)
 	adminHandler := handler.NewAdminHandler(s.Log, s.MediaService)
 	mediaHandler := handler.NewMediaHandler(s.MediaService, s.Log)
-	pageHandler := handler.NewPageHandler(s.Log, s.PageService, s.ProjectService)
-	projectHandler := handler.NewProjectHandler(s.Log, s.ProjectService, s.TagService, s.MediaService)
+	pageHandler := handler.NewPageHandler(s.Log, s.PageService, s.ProjectService, s.MediaService, s.SeoService)
+	projectHandler := handler.NewProjectHandler(s.Log, s.ProjectService, s.TagService, s.MediaService, s.SeoService)
 	tagHandler := handler.NewTagHandler(s.Log, s.TagService)
 	contactHandler := handler.NewContactHandler(s.Log, s.ContactService)
 

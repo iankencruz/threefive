@@ -1,19 +1,19 @@
 version: "3.8"
 
 services:
-  app:
-    image: threefive:latest
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "8080:8080"
-    env_file:
-      - .env
-    depends_on:
-      - postgres
-      - minio
-    restart: unless-stopped
+  # app:
+  #   image: threefive:latest
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "8080:8080"
+  #   env_file:
+  #     - .env
+  #   depends_on:
+  #     - postgres
+  #     - minio
+  #   restart: unless-stopped
 
   postgres:
     image: postgres:17-alpine

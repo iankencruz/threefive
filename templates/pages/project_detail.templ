@@ -9,8 +9,8 @@ import (
 	"github.com/iankencruz/threefive/templates/lib"
 )
 
-templ ProjectDetails(project *services.ProjectResponse) {
-	@layouts.BaseLayout(project.Project.Title) {
+templ ProjectDetails(project *services.ProjectResponse, seo *services.SEOData) {
+	@layouts.BaseLayout(project.Project.Title, seo) {
 		<div class="min-h-screen bg-background text-foreground">
 			@lib.NavigationBar("/projects")
 			<!-- Split layout -->

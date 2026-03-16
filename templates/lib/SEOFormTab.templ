@@ -1,0 +1,180 @@
+package lib
+
+import (
+	"github.com/iankencruz/threefive/components/button"
+	"github.com/iankencruz/threefive/components/dialog"
+	"github.com/iankencruz/threefive/pkg/validation"
+	"github.com/iankencruz/threefive/internal/services"
+)
+
+templ SEOFormTab(seo *services.SEOResponse, errors validation.FieldErrors) {
+	<div class="space-y-6">
+		<div>
+			<h3 class="text-base font-semibold text-foreground">Search Engine Optimisation</h3>
+			<p class="text-sm text-muted-foreground mt-1">Control how this page appears in search results and when shared on social media.</p>
+		</div>
+		<!-- SEO Title -->
+		<div class="space-y-2">
+			<label for="seo_title" class="block text-sm font-medium text-foreground">SEO Title</label>
+			<input
+				type="text"
+				id="seo_title"
+				name="seo_title"
+				maxlength="60"
+				if seo != nil && seo.Seo.SeoTitle.Valid {
+					value={ seo.Seo.SeoTitle.String }
+				}
+				class={
+					"w-full px-4 py-2 border rounded focus:ring-2 focus:ring-primary focus:border-primary",
+					templ.KV("border-red-500", HasError("seo_title", errors)),
+				}
+				placeholder="Leave blank to use the page title"
+			/>
+			@FieldError("seo_title", errors)
+			<p class="text-xs text-muted-foreground">Recommended: 50–60 characters. Appears as the clickable headline in Google results.</p>
+		</div>
+		<!-- SEO Description -->
+		<div class="space-y-2">
+			<label for="seo_description" class="block text-sm font-medium text-foreground">Meta Description</label>
+			<textarea
+				id="seo_description"
+				name="seo_description"
+				rows="3"
+				maxlength="160"
+				class={
+					"w-full px-4 py-2 border rounded focus:ring-2 focus:ring-primary focus:border-primary resize-none",
+					templ.KV("border-red-500", HasError("seo_description", errors)),
+				}
+				placeholder="A short summary of this page for search engines"
+			>
+				if seo != nil && seo.Seo.SeoDescription.Valid {
+					{ seo.Seo.SeoDescription.String }
+				}
+			</textarea>
+			@FieldError("seo_description", errors)
+			<p class="text-xs text-muted-foreground">Recommended: 120–160 characters. Appears below the title in search results.</p>
+		</div>
+		<!-- Open Graph -->
+		<div class="border-t border-border pt-6 space-y-6">
+			<div>
+				<h4 class="text-sm font-semibold text-foreground">Open Graph (Social Media Preview)</h4>
+				<p class="text-xs text-muted-foreground mt-1">Controls how this page looks when shared on Twitter, LinkedIn, Facebook etc. Falls back to SEO title/description if blank.</p>
+			</div>
+			<!-- OG Title -->
+			<div class="space-y-2">
+				<label for="og_title" class="block text-sm font-medium text-foreground">OG Title</label>
+				<input
+					type="text"
+					id="og_title"
+					name="og_title"
+					maxlength="60"
+					if seo != nil && seo.Seo.OgTitle.Valid {
+						value={ seo.Seo.OgTitle.String }
+					}
+					class="w-full px-4 py-2 border border-border rounded focus:ring-2 focus:ring-primary focus:border-primary"
+					placeholder="Falls back to SEO title"
+				/>
+			</div>
+			<!-- OG Description -->
+			<div class="space-y-2">
+				<label for="og_description" class="block text-sm font-medium text-foreground">OG Description</label>
+				<textarea
+					id="og_description"
+					name="og_description"
+					rows="3"
+					maxlength="160"
+					class="w-full px-4 py-2 border border-border rounded focus:ring-2 focus:ring-primary focus:border-primary resize-none"
+					placeholder="Falls back to meta description"
+				>
+					if seo != nil && seo.Seo.OgDescription.Valid {
+						{ seo.Seo.OgDescription.String }
+					}
+				</textarea>
+			</div>
+			<!-- OG Image -->
+			<div class="space-y-2">
+				<label class="block text-sm font-medium text-foreground">OG Image</label>
+				<div class="flex items-center gap-4">
+					<div class="w-24 h-16 bg-muted border border-border rounded flex items-center justify-center overflow-hidden shrink-0">
+						if seo != nil && seo.Seo.OgImageID.Valid {
+							<img id="og-image-thumb" src={ seo.OGImageURL } alt="OG preview" class="w-full h-full object-cover"/>
+						} else {
+							<svg class="w-6 h-6 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+							</svg>
+						}
+					</div>
+					@dialog.Trigger(dialog.TriggerProps{For: "og-image-selector"}) {
+						@button.Button(button.Props{Variant: button.VariantOutline}) {
+							Select Image
+						}
+					}
+				</div>
+				<input
+					type="hidden"
+					id="og_image_id"
+					name="og_image_id"
+					if seo != nil && seo.Seo.OgImageID.Valid {
+						value={ GetUUIDString(seo.Seo.OgImageID) }
+					}
+				/>
+				<p class="text-xs text-muted-foreground">Recommended: 1200×630px.</p>
+			</div>
+		</div>
+		<!-- Advanced -->
+		<div class="border-t border-border pt-6 space-y-6">
+			<h4 class="text-sm font-semibold text-foreground">Advanced</h4>
+			<!-- Canonical URL -->
+			<div class="space-y-2">
+				<label for="canonical_url" class="block text-sm font-medium text-foreground">Canonical URL</label>
+				<input
+					type="url"
+					id="canonical_url"
+					name="canonical_url"
+					if seo != nil && seo.Seo.CanonicalUrl.Valid {
+						value={ seo.Seo.CanonicalUrl.String }
+					}
+					class="w-full px-4 py-2 border border-border rounded focus:ring-2 focus:ring-primary focus:border-primary"
+					placeholder="https://yoursite.com/projects/my-project"
+				/>
+				<p class="text-xs text-muted-foreground">Leave blank to use the page URL.</p>
+			</div>
+			<!-- Robots -->
+			<div class="space-y-3">
+				<label class="block text-sm font-medium text-foreground">Search Engine Directives</label>
+				<div class="flex flex-col gap-3">
+					<label class="flex items-center gap-3 cursor-pointer">
+						<input
+							type="checkbox"
+							name="robots_index"
+							value="true"
+							class="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+							if seo == nil || seo.Seo.RobotsIndex {
+								checked
+							}
+						/>
+						<div>
+							<span class="text-sm font-medium text-foreground">Allow indexing</span>
+							<p class="text-xs text-muted-foreground">Let search engines index this page</p>
+						</div>
+					</label>
+					<label class="flex items-center gap-3 cursor-pointer">
+						<input
+							type="checkbox"
+							name="robots_follow"
+							value="true"
+							class="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+							if seo == nil || seo.Seo.RobotsFollow {
+								checked
+							}
+						/>
+						<div>
+							<span class="text-sm font-medium text-foreground">Allow link following</span>
+							<p class="text-xs text-muted-foreground">Let search engines follow links on this page</p>
+						</div>
+					</label>
+				</div>
+			</div>
+		</div>
+	</div>
+}

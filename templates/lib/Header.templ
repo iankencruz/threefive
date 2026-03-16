@@ -4,20 +4,25 @@ import (
 	"github.com/iankencruz/threefive/components/dialog"
 	"github.com/iankencruz/threefive/components/toast"
 	"github.com/iankencruz/threefive/components/popover"
+	"github.com/iankencruz/threefive/internal/services"
 )
 
-templ Header(title string, isAdmin bool) {
+templ Header(title string, isAdmin bool, seo *services.SEOData) {
 	<head>
 		<meta charset="UTF-8"/>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-		<title>
-			{ title } -
-			if isAdmin {
-				TFP Admin
-			} else {
-				ThreeFive
-			}
-		</title>
+		if seo != nil {
+			@SEOMeta(seo)
+		} else {
+			<title>
+				{ title } -
+				if isAdmin {
+					TFP Admin
+				} else {
+					ThreeFive
+				}
+			</title>
+		}
 		<link rel="icon" type="image/x-icon" href="/assets/favicon/favicon.ico"/>
 		<link rel="stylesheet" href="/assets/css/output.css"/>
 		<script src="/assets/js/htmx.min.js"></script>

@@ -22,13 +22,17 @@ type PageHandler struct {
 	logger         *slog.Logger
 	pageService    *services.PageService
 	projectService *services.ProjectService
+	mediaService   *services.MediaService
+	seoService     *services.SEOService
 }
 
-func NewPageHandler(logger *slog.Logger, pageService *services.PageService, projectService *services.ProjectService) *PageHandler {
+func NewPageHandler(logger *slog.Logger, pageService *services.PageService, projectService *services.ProjectService, mediaService *services.MediaService, seoService *services.SEOService) *PageHandler {
 	return &PageHandler{
 		logger:         logger,
 		pageService:    pageService,
 		projectService: projectService,
+		seoService:     seoService,
+		mediaService:   mediaService,
 	}
 }
 
@@ -58,6 +62,12 @@ func (h *PageHandler) ShowEditPage(c *echo.Context) error {
 		return c.String(404, "Page not found")
 	}
 
+	// Fetch SEO — nil is fine
+	seo, err := h.seoService.GetSEOResponse(c.Request().Context(), "page", pageResp.Page.ID.Bytes, h.mediaService)
+	if err != nil {
+		h.logger.Error("failed to get page SEO", "error", err)
+	}
+
 	ctx := lib.WithUser(c.Request().Context(), getUser(c))
 	currentPath := c.Request().URL.Path
 
@@ -69,11 +79,11 @@ func (h *PageHandler) ShowEditPage(c *echo.Context) error {
 			h.logger.Error("failed to list projects", "error", err)
 			availableProjects = []services.ProjectResponse{}
 		}
-		component = admin.AdminHome(pageResp, availableProjects, currentPath)
+		component = admin.AdminHome(pageResp, availableProjects, seo, currentPath)
 	case "about":
-		component = admin.AdminAbout(pageResp, currentPath)
+		component = admin.AdminAbout(pageResp, seo, currentPath)
 	case "contact":
-		component = admin.AdminContact(pageResp, currentPath)
+		component = admin.AdminContact(pageResp, seo, currentPath)
 	default:
 		return c.String(400, "Invalid page type")
 	}
@@ -119,6 +129,8 @@ func (h *PageHandler) UpdatePage(c *echo.Context) error {
 			params.HeroMediaID = pgtype.UUID{Bytes: mediaUUID, Valid: true}
 		}
 	}
+
+	existingSEO, _ := h.seoService.GetSEOResponse(c.Request().Context(), "page", existing.Page.ID.Bytes, h.mediaService)
 
 	// Home page: update featured projects
 	if existing.Page.PageType == "home" {
@@ -194,6 +206,27 @@ func (h *PageHandler) UpdatePage(c *echo.Context) error {
 		return responses.ErrorToast(c.Request().Context(), c, "Failed to update page")
 	}
 
+	// Upsert SEO — non-fatal
+	seoReq := services.UpsertSEORequest{
+		EntityType:   "page",
+		EntityID:     updated.Page.ID.Bytes,
+		SEOTitle:     c.FormValue("seo_title"),
+		SEODesc:      c.FormValue("seo_description"),
+		OGTitle:      c.FormValue("og_title"),
+		OGDesc:       c.FormValue("og_description"),
+		CanonicalURL: c.FormValue("canonical_url"),
+		RobotsIndex:  c.FormValue("robots_index") == "true",
+		RobotsFollow: c.FormValue("robots_follow") == "true",
+	}
+	if ogImageID := c.FormValue("og_image_id"); ogImageID != "" {
+		if parsed, err := uuid.Parse(ogImageID); err == nil {
+			seoReq.OGImageID = &parsed
+		}
+	}
+	if _, err := h.seoService.UpsertSEO(c.Request().Context(), seoReq); err != nil {
+		h.logger.Error("failed to upsert page SEO", "error", err)
+	}
+
 	h.logger.Info("Page updated successfully", "slug", slug)
 
 	ctx := lib.WithUser(c.Request().Context(), getUser(c))
@@ -203,11 +236,11 @@ func (h *PageHandler) UpdatePage(c *echo.Context) error {
 	switch updated.Page.PageType {
 	case "home":
 		availableProjects, _ := h.projectService.ListPublishedProjects(c.Request().Context(), 100, 0)
-		component = admin.AdminHomeForm(updated, availableProjects, nil)
+		component = admin.AdminHomeForm(updated, availableProjects, existingSEO, nil)
 	case "about":
-		component = admin.AdminAboutForm(updated, nil)
+		component = admin.AdminAboutForm(updated, existingSEO, nil)
 	case "contact":
-		component = admin.AdminContact(updated, c.Request().URL.Path)
+		component = admin.AdminContact(updated, existingSEO, c.Request().URL.Path)
 	default:
 		return responses.ErrorToast(c.Request().Context(), c, "Unknown page type")
 	}
@@ -222,7 +255,10 @@ func (h *PageHandler) ShowPublicHome(c *echo.Context) error {
 		h.logger.Error("failed to get home page", "error", err)
 		return c.String(500, "Failed to load home page")
 	}
-	component := pages.Home(page)
+	seo, _ := h.seoService.GetSEO(c.Request().Context(), "page", page.Page.ID.Bytes)
+	seoData := services.ToSEOData(seo, page.Page.Title, fullURL(c, "/"), "ThreeFive", "")
+
+	component := pages.Home(page, seoData)
 	return responses.Render(c.Request().Context(), c, component)
 }
 
@@ -233,7 +269,11 @@ func (h *PageHandler) ShowPublicAbout(c *echo.Context) error {
 		h.logger.Error("failed to get about page", "error", err)
 		return c.String(500, "Failed to load about page")
 	}
-	component := pages.About(page)
+
+	seo, _ := h.seoService.GetSEO(c.Request().Context(), "page", page.Page.ID.Bytes)
+	seoData := services.ToSEOData(seo, page.Page.Title, fullURL(c, "/about"), "ThreeFive", "")
+
+	component := pages.About(page, seoData)
 	return responses.Render(c.Request().Context(), c, component)
 }
 
@@ -244,7 +284,10 @@ func (h *PageHandler) ShowPublicContact(c *echo.Context) error {
 		h.logger.Error("failed to get contact page", "error", err)
 		return c.String(500, "Failed to load contact page")
 	}
-	component := pages.Contact(page)
+	seo, _ := h.seoService.GetSEO(c.Request().Context(), "page", page.Page.ID.Bytes)
+	seoData := services.ToSEOData(seo, page.Page.Title, fullURL(c, "/about"), "ThreeFive", "")
+
+	component := pages.Contact(page, seoData)
 	return responses.Render(c.Request().Context(), c, component)
 }
 
@@ -259,3 +302,11 @@ func getUser(c *echo.Context) *generated.User {
 
 // toastVariant is a helper alias so we don't need to import toast everywhere
 var _ = toast.VariantSuccess
+
+func fullURL(c *echo.Context, path string) string {
+	scheme := "https"
+	if c.Request().TLS == nil {
+		scheme = "http"
+	}
+	return scheme + "://" + c.Request().Host + path
+}

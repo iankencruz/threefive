@@ -7,8 +7,8 @@ import (
 	"github.com/iankencruz/threefive/templates/lib"
 )
 
-templ About(page *services.PageResponse) {
-	@layouts.BaseLayout("About") {
+templ About(page *services.PageResponse, seo *services.SEOData) {
+	@layouts.BaseLayout("About", seo) {
 		<div class="min-h-screen bg-background text-foreground">
 			@lib.NavigationBar("/about")
 			<main class="pt-18">

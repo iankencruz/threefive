@@ -43,7 +43,7 @@ func (h *AuthHandler) ShowLoginPage(c *echo.Context) error {
 		Error: "",
 	}
 
-	component := pages.LoginPage(props)
+	component := pages.LoginPage(props, nil)
 	return responses.Render(c.Request().Context(), c, component)
 }
 
@@ -67,7 +67,7 @@ func (h *AuthHandler) HandleLogin(c *echo.Context) error {
 			Email: email,
 			Error: "Email and password are required",
 		}
-		component := pages.LoginPage(props)
+		component := pages.LoginPage(props, nil)
 		return responses.RenderWithStatus(ctx, c, http.StatusBadRequest, component)
 	}
 
@@ -84,7 +84,7 @@ func (h *AuthHandler) HandleLogin(c *echo.Context) error {
 				Email: email,
 				Error: appErr.Message,
 			}
-			component := pages.LoginPage(props)
+			component := pages.LoginPage(props, nil)
 			return responses.RenderWithStatus(ctx, c, appErr.Code, component)
 		}
 
@@ -97,7 +97,7 @@ func (h *AuthHandler) HandleLogin(c *echo.Context) error {
 			Email: email,
 			Error: "An unexpected error occurred",
 		}
-		component := pages.LoginPage(props)
+		component := pages.LoginPage(props, nil)
 		return responses.RenderWithStatus(ctx, c, http.StatusInternalServerError, component)
 	}
 
@@ -120,7 +120,7 @@ func (h *AuthHandler) HandleLogin(c *echo.Context) error {
 			Email: email,
 			Error: "Failed to create session. Please try again.",
 		}
-		component := pages.LoginPage(props)
+		component := pages.LoginPage(props, nil)
 		return responses.RenderWithStatus(ctx, c, http.StatusInternalServerError, component)
 	}
 

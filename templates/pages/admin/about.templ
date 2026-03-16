@@ -8,26 +8,29 @@ import (
 	"github.com/iankencruz/threefive/pkg/validation"
 	"github.com/iankencruz/threefive/templates/layouts"
 	"github.com/iankencruz/threefive/templates/lib"
+	"github.com/iankencruz/threefive/components/tabs"
 )
 
 // Full page (for GET requests)
-templ AdminAbout(pageResp *services.PageResponse, currentPath string) {
+templ AdminAbout(pageResp *services.PageResponse, seo *services.SEOResponse, currentPath string) {
 	@layouts.AdminLayout(layouts.LayoutProps{
 		Title: "Edit About Page",
 		Path:  currentPath,
 	}) {
 		<div id="page-edit-container">
-			@AdminAboutForm(pageResp, nil)
+			@AdminAboutForm(pageResp, seo, nil)
 		</div>
 		<!-- Media Selector Dialogs -->
+		@lib.MediaSelectorModal("og-image-selector", "og_image_id")
 		@lib.MediaSelectorModal("hero-media-selector", "hero_media_id")
 		@lib.MediaSelectorModal("content-image-selector", "content_image_id")
 		@dialog.Script()
+		@tabs.Script()
 	}
 }
 
 // Just the form (for HTMX updates)
-templ AdminAboutForm(pageResp *services.PageResponse, errors validation.FieldErrors) {
+templ AdminAboutForm(pageResp *services.PageResponse, seo *services.SEOResponse, errors validation.FieldErrors) {
 	<!-- Page Header -->
 	<div class="mb-8">
 		<a
@@ -54,211 +57,228 @@ templ AdminAboutForm(pageResp *services.PageResponse, errors validation.FieldErr
 			hx-swap="innerHTML show:window:top"
 			class="p-6 space-y-6"
 		>
-			<!-- General Error -->
-			@lib.GeneralError(errors["general"])
-			<!-- Title Field -->
-			<div class="space-y-2">
-				<label for="title" class="block text-sm font-medium text-foreground">
-					Page Title <span class="text-red-500">*</span>
-				</label>
-				<input
-					type="text"
-					id="title"
-					name="title"
-					value={ pageResp.Page.Title }
-					class={
-						"w-full px-4 py-2 border  rounded focus:ring-2 focus:ring-primary focus:border-primary",
-						templ.KV("border-red-500 focus:border-red-500", lib.HasError("title", errors)),
+			@tabs.Tabs(tabs.Props{ID: "about-tabs"}) {
+				@tabs.List() {
+					@tabs.Trigger(tabs.TriggerProps{Value: "details", IsActive: true}) {
+						Details
 					}
-					placeholder="Enter page title"
-				/>
-				@lib.FieldError("title", errors)
-			</div>
-			<!-- Hero Media -->
-			<div class="space-y-2">
-				<label class="block text-sm font-medium text-foreground">Hero Image/Video</label>
-				<div class="flex items-start gap-4" id="hero_media_id_preview">
-					if pageResp.HeroMedia != nil {
-						<div class="relative w-48 h-32 rounded border border-border overflow-hidden">
-							if pageResp.HeroMedia.MimeType[:5] == "image" {
-								<img src={ pageResp.HeroMedia.ThumbnailURL } alt="Hero" class="w-full h-full object-cover"/>
-							} else {
-								<video src={ pageResp.HeroMedia.URL } class="w-full h-full object-cover" muted></video>
-							}
-							<button
-								type="button"
-								onclick="document.getElementById('hero_media_id').value = ''; this.parentElement.remove();"
-								class="absolute top-2 right-2 p-1 bg-red-600 text-white rounded-full hover:bg-red-700"
-							>
-								<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-								</svg>
-							</button>
-						</div>
-					} else {
-						<div class="w-48 h-32 rounded border-2 border-dashed  flex items-center justify-center">
-							<span class="text-gray-400 text-sm">No hero media</span>
-						</div>
+					@tabs.Trigger(tabs.TriggerProps{Value: "seo"}) {
+						SEO
 					}
-					<div class="flex-1">
-						@dialog.Trigger(dialog.TriggerProps{For: "hero-media-selector"}) {
-							@button.Button(button.Props{Variant: button.VariantDefault}) {
-								Select Hero Media
-							}
-						}
-					</div>
-				</div>
-				<input
-					type="hidden"
-					id="hero_media_id"
-					name="hero_media_id"
-					if pageResp.HeroMedia != nil {
-						value={ lib.GetUUIDString(pageResp.HeroMedia.ID) }
-					}
-				/>
-			</div>
-			<!-- Header & Sub-Header -->
-			<div class="space-y-2">
-				<label for="header" class="block text-sm font-medium text-foreground">Header</label>
-				<input
-					type="text"
-					id="header"
-					name="header"
-					if pageResp.Page.Header.Valid {
-						value={ pageResp.Page.Header.String }
-					}
-					class={
-						"w-full px-4 py-2 border  rounded focus:ring-2 focus:ring-primary focus:border-primary",
-						templ.KV("border-red-500 focus:border-red-500", lib.HasError("header", errors)),
-					}
-					placeholder="About Me"
-				/>
-				@lib.FieldError("header", errors)
-			</div>
-			<div class="space-y-2">
-				<label for="sub_header" class="block text-sm font-medium text-foreground">Sub-Header</label>
-				<input
-					type="text"
-					id="sub_header"
-					name="sub_header"
-					if pageResp.Page.SubHeader.Valid {
-						value={ pageResp.Page.SubHeader.String }
-					}
-					class={
-						"w-full px-4 py-2 border  rounded focus:ring-2 focus:ring-primary focus:border-primary",
-						templ.KV("border-red-500 focus:border-red-500", lib.HasError("sub_header", errors)),
-					}
-					placeholder="Learn more about my journey"
-				/>
-				@lib.FieldError("sub_header", errors)
-			</div>
-			<!-- Content -->
-			<div class="space-y-2">
-				<label for="content" class="block text-sm font-medium text-foreground">Content</label>
-				<textarea
-					id="content"
-					name="content"
-					rows="8"
-					class={
-						"w-full px-4 py-2 border  rounded focus:ring-2 focus:ring-primary focus:border-primary",
-						templ.KV("border-red-500 focus:border-red-500", lib.HasError("content", errors)),
-					}
-					placeholder="Tell your story..."
-				>
-					if pageResp.Page.Content.Valid {
-						{ pageResp.Page.Content.String }
-					}
-				</textarea>
-				@lib.FieldError("content", errors)
-			</div>
-			<!-- Content Image -->
-			<div class="space-y-2">
-				<label class="block text-sm font-medium text-foreground">Content Image</label>
-				<div class="flex items-start gap-4" id="content_image_id_preview">
-					if pageResp.ContentImage != nil {
-						<div class="relative w-48 h-32 rounded border border-border overflow-hidden">
-							<img src={ pageResp.ContentImage.ThumbnailURL } alt="Content" class="w-full h-full object-cover"/>
-							<button
-								type="button"
-								onclick="document.getElementById('content_image_id').value = ''; this.parentElement.remove();"
-								class="absolute top-2 right-2 p-1 bg-red-600 text-white rounded-full hover:bg-red-700"
-							>
-								<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-								</svg>
-							</button>
-						</div>
-					} else {
-						<div class="w-48 h-32 rounded border-2 border-dashed  flex items-center justify-center">
-							<span class="text-gray-400 text-sm">No content image</span>
-						</div>
-					}
-					<div class="flex-1">
-						@dialog.Trigger(dialog.TriggerProps{For: "content-image-selector"}) {
-							@button.Button(button.Props{Variant: button.VariantDefault}) {
-								Select Content Image
-							}
-						}
-					</div>
-				</div>
-				<input
-					type="hidden"
-					id="content_image_id"
-					name="content_image_id"
-					if pageResp.ContentImage != nil {
-						value={ lib.GetUUIDString(pageResp.ContentImage.ID) }
-					}
-				/>
-			</div>
-			<!-- CTA Section -->
-			<div class="border-t border-border pt-6">
-				<h3 class="text-lg font-semibold text-foreground mb-4">Call to Action</h3>
-				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+				}
+				<!-- Details Tab -->
+				@tabs.Content(tabs.ContentProps{Value: "details", IsActive: true, Class: "space-y-6 mt-4"}) {
+					<!-- General Error -->
+					@lib.GeneralError(errors["general"])
+					<!-- Title Field -->
 					<div class="space-y-2">
-						<label for="cta_text" class="block text-sm font-medium text-foreground">CTA Text</label>
+						<label for="title" class="block text-sm font-medium text-foreground">
+							Page Title <span class="text-red-500">*</span>
+						</label>
 						<input
 							type="text"
-							id="cta_text"
-							name="cta_text"
-							if pageResp.Page.CtaText.Valid {
-								value={ pageResp.Page.CtaText.String }
+							id="title"
+							name="title"
+							value={ pageResp.Page.Title }
+							class={
+								"w-full px-4 py-2 border  rounded focus:ring-2 focus:ring-primary focus:border-primary",
+								templ.KV("border-red-500 focus:border-red-500", lib.HasError("title", errors)),
+							}
+							placeholder="Enter page title"
+						/>
+						@lib.FieldError("title", errors)
+					</div>
+					<!-- Hero Media -->
+					<div class="space-y-2">
+						<label class="block text-sm font-medium text-foreground">Hero Image/Video</label>
+						<div class="flex items-start gap-4" id="hero_media_id_preview">
+							if pageResp.HeroMedia != nil {
+								<div class="relative w-48 h-32 rounded border border-border overflow-hidden">
+									if pageResp.HeroMedia.MimeType[:5] == "image" {
+										<img src={ pageResp.HeroMedia.ThumbnailURL } alt="Hero" class="w-full h-full object-cover"/>
+									} else {
+										<video src={ pageResp.HeroMedia.URL } class="w-full h-full object-cover" muted></video>
+									}
+									<button
+										type="button"
+										onclick="document.getElementById('hero_media_id').value = ''; this.parentElement.remove();"
+										class="absolute top-2 right-2 p-1 bg-red-600 text-white rounded-full hover:bg-red-700"
+									>
+										<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+										</svg>
+									</button>
+								</div>
+							} else {
+								<div class="w-48 h-32 rounded border-2 border-dashed  flex items-center justify-center">
+									<span class="text-gray-400 text-sm">No hero media</span>
+								</div>
+							}
+							<div class="flex-1">
+								@dialog.Trigger(dialog.TriggerProps{For: "hero-media-selector"}) {
+									@button.Button(button.Props{Variant: button.VariantDefault}) {
+										Select Hero Media
+									}
+								}
+							</div>
+						</div>
+						<input
+							type="hidden"
+							id="hero_media_id"
+							name="hero_media_id"
+							if pageResp.HeroMedia != nil {
+								value={ lib.GetUUIDString(pageResp.HeroMedia.ID) }
+							}
+						/>
+					</div>
+					<!-- Header & Sub-Header -->
+					<div class="space-y-2">
+						<label for="header" class="block text-sm font-medium text-foreground">Header</label>
+						<input
+							type="text"
+							id="header"
+							name="header"
+							if pageResp.Page.Header.Valid {
+								value={ pageResp.Page.Header.String }
 							}
 							class={
 								"w-full px-4 py-2 border  rounded focus:ring-2 focus:ring-primary focus:border-primary",
-								templ.KV("border-red-500 focus:border-red-500", lib.HasError("cta_text", errors)),
+								templ.KV("border-red-500 focus:border-red-500", lib.HasError("header", errors)),
 							}
-							placeholder="View My Work"
+							placeholder="About Me"
 						/>
-						@lib.FieldError("cta_text", errors)
+						@lib.FieldError("header", errors)
 					</div>
 					<div class="space-y-2">
-						<label for="cta_link" class="block text-sm font-medium text-foreground">CTA Link</label>
+						<label for="sub_header" class="block text-sm font-medium text-foreground">Sub-Header</label>
 						<input
-							type="url"
-							id="cta_link"
-							name="cta_link"
-							if pageResp.Page.CtaLink.Valid {
-								value={ pageResp.Page.CtaLink.String }
+							type="text"
+							id="sub_header"
+							name="sub_header"
+							if pageResp.Page.SubHeader.Valid {
+								value={ pageResp.Page.SubHeader.String }
 							}
 							class={
 								"w-full px-4 py-2 border  rounded focus:ring-2 focus:ring-primary focus:border-primary",
-								templ.KV("border-red-500 focus:border-red-500", lib.HasError("cta_link", errors)),
+								templ.KV("border-red-500 focus:border-red-500", lib.HasError("sub_header", errors)),
 							}
-							placeholder="/projects"
+							placeholder="Learn more about my journey"
 						/>
-						@lib.FieldError("cta_link", errors)
+						@lib.FieldError("sub_header", errors)
 					</div>
-				</div>
-			</div>
-			<!-- Form Actions -->
-			<div class="flex gap-3 pt-6 border-t border-border">
-				@button.Button(button.Props{Type: "submit", Variant: button.VariantDefault}) {
-					Save Changes
+					<!-- Content -->
+					<div class="space-y-2">
+						<label for="content" class="block text-sm font-medium text-foreground">Content</label>
+						<textarea
+							id="content"
+							name="content"
+							rows="8"
+							class={
+								"w-full px-4 py-2 border  rounded focus:ring-2 focus:ring-primary focus:border-primary",
+								templ.KV("border-red-500 focus:border-red-500", lib.HasError("content", errors)),
+							}
+							placeholder="Tell your story..."
+						>
+							if pageResp.Page.Content.Valid {
+								{ pageResp.Page.Content.String }
+							}
+						</textarea>
+						@lib.FieldError("content", errors)
+					</div>
+					<!-- Content Image -->
+					<div class="space-y-2">
+						<label class="block text-sm font-medium text-foreground">Content Image</label>
+						<div class="flex items-start gap-4" id="content_image_id_preview">
+							if pageResp.ContentImage != nil {
+								<div class="relative w-48 h-32 rounded border border-border overflow-hidden">
+									<img src={ pageResp.ContentImage.ThumbnailURL } alt="Content" class="w-full h-full object-cover"/>
+									<button
+										type="button"
+										onclick="document.getElementById('content_image_id').value = ''; this.parentElement.remove();"
+										class="absolute top-2 right-2 p-1 bg-red-600 text-white rounded-full hover:bg-red-700"
+									>
+										<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+										</svg>
+									</button>
+								</div>
+							} else {
+								<div class="w-48 h-32 rounded border-2 border-dashed  flex items-center justify-center">
+									<span class="text-gray-400 text-sm">No content image</span>
+								</div>
+							}
+							<div class="flex-1">
+								@dialog.Trigger(dialog.TriggerProps{For: "content-image-selector"}) {
+									@button.Button(button.Props{Variant: button.VariantDefault}) {
+										Select Content Image
+									}
+								}
+							</div>
+						</div>
+						<input
+							type="hidden"
+							id="content_image_id"
+							name="content_image_id"
+							if pageResp.ContentImage != nil {
+								value={ lib.GetUUIDString(pageResp.ContentImage.ID) }
+							}
+						/>
+					</div>
+					<!-- CTA Section -->
+					<div class="border-t border-border pt-6">
+						<h3 class="text-lg font-semibold text-foreground mb-4">Call to Action</h3>
+						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+							<div class="space-y-2">
+								<label for="cta_text" class="block text-sm font-medium text-foreground">CTA Text</label>
+								<input
+									type="text"
+									id="cta_text"
+									name="cta_text"
+									if pageResp.Page.CtaText.Valid {
+										value={ pageResp.Page.CtaText.String }
+									}
+									class={
+										"w-full px-4 py-2 border  rounded focus:ring-2 focus:ring-primary focus:border-primary",
+										templ.KV("border-red-500 focus:border-red-500", lib.HasError("cta_text", errors)),
+									}
+									placeholder="View My Work"
+								/>
+								@lib.FieldError("cta_text", errors)
+							</div>
+							<div class="space-y-2">
+								<label for="cta_link" class="block text-sm font-medium text-foreground">CTA Link</label>
+								<input
+									type="url"
+									id="cta_link"
+									name="cta_link"
+									if pageResp.Page.CtaLink.Valid {
+										value={ pageResp.Page.CtaLink.String }
+									}
+									class={
+										"w-full px-4 py-2 border  rounded focus:ring-2 focus:ring-primary focus:border-primary",
+										templ.KV("border-red-500 focus:border-red-500", lib.HasError("cta_link", errors)),
+									}
+									placeholder="/projects"
+								/>
+								@lib.FieldError("cta_link", errors)
+							</div>
+						</div>
+					</div>
+					<!-- Form Actions -->
+					<div class="flex gap-3 pt-6 border-t border-border">
+						@button.Button(button.Props{Type: "submit", Variant: button.VariantDefault}) {
+							Save Changes
+						}
+						<a href="/admin/pages" class="inline-flex items-center justify-center px-4 py-2 border  text-foreground text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors">
+							Cancel
+						</a>
+					</div>
 				}
-				<a href="/admin/pages" class="inline-flex items-center justify-center px-4 py-2 border  text-foreground text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors">
-					Cancel
-				</a>
-			</div>
+				<!-- SEO Tab -->
+				@tabs.Content(tabs.ContentProps{Value: "seo", Class: "mt-4"}) {
+					@lib.SEOFormTab(seo, errors)
+				}
+			}
 		</form>
 	</div>
 }

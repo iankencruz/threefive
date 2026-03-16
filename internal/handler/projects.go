@@ -24,15 +24,17 @@ type ProjectHandler struct {
 	logger         *slog.Logger
 	projectService *services.ProjectService
 	tagService     *services.TagService
-	mediaService   *services.MediaService // ADD THIS
+	mediaService   *services.MediaService
+	seoService     *services.SEOService
 }
 
-func NewProjectHandler(logger *slog.Logger, projectService *services.ProjectService, tagService *services.TagService, mediaService *services.MediaService) *ProjectHandler {
+func NewProjectHandler(logger *slog.Logger, projectService *services.ProjectService, tagService *services.TagService, mediaService *services.MediaService, seoService *services.SEOService) *ProjectHandler {
 	return &ProjectHandler{
 		logger:         logger,
 		projectService: projectService,
 		tagService:     tagService,
 		mediaService:   mediaService,
+		seoService:     seoService,
 	}
 }
 
@@ -252,11 +254,13 @@ func (h *ProjectHandler) ShowEditPage(c *echo.Context) error {
 		tags = []generated.Tag{}
 	}
 
+	seoResp, _ := h.seoService.GetSEOResponse(c.Request().Context(), "project", project.Project.ID.Bytes, h.mediaService)
+
 	// Add user to context for template
 	ctx := lib.WithUser(c.Request().Context(), middleware.GetUser(c))
 	currentPath := c.Request().URL.Path
 
-	component := admin.ProjectEditPage(project, tags, currentPath, nil)
+	component := admin.ProjectEditPage(project, tags, seoResp, currentPath, nil)
 	return responses.Render(ctx, c, component)
 }
 
@@ -271,6 +275,9 @@ func (h *ProjectHandler) UpdateProject(c *echo.Context) error {
 		h.logger.Error("failed to get project", "error", err, "slug", slug)
 		return responses.ErrorToast(c.Request().Context(), c, "Project not found")
 	}
+
+	// Fetch SEO once — reused in all error paths
+	existingSEO, _ := h.seoService.GetSEOResponse(c.Request().Context(), "project", existing.Project.ID.Bytes, h.mediaService)
 
 	// Parse form data
 	if err := c.Request().ParseForm(); err != nil {
@@ -303,7 +310,7 @@ func (h *ProjectHandler) UpdateProject(c *echo.Context) error {
 		errorCount := len(fieldErrors)
 		toastMessage := fmt.Sprintf("Please fix %d validation error(s)", errorCount)
 
-		component := admin.ProjectEditForm(existing, tags, fieldErrors)
+		component := admin.ProjectEditForm(existing, tags, existingSEO, fieldErrors)
 		return responses.RenderError(ctx, c, component, toastMessage)
 	}
 
@@ -319,14 +326,35 @@ func (h *ProjectHandler) UpdateProject(c *echo.Context) error {
 		// Check if it's a slug uniqueness error
 		if strings.Contains(err.Error(), "slug already exists") {
 			fieldErrors := validation.FieldErrors{"slug": err.Error()}
-			component := admin.ProjectEditForm(existing, tags, fieldErrors)
+			component := admin.ProjectEditForm(existing, tags, existingSEO, fieldErrors)
 			return responses.RenderError(ctx, c, component, err.Error())
 		}
 
 		// Generic database error
 		dbErrors := validation.FieldErrors{"general": err.Error()}
-		component := admin.ProjectEditForm(existing, tags, dbErrors)
+		component := admin.ProjectEditForm(existing, tags, existingSEO, dbErrors)
 		return responses.RenderError(ctx, c, component, err.Error())
+	}
+
+	// Upsert SEO — non-fatal if it fails
+	seoReq := services.UpsertSEORequest{
+		EntityType:   "project",
+		EntityID:     updated.Project.ID.Bytes,
+		SEOTitle:     c.FormValue("seo_title"),
+		SEODesc:      c.FormValue("seo_description"),
+		OGTitle:      c.FormValue("og_title"),
+		OGDesc:       c.FormValue("og_description"),
+		CanonicalURL: c.FormValue("canonical_url"),
+		RobotsIndex:  c.FormValue("robots_index") == "true",
+		RobotsFollow: c.FormValue("robots_follow") == "true",
+	}
+	if ogImageID := c.FormValue("og_image_id"); ogImageID != "" {
+		if parsed, err := uuid.Parse(ogImageID); err == nil {
+			seoReq.OGImageID = &parsed
+		}
+	}
+	if _, err := h.seoService.UpsertSEO(c.Request().Context(), seoReq); err != nil {
+		h.logger.Error("failed to upsert project SEO", "error", err)
 	}
 
 	// SUCCESS - Check if slug changed
@@ -343,9 +371,10 @@ func (h *ProjectHandler) UpdateProject(c *echo.Context) error {
 
 	// Slug didn't change - Stay on page with success toast
 	tags, _ := h.tagService.ListAllTags(c.Request().Context())
+	freshSEO, _ := h.seoService.GetSEOResponse(c.Request().Context(), "project", updated.Project.ID.Bytes, h.mediaService)
 	ctx := lib.WithUser(c.Request().Context(), middleware.GetUser(c))
 
-	component := admin.ProjectEditForm(updated, tags, nil)
+	component := admin.ProjectEditForm(updated, tags, freshSEO, nil)
 	return responses.RenderSuccess(ctx, c, component, "Project updated successfully")
 }
 
@@ -466,7 +495,7 @@ func (h *ProjectHandler) ShowPublicProjectsList(c *echo.Context) error {
 		return c.String(500, "Failed to load projects")
 	}
 
-	component := pages.Projects(projects)
+	component := pages.Projects(projects, nil)
 	return responses.Render(c.Request().Context(), c, component)
 }
 
@@ -483,7 +512,9 @@ func (h *ProjectHandler) ShowPublicProject(c *echo.Context) error {
 	if project.Project.Status.Valid && project.Project.Status.String != "published" {
 		return c.String(404, "Project not found")
 	}
+	seo, _ := h.seoService.GetSEO(c.Request().Context(), "project", project.Project.ID.Bytes)
+	seoData := services.ToSEOData(seo, project.Project.Title, fullURL(c, "/projects/"+project.Project.Slug), "ThreeFive", "")
 
-	component := pages.ProjectDetails(project)
+	component := pages.ProjectDetails(project, seoData)
 	return responses.Render(c.Request().Context(), c, component)
 }

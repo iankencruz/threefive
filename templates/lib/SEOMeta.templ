@@ -1,0 +1,33 @@
+package lib
+
+import "github.com/iankencruz/threefive/internal/services"
+
+templ SEOMeta(seo *services.SEOData) {
+	<title>{ seo.Title } | { seo.SiteName }</title>
+	<meta name="description" content={ seo.Description }/>
+	<meta name="robots" content={ seo.RobotsContent() }/>
+	if seo.CanonicalURL != "" {
+		<link rel="canonical" href={ seo.CanonicalURL }/>
+	} else if seo.PageURL != "" {
+		<link rel="canonical" href={ seo.PageURL }/>
+	}
+	<!-- Open Graph -->
+	<meta property="og:type" content="website"/>
+	<meta property="og:site_name" content={ seo.SiteName }/>
+	<meta property="og:title" content={ seo.EffectiveOGTitle() }/>
+	<meta property="og:description" content={ seo.EffectiveOGDescription() }/>
+	if seo.PageURL != "" {
+		<meta property="og:url" content={ seo.PageURL }/>
+	}
+	if seo.OGImageURL != "" {
+		<meta property="og:image" content={ seo.OGImageURL }/>
+		<meta property="og:image:alt" content={ seo.EffectiveOGTitle() }/>
+	}
+	<!-- Twitter Card -->
+	<meta name="twitter:card" content="summary_large_image"/>
+	<meta name="twitter:title" content={ seo.EffectiveOGTitle() }/>
+	<meta name="twitter:description" content={ seo.EffectiveOGDescription() }/>
+	if seo.OGImageURL != "" {
+		<meta name="twitter:image" content={ seo.OGImageURL }/>
+	}
+}

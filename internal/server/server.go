@@ -28,6 +28,7 @@ type Server struct {
 	ProjectService    *services.ProjectService
 	ContactService    *services.ContactService
 	TagService        *services.TagService
+	SeoService        *services.SEOService
 	SessionManager    *session.SessionManager
 	SessionMiddleware *middleware.SessionMiddleware
 	Log               *slog.Logger
@@ -109,7 +110,9 @@ func NewServer() *Server {
 		panic(err)
 	}
 
-	//
+	// Seo Service
+	seoService := services.NewSEOService(db.Pool(), queries, slogger)
+
 	// Initialize services
 	authService := services.NewAuthService(db.Pool(), queries, slogger)
 	slogger.Info("auth service initialized")
@@ -182,6 +185,7 @@ func NewServer() *Server {
 		PageService:       pageService,
 		ProjectService:    projectService,
 		TagService:        tagService,
+		SeoService:        seoService,
 		ContactService:    contactService,
 		SessionManager:    sessionManager,
 		SessionMiddleware: sessionMiddleware,

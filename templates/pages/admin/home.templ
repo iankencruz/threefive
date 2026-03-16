@@ -7,7 +7,148 @@ import (
 	"github.com/iankencruz/threefive/internal/services"
 	"github.com/iankencruz/threefive/templates/layouts"
 	"github.com/iankencruz/threefive/templates/lib"
+	"github.com/iankencruz/threefive/components/tabs"
 )
+
+templ AdminHome(pageResp *services.PageResponse, availableProjects []services.ProjectResponse, seo *services.SEOResponse, currentPath string) {
+	@layouts.AdminLayout(layouts.LayoutProps{
+		Title: "Edit Home Page",
+		Path:  currentPath,
+	}) {
+		<div class="mb-8">
+			<a href="/admin/pages" class="inline-flex items-center gap-2 py-2 mb-4 text-card-foreground text-sm font-medium rounded hover:underline transition-colors">
+				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+				</svg>
+				Back to Pages
+			</a>
+			<h1 class="text-3xl font-bold text-card-foreground">Edit Home Page</h1>
+		</div>
+		@AdminHomeForm(pageResp, availableProjects, seo, nil)
+		@lib.MediaSelectorModal("og-image-selector", "og_image_id")
+		@lib.MediaSelectorModal("hero-media-selector", "hero_media_id")
+		@dialog.Dialog(dialog.Props{ID: "featured-projects-selector"}) {
+			@dialog.Content(dialog.ContentProps{}) {
+				<div class="space-y-4">
+					<div class="max-h-[60vh] overflow-y-auto">
+						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+							for _, project := range availableProjects {
+								<button { projectCardAttrs(project)... }>
+									@ProjectThumbnail(project)
+									<div class="flex-1 min-w-0">
+										<p class="text-sm font-medium text-card-foreground truncate">{ project.Project.Title }</p>
+										<p class="text-xs text-card-foreground">{ project.Project.Slug }</p>
+									</div>
+								</button>
+							}
+						</div>
+					</div>
+				</div>
+				@dialog.Footer(dialog.FooterProps{}) {
+					@dialog.Close() {
+						@button.Button(button.Props{Variant: button.VariantOutline}) {
+							Close 
+						}
+					}
+				}
+			}
+		}
+		@dialog.Script()
+		@tabs.Script()
+		<script>
+			function addFeaturedProject(id, title, imageUrl) {
+				const existing = document.querySelector(
+					'input[name="featured_project_ids[]"][value="' + id + '"]',
+				);
+				if (existing) return;
+				const grid = document.getElementById("featured-projects-grid");
+				const currentCount = grid.querySelectorAll(
+					'input[name="featured_project_ids[]"]',
+				).length;
+				if (currentCount >= 6) return;
+				const noMsg = grid.querySelector(".col-span-3");
+				if (noMsg) noMsg.remove();
+				const card = document.createElement("div");
+				card.className = "relative border border-gray-200 rounded p-4";
+				card.innerHTML = `
+					<div class="flex justify-between mb-2">
+						<div class="flex-1">
+							<p class="text-sm font-medium text-card-foreground">${title}</p>
+							<p class="text-xs text-card-foreground">Order: ${currentCount + 1}</p>
+						</div>
+						<button type="button" onclick="this.closest('div.relative').remove();" class="text-red-600">×</button>
+					</div>
+					${imageUrl ? '<img src="' + imageUrl + '" class="w-full h-24 object-cover rounded"/>' : ""}
+					<input type="hidden" name="featured_project_ids[]" value="${id}"/>
+				`;
+				grid.appendChild(card);
+			}
+		</script>
+	}
+}
+
+templ AdminHomeForm(pageResp *services.PageResponse, availableProjects []services.ProjectResponse, seo *services.SEOResponse, errors map[string]string) {
+	<div id="admin-home-form" class="bg-card rounded border border-border">
+		<form hx-put={ "/admin/pages/" + pageResp.Page.Slug } hx-target="#admin-home-form" hx-swap="outerHTML" class="p-6 space-y-6">
+			@tabs.Tabs(tabs.Props{ID: "home-tabs"}) {
+				@tabs.List() {
+					@tabs.Trigger(tabs.TriggerProps{Value: "details", IsActive: true}) {
+						Details
+					}
+					@tabs.Trigger(tabs.TriggerProps{Value: "seo"}) {
+						SEO
+					}
+				}
+				<!-- Details Tab -->
+				@tabs.Content(tabs.ContentProps{Value: "details", IsActive: true, Class: "space-y-6 mt-4"}) {
+					<div class="space-y-2 flex flex-col">
+						<div>
+							<label class="block text-sm font-medium text-card-foreground mb-2">Hero Media</label>
+							@ErrorMessage(errors, "hero_media_id")
+							<div class="flex items-start gap-4" id="hero_media_id_preview">
+								@HeroPreview(pageResp.HeroMedia)
+							</div>
+						</div>
+						@dialog.Trigger(dialog.TriggerProps{For: "hero-media-selector"}) {
+							@button.Button(button.Props{Variant: button.VariantDefault}) {
+								Select Hero Media 
+							}
+						}
+						<input type="hidden" id="hero_media_id" name="hero_media_id" value={ getHeroMediaID(pageResp) }/>
+					</div>
+					<div>
+						<label class="block text-sm font-medium text-card-foreground mb-2">Header</label>
+						@ErrorMessage(errors, "header")
+						<input type="text" name="header" value={ getHeaderValue(pageResp) } class="w-full px-4 py-2 border rounded"/>
+					</div>
+					<div>
+						<label class="block text-sm font-medium text-card-foreground mb-2">Sub-Header</label>
+						@ErrorMessage(errors, "sub_header")
+						<input type="text" name="sub_header" value={ getSubHeaderValue(pageResp) } class="w-full px-4 py-2 border rounded"/>
+					</div>
+					<div class="border-t pt-6">
+						<h3 class="text-lg font-semibold text-card-foreground mb-4">Featured Projects (Max 6)</h3>
+						@FeaturedProjectsGrid(pageResp.FeaturedProjects)
+						<div class="mt-4">
+							@dialog.Trigger(dialog.TriggerProps{For: "featured-projects-selector"}) {
+								@button.Button(button.Props{Variant: button.VariantDefault}) {
+									Add Featured Project 
+								}
+							}
+						</div>
+					</div>
+					<div class="flex justify-end pt-6 border-t">
+						<button type="submit" class="px-6 py-2 bg-primary hover:bg-primary/80 text-white rounded">Save Changes</button>
+					</div>
+				}
+				<!-- SEO Tab -->
+				@tabs.Content(tabs.ContentProps{Value: "seo", Class: "mt-4"}) {
+					@lib.SEOFormTab(seo, errors)
+				}
+			}
+		</form>
+	</div>
+}
 
 // --- Logic Helpers ---
 
@@ -52,7 +193,6 @@ func isVideo(mimeType string) bool {
 	return len(mimeType) >= 5 && mimeType[:5] == "video"
 }
 
-// Fixed: This is for the modal selection loop, so it takes ProjectResponse
 func projectCardAttrs(project services.ProjectResponse) templ.Attributes {
 	return templ.Attributes{
 		"type":               "button",
@@ -131,125 +271,4 @@ templ FeaturedProjectsGrid(projects []services.FeaturedProjectSummary) {
 			<p class="text-sm text-card-foreground col-span-3">No featured projects selected</p>
 		</div>
 	}
-}
-
-templ AdminHome(pageResp *services.PageResponse, availableProjects []services.ProjectResponse, currentPath string) {
-	@layouts.AdminLayout(layouts.LayoutProps{
-		Title: "Edit Home Page",
-		Path:  currentPath,
-	}) {
-		<div class="mb-8">
-			<a href="/admin/pages" class="inline-flex items-center gap-2 py-2 mb-4 text-card-foreground text-sm font-medium rounded hover:underline transition-colors">
-				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-				</svg>
-				Back to Pages
-			</a>
-			<h1 class="text-3xl font-bold text-card-foreground">Edit Home Page</h1>
-		</div>
-		@AdminHomeForm(pageResp, availableProjects, nil)
-		@lib.MediaSelectorModal("hero-media-selector", "hero_media_id")
-		@dialog.Dialog(dialog.Props{ID: "featured-projects-selector"}) {
-			@dialog.Content(dialog.ContentProps{}) {
-				<div class="space-y-4">
-					<div class="max-h-[60vh] overflow-y-auto">
-						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-							for _, project := range availableProjects {
-								<button { projectCardAttrs(project)... }>
-									@ProjectThumbnail(project)
-									<div class="flex-1 min-w-0">
-										<p class="text-sm font-medium text-card-foreground truncate">{ project.Project.Title }</p>
-										<p class="text-xs text-card-foreground">{ project.Project.Slug }</p>
-									</div>
-								</button>
-							}
-						</div>
-					</div>
-				</div>
-				@dialog.Footer(dialog.FooterProps{}) {
-					@dialog.Close() {
-						@button.Button(button.Props{Variant: button.VariantOutline}) {
-							Close 
-						}
-					}
-				}
-			}
-		}
-		@dialog.Script()
-		<script>
-			function addFeaturedProject(id, title, imageUrl) {
-				const existing = document.querySelector(
-					'input[name="featured_project_ids[]"][value="' + id + '"]',
-				);
-				if (existing) return;
-				const grid = document.getElementById("featured-projects-grid");
-				const currentCount = grid.querySelectorAll(
-					'input[name="featured_project_ids[]"]',
-				).length;
-				if (currentCount >= 6) return;
-				const noMsg = grid.querySelector(".col-span-3");
-				if (noMsg) noMsg.remove();
-				const card = document.createElement("div");
-				card.className = "relative border border-gray-200 rounded p-4";
-				card.innerHTML = `
-					<div class="flex justify-between mb-2">
-						<div class="flex-1">
-							<p class="text-sm font-medium text-card-foreground">${title}</p>
-							<p class="text-xs text-card-foreground">Order: ${currentCount + 1}</p>
-						</div>
-						<button type="button" onclick="this.closest('div.relative').remove();" class="text-red-600">×</button>
-					</div>
-					${imageUrl ? '<img src="' + imageUrl + '" class="w-full h-24 object-cover rounded"/>' : ""}
-					<input type="hidden" name="featured_project_ids[]" value="${id}"/>
-				`;
-				grid.appendChild(card);
-			}
-		</script>
-	}
-}
-
-templ AdminHomeForm(pageResp *services.PageResponse, availableProjects []services.ProjectResponse, errors map[string]string) {
-	<div id="admin-home-form" class="bg-card rounded border border-border">
-		<form hx-put={ "/admin/pages/" + pageResp.Page.Slug } hx-target="#admin-home-form" hx-swap="outerHTML" class="p-6 space-y-6">
-			<div class="space-y-2 flex flex-col">
-				<div>
-					<label class="block text-sm font-medium text-card-foreground mb-2">Hero Media</label>
-					@ErrorMessage(errors, "hero_media_id")
-					<div class="flex items-start gap-4" id="hero_media_id_preview">
-						@HeroPreview(pageResp.HeroMedia)
-					</div>
-				</div>
-				@dialog.Trigger(dialog.TriggerProps{For: "hero-media-selector"}) {
-					@button.Button(button.Props{Variant: button.VariantDefault}) {
-						Select Hero Media 
-					}
-				}
-				<input type="hidden" id="hero_media_id" name="hero_media_id" value={ getHeroMediaID(pageResp) }/>
-			</div>
-			<div>
-				<label class="block text-sm font-medium text-card-foreground mb-2">Header</label>
-				@ErrorMessage(errors, "header")
-				<input type="text" name="header" value={ getHeaderValue(pageResp) } class="w-full px-4 py-2 border rounded"/>
-			</div>
-			<div>
-				<label class="block text-sm font-medium text-card-foreground mb-2">Sub-Header</label>
-				@ErrorMessage(errors, "sub_header")
-				<input type="text" name="sub_header" value={ getSubHeaderValue(pageResp) } class="w-full px-4 py-2 border rounded"/>
-			</div>
-			<div class="border-t pt-6">
-				<h3 class="text-lg font-semibold text-card-foreground mb-4">Featured Projects (Max 6)</h3>
-				@FeaturedProjectsGrid(pageResp.FeaturedProjects)
-				<div class="mt-4">
-					@dialog.Trigger(dialog.TriggerProps{For: "featured-projects-selector"}) {
-						@button.Button(button.Props{Variant: button.VariantDefault}) {
-							Add Featured Project 
-						}
-					}
-				</div>
-			</div>
-			<div class="flex justify-end pt-6 border-t">
-				<button type="submit" class="px-6 py-2 bg-primary hover:bg-primary/80 text-white rounded">Save Changes</button>
-			</div>
-		</form>
-	</div>
 }

@@ -6,8 +6,8 @@ import (
 	"github.com/iankencruz/threefive/templates/lib"
 )
 
-templ Contact(page *services.PageResponse) {
-	@layouts.BaseLayout("Contact") {
+templ Contact(page *services.PageResponse, seo *services.SEOData) {
+	@layouts.BaseLayout("Contact", seo) {
 		<div class="min-h-screen bg-background text-foreground">
 			@lib.NavigationBar("/contact")
 			<main class="pt-18">

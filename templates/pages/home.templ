@@ -7,8 +7,8 @@ import (
 	"github.com/iankencruz/threefive/templates/lib"
 )
 
-templ Home(page *services.PageResponse) {
-	@layouts.BaseLayout("ThreeFive") {
+templ Home(page *services.PageResponse, seo *services.SEOData) {
+	@layouts.BaseLayout("ThreeFive", seo) {
 		<div class="min-h-screen bg-background text-foreground">
 			@lib.NavigationBar("/")
 			<!-- Hero Section -->
