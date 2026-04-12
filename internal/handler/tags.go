@@ -6,10 +6,10 @@ import (
 	"log/slog"
 	"strconv"
 
-	"github.com/iankencruz/threefive/components/toast"
 	"github.com/iankencruz/threefive/internal/middleware"
 	"github.com/iankencruz/threefive/internal/services"
 	"github.com/iankencruz/threefive/pkg/responses"
+	"github.com/iankencruz/threefive/templates/components/toast"
 	"github.com/iankencruz/threefive/templates/lib"
 	"github.com/iankencruz/threefive/templates/pages/admin"
 	"github.com/labstack/echo/v5"

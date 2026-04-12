@@ -3,19 +3,19 @@ package admin
 
 import (
 	"fmt"
-	"github.com/iankencruz/threefive/components/badge"
-	"github.com/iankencruz/threefive/components/button"
-	"github.com/iankencruz/threefive/components/dialog"
-	"github.com/iankencruz/threefive/components/input"
-	"github.com/iankencruz/threefive/components/label"
 	"github.com/iankencruz/threefive/database/generated"
 	"github.com/iankencruz/threefive/internal/services"
 	"github.com/iankencruz/threefive/pkg/validation"
+	"github.com/iankencruz/threefive/templates/components/badge"
+	"github.com/iankencruz/threefive/templates/components/button"
+	"github.com/iankencruz/threefive/templates/components/dialog"
+	"github.com/iankencruz/threefive/templates/components/input"
+	"github.com/iankencruz/threefive/templates/components/label"
+	"github.com/iankencruz/threefive/templates/components/tabs"
 	"github.com/iankencruz/threefive/templates/layouts"
 	"github.com/iankencruz/threefive/templates/lib"
 	"github.com/jackc/pgx/v5/pgtype"
 	"strings"
-	"github.com/iankencruz/threefive/components/tabs"
 )
 
 templ ProjectEditPage(project *services.ProjectResponse, tags []generated.Tag, seo *services.SEOResponse, currentPath string, errors validation.FieldErrors) {

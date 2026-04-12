@@ -7,10 +7,10 @@ import (
 
 	"github.com/a-h/templ"
 	"github.com/google/uuid"
-	"github.com/iankencruz/threefive/components/toast"
 	"github.com/iankencruz/threefive/database/generated"
 	"github.com/iankencruz/threefive/internal/services"
 	"github.com/iankencruz/threefive/pkg/responses"
+	"github.com/iankencruz/threefive/templates/components/toast"
 	"github.com/iankencruz/threefive/templates/lib"
 	"github.com/iankencruz/threefive/templates/pages"
 	"github.com/iankencruz/threefive/templates/pages/admin"

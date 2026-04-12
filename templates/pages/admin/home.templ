@@ -2,12 +2,12 @@ package admin
 
 import (
 	"fmt"
-	"github.com/iankencruz/threefive/components/button"
-	"github.com/iankencruz/threefive/components/dialog"
 	"github.com/iankencruz/threefive/internal/services"
+	"github.com/iankencruz/threefive/templates/components/button"
+	"github.com/iankencruz/threefive/templates/components/dialog"
+	"github.com/iankencruz/threefive/templates/components/tabs"
 	"github.com/iankencruz/threefive/templates/layouts"
 	"github.com/iankencruz/threefive/templates/lib"
-	"github.com/iankencruz/threefive/components/tabs"
 )
 
 templ AdminHome(pageResp *services.PageResponse, availableProjects []services.ProjectResponse, seo *services.SEOResponse, currentPath string) {

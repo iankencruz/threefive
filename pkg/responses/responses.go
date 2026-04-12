@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/a-h/templ"
-	"github.com/iankencruz/threefive/components/toast"
+	"github.com/iankencruz/threefive/templates/components/toast"
 	"github.com/labstack/echo/v5"
 )
 
