@@ -1,3 +1,4 @@
+
 # Binaries for programs and plugins
 *.exe
 *.exe~
@@ -104,3 +105,33 @@ backend/bin/main
 backend/bin/
 backend/bin
 .task/checksum
+
+
+
+
+
+node_modules
+
+# Output
+.output
+.vercel
+.netlify
+.wrangler
+/.svelte-kit
+/build
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.*
+!.env.example
+!.env.test
+
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+/frontend/.svelte-kit
