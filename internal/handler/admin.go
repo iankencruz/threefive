@@ -4,10 +4,8 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/iankencruz/threefive/internal/middleware"
 	"github.com/iankencruz/threefive/internal/services"
 	"github.com/iankencruz/threefive/pkg/responses"
-	"github.com/iankencruz/threefive/templates/lib"
 	"github.com/iankencruz/threefive/templates/pages/admin"
 	"github.com/labstack/echo/v5"
 )
@@ -28,9 +26,9 @@ func NewAdminHandler(logger *slog.Logger, mediaService *services.MediaService) *
 func (h *AdminHandler) ShowDashboard(c *echo.Context) error {
 	// Get authenticated user
 	// Create a context variable
-	ctx := lib.WithUser(c.Request().Context(), middleware.GetUser(c))
+	// ctx := lib.WithUser(c.Request().Context(), middleware.GetUser(c))
 
-	currentPath := c.Request().URL.Path
+	// currentPath := c.Request().URL.Path
 
 	count, err := h.mediaService.CountMedia(c.Request().Context())
 	if err != nil {
@@ -57,6 +55,7 @@ func (h *AdminHandler) ShowDashboard(c *echo.Context) error {
 		DraftBlogs:        6,
 	}
 
-	component := admin.Dashboard(stats, currentPath)
-	return responses.Render(ctx, c, component)
+	return responses.WriteCreated(c, stats)
+
+	// component := admin.Dashboard(stats, currentPath)
 }

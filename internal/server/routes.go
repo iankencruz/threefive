@@ -63,7 +63,7 @@ func (s *Server) RegisterRoutes() {
 	})
 
 	// Dashboard Handler
-	admin.GET("/dashboard", adminHandler.ShowDashboard)
+	s.Echo.GET("/api/admin/dashboard", adminHandler.ShowDashboard)
 
 	// Media Management
 	media := admin.Group("/media")
