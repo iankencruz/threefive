@@ -1,14 +1,17 @@
 package server
 
 import (
+	"io/fs"
+	"net/http"
+	"strings"
+
+	"github.com/iankencruz/threefive"
 	"github.com/iankencruz/threefive/internal/handler"
 	mw "github.com/iankencruz/threefive/internal/middleware"
 	"github.com/labstack/echo/v5"
-	"github.com/labstack/echo/v5/middleware"
 	"golang.org/x/time/rate"
 )
 
-// RegisterRoutes defines the API endpoints
 func (s *Server) RegisterRoutes() {
 	s.Log.Info("Registering routes...")
 	s.Echo.Static("/assets", "assets")
@@ -22,94 +25,103 @@ func (s *Server) RegisterRoutes() {
 	tagHandler := handler.NewTagHandler(s.Log, s.TagService)
 	contactHandler := handler.NewContactHandler(s.Log, s.ContactService)
 
-	// Static assets
-
-	// Session Middleware
+	// Global Middleware
 	s.Echo.Use(s.SessionMiddleware.Session)
 
-	s.Echo.Pre(middleware.RemoveTrailingSlash())
-
-	// handlers
+	// 1. PUBLIC & AUTH ROUTES
 	s.Echo.GET("/health", s.healthCheckHandler)
 
-	// ── Auth (stricter: 5 attempts per minute) ──────────────────────────────
-	// rate.Limit(5.0/60) = 5 tokens per 60 seconds, burst of 5
 	loginLimiter := mw.RateLimit(rate.Limit(5.0/60), 5)
 	s.Echo.GET("/login", authHandler.ShowLoginPage)
 	s.Echo.POST("/login", authHandler.HandleLogin, loginLimiter)
 	s.Echo.POST("/logout", authHandler.HandleLogout)
 
-	// Public routes (no auth required)
 	s.Echo.GET("/", pageHandler.ShowPublicHome)
 	s.Echo.GET("/about", pageHandler.ShowPublicAbout)
 	s.Echo.GET("/projects", projectHandler.ShowPublicProjectsList)
 	s.Echo.GET("/projects/:slug", projectHandler.ShowPublicProject)
 
-	// ── Contact (10 submissions per hour per IP) ──────────────────────────
-	// rate.Limit(10.0/3600) = 10 tokens per hour, burst of 3
-
 	contactLimiter := mw.RateLimit(rate.Limit(10.0/3600), 3)
 	s.Echo.GET("/contact", pageHandler.ShowPublicContact)
 	s.Echo.POST("/contact", contactHandler.HandleSubmit, contactLimiter)
 
-	// *********
-	// admin routes (require authentication)
-	// *********
-	admin := s.Echo.Group("/admin")
-	admin.Use(s.SessionMiddleware.RequireAuth)
-	// redirect admin to dashboard
-	admin.GET("", func(c *echo.Context) error {
-		return c.Redirect(302, "/admin/dashboard")
+	// 2. PROTECTED API ROUTES (/api/admin/...)
+	// This matches what your SvelteKit fetch calls are hitting
+	api := s.Echo.Group("/api/admin")
+	api.Use(s.SessionMiddleware.RequireAuth)
+
+	api.GET("/dashboard", adminHandler.ShowDashboard)
+
+	mediaGroup := api.Group("/media")
+	mediaGroup.GET("", mediaHandler.ShowMediaList)
+	mediaGroup.GET("/selector", mediaHandler.ShowMediaSelector)
+	mediaGroup.POST("/upload", mediaHandler.UploadMedia)
+	mediaGroup.GET("/:id/detail", mediaHandler.GetMediaDetail)
+	mediaGroup.PUT("/:id", mediaHandler.UpdateMedia)
+	mediaGroup.DELETE("/:id", mediaHandler.DeleteMedia)
+
+	pagesGroup := api.Group("/pages")
+	pagesGroup.GET("", pageHandler.ListPages)
+	pagesGroup.GET("/:slug", pageHandler.ShowEditPage)
+	pagesGroup.PUT("/:slug", pageHandler.UpdatePage)
+
+	projectsGroup := api.Group("/projects")
+	projectsGroup.GET("", projectHandler.ShowProjectsList)
+	projectsGroup.POST("", projectHandler.CreateProject)
+	projectsGroup.GET("/create-modal", projectHandler.ShowCreateModal)
+	projectsGroup.GET("/gallery-selector", projectHandler.ShowGallerySelector)
+	projectsGroup.GET("/:slug", projectHandler.ShowEditPage)
+	projectsGroup.DELETE("/:slug", projectHandler.DeleteProject)
+	projectsGroup.PUT("/:slug", projectHandler.UpdateProject)
+	projectsGroup.PUT("/:slug/publish", projectHandler.PublishProject)
+	projectsGroup.PUT("/:slug/unpublish", projectHandler.UnpublishProject)
+
+	tagsGroup := api.Group("/tags")
+	tagsGroup.GET("", tagHandler.ShowTagsList)
+	tagsGroup.POST("", tagHandler.CreateTag)
+	tagsGroup.GET("/create-modal", tagHandler.ShowCreateModal)
+	tagsGroup.GET("/unused", tagHandler.ShowUnusedTags)
+	tagsGroup.DELETE("/bulk/unused", tagHandler.DeleteUnusedTags)
+	tagsGroup.GET("/:slug", tagHandler.ShowEditPage)
+	tagsGroup.PUT("/:slug", tagHandler.UpdateTag)
+	tagsGroup.DELETE("/:slug", tagHandler.DeleteTag)
+
+	// 3. ADMIN SPA SERVING (/admin/...)
+	// Register this LAST so it doesn't swallow other routes
+	adminFS, err := fs.Sub(threefive.AdminAssets, "build")
+	if err != nil {
+		s.Log.Error("failed to create sub filesystem", "error", err)
+	}
+
+	adminUI := s.Echo.Group("/admin")
+	adminUI.Use(s.SessionMiddleware.RequireAuth)
+
+	fileServer := http.FileServer(http.FS(adminFS))
+
+	adminUI.GET("/*", func(c *echo.Context) error {
+		path := c.Request().URL.Path
+
+		// Handle base path
+		if path == "/admin" || path == "/admin/" {
+			return c.FileFS("index.html", adminFS)
+		}
+
+		filePath := strings.TrimPrefix(path, "/admin/")
+
+		// Check if file exists in the embedded FS (e.g., _app/immutable/...)
+		f, err := adminFS.Open(filePath)
+		if err != nil {
+			// If file doesn't exist, serve index.html for SPA routing
+			return c.FileFS("index.html", adminFS)
+		}
+		f.Close()
+
+		return echo.WrapHandler(http.StripPrefix("/admin", fileServer))(c)
 	})
-
-	// Dashboard Handler
-	s.Echo.GET("/api/admin/dashboard", adminHandler.ShowDashboard)
-
-	// Media Management
-	media := admin.Group("/media")
-	media.GET("", mediaHandler.ShowMediaList)
-	media.GET("/selector", mediaHandler.ShowMediaSelector)
-	media.POST("/upload", mediaHandler.UploadMedia)
-	media.GET("/:id/detail", mediaHandler.GetMediaDetail)
-	media.PUT("/:id", mediaHandler.UpdateMedia)
-	media.DELETE("/:id", mediaHandler.DeleteMedia)
-
-	// Page management (admin only)
-	pages := admin.Group("/pages")
-
-	pages.GET("", pageHandler.ListPages) // List all 3 pages
-	pages.GET("/:slug", pageHandler.ShowEditPage)
-	pages.PUT("/:slug", pageHandler.UpdatePage)
-
-	// Project Management
-	projects := admin.Group("/projects")
-
-	projects.GET("", projectHandler.ShowProjectsList)
-	projects.POST("", projectHandler.CreateProject)
-	projects.GET("/create-modal", projectHandler.ShowCreateModal)
-	projects.GET("/gallery-selector", projectHandler.ShowGallerySelector)
-	projects.GET("/:slug", projectHandler.ShowEditPage)
-	projects.DELETE("/:slug", projectHandler.DeleteProject)
-	projects.PUT("/:slug", projectHandler.UpdateProject)
-	projects.PUT("/:slug/publish", projectHandler.PublishProject)
-	projects.PUT("/:slug/unpublish", projectHandler.UnpublishProject)
-
-	// Tag Management
-	tags := admin.Group("/tags")
-
-	tags.GET("", tagHandler.ShowTagsList)
-	tags.POST("", tagHandler.CreateTag)
-	tags.GET("/create-modal", tagHandler.ShowCreateModal)
-	tags.GET("/unused", tagHandler.ShowUnusedTags)
-	tags.DELETE("/bulk/unused", tagHandler.DeleteUnusedTags)
-	tags.GET("/:slug", tagHandler.ShowEditPage)
-	tags.PUT("/:slug", tagHandler.UpdateTag)
-	tags.DELETE("/:slug", tagHandler.DeleteTag)
 
 	s.Log.Info("routes registered successfully")
 }
 
-// Simple handler methods on the server for basic routes
 func (s *Server) healthCheckHandler(c *echo.Context) error {
 	return c.JSON(200, map[string]string{
 		"status": "ok",

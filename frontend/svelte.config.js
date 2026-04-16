@@ -11,7 +11,11 @@ const config = {
   },
   kit: {
     adapter: adapter({
-      fallback: 'index.html'
+      pages: '../build',
+      assets: '../build',
+      fallback: 'index.html', // Essential for SPA routing
+      precompress: false,
+      strict: true
     }),
     paths: {
       base: '/admin'

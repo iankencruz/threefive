@@ -4,6 +4,7 @@ package middleware
 import (
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/iankencruz/threefive/database/generated"
 	"github.com/iankencruz/threefive/internal/session"
@@ -67,9 +68,11 @@ func (m *SessionMiddleware) RequireAuth(next echo.HandlerFunc) echo.HandlerFunc 
 		userID, exists := sessionData["user_id"]
 
 		if !exists || userID == nil {
-			m.logger.Debug("unauthenticated access attempt",
-				"path", c.Request().URL.Path,
-			)
+			// If it's an API call, return 401 so the SvelteKit app can redirect to /login
+			if strings.HasPrefix(c.Request().URL.Path, "/api/") {
+				return c.JSON(http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+			}
+			// If it's a page navigation, redirect to login
 			return c.Redirect(http.StatusFound, "/login")
 		}
 

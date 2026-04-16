@@ -3,9 +3,9 @@ package handler
 import (
 	"fmt"
 	"log/slog"
+	"net/http"
 
 	"github.com/iankencruz/threefive/internal/services"
-	"github.com/iankencruz/threefive/pkg/responses"
 	"github.com/iankencruz/threefive/templates/pages/admin"
 	"github.com/labstack/echo/v5"
 )
@@ -55,7 +55,7 @@ func (h *AdminHandler) ShowDashboard(c *echo.Context) error {
 		DraftBlogs:        6,
 	}
 
-	return responses.WriteCreated(c, stats)
+	return c.JSON(http.StatusOK, stats)
 
 	// component := admin.Dashboard(stats, currentPath)
 }

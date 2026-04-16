@@ -3,7 +3,6 @@ package responses
 
 import (
 	"context"
-	"encoding/json"
 	"io"
 	"net/http"
 
@@ -165,78 +164,7 @@ func HTMXRedirect(c *echo.Context, url string) error {
 }
 
 // JSON
-
-// WriteJSON writes a JSON response with custom status code
-func WriteJSON(w http.ResponseWriter, statusCode int, data any) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-
-	if data != nil {
-		return json.NewEncoder(w).Encode(data)
-	}
-	return nil
-}
-
-// --- Convenience Success Functions ---
-
-func WriteCreated(c *echo.Context, data any) error {
-	return WriteJSON(c.Response(), http.StatusCreated, data)
-}
-
-func WriteOK(c *echo.Context, data any) error {
-	return WriteJSON(c.Response(), http.StatusOK, data)
-}
-
-func WriteNoContent(c *echo.Context) error {
-	return WriteJSON(c.Response(), http.StatusNoContent, nil)
-}
-
-// --- Convenience Error Functions ---
-
-func WriteBadRequest(c echo.Context, message, code string) error {
-	return WriteErr(c, BadRequest(message, code))
-}
-
-func WriteNotFound(c echo.Context, message, code string) error {
-	return WriteErr(c, NotFound(message, code))
-}
-
-func WriteUnauthorized(c echo.Context, message, code string) error {
-	return WriteErr(c, Unauthorized(message, code))
-}
-
-func WriteForbidden(c echo.Context, message, code string) error {
-	return WriteErr(c, Forbidden(message, code))
-}
-
-func WriteConflict(c echo.Context, message, code string) error {
-	return WriteErr(c, Conflict(message, code))
-}
-
-// --- Core Error Handler ---
-
-// WriteErr writes an error response.
-// It accepts an optional message argument to override the default error message.
-func WriteErr(c echo.Context, err error, messages ...string) error {
-	var appErr *AppError
-
-	// Type assert to your custom AppError
-	if e, ok := err.(*AppError); ok {
-		// Create a shallow copy to avoid mutating the original error object
-		shallow := *e
-		appErr = &shallow
-	} else {
-		// Use your Internal helper for unknown errors
-		appErr = Internal("An unexpected error occurred", err)
-	}
-
-	if len(messages) > 0 {
-		appErr.Message = messages[0]
-	}
-
-	res := c.Response()
-	res.Header().Set("Content-Type", "application/json")
-	res.WriteHeader(appErr.StatusCode)
-
-	return json.NewEncoder(res).Encode(appErr)
+type Response struct {
+	Message string `json:"message"`
+	Data    any    `json:"data,omitempty"`
 }

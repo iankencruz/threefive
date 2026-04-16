@@ -24,6 +24,11 @@ tasks:
     cmds:
       - task --list
 
+  start-docker:
+    desc: "Start Docker daemon"
+    cmds:
+      - sudo systemctl start docker
+
   go:tidy:
     desc: "Tidy Go modules"
     cmds:
@@ -47,16 +52,22 @@ tasks:
       - go tool templ generate --watch --proxy="http://localhost:8090" --cmd="go run ./cmd/web/main.go" --open-browser=false
 
   tailwind:
-    desc: Watch Tailwind CSS changes
+    desc: "Watch Tailwind CSS changes"
     cmds:
       - "{{.TAILWIND_CMD}} -i ./assets/css/input.css -o ./assets/css/output.css --watch"
+
+  svelte:
+    desc: "Watch Frontend"
+    dir: "frontend"
+    cmds:
+      - "vp dev"
 
   dev:
     desc: "Start Development watch mode"
     silent: true
     cmds:
       - defer: { task: clean }
-      - task --parallel tailwind templ
+      - task --parallel tailwind templ svelte
 
   clean:
     desc: "Clean build artifacts"
