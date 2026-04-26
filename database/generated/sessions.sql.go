@@ -18,9 +18,9 @@ DO UPDATE SET data = EXCLUDED.data, expiry = EXCLUDED.expiry
 `
 
 type CommitSessionParams struct {
-	Token  string
-	Data   []byte
-	Expiry time.Time
+	Token  string    `db:"token" json:"token"`
+	Data   []byte    `db:"data" json:"data"`
+	Expiry time.Time `db:"expiry" json:"expiry"`
 }
 
 func (q *Queries) CommitSession(ctx context.Context, arg CommitSessionParams) error {
@@ -35,9 +35,9 @@ VALUES ($1, $2, $3)
 `
 
 type CreateSessionParams struct {
-	Token  string
-	Data   []byte
-	Expiry time.Time
+	Token  string    `db:"token" json:"token"`
+	Data   []byte    `db:"data" json:"data"`
+	Expiry time.Time `db:"expiry" json:"expiry"`
 }
 
 // sql/queries/sessions.sql
@@ -83,9 +83,9 @@ WHERE token = $1
 `
 
 type UpdateSessionParams struct {
-	Token  string
-	Data   []byte
-	Expiry time.Time
+	Token  string    `db:"token" json:"token"`
+	Data   []byte    `db:"data" json:"data"`
+	Expiry time.Time `db:"expiry" json:"expiry"`
 }
 
 func (q *Queries) UpdateSession(ctx context.Context, arg UpdateSessionParams) error {

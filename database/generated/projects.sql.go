@@ -19,10 +19,10 @@ ON CONFLICT (media_id, entity_type, entity_id, relation_type) DO UPDATE
 `
 
 type AddGalleryMediaParams struct {
-	MediaID    pgtype.UUID
-	EntityType string
-	EntityID   pgtype.UUID
-	SortOrder  pgtype.Int4
+	MediaID    pgtype.UUID `db:"media_id" json:"media_id"`
+	EntityType string      `db:"entity_type" json:"entity_type"`
+	EntityID   pgtype.UUID `db:"entity_id" json:"entity_id"`
+	SortOrder  pgtype.Int4 `db:"sort_order" json:"sort_order"`
 }
 
 func (q *Queries) AddGalleryMedia(ctx context.Context, arg AddGalleryMediaParams) error {
@@ -44,8 +44,8 @@ RETURNING project_id, tag_id, created_at
 `
 
 type AddProjectTagParams struct {
-	ProjectID pgtype.UUID
-	TagID     pgtype.UUID
+	ProjectID pgtype.UUID `db:"project_id" json:"project_id"`
+	TagID     pgtype.UUID `db:"tag_id" json:"tag_id"`
 }
 
 // Project Tags Operations
@@ -66,8 +66,8 @@ SELECT EXISTS(
 `
 
 type CheckProjectSlugExistsParams struct {
-	Slug      string
-	ProjectID pgtype.UUID
+	Slug      string      `db:"slug" json:"slug"`
+	ProjectID pgtype.UUID `db:"project_id" json:"project_id"`
 }
 
 func (q *Queries) CheckProjectSlugExists(ctx context.Context, arg CheckProjectSlugExistsParams) (bool, error) {
@@ -176,18 +176,18 @@ RETURNING id, title, slug, description, project_date, status, client_name, proje
 `
 
 type CreateProjectParams struct {
-	ID              pgtype.UUID
-	Title           string
-	Slug            string
-	Description     pgtype.Text
-	ProjectDate     pgtype.Date
-	Status          pgtype.Text
-	ClientName      pgtype.Text
-	ProjectYear     pgtype.Int4
-	ProjectUrl      pgtype.Text
-	ProjectStatus   pgtype.Text
-	FeaturedImageID pgtype.UUID
-	AuthorID        pgtype.UUID
+	ID              pgtype.UUID `db:"id" json:"id"`
+	Title           string      `db:"title" json:"title"`
+	Slug            string      `db:"slug" json:"slug"`
+	Description     pgtype.Text `db:"description" json:"description"`
+	ProjectDate     pgtype.Date `db:"project_date" json:"project_date"`
+	Status          pgtype.Text `db:"status" json:"status"`
+	ClientName      pgtype.Text `db:"client_name" json:"client_name"`
+	ProjectYear     pgtype.Int4 `db:"project_year" json:"project_year"`
+	ProjectUrl      pgtype.Text `db:"project_url" json:"project_url"`
+	ProjectStatus   pgtype.Text `db:"project_status" json:"project_status"`
+	FeaturedImageID pgtype.UUID `db:"featured_image_id" json:"featured_image_id"`
+	AuthorID        pgtype.UUID `db:"author_id" json:"author_id"`
 }
 
 // Projects CRUD Operations
@@ -236,8 +236,8 @@ WHERE entity_type   = $1
 `
 
 type DeleteGalleryMediaForEntityParams struct {
-	EntityType string
-	EntityID   pgtype.UUID
+	EntityType string      `db:"entity_type" json:"entity_type"`
+	EntityID   pgtype.UUID `db:"entity_id" json:"entity_id"`
 }
 
 func (q *Queries) DeleteGalleryMediaForEntity(ctx context.Context, arg DeleteGalleryMediaForEntityParams) error {
@@ -449,9 +449,9 @@ OFFSET $2
 `
 
 type GetProjectsByStatusParams struct {
-	Status    pgtype.Text
-	OffsetVal int32
-	LimitVal  int32
+	Status    pgtype.Text `db:"status" json:"status"`
+	OffsetVal int32       `db:"offset_val" json:"offset_val"`
+	LimitVal  int32       `db:"limit_val" json:"limit_val"`
 }
 
 func (q *Queries) GetProjectsByStatus(ctx context.Context, arg GetProjectsByStatusParams) ([]Project, error) {
@@ -502,9 +502,9 @@ OFFSET $2
 `
 
 type GetProjectsByTagParams struct {
-	TagID     pgtype.UUID
-	OffsetVal int32
-	LimitVal  int32
+	TagID     pgtype.UUID `db:"tag_id" json:"tag_id"`
+	OffsetVal int32       `db:"offset_val" json:"offset_val"`
+	LimitVal  int32       `db:"limit_val" json:"limit_val"`
 }
 
 func (q *Queries) GetProjectsByTag(ctx context.Context, arg GetProjectsByTagParams) ([]Project, error) {
@@ -651,8 +651,8 @@ OFFSET $1
 `
 
 type ListProjectsParams struct {
-	OffsetVal int32
-	LimitVal  int32
+	OffsetVal int32 `db:"offset_val" json:"offset_val"`
+	LimitVal  int32 `db:"limit_val" json:"limit_val"`
 }
 
 func (q *Queries) ListProjects(ctx context.Context, arg ListProjectsParams) ([]Project, error) {
@@ -702,8 +702,8 @@ OFFSET $1
 `
 
 type ListPublishedProjectsParams struct {
-	OffsetVal int32
-	LimitVal  int32
+	OffsetVal int32 `db:"offset_val" json:"offset_val"`
+	LimitVal  int32 `db:"limit_val" json:"limit_val"`
 }
 
 func (q *Queries) ListPublishedProjects(ctx context.Context, arg ListPublishedProjectsParams) ([]Project, error) {
@@ -782,8 +782,8 @@ WHERE project_id = $1 AND tag_id = $2
 `
 
 type RemoveProjectTagParams struct {
-	ProjectID pgtype.UUID
-	TagID     pgtype.UUID
+	ProjectID pgtype.UUID `db:"project_id" json:"project_id"`
+	TagID     pgtype.UUID `db:"tag_id" json:"tag_id"`
 }
 
 func (q *Queries) RemoveProjectTag(ctx context.Context, arg RemoveProjectTagParams) error {
@@ -819,9 +819,9 @@ OFFSET $2
 `
 
 type SearchProjectsParams struct {
-	SearchTerm string
-	OffsetVal  int32
-	LimitVal   int32
+	SearchTerm string `db:"search_term" json:"search_term"`
+	OffsetVal  int32  `db:"offset_val" json:"offset_val"`
+	LimitVal   int32  `db:"limit_val" json:"limit_val"`
 }
 
 // Search and Filter Operations
@@ -927,17 +927,17 @@ RETURNING id, title, slug, description, project_date, status, client_name, proje
 `
 
 type UpdateProjectParams struct {
-	Title           pgtype.Text
-	Slug            pgtype.Text
-	Description     pgtype.Text
-	ProjectDate     pgtype.Date
-	Status          pgtype.Text
-	ClientName      pgtype.Text
-	ProjectYear     pgtype.Int4
-	ProjectUrl      pgtype.Text
-	ProjectStatus   pgtype.Text
-	FeaturedImageID pgtype.UUID
-	ID              pgtype.UUID
+	Title           pgtype.Text `db:"title" json:"title"`
+	Slug            pgtype.Text `db:"slug" json:"slug"`
+	Description     pgtype.Text `db:"description" json:"description"`
+	ProjectDate     pgtype.Date `db:"project_date" json:"project_date"`
+	Status          pgtype.Text `db:"status" json:"status"`
+	ClientName      pgtype.Text `db:"client_name" json:"client_name"`
+	ProjectYear     pgtype.Int4 `db:"project_year" json:"project_year"`
+	ProjectUrl      pgtype.Text `db:"project_url" json:"project_url"`
+	ProjectStatus   pgtype.Text `db:"project_status" json:"project_status"`
+	FeaturedImageID pgtype.UUID `db:"featured_image_id" json:"featured_image_id"`
+	ID              pgtype.UUID `db:"id" json:"id"`
 }
 
 func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) (Project, error) {

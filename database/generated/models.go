@@ -11,174 +11,181 @@ import (
 )
 
 type Blog struct {
-	ID              pgtype.UUID
-	Title           string
-	Slug            string
-	Excerpt         pgtype.Text
-	Status          pgtype.Text
-	ReadingTime     pgtype.Int4
-	IsFeatured      pgtype.Bool
-	CategoryID      pgtype.UUID
-	FeaturedImageID pgtype.UUID
-	AuthorID        pgtype.UUID
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
-	PublishedAt     *time.Time
-	DeletedAt       *time.Time
+	ID              pgtype.UUID `db:"id" json:"id"`
+	Title           string      `db:"title" json:"title"`
+	Slug            string      `db:"slug" json:"slug"`
+	Excerpt         pgtype.Text `db:"excerpt" json:"excerpt"`
+	Status          pgtype.Text `db:"status" json:"status"`
+	ReadingTime     pgtype.Int4 `db:"reading_time" json:"reading_time"`
+	IsFeatured      pgtype.Bool `db:"is_featured" json:"is_featured"`
+	CategoryID      pgtype.UUID `db:"category_id" json:"category_id"`
+	FeaturedImageID pgtype.UUID `db:"featured_image_id" json:"featured_image_id"`
+	AuthorID        pgtype.UUID `db:"author_id" json:"author_id"`
+	CreatedAt       time.Time   `db:"created_at" json:"created_at"`
+	UpdatedAt       time.Time   `db:"updated_at" json:"updated_at"`
+	PublishedAt     *time.Time  `db:"published_at" json:"published_at"`
+	DeletedAt       *time.Time  `db:"deleted_at" json:"deleted_at"`
 }
 
 type BlogTag struct {
-	BlogID    pgtype.UUID
-	TagID     pgtype.UUID
-	CreatedAt time.Time
+	BlogID    pgtype.UUID `db:"blog_id" json:"blog_id"`
+	TagID     pgtype.UUID `db:"tag_id" json:"tag_id"`
+	CreatedAt time.Time   `db:"created_at" json:"created_at"`
 }
 
 type ContactSubmission struct {
-	ID                   pgtype.UUID
-	FirstName            string
-	LastName             string
-	Email                string
-	Subject              string
-	Message              string
-	EmailSent            bool
-	EmailAttempts        int32
-	EmailLastAttemptedAt *time.Time
-	EmailError           pgtype.Text
-	ReadAt               *time.Time
-	CreatedAt            time.Time
-	DeletedAt            *time.Time
+	ID                   pgtype.UUID `db:"id" json:"id"`
+	FirstName            string      `db:"first_name" json:"first_name"`
+	LastName             string      `db:"last_name" json:"last_name"`
+	Email                string      `db:"email" json:"email"`
+	Subject              string      `db:"subject" json:"subject"`
+	Message              string      `db:"message" json:"message"`
+	EmailSent            bool        `db:"email_sent" json:"email_sent"`
+	EmailAttempts        int32       `db:"email_attempts" json:"email_attempts"`
+	EmailLastAttemptedAt *time.Time  `db:"email_last_attempted_at" json:"email_last_attempted_at"`
+	EmailError           pgtype.Text `db:"email_error" json:"email_error"`
+	ReadAt               *time.Time  `db:"read_at" json:"read_at"`
+	CreatedAt            time.Time   `db:"created_at" json:"created_at"`
+	DeletedAt            *time.Time  `db:"deleted_at" json:"deleted_at"`
 }
 
 // Stores all media files (images, videos) with S3 keys for different sizes
 type Media struct {
-	ID pgtype.UUID
+	ID pgtype.UUID `db:"id" json:"id"`
 	// Generated filename format: YYYYMMDD-<uuid>.ext
-	Filename         string
-	OriginalFilename string
-	MimeType         string
-	FileSize         int64
-	Width            pgtype.Int4
-	Height           pgtype.Int4
+	Filename         string      `db:"filename" json:"filename"`
+	OriginalFilename string      `db:"original_filename" json:"original_filename"`
+	MimeType         string      `db:"mime_type" json:"mime_type"`
+	FileSize         int64       `db:"file_size" json:"file_size"`
+	Width            pgtype.Int4 `db:"width" json:"width"`
+	Height           pgtype.Int4 `db:"height" json:"height"`
 	// Video duration in seconds (NULL for images)
-	Duration    pgtype.Int4
-	StorageType string
-	S3Bucket    pgtype.Text
-	S3Region    pgtype.Text
+	Duration    pgtype.Int4 `db:"duration" json:"duration"`
+	StorageType string      `db:"storage_type" json:"storage_type"`
+	S3Bucket    pgtype.Text `db:"s3_bucket" json:"s3_bucket"`
+	S3Region    pgtype.Text `db:"s3_region" json:"s3_region"`
 	// S3 key pattern: media/original/<year>/<filename>
-	OriginalKey pgtype.Text
+	OriginalKey pgtype.Text `db:"original_key" json:"original_key"`
 	// S3 key for large version (1920px width)
-	LargeKey pgtype.Text
+	LargeKey pgtype.Text `db:"large_key" json:"large_key"`
 	// S3 key for medium version (1024px width)
-	MediumKey pgtype.Text
+	MediumKey pgtype.Text `db:"medium_key" json:"medium_key"`
 	// S3 key for thumbnail (300px width) or video thumbnail from FFmpeg
-	ThumbnailKey pgtype.Text
-	AltText      pgtype.Text
-	UploadedBy   pgtype.UUID
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
-	DeletedAt    *time.Time
+	ThumbnailKey pgtype.Text `db:"thumbnail_key" json:"thumbnail_key"`
+	AltText      pgtype.Text `db:"alt_text" json:"alt_text"`
+	UploadedBy   pgtype.UUID `db:"uploaded_by" json:"uploaded_by"`
+	CreatedAt    time.Time   `db:"created_at" json:"created_at"`
+	UpdatedAt    time.Time   `db:"updated_at" json:"updated_at"`
+	DeletedAt    *time.Time  `db:"deleted_at" json:"deleted_at"`
 }
 
 // Polymorphic relationship between media and entities (projects, blogs, pages)
 type MediaRelation struct {
-	ID         pgtype.UUID
-	MediaID    pgtype.UUID
-	EntityType string
-	EntityID   pgtype.UUID
+	ID         pgtype.UUID `db:"id" json:"id"`
+	MediaID    pgtype.UUID `db:"media_id" json:"media_id"`
+	EntityType string      `db:"entity_type" json:"entity_type"`
+	EntityID   pgtype.UUID `db:"entity_id" json:"entity_id"`
 	// Type: gallery (gallery images), featured (hero/featured image), content (inline content)
-	RelationType string
+	RelationType string `db:"relation_type" json:"relation_type"`
 	// Display order for gallery images (0-based index)
-	SortOrder pgtype.Int4
-	CreatedAt time.Time
+	SortOrder pgtype.Int4 `db:"sort_order" json:"sort_order"`
+	CreatedAt time.Time   `db:"created_at" json:"created_at"`
 }
 
 type Page struct {
-	ID             pgtype.UUID
-	Title          string
-	Slug           string
-	PageType       string
-	HeroMediaID    pgtype.UUID
-	Header         pgtype.Text
-	SubHeader      pgtype.Text
-	Content        pgtype.Text
-	ContentImageID pgtype.UUID
-	CtaText        pgtype.Text
-	CtaLink        pgtype.Text
-	Email          pgtype.Text
-	SocialLinks    []byte
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
-	DeletedAt      *time.Time
+	ID             pgtype.UUID `db:"id" json:"id"`
+	Title          string      `db:"title" json:"title"`
+	Slug           string      `db:"slug" json:"slug"`
+	PageType       string      `db:"page_type" json:"page_type"`
+	HeroMediaID    pgtype.UUID `db:"hero_media_id" json:"hero_media_id"`
+	Header         pgtype.Text `db:"header" json:"header"`
+	SubHeader      pgtype.Text `db:"sub_header" json:"sub_header"`
+	Content        pgtype.Text `db:"content" json:"content"`
+	ContentImageID pgtype.UUID `db:"content_image_id" json:"content_image_id"`
+	CtaText        pgtype.Text `db:"cta_text" json:"cta_text"`
+	CtaLink        pgtype.Text `db:"cta_link" json:"cta_link"`
+	Email          pgtype.Text `db:"email" json:"email"`
+	SocialLinks    []byte      `db:"social_links" json:"social_links"`
+	CreatedAt      time.Time   `db:"created_at" json:"created_at"`
+	UpdatedAt      time.Time   `db:"updated_at" json:"updated_at"`
+	DeletedAt      *time.Time  `db:"deleted_at" json:"deleted_at"`
 }
 
 type PageFeaturedProject struct {
-	PageID       pgtype.UUID
-	ProjectID    pgtype.UUID
-	DisplayOrder int32
-	CreatedAt    time.Time
+	PageID       pgtype.UUID `db:"page_id" json:"page_id"`
+	ProjectID    pgtype.UUID `db:"project_id" json:"project_id"`
+	DisplayOrder int32       `db:"display_order" json:"display_order"`
+	CreatedAt    time.Time   `db:"created_at" json:"created_at"`
 }
 
 type Project struct {
-	ID              pgtype.UUID
-	Title           string
-	Slug            string
-	Description     pgtype.Text
-	ProjectDate     pgtype.Date
-	Status          pgtype.Text
-	ClientName      pgtype.Text
-	ProjectYear     pgtype.Int4
-	ProjectUrl      pgtype.Text
-	ProjectStatus   pgtype.Text
-	FeaturedImageID pgtype.UUID
-	AuthorID        pgtype.UUID
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
-	PublishedAt     *time.Time
-	DeletedAt       *time.Time
+	ID              pgtype.UUID `db:"id" json:"id"`
+	Title           string      `db:"title" json:"title"`
+	Slug            string      `db:"slug" json:"slug"`
+	Description     pgtype.Text `db:"description" json:"description"`
+	ProjectDate     pgtype.Date `db:"project_date" json:"project_date"`
+	Status          pgtype.Text `db:"status" json:"status"`
+	ClientName      pgtype.Text `db:"client_name" json:"client_name"`
+	ProjectYear     pgtype.Int4 `db:"project_year" json:"project_year"`
+	ProjectUrl      pgtype.Text `db:"project_url" json:"project_url"`
+	ProjectStatus   pgtype.Text `db:"project_status" json:"project_status"`
+	FeaturedImageID pgtype.UUID `db:"featured_image_id" json:"featured_image_id"`
+	AuthorID        pgtype.UUID `db:"author_id" json:"author_id"`
+	CreatedAt       time.Time   `db:"created_at" json:"created_at"`
+	UpdatedAt       time.Time   `db:"updated_at" json:"updated_at"`
+	PublishedAt     *time.Time  `db:"published_at" json:"published_at"`
+	DeletedAt       *time.Time  `db:"deleted_at" json:"deleted_at"`
 }
 
 type ProjectTag struct {
-	ProjectID pgtype.UUID
-	TagID     pgtype.UUID
-	CreatedAt time.Time
+	ProjectID pgtype.UUID `db:"project_id" json:"project_id"`
+	TagID     pgtype.UUID `db:"tag_id" json:"tag_id"`
+	CreatedAt time.Time   `db:"created_at" json:"created_at"`
 }
 
 type Seo struct {
-	ID             pgtype.UUID
-	EntityType     string
-	EntityID       pgtype.UUID
-	SeoTitle       pgtype.Text
-	SeoDescription pgtype.Text
-	OgTitle        pgtype.Text
-	OgDescription  pgtype.Text
-	OgImageID      pgtype.UUID
-	CanonicalUrl   pgtype.Text
-	RobotsIndex    bool
-	RobotsFollow   bool
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
+	ID             pgtype.UUID `db:"id" json:"id"`
+	EntityType     string      `db:"entity_type" json:"entity_type"`
+	EntityID       pgtype.UUID `db:"entity_id" json:"entity_id"`
+	SeoTitle       pgtype.Text `db:"seo_title" json:"seo_title"`
+	SeoDescription pgtype.Text `db:"seo_description" json:"seo_description"`
+	OgTitle        pgtype.Text `db:"og_title" json:"og_title"`
+	OgDescription  pgtype.Text `db:"og_description" json:"og_description"`
+	OgImageID      pgtype.UUID `db:"og_image_id" json:"og_image_id"`
+	CanonicalUrl   pgtype.Text `db:"canonical_url" json:"canonical_url"`
+	RobotsIndex    bool        `db:"robots_index" json:"robots_index"`
+	RobotsFollow   bool        `db:"robots_follow" json:"robots_follow"`
+	CreatedAt      time.Time   `db:"created_at" json:"created_at"`
+	UpdatedAt      time.Time   `db:"updated_at" json:"updated_at"`
 }
 
 type Session struct {
-	Token  string
-	Data   []byte
-	Expiry time.Time
+	Token  string    `db:"token" json:"token"`
+	Data   []byte    `db:"data" json:"data"`
+	Expiry time.Time `db:"expiry" json:"expiry"`
+}
+
+type SystemConfig struct {
+	ConfigCode string    `db:"config_code" json:"config_code"`
+	Value      string    `db:"value" json:"value"`
+	CreatedAt  time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt  time.Time `db:"updated_at" json:"updated_at"`
 }
 
 type Tag struct {
-	ID        pgtype.UUID
-	Name      string
-	Slug      string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID        pgtype.UUID `db:"id" json:"id"`
+	Name      string      `db:"name" json:"name"`
+	Slug      string      `db:"slug" json:"slug"`
+	CreatedAt time.Time   `db:"created_at" json:"created_at"`
+	UpdatedAt time.Time   `db:"updated_at" json:"updated_at"`
 }
 
 type User struct {
-	ID           pgtype.UUID
-	FirstName    string
-	LastName     string
-	Email        string
-	PasswordHash string
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	ID           pgtype.UUID `db:"id" json:"id"`
+	FirstName    string      `db:"first_name" json:"first_name"`
+	LastName     string      `db:"last_name" json:"last_name"`
+	Email        string      `db:"email" json:"email"`
+	PasswordHash string      `db:"password_hash" json:"password_hash"`
+	CreatedAt    time.Time   `db:"created_at" json:"created_at"`
+	UpdatedAt    time.Time   `db:"updated_at" json:"updated_at"`
 }

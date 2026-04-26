@@ -52,10 +52,10 @@ RETURNING id, first_name, last_name, email, password_hash, created_at, updated_a
 `
 
 type CreateUserParams struct {
-	FirstName    string
-	LastName     string
-	Email        string
-	PasswordHash string
+	FirstName    string `db:"first_name" json:"first_name"`
+	LastName     string `db:"last_name" json:"last_name"`
+	Email        string `db:"email" json:"email"`
+	PasswordHash string `db:"password_hash" json:"password_hash"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -137,8 +137,8 @@ LIMIT $1 OFFSET $2
 `
 
 type ListUsersParams struct {
-	Limit  int32
-	Offset int32
+	Limit  int32 `db:"limit" json:"limit"`
+	Offset int32 `db:"offset" json:"offset"`
 }
 
 func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error) {
@@ -181,11 +181,11 @@ RETURNING id, first_name, last_name, email, password_hash, created_at, updated_a
 `
 
 type UpdateUserParams struct {
-	FirstName    pgtype.Text
-	LastName     pgtype.Text
-	Email        pgtype.Text
-	PasswordHash pgtype.Text
-	ID           pgtype.UUID
+	FirstName    pgtype.Text `db:"first_name" json:"first_name"`
+	LastName     pgtype.Text `db:"last_name" json:"last_name"`
+	Email        pgtype.Text `db:"email" json:"email"`
+	PasswordHash pgtype.Text `db:"password_hash" json:"password_hash"`
+	ID           pgtype.UUID `db:"id" json:"id"`
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {

@@ -12,12 +12,12 @@ import (
 )
 
 type BatchCreateMediaRelationsParams struct {
-	ID           pgtype.UUID
-	MediaID      pgtype.UUID
-	EntityType   string
-	EntityID     pgtype.UUID
-	RelationType string
-	SortOrder    pgtype.Int4
+	ID           pgtype.UUID `db:"id" json:"id"`
+	MediaID      pgtype.UUID `db:"media_id" json:"media_id"`
+	EntityType   string      `db:"entity_type" json:"entity_type"`
+	EntityID     pgtype.UUID `db:"entity_id" json:"entity_id"`
+	RelationType string      `db:"relation_type" json:"relation_type"`
+	SortOrder    pgtype.Int4 `db:"sort_order" json:"sort_order"`
 }
 
 const countMedia = `-- name: CountMedia :one
@@ -92,23 +92,23 @@ RETURNING id, filename, original_filename, mime_type, file_size, width, height, 
 `
 
 type CreateMediaParams struct {
-	ID               pgtype.UUID
-	Filename         string
-	OriginalFilename string
-	MimeType         string
-	FileSize         int64
-	Width            pgtype.Int4
-	Height           pgtype.Int4
-	Duration         pgtype.Int4
-	StorageType      string
-	S3Bucket         pgtype.Text
-	S3Region         pgtype.Text
-	OriginalKey      pgtype.Text
-	LargeKey         pgtype.Text
-	MediumKey        pgtype.Text
-	ThumbnailKey     pgtype.Text
-	AltText          pgtype.Text
-	UploadedBy       pgtype.UUID
+	ID               pgtype.UUID `db:"id" json:"id"`
+	Filename         string      `db:"filename" json:"filename"`
+	OriginalFilename string      `db:"original_filename" json:"original_filename"`
+	MimeType         string      `db:"mime_type" json:"mime_type"`
+	FileSize         int64       `db:"file_size" json:"file_size"`
+	Width            pgtype.Int4 `db:"width" json:"width"`
+	Height           pgtype.Int4 `db:"height" json:"height"`
+	Duration         pgtype.Int4 `db:"duration" json:"duration"`
+	StorageType      string      `db:"storage_type" json:"storage_type"`
+	S3Bucket         pgtype.Text `db:"s3_bucket" json:"s3_bucket"`
+	S3Region         pgtype.Text `db:"s3_region" json:"s3_region"`
+	OriginalKey      pgtype.Text `db:"original_key" json:"original_key"`
+	LargeKey         pgtype.Text `db:"large_key" json:"large_key"`
+	MediumKey        pgtype.Text `db:"medium_key" json:"medium_key"`
+	ThumbnailKey     pgtype.Text `db:"thumbnail_key" json:"thumbnail_key"`
+	AltText          pgtype.Text `db:"alt_text" json:"alt_text"`
+	UploadedBy       pgtype.UUID `db:"uploaded_by" json:"uploaded_by"`
 }
 
 // sql/queries/media.sql
@@ -179,12 +179,12 @@ RETURNING id, media_id, entity_type, entity_id, relation_type, sort_order, creat
 `
 
 type CreateMediaRelationParams struct {
-	ID           pgtype.UUID
-	MediaID      pgtype.UUID
-	EntityType   string
-	EntityID     pgtype.UUID
-	RelationType string
-	SortOrder    pgtype.Int4
+	ID           pgtype.UUID `db:"id" json:"id"`
+	MediaID      pgtype.UUID `db:"media_id" json:"media_id"`
+	EntityType   string      `db:"entity_type" json:"entity_type"`
+	EntityID     pgtype.UUID `db:"entity_id" json:"entity_id"`
+	RelationType string      `db:"relation_type" json:"relation_type"`
+	SortOrder    pgtype.Int4 `db:"sort_order" json:"sort_order"`
 }
 
 // Media Relations Queries
@@ -217,8 +217,8 @@ WHERE entity_type = $1
 `
 
 type DeleteAllMediaRelationsForEntityParams struct {
-	EntityType string
-	EntityID   pgtype.UUID
+	EntityType string      `db:"entity_type" json:"entity_type"`
+	EntityID   pgtype.UUID `db:"entity_id" json:"entity_id"`
 }
 
 func (q *Queries) DeleteAllMediaRelationsForEntity(ctx context.Context, arg DeleteAllMediaRelationsForEntityParams) error {
@@ -234,9 +234,9 @@ WHERE media_id = $1
 `
 
 type DeleteMediaRelationParams struct {
-	MediaID    pgtype.UUID
-	EntityType string
-	EntityID   pgtype.UUID
+	MediaID    pgtype.UUID `db:"media_id" json:"media_id"`
+	EntityType string      `db:"entity_type" json:"entity_type"`
+	EntityID   pgtype.UUID `db:"entity_id" json:"entity_id"`
 }
 
 func (q *Queries) DeleteMediaRelation(ctx context.Context, arg DeleteMediaRelationParams) error {
@@ -253,8 +253,8 @@ OFFSET $1
 `
 
 type GetDeletedMediaParams struct {
-	OffsetVal int32
-	LimitVal  int32
+	OffsetVal int32 `db:"offset_val" json:"offset_val"`
+	LimitVal  int32 `db:"limit_val" json:"limit_val"`
 }
 
 func (q *Queries) GetDeletedMedia(ctx context.Context, arg GetDeletedMediaParams) ([]Media, error) {
@@ -309,8 +309,8 @@ LIMIT 1
 `
 
 type GetFeaturedMediaForEntityParams struct {
-	EntityType string
-	EntityID   pgtype.UUID
+	EntityType string      `db:"entity_type" json:"entity_type"`
+	EntityID   pgtype.UUID `db:"entity_id" json:"entity_id"`
 }
 
 func (q *Queries) GetFeaturedMediaForEntity(ctx context.Context, arg GetFeaturedMediaForEntityParams) (Media, error) {
@@ -352,8 +352,8 @@ ORDER BY mr.sort_order ASC, m.created_at DESC
 `
 
 type GetGalleryMediaForEntityParams struct {
-	EntityType string
-	EntityID   pgtype.UUID
+	EntityType string      `db:"entity_type" json:"entity_type"`
+	EntityID   pgtype.UUID `db:"entity_id" json:"entity_id"`
 }
 
 func (q *Queries) GetGalleryMediaForEntity(ctx context.Context, arg GetGalleryMediaForEntityParams) ([]Media, error) {
@@ -477,8 +477,8 @@ ORDER BY mr.sort_order ASC, m.created_at DESC
 `
 
 type GetMediaForEntityParams struct {
-	EntityType string
-	EntityID   pgtype.UUID
+	EntityType string      `db:"entity_type" json:"entity_type"`
+	EntityID   pgtype.UUID `db:"entity_id" json:"entity_id"`
 }
 
 func (q *Queries) GetMediaForEntity(ctx context.Context, arg GetMediaForEntityParams) ([]Media, error) {
@@ -535,11 +535,11 @@ WHERE deleted_at IS NULL
 `
 
 type GetMediaStatsRow struct {
-	TotalCount int64
-	TotalSize  interface{}
-	ImageCount int64
-	VideoCount int64
-	AudioCount int64
+	TotalCount int64       `db:"total_count" json:"total_count"`
+	TotalSize  interface{} `db:"total_size" json:"total_size"`
+	ImageCount int64       `db:"image_count" json:"image_count"`
+	VideoCount int64       `db:"video_count" json:"video_count"`
+	AudioCount int64       `db:"audio_count" json:"audio_count"`
 }
 
 // Media Statistics
@@ -570,9 +570,9 @@ LIMIT $1
 `
 
 type GetMediaUsageByEntityRow struct {
-	EntityType string
-	EntityID   pgtype.UUID
-	MediaCount int64
+	EntityType string      `db:"entity_type" json:"entity_type"`
+	EntityID   pgtype.UUID `db:"entity_id" json:"entity_id"`
+	MediaCount int64       `db:"media_count" json:"media_count"`
 }
 
 func (q *Queries) GetMediaUsageByEntity(ctx context.Context, limitVal int32) ([]GetMediaUsageByEntityRow, error) {
@@ -664,8 +664,8 @@ OFFSET $1
 `
 
 type ListMediaParams struct {
-	OffsetVal int32
-	LimitVal  int32
+	OffsetVal int32 `db:"offset_val" json:"offset_val"`
+	LimitVal  int32 `db:"limit_val" json:"limit_val"`
 }
 
 func (q *Queries) ListMedia(ctx context.Context, arg ListMediaParams) ([]Media, error) {
@@ -719,9 +719,9 @@ OFFSET $2
 `
 
 type ListMediaByTypeParams struct {
-	MimeTypePattern string
-	OffsetVal       int32
-	LimitVal        int32
+	MimeTypePattern string `db:"mime_type_pattern" json:"mime_type_pattern"`
+	OffsetVal       int32  `db:"offset_val" json:"offset_val"`
+	LimitVal        int32  `db:"limit_val" json:"limit_val"`
 }
 
 func (q *Queries) ListMediaByType(ctx context.Context, arg ListMediaByTypeParams) ([]Media, error) {
@@ -775,9 +775,9 @@ OFFSET $2
 `
 
 type ListMediaByUploaderParams struct {
-	UploadedBy pgtype.UUID
-	OffsetVal  int32
-	LimitVal   int32
+	UploadedBy pgtype.UUID `db:"uploaded_by" json:"uploaded_by"`
+	OffsetVal  int32       `db:"offset_val" json:"offset_val"`
+	LimitVal   int32       `db:"limit_val" json:"limit_val"`
 }
 
 func (q *Queries) ListMediaByUploader(ctx context.Context, arg ListMediaByUploaderParams) ([]Media, error) {
@@ -842,10 +842,10 @@ WHERE media_id = $2
 `
 
 type ReorderGalleryMediaParams struct {
-	SortOrder  pgtype.Int4
-	MediaID    pgtype.UUID
-	EntityType string
-	EntityID   pgtype.UUID
+	SortOrder  pgtype.Int4 `db:"sort_order" json:"sort_order"`
+	MediaID    pgtype.UUID `db:"media_id" json:"media_id"`
+	EntityType string      `db:"entity_type" json:"entity_type"`
+	EntityID   pgtype.UUID `db:"entity_id" json:"entity_id"`
 }
 
 func (q *Queries) ReorderGalleryMedia(ctx context.Context, arg ReorderGalleryMediaParams) error {
@@ -895,8 +895,8 @@ RETURNING id, filename, original_filename, mime_type, file_size, width, height, 
 `
 
 type UpdateMediaParams struct {
-	AltText pgtype.Text
-	ID      pgtype.UUID
+	AltText pgtype.Text `db:"alt_text" json:"alt_text"`
+	ID      pgtype.UUID `db:"id" json:"id"`
 }
 
 func (q *Queries) UpdateMedia(ctx context.Context, arg UpdateMediaParams) (Media, error) {
@@ -938,8 +938,8 @@ RETURNING id, filename, original_filename, mime_type, file_size, width, height, 
 `
 
 type UpdateMediaAltTextParams struct {
-	AltText pgtype.Text
-	ID      pgtype.UUID
+	AltText pgtype.Text `db:"alt_text" json:"alt_text"`
+	ID      pgtype.UUID `db:"id" json:"id"`
 }
 
 func (q *Queries) UpdateMediaAltText(ctx context.Context, arg UpdateMediaAltTextParams) (Media, error) {

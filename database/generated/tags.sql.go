@@ -21,8 +21,8 @@ SELECT EXISTS(
 `
 
 type CheckTagSlugExistsParams struct {
-	Slug  string
-	TagID pgtype.UUID
+	Slug  string      `db:"slug" json:"slug"`
+	TagID pgtype.UUID `db:"tag_id" json:"tag_id"`
 }
 
 func (q *Queries) CheckTagSlugExists(ctx context.Context, arg CheckTagSlugExistsParams) (bool, error) {
@@ -62,9 +62,9 @@ RETURNING id, name, slug, created_at, updated_at
 `
 
 type CreateTagParams struct {
-	ID   pgtype.UUID
-	Name string
-	Slug string
+	ID   pgtype.UUID `db:"id" json:"id"`
+	Name string      `db:"name" json:"name"`
+	Slug string      `db:"slug" json:"slug"`
 }
 
 // Tags CRUD Operations
@@ -99,9 +99,9 @@ RETURNING id, name, slug, created_at, updated_at
 `
 
 type FindOrCreateTagParams struct {
-	ID   pgtype.UUID
-	Name string
-	Slug string
+	ID   pgtype.UUID `db:"id" json:"id"`
+	Name string      `db:"name" json:"name"`
+	Slug string      `db:"slug" json:"slug"`
 }
 
 func (q *Queries) FindOrCreateTag(ctx context.Context, arg FindOrCreateTagParams) (Tag, error) {
@@ -129,12 +129,12 @@ LIMIT $1
 `
 
 type GetMostUsedTagsRow struct {
-	ID         pgtype.UUID
-	Name       string
-	Slug       string
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
-	UsageCount int64
+	ID         pgtype.UUID `db:"id" json:"id"`
+	Name       string      `db:"name" json:"name"`
+	Slug       string      `db:"slug" json:"slug"`
+	CreatedAt  time.Time   `db:"created_at" json:"created_at"`
+	UpdatedAt  time.Time   `db:"updated_at" json:"updated_at"`
+	UsageCount int64       `db:"usage_count" json:"usage_count"`
 }
 
 func (q *Queries) GetMostUsedTags(ctx context.Context, limitVal int32) ([]GetMostUsedTagsRow, error) {
@@ -335,8 +335,8 @@ OFFSET $1
 `
 
 type ListTagsParams struct {
-	OffsetVal int32
-	LimitVal  int32
+	OffsetVal int32 `db:"offset_val" json:"offset_val"`
+	LimitVal  int32 `db:"limit_val" json:"limit_val"`
 }
 
 func (q *Queries) ListTags(ctx context.Context, arg ListTagsParams) ([]Tag, error) {
@@ -374,9 +374,9 @@ OFFSET $2
 `
 
 type SearchTagsParams struct {
-	SearchTerm string
-	OffsetVal  int32
-	LimitVal   int32
+	SearchTerm string `db:"search_term" json:"search_term"`
+	OffsetVal  int32  `db:"offset_val" json:"offset_val"`
+	LimitVal   int32  `db:"limit_val" json:"limit_val"`
 }
 
 func (q *Queries) SearchTags(ctx context.Context, arg SearchTagsParams) ([]Tag, error) {
@@ -415,9 +415,9 @@ RETURNING id, name, slug, created_at, updated_at
 `
 
 type UpdateTagParams struct {
-	Name pgtype.Text
-	Slug pgtype.Text
-	ID   pgtype.UUID
+	Name pgtype.Text `db:"name" json:"name"`
+	Slug pgtype.Text `db:"slug" json:"slug"`
+	ID   pgtype.UUID `db:"id" json:"id"`
 }
 
 func (q *Queries) UpdateTag(ctx context.Context, arg UpdateTagParams) (Tag, error) {

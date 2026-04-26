@@ -19,6 +19,7 @@ func (s *Server) RegisterRoutes() {
 	// Initialize handlers
 	authHandler := handler.NewAuthHandler(s.AuthService, s.SessionManager, s.Log)
 	adminHandler := handler.NewAdminHandler(s.Log, s.MediaService)
+	systemConfigHandler := handler.NewSystemConfigHandler(s.Log, s.SystemConfigService)
 	mediaHandler := handler.NewMediaHandler(s.MediaService, s.Log)
 	pageHandler := handler.NewPageHandler(s.Log, s.PageService, s.ProjectService, s.MediaService, s.SeoService)
 	projectHandler := handler.NewProjectHandler(s.Log, s.ProjectService, s.TagService, s.MediaService, s.SeoService)
@@ -51,6 +52,9 @@ func (s *Server) RegisterRoutes() {
 	api.Use(s.SessionMiddleware.RequireAuth)
 
 	api.GET("/dashboard", adminHandler.ShowDashboard)
+
+	configGroup := api.Group("/system-config")
+	configGroup.GET("", systemConfigHandler.ListSystemConfig)
 
 	mediaGroup := api.Group("/media")
 	mediaGroup.GET("", mediaHandler.ShowMediaList)

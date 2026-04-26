@@ -18,11 +18,11 @@ RETURNING id, first_name, last_name, email, subject, message, email_sent, email_
 `
 
 type CreateContactSubmissionParams struct {
-	FirstName string
-	LastName  string
-	Email     string
-	Subject   string
-	Message   string
+	FirstName string `db:"first_name" json:"first_name"`
+	LastName  string `db:"last_name" json:"last_name"`
+	Email     string `db:"email" json:"email"`
+	Subject   string `db:"subject" json:"subject"`
+	Message   string `db:"message" json:"message"`
 }
 
 func (q *Queries) CreateContactSubmission(ctx context.Context, arg CreateContactSubmissionParams) (ContactSubmission, error) {
@@ -113,8 +113,8 @@ LIMIT $1 OFFSET $2
 `
 
 type ListContactSubmissionsParams struct {
-	Limit  int32
-	Offset int32
+	Limit  int32 `db:"limit" json:"limit"`
+	Offset int32 `db:"offset" json:"offset"`
 }
 
 func (q *Queries) ListContactSubmissions(ctx context.Context, arg ListContactSubmissionsParams) ([]ContactSubmission, error) {
@@ -171,8 +171,8 @@ WHERE id = $1
 `
 
 type MarkEmailFailedParams struct {
-	ID         pgtype.UUID
-	EmailError pgtype.Text
+	ID         pgtype.UUID `db:"id" json:"id"`
+	EmailError pgtype.Text `db:"email_error" json:"email_error"`
 }
 
 func (q *Queries) MarkEmailFailed(ctx context.Context, arg MarkEmailFailedParams) error {

@@ -19,19 +19,20 @@ import (
 )
 
 type Server struct {
-	Echo              *echo.Echo
-	DB                database.Service
-	Queries           *generated.Queries
-	AuthService       *services.AuthService
-	MediaService      *services.MediaService
-	PageService       *services.PageService
-	ProjectService    *services.ProjectService
-	ContactService    *services.ContactService
-	TagService        *services.TagService
-	SeoService        *services.SEOService
-	SessionManager    *session.SessionManager
-	SessionMiddleware *middleware.SessionMiddleware
-	Log               *slog.Logger
+	Echo                *echo.Echo
+	DB                  database.Service
+	Queries             *generated.Queries
+	AuthService         *services.AuthService
+	MediaService        *services.MediaService
+	PageService         *services.PageService
+	ProjectService      *services.ProjectService
+	ContactService      *services.ContactService
+	TagService          *services.TagService
+	SeoService          *services.SEOService
+	SystemConfigService *services.SystemConfigService
+	SessionManager      *session.SessionManager
+	SessionMiddleware   *middleware.SessionMiddleware
+	Log                 *slog.Logger
 }
 
 func NewServer() *Server {
@@ -157,6 +158,8 @@ func NewServer() *Server {
 	projectService := services.NewProjectService(queries, mediaService)
 	slogger.Info("projects service initialized")
 
+	systemConfigService := services.NewSystemConfigService(queries)
+
 	sessionStore := session.NewPostgresStore(db.Pool(), queries, slogger)
 	slogger.Info("session store initialized")
 
@@ -177,19 +180,20 @@ func NewServer() *Server {
 	e.Use(middleware.CustomRequestLogger())
 
 	s := &Server{
-		Echo:              e,
-		DB:                db,
-		Queries:           queries,
-		AuthService:       authService,
-		MediaService:      mediaService,
-		PageService:       pageService,
-		ProjectService:    projectService,
-		TagService:        tagService,
-		SeoService:        seoService,
-		ContactService:    contactService,
-		SessionManager:    sessionManager,
-		SessionMiddleware: sessionMiddleware,
-		Log:               slogger,
+		Echo:                e,
+		DB:                  db,
+		Queries:             queries,
+		AuthService:         authService,
+		MediaService:        mediaService,
+		PageService:         pageService,
+		ProjectService:      projectService,
+		TagService:          tagService,
+		SeoService:          seoService,
+		SystemConfigService: systemConfigService,
+		ContactService:      contactService,
+		SessionManager:      sessionManager,
+		SessionMiddleware:   sessionMiddleware,
+		Log:                 slogger,
 	}
 
 	s.RegisterRoutes()

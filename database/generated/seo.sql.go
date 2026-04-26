@@ -18,8 +18,8 @@ WHERE entity_type = $1
 `
 
 type DeleteSEOParams struct {
-	EntityType string
-	EntityID   pgtype.UUID
+	EntityType string      `db:"entity_type" json:"entity_type"`
+	EntityID   pgtype.UUID `db:"entity_id" json:"entity_id"`
 }
 
 func (q *Queries) DeleteSEO(ctx context.Context, arg DeleteSEOParams) error {
@@ -35,8 +35,8 @@ LIMIT 1
 `
 
 type GetSEOParams struct {
-	EntityType string
-	EntityID   pgtype.UUID
+	EntityType string      `db:"entity_type" json:"entity_type"`
+	EntityID   pgtype.UUID `db:"entity_id" json:"entity_id"`
 }
 
 func (q *Queries) GetSEO(ctx context.Context, arg GetSEOParams) (Seo, error) {
@@ -98,16 +98,16 @@ RETURNING id, entity_type, entity_id, seo_title, seo_description, og_title, og_d
 `
 
 type UpsertSEOParams struct {
-	EntityType     string
-	EntityID       pgtype.UUID
-	SeoTitle       pgtype.Text
-	SeoDescription pgtype.Text
-	OgTitle        pgtype.Text
-	OgDescription  pgtype.Text
-	OgImageID      pgtype.UUID
-	CanonicalUrl   pgtype.Text
-	RobotsIndex    bool
-	RobotsFollow   bool
+	EntityType     string      `db:"entity_type" json:"entity_type"`
+	EntityID       pgtype.UUID `db:"entity_id" json:"entity_id"`
+	SeoTitle       pgtype.Text `db:"seo_title" json:"seo_title"`
+	SeoDescription pgtype.Text `db:"seo_description" json:"seo_description"`
+	OgTitle        pgtype.Text `db:"og_title" json:"og_title"`
+	OgDescription  pgtype.Text `db:"og_description" json:"og_description"`
+	OgImageID      pgtype.UUID `db:"og_image_id" json:"og_image_id"`
+	CanonicalUrl   pgtype.Text `db:"canonical_url" json:"canonical_url"`
+	RobotsIndex    bool        `db:"robots_index" json:"robots_index"`
+	RobotsFollow   bool        `db:"robots_follow" json:"robots_follow"`
 }
 
 func (q *Queries) UpsertSEO(ctx context.Context, arg UpsertSEOParams) (Seo, error) {

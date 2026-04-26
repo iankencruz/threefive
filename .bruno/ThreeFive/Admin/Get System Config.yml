@@ -1,0 +1,21 @@
+info:
+  name: Get System Config
+  type: http
+  seq: 2
+
+http:
+  method: GET
+  url: http://localhost:8080/api/admin/system-config
+  headers:
+    - name: Cookie
+      value: threefive_session:"CO0EmjeUzgemqaI_it090PkOFH8L0tBTxuwAKvJOpvU"
+  params:
+    - name: ""
+      value: ""
+      type: query
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

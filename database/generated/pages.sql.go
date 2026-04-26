@@ -21,9 +21,9 @@ RETURNING page_id, project_id, display_order, created_at
 `
 
 type AddFeaturedProjectParams struct {
-	PageID       pgtype.UUID
-	ProjectID    pgtype.UUID
-	DisplayOrder int32
+	PageID       pgtype.UUID `db:"page_id" json:"page_id"`
+	ProjectID    pgtype.UUID `db:"project_id" json:"project_id"`
+	DisplayOrder int32       `db:"display_order" json:"display_order"`
 }
 
 // Featured Projects for About Page
@@ -78,12 +78,12 @@ ORDER BY pfp.display_order ASC
 `
 
 type GetFeaturedProjectsRow struct {
-	ID              pgtype.UUID
-	Title           string
-	Slug            string
-	Description     pgtype.Text
-	FeaturedImageID pgtype.UUID
-	DisplayOrder    int32
+	ID              pgtype.UUID `db:"id" json:"id"`
+	Title           string      `db:"title" json:"title"`
+	Slug            string      `db:"slug" json:"slug"`
+	Description     pgtype.Text `db:"description" json:"description"`
+	FeaturedImageID pgtype.UUID `db:"featured_image_id" json:"featured_image_id"`
+	DisplayOrder    int32       `db:"display_order" json:"display_order"`
 }
 
 func (q *Queries) GetFeaturedProjects(ctx context.Context, pageID pgtype.UUID) ([]GetFeaturedProjectsRow, error) {
@@ -224,8 +224,8 @@ WHERE page_id = $1 AND project_id = $2
 `
 
 type RemoveFeaturedProjectParams struct {
-	PageID    pgtype.UUID
-	ProjectID pgtype.UUID
+	PageID    pgtype.UUID `db:"page_id" json:"page_id"`
+	ProjectID pgtype.UUID `db:"project_id" json:"project_id"`
 }
 
 func (q *Queries) RemoveFeaturedProject(ctx context.Context, arg RemoveFeaturedProjectParams) error {
@@ -252,18 +252,18 @@ RETURNING id, title, slug, page_type, hero_media_id, header, sub_header, content
 `
 
 type UpdatePageParams struct {
-	Title          pgtype.Text
-	Slug           pgtype.Text
-	HeroMediaID    pgtype.UUID
-	Header         pgtype.Text
-	SubHeader      pgtype.Text
-	Content        pgtype.Text
-	ContentImageID pgtype.UUID
-	CtaText        pgtype.Text
-	CtaLink        pgtype.Text
-	Email          pgtype.Text
-	SocialLinks    []byte
-	ID             pgtype.UUID
+	Title          pgtype.Text `db:"title" json:"title"`
+	Slug           pgtype.Text `db:"slug" json:"slug"`
+	HeroMediaID    pgtype.UUID `db:"hero_media_id" json:"hero_media_id"`
+	Header         pgtype.Text `db:"header" json:"header"`
+	SubHeader      pgtype.Text `db:"sub_header" json:"sub_header"`
+	Content        pgtype.Text `db:"content" json:"content"`
+	ContentImageID pgtype.UUID `db:"content_image_id" json:"content_image_id"`
+	CtaText        pgtype.Text `db:"cta_text" json:"cta_text"`
+	CtaLink        pgtype.Text `db:"cta_link" json:"cta_link"`
+	Email          pgtype.Text `db:"email" json:"email"`
+	SocialLinks    []byte      `db:"social_links" json:"social_links"`
+	ID             pgtype.UUID `db:"id" json:"id"`
 }
 
 func (q *Queries) UpdatePage(ctx context.Context, arg UpdatePageParams) (Page, error) {

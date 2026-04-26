@@ -2,6 +2,31 @@ opencollection: 1.0.0
 
 info:
   name: ThreeFive
+config:
+  proxy:
+    inherit: true
+    config:
+      protocol: http
+      hostname: ""
+      port: ""
+      auth:
+        username: ""
+        password: ""
+      bypassProxy: ""
+
+request:
+  headers:
+    - name: Cookie
+      value: "threefive_session=CO0EmjeUzgemqaI_it090PkOFH8L0tBTxuwAKvJOpvU "
+  auth:
+    type: basic
+    username: john@example.com
+    password: Password!123
+  variables:
+    - name: email
+      value: john@example.com
+    - name: password
+      value: Password!123
 bundled: false
 extensions:
   bruno:
