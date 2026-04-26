@@ -160,7 +160,7 @@ func RedirectWithToast(ctx context.Context, c *echo.Context, url string, message
 // HTMXRedirect sends an HTMX redirect header
 func HTMXRedirect(c *echo.Context, url string) error {
 	c.Response().Header().Set("HX-Redirect", url)
-	return c.NoContent(http.StatusOK)
+	return c.NoContent(http.StatusTemporaryRedirect)
 }
 
 // JSON

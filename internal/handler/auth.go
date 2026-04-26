@@ -130,7 +130,7 @@ func (h *AuthHandler) HandleLogin(c *echo.Context) error {
 	)
 
 	// Redirect to home/dashboard
-	return responses.HTMXRedirect(c, "/admin")
+	return responses.HTMXRedirect(c, "http://localhost:5173/admin")
 }
 
 // HandleLogout destroys the session and redirects to login
