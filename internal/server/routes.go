@@ -55,6 +55,7 @@ func (s *Server) RegisterRoutes() {
 
 	configGroup := api.Group("/system-config")
 	configGroup.GET("", systemConfigHandler.ListSystemConfig)
+	configGroup.GET("/:code", systemConfigHandler.GetConfigByCode)
 
 	mediaGroup := api.Group("/media")
 	mediaGroup.GET("", mediaHandler.ShowMediaList)

@@ -14,11 +14,13 @@
 	let isMobileMenuOpen = $state(false);
 	const closeMenu = () => (isMobileMenuOpen = false);
 
+	let { appName = 'Default App' } = $props();
+
 	const navGroups = [
 		{
 			title: 'Home',
 			items: [
-				{ name: 'Dashboard', href: '/', icon: LayoutDashboard, active: true },
+				{ name: 'Dashboard', href: 'dashboard', icon: LayoutDashboard, active: true },
 				{ name: 'Pages', href: 'pages', icon: Files, active: true },
 				{ name: 'Projects', href: 'projects', icon: FolderClosed, active: true },
 				{ name: 'Blogs', href: 'blogs', icon: BookOpen, active: false }
@@ -53,7 +55,7 @@
 			<div class="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary">
 				<div class="size-2 rounded-full bg-primary-foreground"></div>
 			</div>
-			<span class="text-sm font-bold tracking-tight">ThreeFive.</span>
+			<span class="text-sm font-bold tracking-tight">{appName}</span>
 		</div>
 		<button onclick={closeMenu} class="text-muted-foreground hover:text-foreground lg:hidden">
 			<X size={20} />

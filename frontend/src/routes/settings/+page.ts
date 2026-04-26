@@ -3,7 +3,7 @@ import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async ({ fetch }) => {
   // Use the proxy path. Vite will handle the 'http://localhost:8080' part.
-  const res = await fetch("/api/admin/dashboard");
+  const res = await fetch("/api/admin/system-config");
 
   if (res.status === 401) {
     throw redirect(302, "http://localhost:8080/login");
@@ -14,5 +14,5 @@ export const load: PageLoad = async ({ fetch }) => {
   }
 
   const data = await res.json();
-  return { dashboard: data };
+  return { config: data };
 };

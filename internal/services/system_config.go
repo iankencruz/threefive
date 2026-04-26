@@ -37,3 +37,13 @@ func (s *SystemConfigService) ListSystemConfig(ctx context.Context, limit, offse
 
 	return configs, nil
 }
+
+// ListProjects retrieves a paginated list of projects
+func (s *SystemConfigService) GetConfigByCode(ctx context.Context, code string) (generated.SystemConfig, error) {
+	config, err := s.queries.GetConfigByCode(ctx, code)
+	if err != nil {
+		return generated.SystemConfig{}, fmt.Errorf("failed to list configs: %w", err)
+	}
+
+	return config, nil
+}

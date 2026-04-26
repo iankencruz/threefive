@@ -45,3 +45,17 @@ func (h *SystemConfigHandler) ListSystemConfig(c *echo.Context) error {
 
 	return c.JSON(http.StatusOK, configs)
 }
+
+func (h *SystemConfigHandler) GetConfigByCode(c *echo.Context) error {
+	code := c.Param("code")
+
+	h.logger.Debug("Loading System Config")
+
+	config, err := h.SystemConfigService.GetConfigByCode(c.Request().Context(), code)
+	if err != nil {
+		h.logger.Error("failed to get config by code", "error", err, "code", code)
+		return c.String(500, "Failed to load config")
+	}
+
+	return c.JSON(http.StatusOK, config)
+}

@@ -3,12 +3,13 @@
 	import type { Snippet } from 'svelte';
 	import Navigation from '$lib/components/Navigation.svelte';
 	import { Plus } from '@lucide/svelte';
+	import type { LayoutProps } from './$types';
 
-	let { children }: { children: Snippet } = $props();
+	let { data, children }: LayoutProps = $props();
 </script>
 
 <div class="flex min-h-screen bg-background font-sans text-foreground">
-	<Navigation />
+	<Navigation appName={data.appName} />
 
 	<div class="flex w-full flex-1 flex-col lg:pl-64">
 		<header
