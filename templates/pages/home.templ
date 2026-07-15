@@ -8,7 +8,7 @@ import (
 )
 
 templ Home(page *services.PageResponse, seo *services.SEOData) {
-	@layouts.BaseLayout("ThreeFive", seo) {
+	@layouts.BaseLayout("IANKEN", seo) {
 		<div class="min-h-screen bg-background text-foreground">
 			@lib.NavigationBar("/")
 			<!-- Hero Section -->
@@ -40,9 +40,10 @@ templ Home(page *services.PageResponse, seo *services.SEOData) {
 				<!-- Hero Content -->
 				<div class="relative h-full flex flex-col justify-between px-8 lg:px-16 pt-24 pb-16">
 					<div class="flex-1 flex items-center">
-						<h1 class="text-[15vw] lg:text-[12vw] font-bold leading-[0.85] tracking-tight text-primary uppercase">
-							ThreeFive
+						<!-- <h1 class="text-[15vw] lg:text-[12vw] font-bold leading-[0.85] tracking-tight text-primary uppercase">
+							IANKEN
 						</h1>
+            -->
 					</div>
 					<div class="flex flex-col md:flex-row md:items-end md:justify-between gap-8">
 						<div class="max-w-lg">

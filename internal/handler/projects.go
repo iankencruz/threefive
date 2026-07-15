@@ -513,7 +513,7 @@ func (h *ProjectHandler) ShowPublicProject(c *echo.Context) error {
 		return c.String(404, "Project not found")
 	}
 	seo, _ := h.seoService.GetSEO(c.Request().Context(), "project", project.Project.ID.Bytes)
-	seoData := services.ToSEOData(seo, project.Project.Title, fullURL(c, "/projects/"+project.Project.Slug), "ThreeFive", "")
+	seoData := services.ToSEOData(seo, project.Project.Title, fullURL(c, "/projects/"+project.Project.Slug), "IANKEN", "")
 
 	component := pages.ProjectDetails(project, seoData)
 	return responses.Render(c.Request().Context(), c, component)

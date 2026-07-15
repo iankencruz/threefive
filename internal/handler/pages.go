@@ -256,7 +256,7 @@ func (h *PageHandler) ShowPublicHome(c *echo.Context) error {
 		return c.String(500, "Failed to load home page")
 	}
 	seo, _ := h.seoService.GetSEO(c.Request().Context(), "page", page.Page.ID.Bytes)
-	seoData := services.ToSEOData(seo, page.Page.Title, fullURL(c, "/"), "ThreeFive", "")
+	seoData := services.ToSEOData(seo, page.Page.Title, fullURL(c, "/"), "IANKEN", "")
 
 	component := pages.Home(page, seoData)
 	return responses.Render(c.Request().Context(), c, component)
@@ -285,7 +285,7 @@ func (h *PageHandler) ShowPublicContact(c *echo.Context) error {
 		return c.String(500, "Failed to load contact page")
 	}
 	seo, _ := h.seoService.GetSEO(c.Request().Context(), "page", page.Page.ID.Bytes)
-	seoData := services.ToSEOData(seo, page.Page.Title, fullURL(c, "/about"), "ThreeFive", "")
+	seoData := services.ToSEOData(seo, page.Page.Title, fullURL(c, "/about"), "IANKEN", "")
 
 	component := pages.Contact(page, seoData)
 	return responses.Render(c.Request().Context(), c, component)

@@ -41,7 +41,7 @@ func (s *Server) RegisterRoutes() {
 
 	// Public routes (no auth required)
 	s.Echo.GET("/", pageHandler.ShowPublicHome)
-	s.Echo.GET("/about", pageHandler.ShowPublicAbout)
+	// s.Echo.GET("/about", pageHandler.ShowPublicAbout)
 	s.Echo.GET("/projects", projectHandler.ShowPublicProjectsList)
 	s.Echo.GET("/projects/:slug", projectHandler.ShowPublicProject)
 

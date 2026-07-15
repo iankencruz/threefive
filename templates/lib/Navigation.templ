@@ -7,7 +7,7 @@ type NavLink struct {
 
 var navLinks = []NavLink{
 	{Title: "Work", Href: "/projects"},
-	{Title: "About", Href: "/about"},
+	// {Title: "About", Href: "/about"},
 	// {Title: "Blog", Href: "/blog"},
 	{Title: "Contact", Href: "/contact"},
 }
@@ -17,7 +17,7 @@ templ NavigationBar(currentPath string) {
 		class="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 py-5 bg-background/90 backdrop-blur-sm border-b border-border"
 	>
 		<a href="/" class="text-sm font-semibold tracking-[0.15em] uppercase hover:text-primary transition-colors">
-			ThreeFive
+			IANKEN
 		</a>
 		<div class="hidden md:flex items-center gap-8">
 			for _, link := range navLinks {
